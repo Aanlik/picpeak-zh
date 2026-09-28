@@ -3,6 +3,8 @@ import { Outlet, Navigate } from 'react-router-dom';
 
 import { useAdminAuth } from '../../contexts';
 import { FeatureFlagsProvider } from '../../contexts/FeatureFlagsContext';
+import { UploadSessionProvider } from '../../contexts/UploadSessionContext';
+import { UploadProgressBar } from './UploadProgressBar';
 import { UnsavedChangesProvider } from '../../contexts/UnsavedChangesContext';
 import { useSessionTimeout } from '../../hooks/useSessionTimeout';
 import { AdminSidebar } from './AdminSidebar';
@@ -53,17 +55,22 @@ export const AdminLayout: React.FC = () => {
   // /api/admin/feature-flags has a session cookie attached.
   return (
     <FeatureFlagsProvider>
-      {/* Settings forms register their dirty state here; the sidebar and
-          header ask before navigating away from unsaved edits. */}
-      <UnsavedChangesProvider>
-      <AdminLayoutInner
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        sidebarCollapsed={sidebarCollapsed}
-        setSidebarCollapsed={setSidebarCollapsed}
-        mustChangePassword={mustChangePassword}
-      />
-      </UnsavedChangesProvider>
+      {/* Photo uploads run here, above the page, so the upload modal can close
+          as soon as an upload starts and the bar survives navigating within
+          the admin. Settings forms register their dirty state in
+          UnsavedChangesProvider; the sidebar and header ask before navigating
+          away from unsaved edits. */}
+      <UploadSessionProvider>
+        <UnsavedChangesProvider>
+          <AdminLayoutInner
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+            sidebarCollapsed={sidebarCollapsed}
+            setSidebarCollapsed={setSidebarCollapsed}
+            mustChangePassword={mustChangePassword}
+          />
+        </UnsavedChangesProvider>
+      </UploadSessionProvider>
     </FeatureFlagsProvider>
   );
 };
@@ -126,6 +133,9 @@ const AdminLayoutInner: React.FC<AdminLayoutInnerProps> = ({ sidebarOpen, setSid
 
         {/* Maintenance mode banner */}
         <MaintenanceBanner />
+
+        {/* Live upload progress, sticky under the header */}
+        <UploadProgressBar />
 
         {!mustChangePassword && <Suspense fallback={null}><ProductUsageNotice /></Suspense>}
         {!mustChangePassword && <Suspense fallback={null}><UsageReportingPrompt /></Suspense>}
