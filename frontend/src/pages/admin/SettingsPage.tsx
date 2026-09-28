@@ -133,6 +133,9 @@ export const SettingsPage: React.FC = () => {
     seoSettings,
     setSeoSettings,
     saveSeoMutation,
+    generalDirty, securityDirty, analyticsDirty, eventDirty, seoDirty,
+    discardGeneral, discardSecurity, discardAnalytics, discardEvent, discardSeo,
+    accountDirty, discardAccount,
   } = useSettingsState();
 
   // If the active tab refers to an item that's now hidden (e.g. admin
@@ -212,6 +215,10 @@ export const SettingsPage: React.FC = () => {
               generalSettings={generalSettings}
               setGeneralSettings={setGeneralSettings}
               saveGeneralMutation={saveGeneralMutation}
+              isDirty={generalDirty}
+              onDiscard={discardGeneral}
+              accountDirty={accountDirty}
+              onDiscardAccount={discardAccount}
               accountForm={accountForm}
               accountErrors={accountErrors}
               handleAccountChange={handleAccountChange}
@@ -226,6 +233,8 @@ export const SettingsPage: React.FC = () => {
               eventSettings={eventSettings}
               setEventSettings={setEventSettings}
               saveEventSettingsMutation={saveEventSettingsMutation}
+              isDirty={eventDirty}
+              onDiscard={discardEvent}
             />
           )}
 
@@ -272,6 +281,8 @@ export const SettingsPage: React.FC = () => {
               rateLimitSettings={rateLimitSettings}
               setRateLimitSettings={setRateLimitSettings}
               saveSecurityMutation={saveSecurityMutation}
+              isDirty={securityDirty}
+              onDiscard={discardSecurity}
             />
           )}
 
@@ -280,6 +291,8 @@ export const SettingsPage: React.FC = () => {
               seoSettings={seoSettings}
               setSeoSettings={setSeoSettings}
               saveSeoMutation={saveSeoMutation}
+              isDirty={seoDirty}
+              onDiscard={discardSeo}
             />
           )}
 
@@ -293,6 +306,8 @@ export const SettingsPage: React.FC = () => {
               analyticsSettings={analyticsSettings}
               setAnalyticsSettings={setAnalyticsSettings}
               saveAnalyticsMutation={saveAnalyticsMutation}
+              isDirty={analyticsDirty}
+              onDiscard={discardAnalytics}
             />
           )}
 
