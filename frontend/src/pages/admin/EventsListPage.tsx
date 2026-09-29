@@ -24,11 +24,13 @@ import { toast } from 'react-toastify';
 import { useModal, useMutationWithToast } from '../../hooks';
 import { useLocalizedDate } from '../../hooks/useLocalizedDate';
 
-import { Button, Input, Card, SkeletonTable, ErrorBoundary } from '../../components/common';
+import { Button, Input, Card, SkeletonTable, ErrorBoundary, ColumnMenuHeader } from '../../components/common';
+import type { ColumnMenuOption, ColumnMenuState } from '../../components/common';
 import { BulkArchiveModal, BulkDeleteModal } from '../../components/admin';
 import { PermissionGate } from '../../components/admin/PermissionGate';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { eventsService, type EventStatusFilter } from '../../services/events.service';
+import { eventsService, type EventStatusFilter, type EventSortBy } from '../../services/events.service';
+import { eventTypesService } from '../../services/eventTypes.service';
 import { adminService } from '../../services/admin.service';
 import { isGalleryPublic } from '../../utils/accessControl';
 import { buildShareLinkUrl } from '../../utils/url';
@@ -36,6 +38,15 @@ import type { Event } from '../../types';
 import { useTranslation } from 'react-i18next';
 
 const PAGE_SIZE = 20;
+
+/**
+ * The sort keys the column menus below can produce. A URL carrying anything
+ * else is dropped rather than forwarded: the server would discard it and fall
+ * back to created_at desc, leaving the table in an order no header reflects.
+ */
+const MENU_SORT_KEYS: readonly EventSortBy[] = [
+  'event_name', 'event_date', 'created_at', 'photo_count', 'status', 'expires_at',
+];
 
 export const EventsListPage: React.FC = () => {
   const { t } = useTranslation();
@@ -81,6 +92,9 @@ export const EventsListPage: React.FC = () => {
     }
   };
 
+  // Server-side pagination. Declared above patchParams, which resets it.
+  const [page, setPage] = useState(1);
+
   // Get filter from URL — backend supports all of these as `status` values
   const filterParam = searchParams.get('filter');
   const statusFilter: EventStatusFilter | undefined =
@@ -92,8 +106,43 @@ export const EventsListPage: React.FC = () => {
   const isExpiringFilter = filterParam === 'expiring';
   const isDraftFilter = filterParam === 'draft';
 
-  // Server-side pagination + debounced search
-  const [page, setPage] = useState(1);
+  // Sort and type filter live in the URL alongside `filter`, so a view the
+  // admin arranged survives a reload, the browser Back button and a link
+  // pasted to a colleague.
+  //
+  // Both halves or neither. A header finds its applied option by matching the
+  // whole `sortBy:sortOrder` pair, so forwarding half of one — a link that lost
+  // its `&dir=`, a hand-edited key the menus never produce — would sort the
+  // table by something while every header still rendered the faint "unsorted"
+  // hint and no menu item showed a check.
+  const sortParam = searchParams.get('sort');
+  const dirParam = searchParams.get('dir');
+  const urlSortOrder = dirParam === 'asc' || dirParam === 'desc' ? dirParam : undefined;
+  const sortBy = urlSortOrder && MENU_SORT_KEYS.includes(sortParam as EventSortBy)
+    ? (sortParam as EventSortBy)
+    : undefined;
+  const sortOrder = sortBy ? urlSortOrder : undefined;
+  const typeFilter = searchParams.get('type') || '';
+
+  // Preserves the params it is not changing: picking a status must not throw
+  // away the sort the admin just chose, and vice versa.
+  //
+  // Resets the page here rather than leaving it to the effect below. That
+  // effect still runs — it is what catches a Back navigation or a pasted URL,
+  // where no click passed through this function — but on a click it would fire
+  // a render later, so the query went out once with the new sort and the OLD
+  // page before the page-1 request replaced it. One request per change, not
+  // two.
+  const patchParams = (patch: Record<string, string | null>) => {
+    const next = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === null || value === '') next.delete(key);
+      else next.set(key, value);
+    }
+    setPage(1);
+    setSearchParams(next);
+  };
+
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
   useEffect(() => {
@@ -101,11 +150,15 @@ export const EventsListPage: React.FC = () => {
     return () => clearTimeout(t);
   }, [searchTerm]);
 
-  // Reset to page 1 whenever the filter or search changes so users don't
-  // get stuck on a page index that no longer exists in the new result set.
+  // Reset to page 1 whenever the query changes so users don't get stuck on a
+  // page index that no longer exists in the new result set. patchParams
+  // already does this for a click; this covers the paths that bypass it —
+  // Back/Forward, a pasted link, and the debounced search box, which is local
+  // state rather than a URL param. Setting the same value is a no-op render,
+  // so the two together do not double up.
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, debouncedSearchTerm]);
+  }, [statusFilter, debouncedSearchTerm, typeFilter, sortBy, sortOrder]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -144,8 +197,16 @@ export const EventsListPage: React.FC = () => {
   // Fetch events — fully server-side: pagination, status filter, and search
   // (#346 — counters and search were previously bounded to the first 100 rows).
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['admin-events', statusFilter ?? 'all', debouncedSearchTerm, page],
-    queryFn: () => eventsService.getEvents(page, PAGE_SIZE, statusFilter, debouncedSearchTerm || undefined),
+    queryKey: ['admin-events', statusFilter ?? 'all', debouncedSearchTerm, typeFilter, sortBy ?? '', sortOrder ?? '', page],
+    queryFn: () => eventsService.getEvents({
+      page,
+      limit: PAGE_SIZE,
+      status: statusFilter,
+      search: debouncedSearchTerm || undefined,
+      type: typeFilter || undefined,
+      sortBy,
+      sortOrder,
+    }),
     placeholderData: (prev) => prev,
   });
 
@@ -170,6 +231,69 @@ export const EventsListPage: React.FC = () => {
     queryKey: ['admin-dashboard-stats'],
     queryFn: () => adminService.getDashboardStats(),
   });
+
+  // Every type ever assigned, including deactivated ones: a gallery created
+  // years ago can still carry a type that has since been switched off, and
+  // leaving it out of the menu would make those rows unfilterable. Deleting a
+  // type in use is blocked and a rename cascades to events.event_type, so this
+  // list covers every slug the rows can hold.
+  const { data: eventTypes } = useQuery({
+    queryKey: ['admin-event-types', 'withInactive'],
+    queryFn: () => eventTypesService.getEventTypes(true),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Column menus. Each option value is the `sortBy:sortOrder` pair sent to the
+  // server, so the applied option is found by string match rather than by
+  // reconstructing which column owns the current sort.
+  const sortValue = sortBy && sortOrder ? `${sortBy}:${sortOrder}` : null;
+
+  const NAME_SORT: ColumnMenuOption[] = [
+    { value: 'event_name:asc', label: t('events.sortNameAsc', 'A – Z') },
+    { value: 'event_name:desc', label: t('events.sortNameDesc', 'Z – A') },
+  ];
+  const DATE_SORT: ColumnMenuOption[] = [
+    { value: 'event_date:desc', label: t('events.sortDateNewest', 'Newest first') },
+    { value: 'event_date:asc', label: t('events.sortDateOldest', 'Oldest first') },
+    { value: 'created_at:desc', label: t('events.sortCreatedNewest', 'Recently created'), separatorBefore: true },
+    { value: 'created_at:asc', label: t('events.sortCreatedOldest', 'First created') },
+  ];
+  const PHOTOS_SORT: ColumnMenuOption[] = [
+    { value: 'photo_count:desc', label: t('events.sortPhotosMost', 'Most photos') },
+    { value: 'photo_count:asc', label: t('events.sortPhotosFewest', 'Fewest photos') },
+  ];
+  const STATUS_SORT: ColumnMenuOption[] = [
+    { value: 'status:asc', label: t('events.sortStatusActive', 'Active first') },
+    { value: 'status:desc', label: t('events.sortStatusArchived', 'Archived first') },
+  ];
+  const EXPIRES_SORT: ColumnMenuOption[] = [
+    { value: 'expires_at:asc', label: t('events.sortExpiresSoonest', 'Expiring soonest') },
+    { value: 'expires_at:desc', label: t('events.sortExpiresLatest', 'Expiring latest') },
+  ];
+
+  const typeOptions: ColumnMenuOption[] = [
+    { value: '', label: t('events.filterAllTypes', 'All types') },
+    ...(eventTypes ?? []).map((type) => ({
+      value: type.slug_prefix,
+      label: type.emoji ? `${type.emoji} ${type.name}` : type.name,
+    })),
+  ];
+
+  /** The option this column currently carries, or null when it is not the active sort. */
+  const sortSelection = (options: ColumnMenuOption[]) =>
+    (sortValue && options.some((o) => o.value === sortValue) ? sortValue : null);
+
+  /** Chevron direction for the column, or null when it is not the active sort. */
+  const sortState = (options: ColumnMenuOption[]): ColumnMenuState => {
+    const selected = sortSelection(options);
+    if (!selected) return null;
+    return selected.endsWith(':asc') ? 'asc' : 'desc';
+  };
+
+  const applySort = (value: string) => {
+    const [by, dir] = value.split(':');
+    patchParams({ sort: by, dir });
+  };
 
   // Archive mutation
   const archiveMutation = useMutationWithToast({
@@ -395,24 +519,21 @@ export const EventsListPage: React.FC = () => {
             <Button
               variant={!statusFilter ? 'primary' : 'outline'}
               size="md"
-              onClick={() => {
-                searchParams.delete('filter');
-                setSearchParams(searchParams);
-              }}
+              onClick={() => patchParams({ filter: null })}
             >
               {t('events.all')} ({dashboardStats?.totalEvents ?? 0})
             </Button>
             <Button
               variant={statusFilter === 'active' ? 'primary' : 'outline'}
               size="md"
-              onClick={() => setSearchParams({ filter: 'active' })}
+              onClick={() => patchParams({ filter: 'active' })}
             >
               {t('events.active')}
             </Button>
             <Button
               variant={isExpiringFilter ? 'primary' : 'outline'}
               size="md"
-              onClick={() => setSearchParams({ filter: 'expiring' })}
+              onClick={() => patchParams({ filter: 'expiring' })}
               leftIcon={<AlertTriangle className="w-4 h-4" />}
             >
               {t('events.expiring')}
@@ -420,14 +541,14 @@ export const EventsListPage: React.FC = () => {
             <Button
               variant={isDraftFilter ? 'primary' : 'outline'}
               size="md"
-              onClick={() => setSearchParams({ filter: 'draft' })}
+              onClick={() => patchParams({ filter: 'draft' })}
             >
               {t('events.draft')}
             </Button>
             <Button
               variant={statusFilter === 'archived' ? 'primary' : 'outline'}
               size="md"
-              onClick={() => setSearchParams({ filter: 'archived' })}
+              onClick={() => patchParams({ filter: 'archived' })}
               leftIcon={<Archive className="w-4 h-4" />}
             >
               {t('events.archived')}
@@ -483,24 +604,60 @@ export const EventsListPage: React.FC = () => {
                     className="w-4 h-4 text-accent border-line-strong rounded focus:ring-primary-500 dark:bg-neutral-700"
                   />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                  {t('events.event')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                  {t('events.type')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                  {t('events.date')}
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">
-                  {t('events.photos', 'Photos')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                  {t('events.status')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                  {t('events.expires')}
-                </th>
+                <ColumnMenuHeader
+                  label={t('events.event')}
+                  menuLabel={t('events.sortByName', 'Sort by name')}
+                  options={NAME_SORT}
+                  value={sortSelection(NAME_SORT)}
+                  state={sortState(NAME_SORT)}
+                  onSelect={applySort}
+                />
+                <ColumnMenuHeader
+                  label={t('events.type')}
+                  menuLabel={t('events.filterByType', 'Filter by type')}
+                  options={typeOptions}
+                  value={typeFilter}
+                  state={typeFilter ? 'set' : null}
+                  onSelect={(value) => patchParams({ type: value || null })}
+                  // Until the catalogue loads — or if it fails to — the only
+                  // option would be "All types", which filters nothing. A
+                  // header that plainly has no menu yet beats one that opens
+                  // and offers a single useless choice.
+                  disabled={!eventTypes}
+                />
+                <ColumnMenuHeader
+                  label={t('events.date')}
+                  menuLabel={t('events.sortByDate', 'Sort by date')}
+                  options={DATE_SORT}
+                  value={sortSelection(DATE_SORT)}
+                  state={sortState(DATE_SORT)}
+                  onSelect={applySort}
+                />
+                <ColumnMenuHeader
+                  label={t('events.photos', 'Photos')}
+                  menuLabel={t('events.sortByPhotos', 'Sort by photo count')}
+                  options={PHOTOS_SORT}
+                  value={sortSelection(PHOTOS_SORT)}
+                  state={sortState(PHOTOS_SORT)}
+                  onSelect={applySort}
+                  align="right"
+                />
+                <ColumnMenuHeader
+                  label={t('events.status')}
+                  menuLabel={t('events.sortByStatus', 'Sort by status')}
+                  options={STATUS_SORT}
+                  value={sortSelection(STATUS_SORT)}
+                  state={sortState(STATUS_SORT)}
+                  onSelect={applySort}
+                />
+                <ColumnMenuHeader
+                  label={t('events.expires')}
+                  menuLabel={t('events.sortByExpiry', 'Sort by expiry')}
+                  options={EXPIRES_SORT}
+                  value={sortSelection(EXPIRES_SORT)}
+                  state={sortState(EXPIRES_SORT)}
+                  onSelect={applySort}
+                />
                 <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                   {t('events.actions')}
                 </th>
