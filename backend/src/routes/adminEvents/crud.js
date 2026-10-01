@@ -306,7 +306,14 @@ module.exports = (router) => {
     // Customer accounts assigned to this event (#354). Optional array of
     // customer_accounts.id — many-to-many via event_customer_assignments.
     body('customer_account_ids').optional().isArray(),
-    body('customer_account_ids.*').optional().isInt({ min: 1 })
+    body('customer_account_ids.*').optional().isInt({ min: 1 }),
+    // Custom styling switch (services/galleryTheme) and the photo source,
+    // so a gallery is complete from the create form alone.
+    body('custom_theme_enabled').optional().isBoolean(),
+    body('source_mode').optional().isIn(['managed', 'reference']),
+    body('external_path').optional({ nullable: true }).isString().trim(),
+    body('external_watch').optional().isBoolean(),
+    body('import_now').optional().isBoolean()
   ], async (req, res) => {
     try {
       // Redact credentials — the body carries the gallery password (GHSA-r794).
@@ -567,7 +574,7 @@ module.exports = (router) => {
   // spam, the address was wrong and has been corrected — and refusing would
   // just push people to unpublish and republish, which changes gallery state
   // to work around a mail problem.
-  router.post('/:id/send-gallery-email', adminAuth, requirePermission('events.edit'), requireEventOwnership, [
+  router.post('/:id/send-gallery-email', adminAuth, requirePermission(['events.edit', 'events.support']), requireEventOwnership, [
     body('password').optional().isString().isLength({ min: 6 })
       .withMessage('Password must be at least 6 characters long'),
   ], async (req, res) => {
@@ -942,6 +949,7 @@ module.exports = (router) => {
         password_hash,
         welcome_message: source.welcome_message || '',
         color_theme: source.color_theme,
+        custom_theme_enabled: formatBoolean(parseBooleanInput(source.custom_theme_enabled, false)),
         share_link: shareLinkToStore,
         share_token: shareToken,
         expires_at: newExpiresAt ? newExpiresAt.toISOString() : null,
@@ -1188,7 +1196,10 @@ module.exports = (router) => {
     // Customer accounts assigned to this event (#354). Optional array of
     // customer_accounts.id — many-to-many via event_customer_assignments.
     body('customer_account_ids').optional().isArray(),
-    body('customer_account_ids.*').optional().isInt({ min: 1 })
+    body('customer_account_ids.*').optional().isInt({ min: 1 }),
+    // Custom styling switch (services/galleryTheme). Off keeps color_theme
+    // and css_template_id stored, so switching it on again restores them.
+    body('custom_theme_enabled').optional().isBoolean()
   ], async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -1605,6 +1616,10 @@ module.exports = (router) => {
         }
       }
 
+      if (Object.prototype.hasOwnProperty.call(updates, 'custom_theme_enabled')) {
+        updates.custom_theme_enabled = formatBoolean(parseBooleanInput(updates.custom_theme_enabled, false));
+      }
+
       // Written through formatBoolean like the other event flags (#1561).
       if (Object.prototype.hasOwnProperty.call(updates, 'show_credits_to_guests')) {
         updates.show_credits_to_guests = formatBoolean(parseBooleanInput(updates.show_credits_to_guests, false));
@@ -1833,7 +1848,7 @@ module.exports = (router) => {
   // (removed — GHSA-4j34-x562-5vfq), now on the canonical mount with the same
   // permission + ownership guards as every other gallery mutation, so a
   // non-owning editor/viewer can no longer touch a gallery they don't own.
-  router.post('/:id/extend', adminAuth, requirePermission('events.edit'), requireEventOwnership, [
+  router.post('/:id/extend', adminAuth, requirePermission(['events.edit', 'events.support']), requireEventOwnership, [
     body('days').isInt({ min: 1, max: 365 })
   ], async (req, res) => {
     try {
