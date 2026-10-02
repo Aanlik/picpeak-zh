@@ -67,6 +67,12 @@ async function processUploadedPhotos(files, eventId, uploadedBy = 'admin', categ
     throw new Error('Event not found');
   }
   
+  // Read the setting before any transaction opens: on SQLite the pool is one
+  // connection, and a read through `db` while `trx` holds it waits for the
+  // acquire timeout (isEnabled then logs and answers false). The value is
+  // cached for a minute, so once per batch is right.
+  const webCopyEnabled = await require('./videoRenditionService').isEnabled();
+
   // Process each file
   for (const file of fileList) {
     const trx = await db.transaction();
@@ -238,6 +244,9 @@ async function processUploadedPhotos(files, eventId, uploadedBy = 'admin', categ
         source_origin: 'managed',
         media_type: mediaType,
         mime_type: file.mimetype,
+        // Browser-playable copy (issue 1430): queued only while the setting
+        // is on, so installs without it never write a web_status.
+        ...(isVideo && webCopyEnabled ? { web_status: 'pending' } : {}),
         ...(processingError ? { processing_error: processingError } : {}),
         ...credit
       };
@@ -650,6 +659,16 @@ async function processPhoto(photoId) {
   } catch (err) {
     // Never let the face feature block a photo from completing.
     logger.warn(`processPhoto: face enqueue check failed for ${photoId}`, { error: err.message });
+  }
+
+  // Browser-playable copy (issue 1430, item 8): same UPDATE for the same
+  // reason as the face enqueue above, and only while the setting is on.
+  try {
+    if (isVideo && await require('./videoRenditionService').isEnabled()) {
+      updateData.web_status = 'pending';
+    }
+  } catch (err) {
+    logger.warn(`processPhoto: web rendition enqueue check failed for ${photoId}`, { error: err.message });
   }
 
   await db('photos').where({ id: photoId }).update(updateData);

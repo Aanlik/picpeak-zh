@@ -198,47 +198,95 @@ router.get('/:slug/photo/:photoId',
       // Handle video streaming with range requests
       if (isVideo) {
         if (!(await admitVideoStream(req, res, photo))) return;
+
+        // Browser-playable copy (issue 1430, item 8): when the queue wrote
+        // one, the player gets it instead of the original. It always lives
+        // in the managed backend, external originals included. A copy the
+        // row points at but storage no longer has falls back to the original
+        // rather than a 404 player.
+        let videoKey = storageKey;
+        let videoPath = filePath;
+        let videoSize = fileSize;
+        let videoViaStorage = useStorageBackend;
+        let videoContentType = resolvePhotoContentType(photo);
+        if (photo.web_path && photo.web_status === 'complete') {
+          // stat() answers null for a key the backend does not have and
+          // throws for anything else (network, credentials): only the first
+          // is "the copy is gone". A failing backend serves the original for
+          // this request and keeps the pointer.
+          let webStat = null;
+          let webMissing = false;
+          try {
+            webStat = await storage.stat(photo.web_path);
+            webMissing = !webStat;
+          } catch (statErr) {
+            logger.warn(`Could not stat the web copy of video ${photo.id}: ${statErr.message}`);
+          }
+          if (webStat) {
+            videoKey = photo.web_path;
+            videoPath = null;
+            videoSize = webStat.size;
+            videoViaStorage = true;
+            videoContentType = 'video/mp4';
+          } else if (webMissing) {
+            // The row names a copy storage does not have — a backup restored
+            // without videos/, or a bucket cleaned by hand. Left at
+            // `complete` it would never be rebuilt (the switch-on backfill
+            // takes NULL and failed rows only), so it goes back to the queue
+            // now while the setting is on, or to `failed` for the next
+            // switch-on. Guarded on the stale pointer, so a concurrent
+            // worker's fresh publish is not undone.
+            const { isEnabled } = require('../../services/videoRenditionService');
+            const enabled = await isEnabled().catch(() => false);
+            await db('photos').where({ id: photo.id, web_path: photo.web_path, web_status: 'complete' }).update({
+              web_path: null,
+              web_status: enabled ? 'pending' : 'failed',
+              web_started_at: null,
+              web_error: 'copy missing from storage',
+            }).catch((e) => logger.warn(`Could not re-queue the missing web copy of video ${photo.id}: ${e.message}`));
+          }
+        }
         const range = req.headers.range;
 
         if (range) {
           const parts = range.replace(/bytes=/, '').split('-');
           const start = parseInt(parts[0], 10);
-          const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+          const end = parts[1] ? parseInt(parts[1], 10) : videoSize - 1;
           // Validate before writing the 206: a NaN, inverted or out-of-file
           // range used to be committed to the headers and then throw while
           // streaming (or read past the end).
           if (!Number.isInteger(start) || !Number.isInteger(end)
-              || start < 0 || end < start || start >= fileSize) {
-            res.set('Content-Range', `bytes */${fileSize}`);
+              || start < 0 || end < start || start >= videoSize) {
+            res.set('Content-Range', `bytes */${videoSize}`);
             return res.status(416).end();
           }
-          const boundedEnd = Math.min(end, fileSize - 1);
+          const boundedEnd = Math.min(end, videoSize - 1);
           const chunksize = (boundedEnd - start) + 1;
 
           res.writeHead(206, {
-            'Content-Range': `bytes ${start}-${boundedEnd}/${fileSize}`,
+            'Content-Range': `bytes ${start}-${boundedEnd}/${videoSize}`,
             'Accept-Ranges': 'bytes',
             'Content-Length': chunksize,
-            'Content-Type': resolvePhotoContentType(photo),
+            'Content-Type': videoContentType,
             'Cache-Control': 'private, max-age=1800',
             'X-Protection-Level': 'basic'
           });
 
-          const file = useStorageBackend
-            ? await storage.getRange(storageKey, start, boundedEnd)
-            : fs.createReadStream(filePath, { start, end: boundedEnd });
+          const file = videoViaStorage
+            ? await storage.getRange(videoKey, start, boundedEnd)
+            : fs.createReadStream(videoPath, { start, end: boundedEnd });
           pipeStreamToResponse(file, res, { context: `video range for photo ${photo.id}` });
         } else {
           res.writeHead(200, {
-            'Content-Length': fileSize,
-            'Content-Type': resolvePhotoContentType(photo),
+            'Content-Length': videoSize,
+            'Content-Type': videoContentType,
             'Accept-Ranges': 'bytes',
             'Cache-Control': 'private, max-age=1800',
             'X-Protection-Level': 'basic'
           });
-          const file = useStorageBackend
-            ? await storage.get(storageKey)
-            : fs.createReadStream(filePath);
+          const file = videoViaStorage
+            ? await storage.get(videoKey)
+            : fs.createReadStream(videoPath);
           pipeStreamToResponse(file, res, { context: `video for photo ${photo.id}` });
         }
         return;

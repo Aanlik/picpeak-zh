@@ -16,6 +16,10 @@ export interface AdminPhoto {
   uploaded_at: string;
   media_type?: 'photo' | 'video';
   mime_type?: string | null;
+  // Browser-playable copy of a video (issue 1430, item 8); null until the
+  // setting has queued it.
+  web_status?: 'pending' | 'processing' | 'complete' | 'skipped' | 'failed' | null;
+  web_error?: string | null;
   processing_status?: 'pending' | 'processing' | 'complete' | 'failed';
   // Set on a complete video that shows the placeholder tile because no
   // poster frame could be taken (issue 1430, item 6).
