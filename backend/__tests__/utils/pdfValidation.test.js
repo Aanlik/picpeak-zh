@@ -41,6 +41,73 @@ test('a plain PDF passes and is described', async () => {
   expect(info.sha256).toBe(crypto.createHash('sha256').update(info.normalised).digest('hex'));
 });
 
+test('a file whose xref points at a definition the scan did not keep is flagged, and normalised drops it', async () => {
+  const { duplicateObjectPdf } = require('../integration/helpers/pdfFixture');
+  const buffer = duplicateObjectPdf();
+  const info = await validatePdf(buffer);
+  // The scan kept the harmless last catalog, so the check passes …
+  expect(info.pages).toBe(1);
+  expect(buffer.toString('latin1')).toContain('/JavaScript');
+  expect(info.normalised.toString('latin1')).not.toContain('/JavaScript');
+  // … and the caller that cannot store `normalised` is told the two disagree.
+  expect(info.ambiguousObjects).toBe(true);
+  expect((await validatePdf(await makePdf({ pages: 1 }))).ambiguousObjects).toBe(false);
+});
+
+test('page content that spells "1 0 obj" is data, not a second definition', async () => {
+  // An uncompressed content stream carrying the same characters an object
+  // header has: a byte search counted it and refused a valid file on the
+  // signer and inbound-invoice paths.
+  const { PDFDocument } = require('pdf-lib');
+  const { _internal } = require('../../src/utils/pdfInspect');
+  const doc = await PDFDocument.create();
+  const page = doc.addPage([300, 200]);
+  page.node.addContentStream(doc.context.register(
+    doc.context.stream('BT /F1 12 Tf 20 60 Td (see) Tj ET\n1 0 obj\n2 0 obj\n'),
+  ));
+  const buffer = Buffer.from(await doc.save({ useObjectStreams: false }));
+  expect(buffer.toString('latin1')).toContain('\n1 0 obj\n2 0 obj\n');
+  expect(_internal.findAmbiguousObjects(buffer)).toBe(false);
+  expect((await validatePdf(buffer)).ambiguousObjects).toBe(false);
+});
+
+test('the same characters in a string or a comment are not definitions either, and cannot hide one', async () => {
+  const { duplicateObjectPdf, minimalPdf } = require('../integration/helpers/pdfFixture');
+  const { _internal } = require('../../src/utils/pdfInspect');
+  const plain = (await minimalPdf({ label: 'note: 1 0 obj and 2 0 obj' })).toString('latin1');
+  expect(_internal.findAmbiguousObjects(Buffer.from(`${plain}\n% 1 0 obj\n% 1 0 obj\n`, 'latin1'))).toBe(false);
+
+  // A `stream` keyword spelled inside a string must not open a span that
+  // swallows the real duplicate definition behind it.
+  const hidden = duplicateObjectPdf().toString('latin1')
+    .replace('2 0 obj\n<< /Type /Pages', '2 0 obj\n<< /Length 400 /X (>> stream\n) /Type /Pages');
+  expect(hidden).toContain('/X (>> stream');
+  expect(_internal.collectObjectDefinitions(`${hidden}\nendstream\n`).get('1 0')).toHaveLength(2);
+  expect(_internal.findAmbiguousObjects(Buffer.from(hidden, 'latin1'))).toBe(true);
+  expect(_internal.findAmbiguousObjects(duplicateObjectPdf())).toBe(true);
+});
+
+test('an incremental update whose newest xref points at the last definition is not ambiguous', async () => {
+  const { minimalPdf } = require('../integration/helpers/pdfFixture');
+  const { _internal } = require('../../src/utils/pdfInspect');
+  const base = (await minimalPdf({ label: 'inc' })).toString('latin1');
+  const prevXref = Number(/startxref\s+(\d+)/.exec(base)[1]);
+  const root = Number(/\/Root (\d+) 0 R/.exec(base)[1]);
+  const catalog = new RegExp(`${root} 0 obj\\n([\\s\\S]*?)endobj`).exec(base)[1];
+  const append = (pointAtNew) => {
+    let out = `${base}\n`;
+    const newAt = out.length;
+    out += `${root} 0 obj\n${catalog.replace(/>>\s*$/, '/Lang (de) >>\n')}endobj\n`;
+    const oldAt = base.indexOf(`\n${root} 0 obj`) + 1;
+    const xrefAt = out.length;
+    out += `xref\n${root} 1\n${String(pointAtNew ? newAt : oldAt).padStart(10, '0')} 00000 n \n`
+      + `trailer\n<< /Size 99 /Root ${root} 0 R /Prev ${prevXref} >>\nstartxref\n${xrefAt}\n%%EOF\n`;
+    return Buffer.from(out, 'latin1');
+  };
+  expect(_internal.findAmbiguousObjects(append(true))).toBe(false);
+  expect(_internal.findAmbiguousObjects(append(false))).toBe(true);
+});
+
 // One page whose single FlateDecode stream inflates to `mb` megabytes of
 // zeros — the shape a decompression bomb actually has. A few hundred KB of
 // upload; the damage is all on the other side of the inflate.

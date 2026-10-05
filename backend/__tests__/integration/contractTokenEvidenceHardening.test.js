@@ -461,7 +461,10 @@ describe('countersignature stamping', () => {
     expect(contract.signed_pdf_path).toBe(customerStamped);
   });
 
-  it('does not replace a wet-signed upload that landed right after the countersignature took the status', async () => {
+  it('refuses a customer wet-signed upload that lands right after the countersignature took the status', async () => {
+    // fully_signed is final for a customer upload: once the countersignature
+    // has flipped the status, a late wet-signed copy no longer replaces the
+    // authoritative PDF (it used to, and the render then raced it).
     const { id, token } = await sentContract('Upload before countersign stamp');
     await contractService.recordCustomerSignature({
       token, name: 'Maria Meier', accepted: true, ip: '198.51.100.14', signatureDataUrl: SIGNATURE_DATA_URL,
@@ -471,7 +474,11 @@ describe('countersignature stamping', () => {
     const wet = path.join(uploadDir, `wet-countersign-${Date.now()}.pdf`);
     fs.writeFileSync(wet, '%PDF-1.4 authoritative wet-signed copy');
 
-    mockBeforeContractRead = { contractId: id, run: () => contractService.attachSignedPdfUpload(id, wet, 'customer') };
+    let refused = null;
+    mockBeforeContractRead = {
+      contractId: id,
+      run: () => contractService.attachSignedPdfUpload(id, wet, 'customer').catch((err) => { refused = err; }),
+    };
     try {
       await contractService.recordAdminCountersignature(
         id, { name: 'Admin', ip: '203.0.113.32', signatureDataUrl: SIGNATURE_DATA_URL }, adminId,
@@ -480,10 +487,41 @@ describe('countersignature stamping', () => {
       mockBeforeContractRead = null;
     }
 
+    expect(refused?.code).toBe('CONTRACT_ALREADY_SIGNED');
+    expect(fs.existsSync(wet)).toBe(false);
     const contract = await db('contracts').where({ id }).first();
     expect(contract.status).toBe('fully_signed');
     expect(contract.signed_admin_name).toBe('Admin');
-    expect(contract.signed_pdf_path).toBe(storedAs(wet));
+    expect(contract.signed_pdf_path).not.toBe(storedAs(wet));
+  });
+
+  it('rolls the status back when the token revocation fails, so the signature file is not orphaned', async () => {
+    const { id, token } = await sentContract('Countersign with a failing revoke');
+    await contractService.recordCustomerSignature({
+      token, name: 'Maria Meier', accepted: true, ip: '198.51.100.15', signatureDataUrl: SIGNATURE_DATA_URL,
+    });
+    const before = await db('contracts').where({ id }).first();
+
+    // The revoke runs in the same transaction as the status flip; a failure
+    // there used to leave a fully_signed contract pointing at the PNG the
+    // catch block had just deleted.
+    await db.schema.renameTable('contract_action_tokens', 'contract_action_tokens_offline');
+    let err;
+    try {
+      await contractService.recordAdminCountersignature(
+        id, { name: 'Admin', ip: '203.0.113.33', signatureDataUrl: SIGNATURE_DATA_URL }, adminId,
+      );
+    } catch (e) {
+      err = e;
+    } finally {
+      await db.schema.renameTable('contract_action_tokens_offline', 'contract_action_tokens');
+    }
+    expect(err).toBeTruthy();
+
+    const after = await db('contracts').where({ id }).first();
+    expect(after.status).toBe('signed_by_customer');
+    expect(after.signed_admin_signature_path).toBe(before.signed_admin_signature_path);
+    expect(after.signed_admin_name).toBe(before.signed_admin_name);
   });
 });
 
