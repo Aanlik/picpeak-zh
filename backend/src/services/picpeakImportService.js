@@ -27,7 +27,7 @@ const { db } = require('../database/db');
 const knexConfig = require('../../knexfile');
 const { getStoragePath } = require('../config/storage');
 const { hasColumnCached } = require('../utils/schemaCache');
-const { setSessionsValidAfter } = require('../utils/sessionCutoff');
+const { invalidateSessionsIssuedSoFar } = require('../utils/sessionCutoff');
 const logger = require('../utils/logger');
 const { PICPEAK_FORMAT_VERSION, EXCLUDED_TABLES, listDataTables } = require('./picpeakExportService');
 const { normaliseSqliteEmailQueue } = require('../utils/queueTimestamps');
@@ -68,6 +68,64 @@ function archiveLimitError(message, statusCode) {
   const err = new Error(message);
   err.statusCode = statusCode;
   return err;
+}
+
+// The exporter writes exactly these storage subtrees under files/
+// (picpeakExportService: DOC_DIRS, PHOTO_DIRS, and legacy documents, which
+// isPlaceablePath keeps under the DOC_DIRS). Everything else in an archive
+// was not produced by PicPeak and is refused before any live state changes:
+// the import copies files/ into STORAGE_PATH as-is, and some of that tree is
+// served publicly (fonts/, uploads/logos, uploads/favicons).
+const IMPORT_FILE_ROOTS = ['business-docs', 'uploads', 'events/active', 'events/archived'];
+// The storage subtrees (inside the roots above) that the app serves as
+// static web content, without authentication:
+//   uploads/logos     backend/server.js `app.use('/uploads/logos', secureStatic(...))`
+//   uploads/favicons  backend/server.js `app.use('/uploads/favicons', secureStatic(...))`,
+//                     and the /favicon.ico handler, which streams from both
+// frontend/nginx.conf proxies `location ^~ /uploads` to those mounts and
+// serves no storage path itself. fonts/ is served too but is not an import
+// root; /photos and /thumbnails are no longer mounted. Everything else under
+// the roots — transfer attachments (uploads/transfers/<id>/...), signed
+// contracts, business documents, event media — is handed out by authorised
+// routes as an attachment under its stored name, never as a page.
+const IMPORT_PUBLICLY_SERVED_PREFIXES = ['uploads/logos', 'uploads/favicons'];
+// Active web content must never land in a served subtree through an archive.
+// SVG is deliberately not here: it is a supported logo format and
+// secureStatic serves it under a script-blocking CSP. Outside the served
+// subtrees the extension is just a name: a client may well have uploaded
+// `payload.js` or `page.html` to a transfer, and a genuine export carries it.
+const IMPORT_FORBIDDEN_EXTENSIONS = new Set(['.html', '.htm', '.xhtml', '.xht', '.shtml', '.js', '.mjs', '.cjs']);
+
+/**
+ * Why a storage-relative file path from an archive's files/ tree may not be
+ * restored, or null when it may. `rel` is POSIX, without the files/ prefix.
+ */
+function importFilePathProblem(rel) {
+  const parts = rel.split('/');
+  if (parts.some((p) => !p || p === '.' || p === '..')) return 'malformed path';
+  const root = IMPORT_FILE_ROOTS.find((r) => rel === r || rel.startsWith(`${r}/`));
+  if (!root || rel === root) return `not under an exported storage folder (${IMPORT_FILE_ROOTS.join(', ')})`;
+  // Compared case-insensitively: a case-insensitive filesystem would land
+  // `uploads/Logos/x.html` in the served directory all the same.
+  const lower = rel.toLowerCase();
+  const served = IMPORT_PUBLICLY_SERVED_PREFIXES.some((prefix) => lower.startsWith(`${prefix}/`));
+  if (served && IMPORT_FORBIDDEN_EXTENSIONS.has(path.posix.extname(lower))) return 'active web content';
+  return null;
+}
+
+/** Refuse an archive whose files/ entries the exporter could not have written. */
+function assertFilesEntriesAllowed(entries) {
+  for (const entry of entries || []) {
+    if (!entry || !entry.name || entry.isDirectory) continue;
+    const name = String(entry.name).replace(/\\/g, '/');
+    if (!name.startsWith('files/')) continue;
+    const problem = importFilePathProblem(name.slice('files/'.length));
+    if (problem) {
+      const err = archiveLimitError(`Archive contains a file PicPeak would not have exported (${problem}): ${name}`, 400);
+      err.code = 'UNSUPPORTED_ARCHIVE_FILE';
+      throw err;
+    }
+  }
 }
 
 async function freeBytes(dir) {
@@ -602,6 +660,10 @@ async function restoreFiles(stagingDir) {
       if (entry.isDirectory()) {
         await walk(childRel);
       } else if (entry.isFile()) {
+        // Checked on the zip entries before extraction; the walk is the sink,
+        // so it refuses the same paths.
+        const problem = importFilePathProblem(childRel.split(path.sep).join('/'));
+        if (problem) throw new Error(`Refusing to restore ${childRel}: ${problem}`);
         const dest = path.join(storageRoot, childRel);
         await fsp.mkdir(path.dirname(dest), { recursive: true });
         await fsp.copyFile(path.join(src, childRel), dest);
@@ -675,6 +737,7 @@ async function importFromPicpeak({ picpeakPath, currentAdminId }) {
       // (same class as GHSA-jfhw-fj23-fx6x).
       const entries = Object.values(await zip.entries());
       assertZipEntriesWithin(entries, staging);
+      assertFilesEntriesAllowed(entries);
       await assertArchiveWithinLimits(entries, staging);
       await extractWithinLimits(zip, entries, staging);
     } finally {
@@ -702,8 +765,12 @@ async function importFromPicpeak({ picpeakPath, currentAdminId }) {
     //    batchInsert, so the next natural insert doesn't collide;
     //  - stamp a global session cutoff so every JWT issued before this restore
     //    (admin, customer, gallery) stops authenticating — ids may have shifted.
+    //    isTokenBeforeCutoff() rejects `iat < cutoff` and iat is a whole
+    //    second, so the cutoff is the NEXT second: a token minted earlier in
+    //    the same second as the commit must not survive. The helper also
+    //    waits out that second, so a login right after the import is valid.
     await resyncSequences(tables);
-    await setSessionsValidAfter(Math.floor(Date.now() / 1000));
+    await invalidateSessionsIssuedSoFar();
 
 
     const filesRestored = await restoreFiles(staging);
@@ -794,6 +861,8 @@ async function importFromPicpeak({ picpeakPath, currentAdminId }) {
 }
 
 module.exports = {
+  assertFilesEntriesAllowed,
+  importFilePathProblem,
   importFromPicpeak,
   readManifestFromZip,
   validateManifest,

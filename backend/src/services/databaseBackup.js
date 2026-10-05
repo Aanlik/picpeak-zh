@@ -28,6 +28,34 @@ const packageJson = require('../../package.json');
 // createSQLiteBackup below.
 const FACE_TABLES = ['photo_faces', 'event_people', 'event_people_merge_dismissals'];
 
+// sqlite3's `.backup` is a dot-command parsed by sqlite3's OWN tokenizer, not
+// the shell: spawn()'s argv separation does not stop a quote or a line break
+// inside the path from ending the `.backup '<path>'` argument and starting a
+// second dot-command such as `.shell`. The destination is admin-configured,
+// so the copy is written to a server-generated path in this charset and
+// moved to the destination afterwards (same rule as restoreService's
+// assertSafeSqlitePath). Only the `.backup` target is interpolated; every
+// other sqlite3 call passes the file as its own argv element.
+const SAFE_SQLITE_PATH_RE = /^[A-Za-z0-9._/-]+$/;
+function assertSafeSqlitePath(p) {
+  if (typeof p !== 'string' || !SAFE_SQLITE_PATH_RE.test(p)) {
+    throw new Error(`Refusing to run sqlite3 against an unsafe path: ${p}`);
+  }
+}
+
+// Printable, quote-free and without line breaks: what a destination path may
+// contain so that it never has to be interpolated into a dot-command, and
+// what adminDatabaseBackup refuses at save time.
+// eslint-disable-next-line no-control-regex -- intentional: refuses control chars in the path
+const DESTINATION_PATH_FORBIDDEN_RE = /["'`\\]|[\u0000-\u001f\u007f]/;
+function destinationPathProblem(value) {
+  if (typeof value !== 'string') return null;
+  if (DESTINATION_PATH_FORBIDDEN_RE.test(value)) {
+    return 'Destination path must not contain quotes, backslashes or control characters';
+  }
+  return null;
+}
+
 function getStoragePath() {
   return process.env.STORAGE_PATH || path.join(__dirname, '../../../storage');
 }
@@ -330,11 +358,32 @@ class DatabaseBackupService {
    */
   async createSQLiteBackup(outputPath, _options = {}) {
     const dbPath = knexConfig.connection.filename;
-    const tempPath = `${outputPath}.tmp`;
-    
+    // `.backup` writes to a path WE generate, never to the configured
+    // destination: next to the output when that directory is already in the
+    // safe charset (same filesystem, plain rename), else in the OS temp dir.
+    const stamp = `picpeak-sqlite-backup-${crypto.randomBytes(8).toString('hex')}.tmp`;
+    const outputDir = path.dirname(outputPath);
+    let tempPath;
+    let stagingDir = null;
+    if (SAFE_SQLITE_PATH_RE.test(path.join(outputDir, stamp))) {
+      tempPath = path.join(outputDir, stamp);
+    } else {
+      // A whole copy of the database must not sit readable in a shared
+      // /tmp while it is scrubbed and verified: a private 0700 directory,
+      // not the bare tmpdir. mkdtemp's name is in the safe charset.
+      stagingDir = await fs.mkdtemp(path.join(require('os').tmpdir(), 'picpeak-sqlite-'));
+      tempPath = path.join(stagingDir, stamp);
+    }
+    assertSafeSqlitePath(tempPath);
+    const dropStaging = async () => {
+      if (stagingDir) await fs.rm(stagingDir, { recursive: true, force: true }).catch(() => {});
+    };
+
     try {
       // Use SQLite's backup API for consistency
       await spawnAsync('sqlite3', [dbPath, `.backup '${tempPath}'`]);
+      // sqlite3 creates the copy with the process umask (commonly 0644).
+      await fs.chmod(tempPath, 0o600);
 
       // Strip face data from the COPY (#1074). `.backup` is a whole-file
       // binary copy with no way to exclude a table, so the rows come out and
@@ -384,9 +433,17 @@ class DatabaseBackupService {
         throw new Error('Backup integrity check failed');
       }
       
-      // Move temp file to final location
-      await fs.rename(tempPath, outputPath);
+      // Move temp file to final location (copy when the temp dir is on
+      // another filesystem).
+      try {
+        await fs.rename(tempPath, outputPath);
+      } catch (err) {
+        if (err.code !== 'EXDEV') throw err;
+        await fs.copyFile(tempPath, outputPath);
+        await fs.unlink(tempPath);
+      }
       
+      await dropStaging();
       return { success: true };
     } catch (error) {
       // Cleanup temp file if exists
@@ -395,6 +452,7 @@ class DatabaseBackupService {
       } catch (e) {
         // Ignore
       }
+      await dropStaging();
       throw error;
     }
   }
@@ -999,5 +1057,7 @@ module.exports = {
   stopScheduledBackups,
   isUnderPubliclyServableRoot,
   resolveDatabaseBackupDestination,
+  destinationPathProblem,
+  assertSafeSqlitePath,
   DatabaseBackupService // Export class for testing
 };
