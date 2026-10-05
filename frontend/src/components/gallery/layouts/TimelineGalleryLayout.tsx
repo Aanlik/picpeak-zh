@@ -5,6 +5,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { PhotoCard } from '../PhotoCard';
 import type { BaseGalleryLayoutProps } from './BaseGalleryLayout';
 import type { Photo } from '../../../types';
+import { useLazyBands } from './lazyBands';
 import { FeedbackIdentityModal } from '../../gallery/FeedbackIdentityModal';
 import { feedbackService } from '../../../services/feedback.service';
 import { useLocalizedDate } from '../../../hooks/useLocalizedDate';
@@ -22,6 +23,7 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
   feedbackEnabled = false,
   feedbackOptions
 }) => {
+  const bands = useLazyBands();
   const { theme } = useTheme();
   const { formatTime: fmtTime } = useLocalizedDate();
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
@@ -89,6 +91,15 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [photos, grouping]);
 
+  // Position of each photo in `photos`, which is what the lightbox indexes
+  // by. Grouping reorders the tiles, and a `findIndex` per tile made every
+  // render of an N-photo gallery O(N²) (issue 1733).
+  const photoIndexById = useMemo(() => {
+    const map = new Map<number, number>();
+    photos.forEach((photo, index) => map.set(photo.id, index));
+    return map;
+  }, [photos]);
+
   return (
     <div className="relative">
       {/* Timeline line */}
@@ -113,7 +124,7 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
             {/* Photos grid for this date */}
             <div className="photo-grid lg:ml-24 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {group.photos.map((photo) => {
-                const actualIndex = photos.findIndex(p => p.id === photo.id);
+                const actualIndex = photoIndexById.get(photo.id) ?? -1;
                 return (
                   <PhotoCard
                     key={photo.id}
@@ -124,6 +135,15 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                     onDownload={(e) => onDownload(photo, e)}
                     onToggleSelect={() => onPhotoSelect && onPhotoSelect(photo.id)}
                     className="photo-card relative group cursor-pointer aspect-square"
+                    // Issue 1733: skip offscreen tile work, as in Grid — the
+                    // `aspect-square` box needs no intrinsic size.
+                    style={{ contentVisibility: 'auto' }}
+                    // Lazy mount + release with Grid's bands (issue 1733).
+                    // AuthenticatedImage fetches on mount, so without `lazy`
+                    // every tile of the gallery was requested on first render.
+                    lazy
+                    inViewRootMargin={bands.load}
+                    releaseRootMargin={bands.keep}
                     imageProps={{
                       src: photo.thumbnail_url || photo.url,
                       alt: photo.filename,
