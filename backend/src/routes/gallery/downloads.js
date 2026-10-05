@@ -370,14 +370,41 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, denySlideshowToken, 
       'Content-Disposition': contentDisposition,
     });
     res.sendFile(filePath, (downloadError) => {
-      if (downloadError) {
-        logger.error('Error streaming gallery download', {
-          slug: req.params.slug,
-          photoId,
-          eventId: req.event.id,
-          error: downloadError.message,
-        });
+      if (!downloadError) return;
+      logger.error('Error streaming gallery download', {
+        slug: req.params.slug,
+        photoId,
+        eventId: req.event.id,
+        error: downloadError.message,
+      });
+      // With a callback, sendFile leaves the response to us. Unanswered, the
+      // request stayed open until the client or proxy gave up. The existsSync
+      // above already caught a missing file; what lands here is EACCES/EISDIR
+      // or a file removed between the check and the send.
+      if (!res.headersSent) {
+        // Drop the staged attachment headers, or the browser saves a .jpg
+        // containing JSON — and the file metadata send stages once it has
+        // stat'ed the file (validators, ranges, caching), or the JSON error
+        // carries the photo's ETag and a bogus range.
+        const gone = downloadError.code === 'ENOENT' || downloadError.status === 404;
+        const status = gone ? 404
+          : (downloadError.status >= 400 && downloadError.status < 500 ? downloadError.status : 500);
+        for (const header of ['Content-Type', 'Content-Disposition', 'Content-Length', 'ETag', 'Last-Modified',
+          'Accept-Ranges', 'Cache-Control']) {
+          res.removeHeader(header);
+        }
+        // A 416 keeps the Content-Range send staged: that is what tells a
+        // resuming client to start over, where a 500 would not.
+        if (status !== 416) res.removeHeader('Content-Range');
+        // The file's caching policy went with its headers; an error answer
+        // must not be cached in its place (the storage-stream error path
+        // does the same).
+        res.setHeader('Cache-Control', 'no-store');
+        if (gone) return res.status(404).json({ error: 'Photo file not found' });
+        return res.status(status).json({ error: status === 416 ? 'Requested range not satisfiable' : 'Failed to download photo' });
       }
+      // Headers are out: a broken transfer, not a hang.
+      res.destroy();
     });
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to download photo');
