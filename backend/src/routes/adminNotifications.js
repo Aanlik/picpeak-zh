@@ -21,17 +21,33 @@ function scopeToVisibleEvents(query, admin) {
     .where((q) => q.whereNull('created_by').orWhere('created_by', admin.id)));
 }
 
+/**
+ * Leave out the rows this admin has cleared from their bell
+ * (notification_dismissals, migration 239). Dismissal is per admin and
+ * touches neither the activity_logs row nor its read_at, so the audit trail
+ * and every other admin's bell are unaffected.
+ */
+function withoutDismissed(query, admin) {
+  return query.whereNotIn('activity_logs.id', db('notification_dismissals')
+    .select('activity_log_id').where('admin_id', admin.id));
+}
+
+// The rows that make up this admin's bell: visible and not dismissed.
+function bellRows(admin) {
+  return withoutDismissed(scopeToVisibleEvents(db('activity_logs'), admin), admin);
+}
+
 // Get notifications (unread activity logs)
 router.get('/', adminAuth, requirePermission(['settings.view', 'notifications.view']), async (req, res) => {
   try {
     const { limit = 20, includeRead = false } = req.query;
 
-    let query = scopeToVisibleEvents(db('activity_logs')
+    let query = bellRows(req.admin)
       .select(
         'activity_logs.*',
         'events.event_name'
       )
-      .leftJoin('events', 'activity_logs.event_id', 'events.id'), req.admin)
+      .leftJoin('events', 'activity_logs.event_id', 'events.id')
       .orderBy('activity_logs.created_at', 'desc')
       .limit(parseInt(limit));
     
@@ -68,7 +84,7 @@ router.get('/', adminAuth, requirePermission(['settings.view', 'notifications.vi
     }));
 
     // Get unread count
-    const unreadCount = await scopeToVisibleEvents(db('activity_logs'), req.admin)
+    const unreadCount = await bellRows(req.admin)
       .whereNull('activity_logs.read_at')
       .count('activity_logs.id as count')
       .first();
@@ -88,8 +104,10 @@ router.put('/:id/read', adminAuth, requirePermission('notifications.manage'), as
   try {
     const { id } = req.params;
 
-    // Only a row the caller can see in the bell; a foreign row stays unread.
-    await scopeToVisibleEvents(db('activity_logs'), req.admin)
+    // Only a row the caller's bell shows: a foreign row stays unread, and so
+    // does one this admin has dismissed — read_at is shared with every
+    // other admin, so an id kept from before a Clear all must not move it.
+    await bellRows(req.admin)
       .where('activity_logs.id', id)
       .update({
         read_at: new Date().toISOString()
@@ -105,7 +123,9 @@ router.put('/:id/read', adminAuth, requirePermission('notifications.manage'), as
 // Mark all notifications as read
 router.put('/read-all', adminAuth, requirePermission('notifications.manage'), async (req, res) => {
   try {
-    await scopeToVisibleEvents(db('activity_logs'), req.admin)
+    // Only what the caller's bell shows: read_at is shared, so a row this
+    // admin has dismissed must not be marked read on everyone's behalf.
+    await bellRows(req.admin)
       .whereNull('activity_logs.read_at')
       .update({
         read_at: new Date().toISOString()
@@ -124,17 +144,44 @@ router.put('/read-all', adminAuth, requirePermission('notifications.manage'), as
 // at `notifications.service.ts` does DELETE /admin/notifications/clear-all.
 //
 // activity_logs is not a notification inbox: the same rows are the contract
-// audit trail, the customer timelines and every other admin's actions, and
-// the bell has no per-admin state of its own beyond `read_at`. Clearing
-// therefore deletes nothing — it marks the caller's visible unread rows read,
-// which empties the bell without touching anyone's audit evidence.
-// `deletedCount` keeps its name for the frontend toast and carries the number
-// of rows dismissed.
+// audit trail, the customer timelines and every other admin's actions, so
+// clearing deletes nothing. It records a dismissal per visible row for the
+// calling admin (notification_dismissals); the bell then leaves those rows
+// out for this admin only, read or unread, while read_at and every other
+// admin's bell stay as they are. `deletedCount` keeps its name for the
+// frontend toast and carries the number of rows dismissed.
 router.delete('/clear-all', adminAuth, requirePermission('notifications.manage'), async (req, res) => {
   try {
-    const deletedCount = await scopeToVisibleEvents(db('activity_logs'), req.admin)
-      .whereNull('activity_logs.read_at')
-      .update({ read_at: new Date().toISOString() });
+    const dismissedAt = new Date().toISOString();
+    // One INSERT … SELECT, and the count is what that statement wrote. A
+    // single statement is a single snapshot of the bell: a row that arrives,
+    // or a dismissed download summary that grows again, while the request
+    // runs is either in it and counted or not touched at all — a separate
+    // count and insert could dismiss a row the count never saw. The database
+    // walks the rows itself, so a long-lived install's first "Clear all"
+    // never materialises every activity_logs id on the Node heap, and ON
+    // CONFLICT DO NOTHING ignores a dismissal a concurrent click wrote first.
+    // toSQL() keeps knex's `?` placeholders — toNative() would hand back
+    // `$1…` on PostgreSQL, which db.raw cannot bind.
+    const select = bellRows(req.admin).select(
+      db.raw('? as admin_id', [req.admin.id]),
+      'activity_logs.id as activity_log_id',
+      db.raw('? as dismissed_at', [dismissedAt]),
+    );
+    const { sql, bindings } = select.toSQL();
+    const insert = `INSERT INTO notification_dismissals (admin_id, activity_log_id, dismissed_at) ${sql} ON CONFLICT (admin_id, activity_log_id) DO NOTHING`;
+    let deletedCount;
+    if (db.client.config.client === 'pg') {
+      deletedCount = Number((await db.raw(insert, bindings)).rowCount) || 0;
+    } else {
+      // SQLite reports the rows a statement wrote through changes(), which is
+      // per connection: read it inside the same transaction.
+      deletedCount = await db.transaction(async (trx) => {
+        await trx.raw(insert, bindings);
+        const [row] = await trx.raw('SELECT changes() AS n');
+        return Number(row?.n) || 0;
+      });
+    }
     res.json({ message: 'All notifications cleared', deletedCount });
   } catch (error) {
     logger.error('Clear notifications error:', error);
