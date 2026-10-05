@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Package } from 'lucide-react';
+import { ClipboardList, Package } from 'lucide-react';
 import { toast as toastify } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 
@@ -100,6 +100,10 @@ interface PhotoGridWithLayoutsProps {
   /** #1160: event-wide count + whole-gallery download for layout chrome. */
   eventPhotoCount?: number;
   onDownloadEverything?: () => void;
+  // Copyable filename list (issue 1733, A3d): the selection, or the viewer's
+  // favourites when nothing is selected. Hidden at zero.
+  onCopyFilenames?: () => void;
+  copyFilenamesCount?: number;
 }
 
 export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
@@ -107,6 +111,8 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
   suppressEmptyState = false,
   eventPhotoCount,
   onDownloadEverything,
+  onCopyFilenames,
+  copyFilenamesCount = 0,
   slug,
   categoryId,
   heroPhotoOverride,
@@ -279,6 +285,22 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
       return (
         <div className="text-center py-12">
           <p className="text-muted-theme">{t('gallery.noPhotosFound')}</p>
+          {/* The filename list is event-wide (issue 1733, A3d): a search or
+              feedback filter that leaves no photo on screen must not take the
+              favourites' list with it. */}
+          {onCopyFilenames && copyFilenamesCount > 0 && (
+            <div className="mt-4 flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<ClipboardList className="w-4 h-4" />}
+                onClick={onCopyFilenames}
+                className="text-xs sm:text-sm"
+              >
+                {t('gallery.copyFilenames.button', 'Copy filenames')} ({copyFilenamesCount})
+              </Button>
+            </div>
+          )}
         </div>
       );
     }
@@ -296,6 +318,8 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
     suppressEmptyState,
     eventPhotoCount,
     onDownloadEverything,
+    onCopyFilenames,
+    copyFilenamesCount,
     slug,
     // Face data (#1074) must reach the full-page layouts too — they render
     // their OWN lightbox rather than the one below, so without this the
@@ -377,6 +401,20 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
   // Gallery Premium and Gallery Story layouts have their own integrated hero/header
   const isFullPageLayout = galleryLayout === 'gallery-premium' || galleryLayout === 'gallery-story';
 
+  // Filename list (issue 1733, A3d). Outside selection mode it lists the
+  // viewer's favourites, inside it the selection — the count says which.
+  const copyFilenamesButton = onCopyFilenames && copyFilenamesCount > 0 ? (
+    <Button
+      variant="outline"
+      size="sm"
+      leftIcon={<ClipboardList className="w-4 h-4" />}
+      onClick={onCopyFilenames}
+      className="text-xs sm:text-sm"
+    >
+      {t('gallery.copyFilenames.button', 'Copy filenames')} ({copyFilenamesCount})
+    </Button>
+  ) : null;
+
   return (
     <>
       {/* Hero Header - shown when headerStyle is 'hero' (skip for full-page layouts with integrated hero) */}
@@ -406,6 +444,14 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
         </div>
       )}
 
+      {/* The filename list is still reachable where the selection toolbar is
+          not (a carousel, or a single visible photo): the favourites that
+          feed it do not depend on either. Full-page layouts get the button
+          from GalleryView's own band. */}
+      {showSelectionControls && !isFullPageLayout && !(photos.length > 1 && galleryLayout !== 'carousel') && copyFilenamesButton && (
+        <div className="mb-4 flex items-center gap-2">{copyFilenamesButton}</div>
+      )}
+
       {/* Selection Mode Controls - Not shown for carousel, full-page layouts, or when controls are hidden */}
       {showSelectionControls && photos.length > 1 && galleryLayout !== 'carousel' && !isFullPageLayout && (
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -432,6 +478,7 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
                 {t('gallery.selectAll')}
               </Button>
             )}
+            {!isSelectionMode && copyFilenamesButton}
           </div>
           
           {isSelectionMode && (
@@ -459,6 +506,7 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
                     <span className="sm:hidden">{t('common.download')} ({selectedPhotos.size})</span>
                   </Button>
                 )}
+                {copyFilenamesButton}
               </div>
               {allowDownloads && selectedPhotos.size > 0 && (
                 <DownloadQuotaNotice photos={selectedPhotoList} className="text-xs sm:text-sm" />

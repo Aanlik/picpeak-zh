@@ -26,6 +26,7 @@ import {
   writeFolderParam,
 } from './folders';
 import { DownloadResolutionModal } from './DownloadResolutionModal';
+import { CopyFilenamesDialog } from './CopyFilenamesDialog';
 import { ExpirationBanner } from './ExpirationBanner';
 import { CountdownTimer } from './CountdownTimer';
 import { GalleryLayout } from './GalleryLayout';
@@ -35,6 +36,7 @@ import { UserPhotoUpload } from './UserPhotoUpload';
 import { CreditFilterChips } from './CreditFilterChips';
 import { creditGroups, uploaderRequiresEmail } from '../../utils/photoCredits';
 import { hasVideoItems } from '../../utils/mediaCounts';
+import { isFilenameListFavourite, photosForFilenameList } from '../../utils/photoFilename';
 import { GuestNamePromptModal } from './GuestNamePromptModal';
 import { GuestRecoveryModal } from './GuestRecoveryModal';
 import { PeopleStrip } from './PeopleStrip';
@@ -46,7 +48,7 @@ import { DownloadQuotaNotice } from './DownloadQuotaNotice';
 import type { FilterType, FeedbackFilterType } from './GalleryFilter';
 import { analyticsService } from '../../services/analytics.service';
 import { useDevToolsProtection } from '../../hooks/useDevToolsProtection';
-import { Upload, Menu, Eye, EyeOff, Shield, X, Download, ChevronLeft } from 'lucide-react';
+import { Upload, Menu, Eye, EyeOff, Shield, X, Download, ChevronLeft, ClipboardList } from 'lucide-react';
 import { galleryService } from '../../services/gallery.service';
 import { feedbackService, type ColorLabel } from '../../services/feedback.service';
 import { useWatermarkSettings } from '../../hooks/useWatermarkSettings';
@@ -124,6 +126,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   // Download size picker (#858). `showResolutionPicker` covers "download all";
   // `resolutionPickerIds` covers a selection (sidebar / full-page layouts).
   const [showResolutionPicker, setShowResolutionPicker] = useState(false);
+  // Filename list dialog (issue 1733, A3d).
+  const [showCopyFilenames, setShowCopyFilenames] = useState(false);
   const [resolutionPickerIds, setResolutionPickerIds] = useState<number[] | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'size' | 'rating' | 'capture_date'>('date');
@@ -783,6 +787,34 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     return true;
   };
 
+  // Copyable filename list (issue 1733, A3d): the selection, or the viewer's
+  // favourites when nothing is selected. Favourites use the same predicate as
+  // the "Favorited" filter — the guest's own in identity mode, the aggregate in
+  // simple mode — and span the whole gallery: the list is for finding the
+  // masters in a RAW editor, which has no notion of this gallery's folders.
+  //
+  // Premium and Story have no `favorite` control: their Favourites toggle
+  // writes `like` feedback and seeds from `is_liked`, so there a like is the
+  // favourite (see isFilenameListFavourite).
+  const favouritesAreLikes = theme.galleryLayout === 'gallery-premium' || theme.galleryLayout === 'gallery-story';
+  const copyFilenames = useMemo(() => photosForFilenameList(
+    data?.photos || [],
+    selectedPhotos,
+    (photo) => isFilenameListFavourite(photo, {
+      likeBacked: favouritesAreLikes,
+      guestIdentity: isGuestIdentityMode,
+      myLiked: myFeedbackPhotoIds.liked,
+      myFavorited: myFeedbackPhotoIds.favorited,
+      // The identity mode is known only from a successful load: the public
+      // settings always carry identity_mode, the query's error fallback
+      // ({ feedback_enabled: false }) does not. Pending or failed, no
+      // favourites are offered — the aggregate fallback would list other
+      // guests' favourites in a guest-identity gallery.
+      settingsResolved: feedbackSettings?.identity_mode !== undefined,
+    }),
+    isSelectionMode,
+  ), [data?.photos, selectedPhotos, isSelectionMode, isGuestIdentityMode, myFeedbackPhotoIds, favouritesAreLikes, feedbackSettings]);
+
   const handleDownloadAll = () => {
     // Prevent downloads if gallery is expired or downloads disabled
     if (!allowDownloads) {
@@ -1203,7 +1235,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
             still get `filteredPhotos`, so without this the foldered photos
             would be hidden with no way in. Contained width so the folder strip
             reads as chrome against the full-bleed grid below it. */}
-        {hasFolderNav && (
+        {(hasFolderNav || (copyFilenames.photos.length > 0 && theme.galleryLayout !== 'gallery-story')) && (
           // Story's `.story-nav` is fixed across this same band at z-index 50.
           // Raising the strip above it is necessary for the chips to be
           // clickable at all, but the strip is mostly empty space — so the
@@ -1211,9 +1243,11 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
           // search/favourites/logout underneath. Only the real controls opt back
           // in via pointer-events-auto.
           <div className="relative z-[60] pointer-events-none max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-3 flex-wrap">
-            <div className="pointer-events-auto flex items-center gap-3 flex-wrap">
-              {buildFolderNav(true)}
-            </div>
+            {hasFolderNav && (
+              <div className="pointer-events-auto flex items-center gap-3 flex-wrap">
+                {buildFolderNav(true)}
+              </div>
+            )}
             {/* Hidden when a category opts out of downloads (#640): this routes
                 to the whole-gallery zip, which contains every event photo with
                 no per-category filter, so offering it here would hand a guest
@@ -1226,7 +1260,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
                 folders exist that leaves no single way to get everything, so
                 surface the event-wide zip here. Root only: inside a folder the
                 breadcrumb already offers that folder's download. */}
-            {!openFolder && allowDownloads && !hasRestrictedCategory && (
+            {hasFolderNav && !openFolder && allowDownloads && !hasRestrictedCategory && (
               <Button
                 variant="outline"
                 size="sm"
@@ -1239,6 +1273,22 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
                 className="pointer-events-auto"
               >
                 {t('gallery.downloadEverything', 'Download all photos')}
+              </Button>
+            )}
+            {/* Filename list (issue 1733, A3d). Premium has no selection
+                toolbar and no sidebar, so this band is the only chrome of ours
+                above its full-bleed grid. Story's fixed nav covers this band
+                on narrow phones, so Story gets the button inside that nav
+                instead (onCopyFilenames below). */}
+            {copyFilenames.photos.length > 0 && theme.galleryLayout !== 'gallery-story' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCopyFilenames(true)}
+                leftIcon={<ClipboardList className="w-4 h-4" />}
+                className="pointer-events-auto"
+              >
+                {t('gallery.copyFilenames.button', 'Copy filenames')} ({copyFilenames.photos.length})
               </Button>
             )}
           </div>
@@ -1266,6 +1316,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
           onDownloadEverything={
             allowDownloads && !hasRestrictedCategory ? handleDownloadAll : undefined
           }
+          onCopyFilenames={() => setShowCopyFilenames(true)}
+          copyFilenamesCount={copyFilenames.photos.length}
           slug={slug}
           people={peopleEnabled ? people : undefined}
           onSelectPerson={togglePerson}
@@ -1344,6 +1396,15 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
             }}
           />
         )}
+
+        {/* Filename list for a RAW editor search (issue 1733, A3d). */}
+        {showCopyFilenames && (
+          <CopyFilenamesDialog
+            photos={copyFilenames.photos}
+            source={copyFilenames.source}
+            onClose={() => setShowCopyFilenames(false)}
+          />
+        )}
       </DownloadQuotaProvider>
     );
   }
@@ -1406,6 +1467,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
           creditPhotos={creditsVisible ? scopedPhotos : undefined}
           selectedCreditKey={selectedCreditKey}
           onCreditChange={setSelectedCreditKey}
+          onCopyFilenames={() => setShowCopyFilenames(true)}
+          copyFilenamesCount={copyFilenames.photos.length}
         />
       ) : null}
 
@@ -1745,8 +1808,19 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
             isClient={isClient}
             onToggleVisibility={isClient ? handleToggleVisibility : undefined}
             showOriginalFilename={showOriginalFilename}
+            onCopyFilenames={() => setShowCopyFilenames(true)}
+            copyFilenamesCount={copyFilenames.photos.length}
           />
         </div>
+
+        {/* Filename list for a RAW editor search (issue 1733, A3d). */}
+        {showCopyFilenames && (
+          <CopyFilenamesDialog
+            photos={copyFilenames.photos}
+            source={copyFilenames.source}
+            onClose={() => setShowCopyFilenames(false)}
+          />
+        )}
 
         {/* Upload Modal */}
         {showUploadModal && (data?.event?.allow_user_uploads || event?.allow_user_uploads) && (
