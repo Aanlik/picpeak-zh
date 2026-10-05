@@ -217,6 +217,8 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
   heroPhotoOverride,
   onLogout,
   showOriginalFilename = false,
+  openPhotoId,
+  onLightboxPhotoChange,
 }) => {
   // These props are passed by parent but we use our own lightbox, so mark as intentionally unused
   void _onPhotoClick;
@@ -278,6 +280,48 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
   }, [photos, activeCategory]);
 
   const currentLightboxPhoto = lightboxIndex >= 0 ? filteredPhotos[lightboxIndex] : null;
+
+  // The photo the lightbox is on, by id: `lightboxIndex` is a position in
+  // `filteredPhotos`, which a filter or category change can shift under it.
+  // When that photo leaves the list while others remain, the slide at the
+  // old index is a different photo and YARL fires no `view` for it, so the
+  // URL would keep the old `?photo=`. Clamp onto a neighbour and report the
+  // step, as the standard lightbox does; with no slides left, close.
+  const lightboxPhotoIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (lightboxIndex < 0 || lightboxPhotoIdRef.current === null) return;
+    if (filteredPhotos.some((photo) => photo.id === lightboxPhotoIdRef.current)) return;
+    if (filteredPhotos.length === 0) {
+      lightboxPhotoIdRef.current = null;
+      setLightboxIndex(-1);
+      onLightboxPhotoChange?.(null, 'close');
+      return;
+    }
+    const next = Math.min(lightboxIndex, filteredPhotos.length - 1);
+    lightboxPhotoIdRef.current = filteredPhotos[next].id;
+    setLightboxIndex(next);
+    onLightboxPhotoChange?.(filteredPhotos[next].id, 'step');
+  }, [filteredPhotos, lightboxIndex, onLightboxPhotoChange]);
+
+  // Link to a single photo (issue 1733): open on the photo the URL asks for,
+  // close on null. This layout filters by category on its own, so a linked
+  // photo hidden by that chip clears it first; an id not in `photos` opens
+  // nothing.
+  useEffect(() => {
+    if (openPhotoId === undefined) return;
+    if (openPhotoId === null) {
+      setLightboxIndex(-1);
+      return;
+    }
+    const index = filteredPhotos.findIndex((photo) => photo.id === openPhotoId);
+    if (index >= 0) {
+      lightboxPhotoIdRef.current = openPhotoId;
+      setLightboxIndex(index);
+    } else if (photos.some((photo) => photo.id === openPhotoId)) {
+      setActiveCategory(null);
+    }
+  }, [openPhotoId, filteredPhotos, photos]);
+
   const reactionsActive = feedbackEnabled && !!feedbackOptions?.allowReactions;
 
   // Fetch the current photo's reaction tallies + my selection when the
@@ -673,7 +717,11 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
                   photo={originalPhoto}
                   width={width}
                   height={height}
-                  onClick={() => setLightboxIndex(photoIndex)}
+                  onClick={() => {
+                    lightboxPhotoIdRef.current = originalPhoto.id;
+                    setLightboxIndex(photoIndex);
+                    onLightboxPhotoChange?.(originalPhoto.id, 'open');
+                  }}
                   onLike={(e) => handleLike(originalPhoto, e)}
                   onSelect={(e) => {
                     e.stopPropagation();
@@ -713,7 +761,11 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
       {/* Lightbox */}
       <Lightbox
         open={lightboxIndex >= 0}
-        close={() => setLightboxIndex(-1)}
+        close={() => {
+          lightboxPhotoIdRef.current = null;
+          setLightboxIndex(-1);
+          onLightboxPhotoChange?.(null, 'close');
+        }}
         index={lightboxIndex}
         slides={slides}
         // View beacon (#895): yarl fires `view` on open and on every
@@ -724,7 +776,11 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
             // the slides array; otherwise YARL jumps back to the opening photo.
             setLightboxIndex(index);
             const photo = filteredPhotos[index];
-            if (photo) galleryService.trackPhotoView(slug, photo.id);
+            if (photo) {
+              lightboxPhotoIdRef.current = photo.id;
+              galleryService.trackPhotoView(slug, photo.id);
+              onLightboxPhotoChange?.(photo.id, 'step');
+            }
           },
         }}
         plugins={[

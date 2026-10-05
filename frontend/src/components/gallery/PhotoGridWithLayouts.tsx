@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ClipboardList, Package } from 'lucide-react';
 import { toast as toastify } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useDownloadQuota } from '../../contexts/DownloadQuotaContext';
 import { isDownloadLimitError, showDownloadLimitReached } from '../../utils/downloadLimit';
 import { DownloadQuotaNotice } from './DownloadQuotaNotice';
+import type { LightboxPhotoChangeHandler } from './photoLink';
 
 // Import all layouts
 import {
@@ -104,6 +105,9 @@ interface PhotoGridWithLayoutsProps {
   // favourites when nothing is selected. Hidden at zero.
   onCopyFilenames?: () => void;
   copyFilenamesCount?: number;
+  /** Link to a single photo (issue 1733) — see BaseGalleryLayoutProps. */
+  openPhotoId?: number | null;
+  onLightboxPhotoChange?: LightboxPhotoChangeHandler;
 }
 
 export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
@@ -113,6 +117,8 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
   onDownloadEverything,
   onCopyFilenames,
   copyFilenamesCount = 0,
+  openPhotoId,
+  onLightboxPhotoChange,
   slug,
   categoryId,
   heroPhotoOverride,
@@ -171,15 +177,73 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
     setSelectedPhotos(new Set());
   }, [categoryId, setSelectedPhotos]);
 
+  // The photo a layout-owned lightbox (Gallery Premium / Story) is on, as it
+  // reports it; null while that lightbox is closed.
+  const lightboxPhotoIdRef = useRef<number | null>(null);
+
   const handlePhotoClick = (index: number) => {
     setOpenFeedbackInitially(false);
     setSelectedPhotoIndex(index);
+    if (photos[index]) onLightboxPhotoChange?.(photos[index].id, 'open');
   };
 
   const handleOpenWithFeedback = (index: number) => {
     setOpenFeedbackInitially(true);
     setSelectedPhotoIndex(index);
+    if (photos[index]) onLightboxPhotoChange?.(photos[index].id, 'open');
   };
+
+  const handleLightboxClose = () => {
+    setSelectedPhotoIndex(null);
+    onLightboxPhotoChange?.(null, 'close');
+  };
+
+  // Gallery Premium and Gallery Story mount their own lightbox and report
+  // its moves through this wrapper, so the id it is on is known here too.
+  const layoutOwnsLightbox = theme.galleryLayout === 'gallery-premium' || theme.galleryLayout === 'gallery-story';
+  const reportLayoutLightbox: LightboxPhotoChangeHandler = (photoId, reason) => {
+    lightboxPhotoIdRef.current = reason === 'close' ? null : photoId;
+    onLightboxPhotoChange?.(photoId, reason);
+  };
+
+  // The list emptied under an open lightbox (unliking the last Liked photo,
+  // a filter change): this component returns its empty state and the
+  // lightbox — its own or the layout's — unmounts without a close, leaving
+  // `?photo=` and the pushed history entry behind. Report the close here.
+  // Only the EMPTY list: while photos remain, the lightbox clamps onto a
+  // neighbour in an effect of its own and reports that step a render later;
+  // closing from here first would shut it on a list that still has photos.
+  useEffect(() => {
+    if (photos.length > 0) return;
+    if (layoutOwnsLightbox) {
+      if (lightboxPhotoIdRef.current === null) return;
+      lightboxPhotoIdRef.current = null;
+      onLightboxPhotoChange?.(null, 'close');
+      return;
+    }
+    if (selectedPhotoIndex === null) return;
+    handleLightboxClose();
+    // handleLightboxClose is recreated every render; the inputs that matter
+    // are the list and whether a lightbox is open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photos, selectedPhotoIndex, layoutOwnsLightbox]);
+
+  // Link to a single photo (issue 1733): the URL asks for a photo — open on
+  // it, or close on null. Only against `photos`, the list this viewer sees;
+  // an id not in it opens nothing. Re-runs when the list changes so a deep
+  // link resolves once the container has switched folder or cleared filters.
+  useEffect(() => {
+    if (openPhotoId === undefined) return;
+    if (openPhotoId === null) {
+      setSelectedPhotoIndex(null);
+      return;
+    }
+    const index = photos.findIndex((photo) => photo.id === openPhotoId);
+    if (index >= 0) {
+      setOpenFeedbackInitially(false);
+      setSelectedPhotoIndex(index);
+    }
+  }, [openPhotoId, photos]);
 
   const handlePhotoSelect = (photoId: number) => {
     // Auto-enable selection mode when selecting via checkbox
@@ -334,6 +398,10 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
     onPickResolution: (ids: number[]) => setResolutionPickerIds(ids),
     onPhotoClick: handlePhotoClick,
     onOpenPhotoWithFeedback: handleOpenWithFeedback,
+    // Link to a single photo (issue 1733): the full-page layouts mount their
+    // own lightbox, so the URL contract has to reach them as well.
+    openPhotoId,
+    onLightboxPhotoChange: reportLayoutLightbox,
     onFeedbackChange: onFeedbackChange,
     onDownload: handleDownload,
     heroPhotoOverride,
@@ -524,7 +592,7 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
         <PhotoLightbox
           photos={photos}
           initialIndex={selectedPhotoIndex}
-          onClose={() => setSelectedPhotoIndex(null)}
+          onClose={handleLightboxClose}
           slug={slug}
           feedbackEnabled={feedbackEnabled || false}
           allowDownloads={allowDownloads}
@@ -538,6 +606,7 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
           showOriginalFilename={showOriginalFilename}
           people={people}
           onSelectPerson={onSelectPerson}
+          onCurrentPhotoChange={(photoId) => onLightboxPhotoChange?.(photoId, 'step')}
         />
       )}
 
