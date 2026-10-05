@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Upload, X, Image, Info } from 'lucide-react';
 import { Button } from '../common';
 import { clsx } from 'clsx';
@@ -9,6 +9,7 @@ import { settingsService } from '../../services/settings.service';
 import { useTranslation } from 'react-i18next';
 import { extensionsToMimeTypes, extensionsToAcceptString, extensionsToLabel, normalizeFileMimeType } from '../../utils/fileTypes';
 import { useUploadSession } from '../../contexts/UploadSessionContext';
+import { collectDroppedFiles } from '../../utils/droppedFiles';
 
 interface PhotoUploadProps {
   eventId: number;
@@ -18,12 +19,33 @@ interface PhotoUploadProps {
 }
 
 const DEFAULT_MAX_FILES_PER_UPLOAD = 500;
+// Largest value general_max_files_per_upload can take; mirrors
+// MAX_ALLOWED_FILES_PER_UPLOAD in backend/src/services/uploadSettings.js.
 const MAX_FILES_PER_UPLOAD_LIMIT = 2000;
+// How many admissible files a folder walk collects at most. Fixed, not the
+// capacity at drop time: the cap can be raised and files can be removed
+// while a walk is pending, and addFiles applies the live cap when it lands.
+// One above the largest possible cap, so its "some files skipped" notice
+// still fires for a tree that exceeds even that.
+const FOLDER_WALK_CEILING = MAX_FILES_PER_UPLOAD_LIMIT + 1;
 
 export const PhotoUpload: React.FC<PhotoUploadProps> = ({ eventId, onUploadStarted }) => {
   const { t } = useTranslation();
   const { startUpload, isUploading } = useUploadSession();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  // Folder walks still resolving. Upload stays disabled while any is pending:
+  // otherwise a click sends the current selection, clears it, and the walk's
+  // files arrive in a modal that has already unmounted.
+  const [pendingWalks, setPendingWalks] = useState(0);
+  // The selection as of the last add/remove, written synchronously. A folder
+  // walk resolves asynchronously, so `addFiles` may run from a render that
+  // predates another drop or pick; reading the cap against `selectedFiles`
+  // from that render let two concurrent additions exceed maxFilesPerUpload.
+  const selectedFilesRef = useRef<File[]>([]);
+  const commitSelection = (next: File[]) => {
+    selectedFilesRef.current = next;
+    setSelectedFiles(next);
+  };
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [replaceByName, setReplaceByName] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,7 +56,7 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({ eventId, onUploadStart
     queryFn: () => categoriesService.getEventCategories(eventId),
   });
 
-  const { data: settings } = useQuery({
+  const { data: settings, isPending: settingsPending } = useQuery({
     queryKey: ['admin-settings'],
     queryFn: () => settingsService.getAllSettings(),
   });
@@ -85,23 +107,29 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({ eventId, onUploadStart
   // change handler and the drop handler. #504 — without the drop handler
   // the dashed-border zone looked draggable but silently fell through to
   // the browser's default "open the file in a new tab" behaviour.
+  // One admission rule for picked and dropped files: allowed type, and the
+  // pre-flight size check mirroring the guest uploader (without it the admin
+  // streams the whole oversized file before the backend 400s it). The folder
+  // walk applies it too, so sidecars and oversized files do not use up the
+  // per-upload budget before the photos behind them are reached.
+  const admitFile = (file: File): boolean => {
+    if (!allowedMimeTypes.includes(normalizeFileMimeType(file.name, file.type))) return false;
+    const limitMb = sizeLimitMbFor(file);
+    if (file.size > limitMb * 1024 * 1024) {
+      toast.error(t('upload.fileTooLarge', { name: file.name, limit: limitMb }));
+      return false;
+    }
+    return true;
+  };
+
   const addFiles = (incoming: File[]) => {
-    const imageFiles = incoming.filter((file) => {
-      if (!allowedMimeTypes.includes(normalizeFileMimeType(file.name, file.type))) return false;
-      // Pre-flight size check, mirroring the guest uploader: without it the
-      // admin streams the whole oversized file before the backend 400s it.
-      const limitMb = sizeLimitMbFor(file);
-      if (file.size > limitMb * 1024 * 1024) {
-        toast.error(t('upload.fileTooLarge', { name: file.name, limit: limitMb }));
-        return false;
-      }
-      return true;
-    });
+    const imageFiles = incoming.filter(admitFile);
     if (imageFiles.length === 0) return;
 
-    const totalFiles = selectedFiles.length + imageFiles.length;
+    const current = selectedFilesRef.current;
+    const totalFiles = current.length + imageFiles.length;
     if (totalFiles > maxFilesPerUpload) {
-      const allowedNewFiles = maxFilesPerUpload - selectedFiles.length;
+      const allowedNewFiles = maxFilesPerUpload - current.length;
       if (allowedNewFiles <= 0) {
         toast.error(
           t('upload.maxFilesReached', { limit: maxFilesPerUpload }) ||
@@ -113,12 +141,38 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({ eventId, onUploadStart
         t('upload.someFilesSkipped', { allowed: allowedNewFiles, limit: maxFilesPerUpload }) ||
         `Only ${allowedNewFiles} more files can be added (limit ${maxFilesPerUpload})`
       );
-      setSelectedFiles((prev) => [...prev, ...imageFiles.slice(0, allowedNewFiles)]);
+      commitSelection([...current, ...imageFiles.slice(0, allowedNewFiles)]);
       return;
     }
 
-    setSelectedFiles((prev) => [...prev, ...imageFiles]);
+    commitSelection([...current, ...imageFiles]);
   };
+
+  // A folder walk settles in a later render; it must validate with the
+  // limits of that render (admin-settings may have resolved or refreshed
+  // meanwhile), not with the addFiles closure of the drop.
+  const addFilesRef = useRef(addFiles);
+  addFilesRef.current = addFiles;
+  const admitFileRef = useRef(admitFile);
+  admitFileRef.current = admitFile;
+  // Whether the limits above come from the server yet. Until admin-settings
+  // has resolved, admitFile judges by the defaults (no video, 50 MB), which
+  // must not decide what a folder walk keeps.
+  const settingsLoadedRef = useRef(false);
+  settingsLoadedRef.current = settings !== undefined;
+  // Dropped files are admitted only once admin-settings has settled (loaded
+  // or failed): a walk that finishes earlier waits here, or addFiles would
+  // discard a server-allowed video or larger photo under the defaults for
+  // good. The walk stays counted in pendingWalks, so Upload is held too.
+  const settingsSettledRef = useRef(false);
+  settingsSettledRef.current = !settingsPending;
+  const settledWaiters = useRef<Array<() => void>>([]);
+  useEffect(() => {
+    if (!settingsPending) settledWaiters.current.splice(0).forEach((resume) => resume());
+  }, [settingsPending]);
+  const whenSettingsSettled = () => (settingsSettledRef.current
+    ? Promise.resolve()
+    : new Promise<void>((resume) => { settledWaiters.current.push(resume); }));
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     addFiles(Array.from(e.target.files || []));
@@ -149,16 +203,35 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({ eventId, onUploadStart
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
-    const files = Array.from(e.dataTransfer.files || []);
-    addFiles(files);
+    // Dropped folders are walked recursively (issue 1733, C1); the result
+    // goes through the same filter and per-upload cap as picked files.
+    setPendingWalks((n) => n + 1);
+    // The walk stops at a fixed ceiling instead of reading a whole archive;
+    // the cap itself is applied by addFiles against the selection and the
+    // settings as they are when the walk lands.
+    // The prefilter only keeps sidecars and oversized files from using up
+    // the ceiling, and only once the real limits are known: a file read
+    // before admin-settings resolved is collected as it is and judged by
+    // addFiles when the walk lands. A file it rejects is not collected, so
+    // its size toast fires here or in addFiles, never in both.
+    const accept = (file: File) => !settingsLoadedRef.current || admitFileRef.current(file);
+    // The walk also stops after examining a multiple of the ceiling (a tree
+    // of mostly unsupported files); say so rather than omit the rest silently.
+    const onTruncated = () => toast.warning(t('upload.folderTooLarge'));
+    void collectDroppedFiles(e.dataTransfer, { limit: FOLDER_WALK_CEILING, accept, onTruncated })
+      .then(async (files) => {
+        await whenSettingsSettled();
+        addFilesRef.current(files);
+      })
+      .finally(() => setPendingWalks((n) => n - 1));
   };
 
   const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    commitSelection(selectedFilesRef.current.filter((_, i) => i !== index));
   };
 
   const handleUpload = () => {
-    if (selectedFiles.length === 0 || isUploading) return;
+    if (selectedFiles.length === 0 || isUploading || pendingWalks > 0) return;
 
     // Validate file count
     if (selectedFiles.length > maxFilesPerUpload) {
@@ -184,7 +257,7 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({ eventId, onUploadStart
       maxBytesPerChunk: maxBatchSizeMb * 1024 * 1024,
     });
 
-    setSelectedFiles([]);
+    commitSelection([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -263,7 +336,7 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({ eventId, onUploadStart
       >
         <Upload className="w-12 h-12 mx-auto text-faint mb-4" />
         <p className="text-body font-medium mb-1">
-          {t('upload.clickToUpload')}
+          {t('upload.clickToUploadOrDropFolder')}
         </p>
         <p className="text-sm text-muted">
           {t('upload.fileRequirements', { formats: formatsLabel, limit: maxFilesPerUpload, sizeLimit: maxFileSizeMb })}
@@ -340,7 +413,8 @@ export const PhotoUpload: React.FC<PhotoUploadProps> = ({ eventId, onUploadStart
         <Button
           variant="primary"
           onClick={handleUpload}
-          disabled={selectedFiles.length === 0 || isUploading}
+          disabled={selectedFiles.length === 0 || isUploading || pendingWalks > 0}
+          isLoading={pendingWalks > 0}
           leftIcon={<Upload className="w-4 h-4" />}
         >
           {t('common.upload') + ` ${selectedFiles.length} ${t(selectedFiles.length === 1 ? 'common.photo' : 'common.photos')}`}
