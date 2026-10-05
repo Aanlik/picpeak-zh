@@ -365,7 +365,20 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
     return () => { mounted = false; };
   }, [slug]);
 
-  // Load my feedback for the current photo
+  // Seed from the list payload (issue 1733): a rating given on the tile is
+  // already in the gallery-photos cache, so the stars are right before the
+  // per-photo fetch below confirms them instead of flashing empty. Keyed on
+  // the value too, not only the photo: a tile POST that settles after the
+  // lightbox opened on the same photo still reaches the stars.
+  useEffect(() => {
+    setMyRating(currentPhoto?.my_rating ?? 0);
+  }, [currentPhoto?.id, currentPhoto?.my_rating]);
+
+  // Load my feedback for the current photo. Keyed on the row's my_rating as
+  // well: when a tile rating settles under an open lightbox, the request
+  // that was already out is dropped whole by the cleanup below — its stars
+  // AND its average / count are from before the rating — and a fresh one
+  // fetches what the server holds now.
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -385,7 +398,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
       }
     })();
     return () => { mounted = false; };
-  }, [slug, currentPhoto?.id, feedbackSettings?.feedback_enabled]);
+  }, [slug, currentPhoto?.id, currentPhoto?.my_rating, feedbackSettings?.feedback_enabled]);
 
   const submitLike = async () => {
     // Guest identity mode: ensure we have a per-person guest token. The

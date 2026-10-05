@@ -168,6 +168,7 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                       });
                     }}
                     savedIdentity={savedIdentity}
+                    onIdentitySaved={setSavedIdentity}
                     onRequireIdentity={(action, photoId) => {
                       setPendingAction({ type: action, photoId });
                       setShowIdentityModal(true);

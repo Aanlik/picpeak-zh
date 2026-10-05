@@ -29,6 +29,7 @@ interface GridPhotoProps {
   };
   savedIdentity?: { name: string; email: string } | null;
   onRequireIdentity?: (action: 'like', photoId: number) => void;
+  onIdentitySaved?: (identity: { name: string; email: string }) => void;
   onQuickComment?: () => void;
   onFeedbackChange?: () => void;
   // Immediate UI like state and callback
@@ -50,6 +51,7 @@ const GridPhoto: React.FC<GridPhotoProps> = ({
   feedbackOptions,
   savedIdentity,
   onRequireIdentity,
+  onIdentitySaved,
   onQuickComment,
   onFeedbackChange,
   liked = false,
@@ -157,6 +159,7 @@ const GridPhoto: React.FC<GridPhotoProps> = ({
       onLikeSuccess={onLikeSuccess}
       savedIdentity={savedIdentity}
       onRequireIdentity={onRequireIdentity}
+      onIdentitySaved={onIdentitySaved}
       checkboxTestId
     >
       {/* Feedback Indicators (always visible, bottom-left). Show like immediately when user liked */}
@@ -268,6 +271,7 @@ export const GridGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
               feedbackEnabled={feedbackEnabled}
               feedbackOptions={feedbackOptions}
               savedIdentity={savedIdentity}
+              onIdentitySaved={setSavedIdentity}
               onRequireIdentity={(action, photoId) => {
                 setPendingAction({ type: action, photoId });
                 setShowIdentityModal(true);
