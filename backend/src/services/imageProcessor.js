@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const logger = require('../utils/logger');
 const { db } = require('../database/db');
 const { getStorage } = require('./storage');
+const { isStorageUnavailableError } = require('./storage/storageErrors');
 const { heroAnchorPoint, normalizeHeroAnchor, heroRenditionName } = require('../utils/heroAnchor');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
@@ -361,6 +362,11 @@ async function generateThumbnail(imagePath, options = {}) {
  * Check if a thumbnail exists and is valid. For local-fs storage we open the
  * file with sharp to confirm it parses; for S3 we trust the byte-integrity
  * checks built into the protocol and only verify size > 0.
+ *
+ * Throws when the storage backend cannot be reached (issue 1785): that says
+ * nothing about the thumbnail, and answering false would regenerate a healthy
+ * one from the original through the backend that is failing. isHeroValid and
+ * isPreviewValid follow the same rule.
  */
 async function isThumbnailValid(thumbnailPath) {
   const storage = getStorage();
@@ -375,6 +381,7 @@ async function isThumbnailValid(thumbnailPath) {
     }
     return true;
   } catch (error) {
+    if (isStorageUnavailableError(error)) throw error;
     return false;
   }
 }
@@ -867,6 +874,7 @@ async function isHeroValid(heroPath) {
     }
     return true;
   } catch (error) {
+    if (isStorageUnavailableError(error)) throw error;
     return false;
   }
 }
@@ -1127,6 +1135,10 @@ async function generatePreviewImage(imagePath, options = {}) {
   } catch (error) {
     const msg = (error && error.message) ? error.message : String(error);
     logger.error(`Failed to generate preview image for ${filename}: ${msg}`);
+    // A write the storage backend could not take is not a photo that has no
+    // preview (issue 1785): null would send the guest to the original and
+    // mark a face scan failed for good. Callers retry or answer 503.
+    if (isStorageUnavailableError(error)) throw error;
     return null;
   }
 }
@@ -1145,7 +1157,8 @@ async function isPreviewValid(previewPath) {
       await sharp(localPath).metadata();
     }
     return true;
-  } catch {
+  } catch (error) {
+    if (isStorageUnavailableError(error)) throw error;
     return false;
   }
 }
@@ -1340,6 +1353,8 @@ async function ensureThumbnailTierUnguarded(photo, width, settings, canonicalWid
   try {
     if (await storage.stat(key)) return key;
   } catch (e) {
+    // Unreachable storage is not a cache miss (issue 1785).
+    if (isStorageUnavailableError(e)) throw e;
     // regenerate below
   }
 
@@ -1412,6 +1427,8 @@ async function ensurePreviewImageAtWidthUnguarded(photo, width) {
     try {
       if (await storage.stat(key)) return key;
     } catch (e) {
+      // Unreachable storage is not a cache miss (issue 1785).
+      if (isStorageUnavailableError(e)) throw e;
       // fall through to the next candidate, then regenerate
     }
   }
