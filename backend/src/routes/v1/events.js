@@ -20,6 +20,7 @@ const sharp = require('sharp');
 const { body, query, validationResult } = require('express-validator');
 const { safeValidationErrors } = require('../../utils/routeHelpers');
 const { db, logActivity } = require('../../database/db');
+const { parseBooleanInput } = require('../../utils/parsers');
 const { apiTokenAuth, requireApiScope } = require('../../middleware/apiTokenAuth');
 const { requireEventOwnership, scopeEventsQuery } = require('../../middleware/ownership');
 // GHSA-9697: migration 081 defines a token's effective permissions as the
@@ -417,7 +418,10 @@ router.get('/events/:id', apiTokenAuth, requireApiScope('read'), requirePermissi
  *                   Optional. If provided, the photo is filed under the
  *                   given photo_categories.id (must belong to the event
  *                   or be a global category). If omitted, the photo
- *                   lands uncategorized.
+ *                   lands uncategorized. Since nested folders (migration 265) a folder's id here
+ *                   places the photo in that folder (its `folder_id`)
+ *                   rather than setting `category_id`, which holds filter
+ *                   categories only.
  *     responses:
  *       201:
  *         description: Photo uploaded
@@ -461,6 +465,7 @@ router.post(
       const rawCategoryId = req.body?.category_id;
       const parsedCategoryId = rawCategoryId ? parseInt(rawCategoryId, 10) : NaN;
       let categoryId = null;
+      let folderId = null;
       let photoType = 'individual';
       if (!Number.isNaN(parsedCategoryId)) {
         // Scope to categories owned by this event (event_id = event.id) or
@@ -488,6 +493,8 @@ router.post(
         if (category.slug === 'collage' || category.slug === 'collages') {
           photoType = 'collage';
         }
+        // A folder (issue 1786) lives in folder_id since migration 265.
+        if (parseBooleanInput(category.is_folder, false)) folderId = category.id;
       }
 
       // Replacement (#745). The Lightroom plugin stores the picpeak photo id
@@ -614,7 +621,8 @@ router.post(
         path: relPath,
         thumbnail_path: thumbRel,
         type: photoType,
-        category_id: categoryId,
+        category_id: folderId ? null : categoryId,
+        folder_id: folderId,
         size_bytes: stat.size,
         width,
         height,
@@ -938,7 +946,12 @@ router.get(
             // external-media ingest never set original_filename, so for NAS
             // and auto-import galleries the camera name lives only there.
             source_filename: photo.source_filename || photo.original_filename || photo.filename || null,
+            // Filter category only. Since migration 265 a photo's folder is
+            // its own field; for photos that were in a folder before the
+            // upgrade, `category` went from the folder's name to null and
+            // the name moved to `folder` (issue 1786).
             category: photo.category_name || null,
+            folder: photo.folder_name || null,
             average_rating: photo.average_rating ? parseFloat(photo.average_rating) : 0,
             feedback_count: photo.feedback_count || 0,
             like_count: photo.like_count || 0,

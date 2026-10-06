@@ -31,6 +31,7 @@ import { AccessSection, GeneralSection, GuestsSection, ReminderSection, SectionC
 import { DownloadsSection } from './DownloadsSection';
 import { AppearanceSection } from './AppearanceSection';
 import { SlideshowSection } from './SlideshowSection';
+import { DeliverySection } from './DeliverySection';
 import { safeParseDate } from '../utils';
 import { SECTION_ICON, SettingsOverview, useSectionSummaries } from './SettingsOverview';
 
@@ -89,6 +90,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({
     { key: 'guests', label: t('events.settingsTab.guests', 'Guest interaction'), show: true },
     { key: 'appearance', label: t('events.settingsTab.appearance', 'Appearance'), show: true },
     { key: 'source', label: t('events.settingsTab.source', 'Photo source'), show: true },
+    { key: 'delivery', label: t('events.settingsTab.delivery', 'Folders & delivery'), show: true },
     { key: 'reminder', label: t('eventReminderOverride.title', 'Pre-event reminder'), show: !!flags.reminderEmails },
     { key: 'slideshow', label: t('slideshow.adminTitle', 'Live Slideshow'), show: !!flags.slideshow },
     { key: 'faces', label: t('events.settingsTab.faces', 'Faces'), show: !!flags.faces },
@@ -158,6 +160,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({
     guests: t('events.settingsTab.about.guests', 'Guest uploads, names and feedback.'),
     slideshow: t('events.settingsTab.about.slideshow', 'A fullscreen link for projectors at live events.'),
     source: t('events.settingsTab.about.source', 'Where the photos of this gallery come from.'),
+    delivery: t('events.settingsTab.about.delivery', 'Nested folders from uploads, and delivering a first look before the full gallery.'),
     reminder: t('events.settingsTab.about.reminder', 'The reminder email to the customer before the event.'),
     faces: t('events.settingsTab.about.faces', 'Find and group the people in the photos.'),
     danger: t('events.settingsTab.about.danger', 'Archive or delete this gallery.'),
@@ -193,6 +196,8 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({
         return <AppearanceSection f={draft.event} set={set} event={event} photos={photos} readOnly={!canEdit} />;
       case 'source':
         return <SourceSection f={draft.event} set={set} event={event} />;
+      case 'delivery':
+        return <DeliverySection f={draft.event} set={set} event={event} onChanged={refetchEvent} />;
       case 'reminder':
         return (
           <ReminderSection

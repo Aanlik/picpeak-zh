@@ -1814,6 +1814,33 @@ router.put('/general', adminAuth, requirePermission('settings.edit'), async (req
       settings.event_default_show_credits_to_guests = raw === true || raw === 'true' || raw === 1 || raw === '1';
     }
 
+    // Folders (issue 1786) and two-stage delivery (issue 1562).
+    for (const key of ['event_default_folder_structure', 'first_look_keyword_detection']) {
+      if (Object.prototype.hasOwnProperty.call(settings, key)) {
+        const raw = settings[key];
+        settings[key] = raw === true || raw === 'true' || raw === 1 || raw === '1';
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(settings, 'first_look_folder_keywords')) {
+      const raw = settings.first_look_folder_keywords;
+      const list = (Array.isArray(raw) ? raw : String(raw || '').split(','))
+        .map((k) => String(k).replace(/\s+/g, ' ').trim())
+        .filter(Boolean);
+      // Refused, not trimmed: a keyword dropped silently is a folder that
+      // quietly stops starting a first look.
+      if (list.length > 20 || list.some((k) => k.length > 60 || k.replace(/[^\p{L}\p{N}]/gu, '').length < 3)) {
+        return res.status(400).json({ error: 'first_look_folder_keywords: at most 20 keywords, each with at least 3 letters or digits and at most 60 characters' });
+      }
+      settings.first_look_folder_keywords = [...new Set(list)];
+    }
+    if (Object.prototype.hasOwnProperty.call(settings, 'event_default_delivery_days')) {
+      const days = Number(settings.event_default_delivery_days);
+      if (!Number.isInteger(days) || days < 1 || days > 365) {
+        return res.status(400).json({ error: 'event_default_delivery_days must be an integer between 1 and 365' });
+      }
+      settings.event_default_delivery_days = days;
+    }
+
     if (publicSiteKeysTouched) {
       if (Object.prototype.hasOwnProperty.call(settings, 'general_public_site_custom_css')) {
         settings.general_public_site_custom_css = sanitizeCss(settings.general_public_site_custom_css || '');

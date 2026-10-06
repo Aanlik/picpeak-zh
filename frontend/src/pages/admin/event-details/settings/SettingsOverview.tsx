@@ -8,7 +8,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  AlertTriangle, Bell, ChevronRight, Download, FolderOpen, Lock, MonitorPlay,
+  AlertTriangle, Bell, ChevronRight, Download, FolderOpen, FolderTree, Lock, MonitorPlay,
   Palette, ScanFace, SlidersHorizontal, Users, type LucideIcon,
 } from 'lucide-react';
 import type { Event } from '../../../../types';
@@ -24,6 +24,7 @@ export const SECTION_ICON: Record<SettingsSectionKey, LucideIcon> = {
   guests: Users,
   slideshow: MonitorPlay,
   source: FolderOpen,
+  delivery: FolderTree,
   reminder: Bell,
   faces: ScanFace,
   danger: AlertTriangle,
@@ -34,7 +35,7 @@ export const SECTION_GROUPS: Array<{ key: string; label: string; sections: Setti
   { key: 'basics', label: 'Basics', sections: ['general', 'appearance'] },
   { key: 'access', label: 'Access & downloads', sections: ['access', 'downloads'] },
   { key: 'guests', label: 'Guests', sections: ['guests', 'slideshow'] },
-  { key: 'photos', label: 'Photos & automation', sections: ['source', 'reminder', 'faces'] },
+  { key: 'photos', label: 'Photos & automation', sections: ['source', 'delivery', 'reminder', 'faces'] },
 ];
 
 type Tone = 'plain' | 'strong' | 'ok' | 'off';
@@ -123,6 +124,22 @@ export function useSectionSummaries(
           ...(f.external_watch ? [{ text: s('watching', 'watching'), tone: 'ok' as const }] : []),
         ]
         : [{ text: s('uploaded', 'Uploaded to PicPeak') }],
+    },
+    // Folders + two-stage delivery (issues 1786, 1562).
+    delivery: {
+      parts: [
+        f.folder_structure
+          ? { text: s('folderStructureOn', 'Folder structure on'), tone: 'ok' }
+          : { text: s('folderStructureOff', 'Flat uploads'), tone: 'off' },
+        ...(f.delivery_status === 'partial'
+          ? [{
+            text: f.delivery_due_at
+              ? s('firstLookDue', 'first look, full gallery by {{date}}', { date: format(safeParseDate(f.delivery_due_at) ?? new Date(), 'PP') })
+              : s('firstLook', 'first look, more to come'),
+            tone: 'strong' as const,
+          }]
+          : []),
+      ],
     },
     reminder: {
       parts: f.event_reminder_disabled

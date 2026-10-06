@@ -6,7 +6,15 @@
  * API to reach the files inside. Browsers without `webkitGetAsEntry` keep
  * the plain `files` list.
  *
- * Nested folders are flattened. Inside a folder the entries are sorted by
+ * `collectDroppedEntries` keeps each file's directory relative to the drop
+ * (issue 1786): `shoot/Friday` for `shoot/Friday/IMG_1.jpg` when the folder
+ * `shoot` was dropped, '' for a loose file. That is `entry.fullPath` without
+ * the leading slash and the file name, built from the names on the way down
+ * so it does not depend on how a browser fills fullPath. The upload maps
+ * those directories to gallery folders; `collectDroppedFiles` is the flat
+ * list for callers that do not care.
+ *
+ * Inside a folder the entries are sorted by
  * name (`readEntries` hands them back in batches of unspecified order) and
  * hidden entries (`.DS_Store`, `._IMG_0001.jpg`) are skipped. The dropped
  * items themselves are taken as the user chose them.
@@ -40,6 +48,33 @@
  */
 export const EXAMINED_PER_COLLECTED = 5;
 
+/** A picked or dropped file with its directory relative to the drop or pick root. */
+export interface PickedFile {
+  file: File;
+  /** '' for a file that was not inside a folder. */
+  dir: string;
+}
+
+/** Directory part of a relative path: `a/b/c.jpg` → `a/b`, `c.jpg` → ''. */
+export const directoryOf = (relativePath: string): string => {
+  const cut = relativePath.lastIndexOf('/');
+  return cut <= 0 ? '' : relativePath.slice(0, cut).replace(/^\/+/, '');
+};
+
+/**
+ * Files from `<input type="file">`. A folder pick (`webkitdirectory`) fills
+ * `webkitRelativePath` (`Export/Friday/IMG_1.jpg`); a plain pick leaves it
+ * empty, so those files are loose.
+ */
+export const pickedFromInput = (files: File[]): PickedFile[] =>
+  files
+    .map((file) => ({ file, rel: (file as File & { webkitRelativePath?: string }).webkitRelativePath || '' }))
+    // A folder pick hands over hidden files too (`._IMG_0001.jpg` AppleDouble
+    // files on every exFAT card, `.DS_Store`, anything under `.thumbnails/`);
+    // skip them as the drop walk does. A plain pick is taken as chosen.
+    .filter(({ rel }) => !rel || !rel.split('/').some((part) => part.startsWith('.')))
+    .map(({ file, rel }) => ({ file, dir: directoryOf(rel) }));
+
 export interface CollectOptions {
   limit?: number;
   accept?: (file: File, depth: number) => boolean;
@@ -50,33 +85,41 @@ export async function collectDroppedFiles(
   dataTransfer: DataTransfer,
   options: CollectOptions = {},
 ): Promise<File[]> {
+  return (await collectDroppedEntries(dataTransfer, options)).map((picked) => picked.file);
+}
+
+export async function collectDroppedEntries(
+  dataTransfer: DataTransfer,
+  options: CollectOptions = {},
+): Promise<PickedFile[]> {
   const limit = options.limit ?? Infinity;
   const accept = options.accept ?? (() => true);
   // Both lists are emptied once the drop event has returned, so read them
   // synchronously before the first await.
   const plainFiles = Array.from(dataTransfer.files || []);
   const items = Array.from(dataTransfer.items || []);
+  const loose = () => plainFiles.map((file) => ({ file, dir: '' }));
   if (items.length === 0 || typeof items[0].webkitGetAsEntry !== 'function') {
-    return plainFiles;
+    return loose();
   }
   const entries = items
     .filter((item) => item.kind === 'file')
     .map((item) => item.webkitGetAsEntry())
     .filter((entry): entry is FileSystemEntry => entry !== null);
-  if (entries.length === 0) return plainFiles;
+  if (entries.length === 0) return loose();
 
   const walk: Walk = {
     out: [], limit, accept, examined: 0, maxExamined: limit * EXAMINED_PER_COLLECTED, truncated: false,
   };
   for (const entry of entries) {
-    await walkEntry(entry, walk, 0);
+    await walkEntry(entry, '', walk, 0);
   }
   if (walk.truncated) options.onTruncated?.();
   return walk.out;
 }
 
 interface Walk {
-  out: File[];
+  out: PickedFile[];
   limit: number;
   accept: (file: File, depth: number) => boolean;
   examined: number;
@@ -94,21 +137,24 @@ const spent = (walk: Walk) => {
   return true;
 };
 
-async function walkEntry(entry: FileSystemEntry, walk: Walk, depth: number): Promise<void> {
+// `dir` is the directory the entry sits in, relative to the drop; `depth` is
+// 0 for an item dropped by hand (see `accept`).
+async function walkEntry(entry: FileSystemEntry, dir: string, walk: Walk, depth: number): Promise<void> {
   if (spent(walk)) return;
   if (entry.isFile) {
     walk.examined += 1;
     const file = await fileOf(entry as FileSystemFileEntry);
-    if (file && walk.accept(file, depth)) walk.out.push(file);
+    if (file && walk.accept(file, depth)) walk.out.push({ file, dir });
     return;
   }
   if (!entry.isDirectory) return;
   const children = (await readAllEntries((entry as FileSystemDirectoryEntry).createReader()))
     .filter((child) => !child.name.startsWith('.'))
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  const childDir = dir ? `${dir}/${entry.name}` : entry.name;
   for (const child of children) {
     if (spent(walk)) return;
-    await walkEntry(child, walk, depth + 1);
+    await walkEntry(child, childDir, walk, depth + 1);
   }
 }
 

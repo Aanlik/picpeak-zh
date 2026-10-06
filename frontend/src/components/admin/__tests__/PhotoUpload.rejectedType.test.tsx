@@ -163,4 +163,27 @@ describe('PhotoUpload wrong-type reporting', () => {
     await waitFor(() => expect(screen.getByText('DSC03.ARW')).toBeInTheDocument());
     expect(toastError).not.toHaveBeenCalled();
   });
+
+  // Issue 1786: a folder picked with "Choose folder" has no `accept` to
+  // prefilter it, so the same rule has to hold in addFiles: files inside the
+  // folder are not named, and hidden files (AppleDouble `._*` on exFAT cards)
+  // are not admitted at all.
+  it('says nothing about sidecars in a picked folder and skips its hidden files', async () => {
+    const { container } = renderWithClient(<PhotoUpload eventId={1} />);
+    await waitFor(() => expect(screen.getByText('upload.videoSizeLimit')).toBeInTheDocument());
+    const folderInput = container.querySelector('input[webkitdirectory]') as HTMLInputElement;
+    const inFolder = (name: string) => {
+      const file = untyped(name);
+      Object.defineProperty(file, 'webkitRelativePath', { value: `shoot/${name}` });
+      return file;
+    };
+    fireEvent.change(folderInput, {
+      target: { files: [inFolder('DSC04.ARW'), inFolder('DSC04.XMP'), inFolder('._DSC04.ARW')] },
+    });
+
+    await waitFor(() => expect(screen.getByText('DSC04.ARW')).toBeInTheDocument());
+    expect(screen.queryByText('._DSC04.ARW')).not.toBeInTheDocument();
+    expect(screen.queryByText('DSC04.XMP')).not.toBeInTheDocument();
+    expect(toastError).not.toHaveBeenCalled();
+  });
 });
