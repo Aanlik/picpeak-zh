@@ -181,7 +181,7 @@ const validateFeedbackSubmission = [
       // If not empty, check length and pattern
       const trimmed = value.trim();
       if (trimmed.length > 100) throw new Error('Name must be less than 100 characters');
-      if (!/^[a-zA-Z0-9\s\-'.]+$/.test(trimmed)) throw new Error('Name contains invalid characters');
+      if (!/^[\p{L}\p{M}\p{N} \-'.·]+$/u.test(trimmed)) throw new Error('Name contains invalid characters');
       return true;
     }),
   
