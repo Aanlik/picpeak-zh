@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { format as dateFnsFormat, formatDistanceToNow as dateFnsFormatDistanceToNow, isValid } from 'date-fns';
-import { de, enUS, es, fr, nl, ptBR, ru, sl } from 'date-fns/locale';
+import { de, enUS, es, fr, nl, ptBR, ru, sl, zhCN } from 'date-fns/locale';
 import type { Locale } from 'date-fns';
 import { usePublicSettings } from './usePublicSettings';
 
@@ -15,6 +15,7 @@ const DATE_LOCALES: Record<string, Locale> = {
   pt: ptBR,
   ru,
   sl,
+  zh: zhCN,
 };
 
 export const resolveDateLocale = (language: string | undefined): Locale =>

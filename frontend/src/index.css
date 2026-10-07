@@ -40,8 +40,8 @@
     --color-primary-light: #7aa583;
     --color-primary-dark: #4a6f4f;
 
-    --font-family: 'Inter', 'Noto Sans', system-ui, -apple-system, sans-serif;
-    --heading-font-family: 'Inter', 'Noto Sans', system-ui, -apple-system, sans-serif;
+    --font-family: 'Inter', 'Noto Sans', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+    --heading-font-family: 'Inter', 'Noto Sans', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
     --border-radius: 0.5rem;
     --font-size-base: 16px;
     --shadow-default: 0 4px 6px rgba(0,0,0,0.1);

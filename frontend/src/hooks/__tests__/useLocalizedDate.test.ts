@@ -33,6 +33,7 @@ describe('useLocalizedDate locale resolution', () => {
     ['sl', 'marec', 'sreda'],
     ['de-DE', 'März', 'Mittwoch'],
     ['pt-BR', 'março', 'quarta-feira'],
+    ['zh-CN', '三月', '星期三'],
   ])('%s → month %s, weekday %s', (lang, month, weekday) => {
     language = lang;
     const { result } = renderHook(() => useLocalizedDate());
