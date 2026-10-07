@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState } from 'react';
 import { X, Send, Lock, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -44,13 +45,13 @@ export const PublishGalleryDialog: React.FC<PublishGalleryDialogProps> = ({
   // for that last one. Leaving the phone out hid the opt-out on phone-only
   // galleries AND told the admin nothing would be sent, while the WhatsApp
   // went out anyway.
-  const willNotify = !!customerEmail || !!customerPhone || assignedCustomerCount > 0;
+  const willNotify = !NO_EMAIL_MODE && (!!customerEmail || !!customerPhone || assignedCustomerCount > 0);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   // Defaults to notifying — that is what publish has always done, and the
   // quiet path is the exception (#1235).
-  const [notifyCustomer, setNotifyCustomer] = useState(true);
+  const [notifyCustomer, setNotifyCustomer] = useState(!NO_EMAIL_MODE);
   // The password is only collected (and required) on the inline-email path,
   // because the gallery_created email carries it. With no inline email the field
   // is hidden and the existing hash is kept — so don't gate submit on it, or a
@@ -90,7 +91,7 @@ export const PublishGalleryDialog: React.FC<PublishGalleryDialogProps> = ({
           {/* Follows the checkbox. Left static it contradicted itself — the
               text promised an email to the customer while the box beneath it
               said none would be sent. */}
-          {willNotify && !notifyCustomer
+          {NO_EMAIL_MODE ? `发布「${eventName}」后，请复制分享链接发送给客户。` : willNotify && !notifyCustomer
             ? t('events.publishDialog.descriptionQuiet', {
                 eventName,
                 defaultValue:

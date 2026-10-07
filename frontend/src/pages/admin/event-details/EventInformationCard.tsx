@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../../config/communication';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -137,7 +138,7 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
             />
           </div>
 
-          <div>
+          {!NO_EMAIL_MODE && (<div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
               {t('events.hostEmail')}
             </label>
@@ -147,7 +148,7 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
               onChange={(e) => setEditForm(prev => ({ ...prev, customer_email: e.target.value }))}
               placeholder={t('events.hostEmailPlaceholder')}
             />
-          </div>
+          </div>)}
 
           {phoneFieldEnabled && (
             <div>
@@ -883,10 +884,10 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
             <dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100">{event.customer_email}</dd>
             </div>
 
-            <div>
+            {!NO_EMAIL_MODE && (<div>
               <dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{t('events.adminEmail')}</dt>
               <dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100">{event.admin_email}</dd>
-            </div>
+            </div>)}
           </div>
 
           {phoneFieldEnabled && (

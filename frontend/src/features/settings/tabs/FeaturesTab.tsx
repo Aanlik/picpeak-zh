@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../../config/communication';
 import React from 'react';
 import {
   ToggleRight,
@@ -149,7 +150,7 @@ export const FeaturesTab: React.FC = () => {
             onToggle={(next) => setFlag('slideshow', next)}
           />
 
-          <FeatureCard
+          {!NO_EMAIL_MODE && (<FeatureCard
             icon={Send}
             title={t('settings.features.transfers.title', 'PicTransfer')}
             description={t(
@@ -161,7 +162,7 @@ export const FeaturesTab: React.FC = () => {
             sidebarLabel={t('settings.features.transfers.sidebar', 'PicTransfer')}
             enabled={staged.transfers}
             onToggle={(next) => setFlag('transfers', next)}
-          />
+          />)}
 
           {/* Face recognition (#1074). Requires the optional picpeak-ml
               sidecar container — with the flag on but no sidecar running,
@@ -216,7 +217,7 @@ export const FeaturesTab: React.FC = () => {
             admins just enable the specific feature they want and the
             section appears automatically. */}
         <Section title={t('settings.features.sections.clients', 'CRM')}>
-          <FeatureCard
+          {!NO_EMAIL_MODE && (<FeatureCard
             icon={UserCog}
             title={t('settings.features.customerPortal.title', 'Customer Accounts')}
             description={t(
@@ -232,7 +233,7 @@ export const FeaturesTab: React.FC = () => {
             sidebarLabel={t('navigation.clients', 'CRM')}
             enabled={staged.customerPortal}
             onToggle={(next) => setFlag('customerPortal', next)}
-          />
+          />)}
           {/* Future sub-features (Calendar / Quotes / Bills / Messaging)
               slot in here as FeatureCard entries when they ship. No
               placeholder cards today — the Clients section just shows
@@ -241,7 +242,7 @@ export const FeaturesTab: React.FC = () => {
 
         {/* Communication */}
         <Section title={t('settings.features.sections.communication', 'Communication')}>
-          <FeatureCard
+          {!NO_EMAIL_MODE && (<FeatureCard
             icon={BellRing}
             title={t('settings.features.reminderEmails.title', 'Reminder Emails')}
             description={t(
@@ -254,9 +255,9 @@ export const FeaturesTab: React.FC = () => {
             sidebarHiddenLabel={sidebarHiddenLabel}
             enabled={staged.reminderEmails}
             onToggle={(next) => setFlag('reminderEmails', next)}
-          />
+          />)}
 
-          <FeatureCard
+          {!NO_EMAIL_MODE && (<FeatureCard
             icon={Mailbox}
             title={t('settings.features.incomingMail.title', 'Incoming mail')}
             description={t(
@@ -269,7 +270,7 @@ export const FeaturesTab: React.FC = () => {
             sidebarHiddenLabel={sidebarHiddenLabel}
             enabled={staged.incomingMail}
             onToggle={(next) => setFlag('incomingMail', next)}
-          />
+          />)}
 
           <FeatureCard
             icon={Smartphone}
@@ -286,7 +287,7 @@ export const FeaturesTab: React.FC = () => {
             onToggle={(next) => setFlag('whatsapp', next)}
           />
 
-          <FeatureCard
+          {!NO_EMAIL_MODE && (<FeatureCard
             icon={MessageSquare}
             title={t('settings.features.messaging.title', 'Messaging')}
             description={t(
@@ -298,7 +299,7 @@ export const FeaturesTab: React.FC = () => {
             sidebarLabel={t('settings.features.messaging.sidebar', 'Messages')}
             enabled={staged.messaging}
             onToggle={(next) => setFlag('messaging', next)}
-          />
+          />)}
         </Section>
 
         {/* Scheduling */}
@@ -342,7 +343,7 @@ export const FeaturesTab: React.FC = () => {
               placeholder lockedReason / disabled props are removed so
               the toggles actually save. The sub-page surfaces under
               /admin/clients/{quotes,bills} are gated independently. */}
-          <FeatureCard
+          {!NO_EMAIL_MODE && (<FeatureCard
             icon={FileSignature}
             title={t('settings.features.quotes.title', 'Quotes')}
             description={t(
@@ -354,9 +355,9 @@ export const FeaturesTab: React.FC = () => {
             sidebarLabel={t('settings.features.quotes.sidebar', 'Quotes')}
             enabled={staged.quotes}
             onToggle={(next) => setFlag('quotes', next)}
-          />
+          />)}
 
-          <FeatureCard
+          {!NO_EMAIL_MODE && (<FeatureCard
             icon={ScrollText}
             title={t('settings.features.contracts.title', 'Contracts')}
             description={t(
@@ -368,9 +369,9 @@ export const FeaturesTab: React.FC = () => {
             sidebarLabel={t('settings.features.contracts.sidebar', 'Contracts')}
             enabled={staged.contracts}
             onToggle={(next) => setFlag('contracts', next)}
-          />
+          />)}
 
-          <FeatureCard
+          {!NO_EMAIL_MODE && (<FeatureCard
             icon={Receipt}
             title={t('settings.features.bills.title', 'Invoices')}
             description={t(
@@ -382,11 +383,11 @@ export const FeaturesTab: React.FC = () => {
             sidebarLabel={t('settings.features.bills.sidebar', 'Invoices')}
             enabled={staged.bills}
             onToggle={(next) => setFlag('bills', next)}
-          />
+          />)}
 
           {/* Newsletter campaigns (#1264). Clients child. Mass marketing mail
               to customer accounts, so the copy leads with consent. */}
-          <FeatureCard
+          {!NO_EMAIL_MODE && (<FeatureCard
             icon={Megaphone}
             title={t('settings.features.newsletters.title', 'Newsletters')}
             description={t(
@@ -398,7 +399,7 @@ export const FeaturesTab: React.FC = () => {
             sidebarLabel={t('settings.features.newsletters.sidebar', 'Newsletters')}
             enabled={staged.newsletters}
             onToggle={(next) => setFlag('newsletters', next)}
-          />
+          />)}
 
           <FeatureCard
             icon={Briefcase}
@@ -433,7 +434,7 @@ export const FeaturesTab: React.FC = () => {
             relocated here permanently out of CRM. Sub-toggles are disabled
             until the Accounting master is on. */}
         <Section title={t('settings.features.sections.accounting', 'Accounting')}>
-          <FeatureCard
+          {!NO_EMAIL_MODE && (<FeatureCard
             icon={Landmark}
             title={t('settings.features.accounting.title', 'Accounting')}
             description={t(
@@ -452,7 +453,7 @@ export const FeaturesTab: React.FC = () => {
               'settings.features.accounting.requiredByBills',
               'On automatically because Invoices is enabled — invoice VAT settings live in the Accounting section.',
             ) : undefined}
-          />
+          />)}
 
           <FeatureCard
             icon={Calculator}
@@ -546,7 +547,7 @@ export const FeaturesTab: React.FC = () => {
             )}
           />
 
-          <FeatureCard
+          {!NO_EMAIL_MODE && (<FeatureCard
             icon={Wrench}
             title={t('settings.features.crmDevelopment.title', 'CRM developer tools')}
             description={t(
@@ -558,7 +559,7 @@ export const FeaturesTab: React.FC = () => {
             sidebarLabel={t('settings.features.crmDevelopment.sidebar', 'Development')}
             enabled={staged.crmDevelopment}
             onToggle={(next) => setFlag('crmDevelopment', next)}
-          />
+          />)}
         </Section>
       </Card>
 

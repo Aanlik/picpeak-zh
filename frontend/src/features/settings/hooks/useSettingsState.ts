@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../../config/communication';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -534,7 +535,7 @@ export function useSettingsState() {
   });
 
   const updateAdminProfileMutation = useMutation({
-    mutationFn: (payload: { username: string; email: string }) => adminService.updateAdminProfile(payload),
+    mutationFn: (payload: { username: string; email?: string }) => adminService.updateAdminProfile(payload),
     onSuccess: (updatedUser) => {
       toast.success(t('settings.general.accountSaveSuccess'));
       setAccountErrors({});
@@ -629,9 +630,9 @@ export function useSettingsState() {
       errors.username = t('settings.general.accountUsernameLength');
     }
 
-    if (!trimmedEmail) {
+    if (!NO_EMAIL_MODE && !trimmedEmail) {
       errors.email = t('settings.general.accountEmailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    } else if (!NO_EMAIL_MODE && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       errors.email = t('settings.general.accountEmailInvalid');
     }
 
@@ -642,7 +643,7 @@ export function useSettingsState() {
 
     updateAdminProfileMutation.mutate({
       username: trimmedUsername,
-      email: trimmedEmail
+      ...(NO_EMAIL_MODE ? {} : { email: trimmedEmail })
     });
   };
 

@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -242,16 +243,16 @@ export const CreateEventPage: React.FC = () => {
   const didPrefillAdminEmailRef = useRef(false);
   useEffect(() => {
     if (didPrefillAdminEmailRef.current) return;
-    if (!currentAdmin?.email) return;
+    if (NO_EMAIL_MODE || !currentAdmin?.email) return;
     didPrefillAdminEmailRef.current = true;
     setFormData(prev => (prev.admin_email ? prev : { ...prev, admin_email: currentAdmin.email }));
   }, [currentAdmin?.email]);
 
   // Get field requirements (default to true if not set)
   const requireCustomerName = publicSettings?.event_require_customer_name !== false;
-  const requireCustomerEmail = publicSettings?.event_require_customer_email !== false;
+  const requireCustomerEmail = !NO_EMAIL_MODE && publicSettings?.event_require_customer_email !== false;
   const phoneFieldEnabled = publicSettings?.event_phone_field_enabled === true;
-  const requireAdminEmail = publicSettings?.event_require_admin_email !== false;
+  const requireAdminEmail = !NO_EMAIL_MODE && publicSettings?.event_require_admin_email !== false;
   const requireEventDate = publicSettings?.event_require_event_date !== false;
   const requireExpiration = publicSettings?.event_require_expiration !== false;
 
@@ -893,7 +894,7 @@ export const CreateEventPage: React.FC = () => {
                 error={errors.admin_email}
                 leftIcon={<Mail className="w-5 h-5" />}
               />
-              {activeAdmins.length > 1 && (
+              {!NO_EMAIL_MODE && activeAdmins.length > 1 && (
                 <div className="flex items-center gap-2 -mt-1">
                   <label htmlFor="admin-email-picker" className="text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
                     {t('events.adminEmailPickFromAdmins', 'Pick from admins:')}

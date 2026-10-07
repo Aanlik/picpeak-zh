@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
@@ -226,7 +227,7 @@ export const SetupConfigStep: React.FC<Props> = ({ selectedFeatures, onDone }) =
         </div>
       )}
 
-      <div className="space-y-3">
+      {!NO_EMAIL_MODE && (<div className="space-y-3">
         <h3 className="text-sm font-semibold text-neutral-800">{t('setup.config.email', 'Email delivery (SMTP)')}</h3>
         <p className="text-xs text-neutral-500">{t('setup.config.emailHint', 'Used to send gallery links to your clients, plus guest invites, expiry warnings and any reminders or invoices you enable. Leave blank to set it up later in Settings → Email.')}</p>
           <div className="grid grid-cols-3 gap-3">
@@ -249,7 +250,7 @@ export const SetupConfigStep: React.FC<Props> = ({ selectedFeatures, onDone }) =
             />
             <Input placeholder={t('setup.config.fromName', 'From name')} value={mail.from_name} onChange={mailField('from_name')} />
           </div>
-      </div>
+      </div>)}
 
       <div className="flex gap-3">
         <Button type="button" variant="outline" size="lg" onClick={skip} disabled={saving}>

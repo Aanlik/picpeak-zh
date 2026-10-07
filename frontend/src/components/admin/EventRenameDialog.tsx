@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, AlertCircle, CheckCircle, Loader2, Type, Mail } from 'lucide-react';
@@ -251,7 +252,7 @@ export const EventRenameDialog: React.FC<EventRenameDialogProps> = ({
             )}
 
             {/* Resend email option */}
-            {customerEmail && (
+            {!NO_EMAIL_MODE && customerEmail && (
               <div className="pt-2 border-t border-neutral-200">
                 <label className="flex items-start gap-2">
                   <input

@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../../config/communication';
 import React from 'react';
 import { Save, Globe, Mail, User } from 'lucide-react';
 import { Button, Card, Input, Loading } from '../../../components/common';
@@ -84,7 +85,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
               </p>
             </div>
 
-            <div>
+            {!NO_EMAIL_MODE && (<div>
               <label htmlFor="admin-account-email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 {t('settings.general.accountEmail')}
               </label>
@@ -100,7 +101,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                 {t('settings.general.accountEmailHelp')}
               </p>
-            </div>
+            </div>)}
 
             <div className="pt-2">
               <Button

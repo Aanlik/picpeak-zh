@@ -86,6 +86,7 @@ function generateConfigHash(config) {
 
 // Initialize transporter from database config
 async function initializeTransporter(forceReinit = false) {
+  if (require('../utils/communicationProfile').NO_EMAIL_MODE) return null;
   try {
     const config = await db('email_configs').first();
     
@@ -962,6 +963,7 @@ async function buildSignatureTextFor(language) {
 }
 
 async function sendTemplateEmail(to, templateKey, variables, { usageEligible = true } = {}) {
+  if (require('../utils/communicationProfile').NO_EMAIL_MODE) return false;
   try {
     // Webhook transport (#1225) replaces SMTP entirely when configured, so an
     // instance using it has no SMTP settings to initialise and must not be
@@ -1075,6 +1077,7 @@ async function sendTemplateEmail(to, templateKey, variables, { usageEligible = t
  * transactional mail.
  */
 async function sendCampaignEmail(queueRow, emailData) {
+  if (require('../utils/communicationProfile').NO_EMAIL_MODE) return false;
   const newsletterService = require('./newsletterService');
 
   const campaign = await db('email_campaigns').where({ id: queueRow.campaign_id }).first();
@@ -1105,6 +1108,7 @@ async function sendCampaignEmail(queueRow, emailData) {
  * { messageId, html } so the caller can persist rendered_html for the record.
  */
 async function sendRawEmail({ to, cc, subject, html, text, attachments, accountKey } = {}) {
+  if (require('../utils/communicationProfile').NO_EMAIL_MODE) return false;
   let tx = null;
   let fromEmail = null;
   let fromName = null;
@@ -1220,6 +1224,7 @@ function getQueueProcessorStatus() {
 }
 
 async function processEmailQueue({ ignoreSchedule = false, limit = 10, onlyId = null } = {}) {
+  if (require('../utils/communicationProfile').NO_EMAIL_MODE) return { processed: 0, failed: 0 };
   logger.info('Email queue processor: Checking for pending emails...');
   const result = { processed: 0, sent: 0, failed: 0 };
   processorStatus.lastRunAt = new Date().toISOString();
@@ -1553,6 +1558,7 @@ async function getScheduledEmailConfig() {
 // Attachments + cc travel inside `emailData` (keys: attachments, cc)
 // so callers don't need a new signature for every email shape.
 async function queueEmail(eventId, recipientEmail, emailType, emailData, options = {}) {
+  if (require('../utils/communicationProfile').NO_EMAIL_MODE) return false;
   // Callers pass `customer_email || host_email`, and an event may have
   // neither (issue 1733). A row without a recipient can never be sent, so
   // nothing is queued; this is not thrown because the automated callers

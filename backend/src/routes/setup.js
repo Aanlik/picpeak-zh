@@ -53,7 +53,9 @@ router.post('/verify-token', [
 
 router.post('/admin', [
   body('token').notEmpty().withMessage('Setup token is required'),
-  body('email').isEmail().withMessage('A valid email is required'),
+  body('email').custom((value, { req }) => require('../utils/communicationProfile').NO_EMAIL_MODE
+    ? /^[\p{L}\p{N}_-]{3,50}$/u.test(req.body.username || '')
+    : /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value || '')).withMessage('Valid account identifier required'),
   body('password').isString().notEmpty().isLength({ max: MAX_PASSWORD_LENGTH }).withMessage('Password is required'),
 ], async (req, res) => {
   const errors = validationResult(req);
@@ -65,6 +67,7 @@ router.post('/admin', [
     const result = await setupService.createInitialAdmin({
       token,
       email,
+      username: req.body.username,
       password,
       ip: getClientIp(req),
     });

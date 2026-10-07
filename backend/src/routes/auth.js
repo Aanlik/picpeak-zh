@@ -178,7 +178,7 @@ router.post('/admin/login', [
     const admin = await db('admin_users')
       .leftJoin('roles', 'roles.id', 'admin_users.role_id')
       .where('admin_users.username', username)
-      .orWhere('admin_users.email', username)
+      .modify(query => { if (!require('../utils/communicationProfile').NO_EMAIL_MODE) query.orWhere('admin_users.email', username); })
       .select(
         'admin_users.*',
         'roles.name as role_name',

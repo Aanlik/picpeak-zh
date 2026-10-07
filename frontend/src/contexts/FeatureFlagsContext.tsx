@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../config/communication';
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -170,7 +171,11 @@ export const FeatureFlagsProvider: React.FC<ProviderProps> = ({ children }) => {
   });
 
   // Source-of-truth = server response; fall back to defaults during load.
-  const flags = useMemo(() => serverFlags ?? DEFAULT_FLAGS, [serverFlags]);
+  const flags = useMemo(() => {
+    const next = { ...(serverFlags ?? DEFAULT_FLAGS) };
+    if (NO_EMAIL_MODE) for (const key of ["messaging", "incomingMail", "newsletters", "reminderEmails", "customerPortal", "crmDevelopment", "contracts", "quotes", "bills", "transfers"] as FeatureKey[]) next[key] = false;
+    return next;
+  }, [serverFlags]);
 
   // Staged copy — what the Features tab is currently showing pre-save.
   const [staged, setStaged] = useState<FeatureFlags>(flags);

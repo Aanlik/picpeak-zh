@@ -256,7 +256,7 @@ async function verifySetupToken(token) {
 
 // Creates the first admin as super_admin (the highest role) and returns a
 // ready-to-set admin JWT so the browser flows straight into the wizard.
-async function createInitialAdmin({ token, email, password, ip }) {
+async function createInitialAdmin({ token, email, username, password, ip }) {
   if (!(await noAdminExists())) {
     throw new ConflictError('Setup already completed — an admin account exists');
   }
@@ -265,7 +265,10 @@ async function createInitialAdmin({ token, email, password, ip }) {
     throw new ValidationError('Invalid setup token', 'token');
   }
 
-  const cleanEmail = String(email || '').trim().toLowerCase();
+  const local = require('../utils/communicationProfile').NO_EMAIL_MODE;
+  const cleanUsername = local ? String(username || '').trim() : String(email || '').trim().toLowerCase();
+  if (local && !/^[\p{L}\p{N}_-]{3,50}$/u.test(cleanUsername)) throw new ValidationError('Invalid username', 'username');
+  const cleanEmail = local ? `${require('crypto').randomUUID()}@accounts.invalid` : String(email || '').trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cleanEmail)) {
     throw new ValidationError('A valid email address is required', 'email');
   }
@@ -297,7 +300,7 @@ async function createInitialAdmin({ token, email, password, ip }) {
       throw new ConflictError('Setup already completed — an admin account exists');
     }
     const inserted = await trx('admin_users').insert({
-      username: cleanEmail,
+      username: cleanUsername,
       email: cleanEmail,
       password_hash: passwordHash,
       role_id: role.id,
@@ -318,7 +321,7 @@ async function createInitialAdmin({ token, email, password, ip }) {
   logger.info(`[setup] Initial super_admin created (id=${id}, email=${cleanEmail})`);
 
   const authToken = jwt.sign(
-    { id, username: cleanEmail, type: 'admin', role: role.name, ip: ip || null, loginTime: Date.now() },
+    { id, username: cleanUsername, type: 'admin', role: role.name, ip: ip || null, loginTime: Date.now() },
     process.env.JWT_SECRET,
     { expiresIn: '24h', issuer: 'picpeak-auth' }
   );
@@ -327,7 +330,7 @@ async function createInitialAdmin({ token, email, password, ip }) {
     token: authToken,
     user: {
       id,
-      username: cleanEmail,
+      username: cleanUsername,
       email: cleanEmail,
       role: { name: role.name, displayName: role.display_name },
     },

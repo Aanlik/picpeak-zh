@@ -1,3 +1,5 @@
+import { NO_EMAIL_MODE } from './config/communication';
+import { LocalUsersPage } from './pages/admin/LocalUsersPage';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -267,7 +269,7 @@ function App() {
                         <Route path="analytics" element={<AnalyticsPage />} />
                       </Route>
                       <Route element={<RequireFeature flag="userManagement" />}>
-                        <Route path="users" element={<UserManagementPage />} />
+                        <Route path="users" element={NO_EMAIL_MODE ? <LocalUsersPage /> : <UserManagementPage />} />
                       </Route>
                       <Route element={<RequireFeature flag="messaging" />}>
                         <Route path="messages" element={
@@ -417,7 +419,7 @@ function App() {
                       </Route>
 
                       <Route path="settings" element={<SettingsPage />} />
-                      <Route path="system-health" element={<SystemHealthPage />} />
+                      <Route path="system-health" element={NO_EMAIL_MODE ? <Navigate to="/admin/settings?tab=status" replace /> : <SystemHealthPage />} />
                       <Route path="webhooks/:id/deliveries" element={<WebhookDeliveriesPage />} />
 
                       {/* Old top-level routes — these surfaces now live as

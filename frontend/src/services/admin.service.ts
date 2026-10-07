@@ -612,7 +612,7 @@ export const adminService = {
     return response.data;
   },
 
-  async updateAdminProfile(data: { username: string; email: string }): Promise<AdminProfile> {
+  async updateAdminProfile(data: { username: string; email?: string }): Promise<AdminProfile> {
     const response = await api.put<{ user: AdminProfile }>('/admin/auth/profile', data);
     return response.data.user;
   }

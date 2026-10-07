@@ -35,6 +35,7 @@ router.put('/profile', [
     .isLength({ min: 3, max: 50 })
     .withMessage('Username must be between 3 and 50 characters'),
   body('email')
+    .if(() => !require('../utils/communicationProfile').NO_EMAIL_MODE)
     .trim()
     .isEmail()
     .withMessage('A valid email address is required')
@@ -43,7 +44,9 @@ router.put('/profile', [
   validateRequest(req);
 
   const username = req.body.username.trim();
-  const email = req.body.email.trim().toLowerCase();
+  const email = require('../utils/communicationProfile').NO_EMAIL_MODE
+    ? (await db('admin_users').where('id', req.admin.id).first()).email
+    : req.body.email.trim().toLowerCase();
   const adminId = req.admin.id;
 
   // Check for username conflict

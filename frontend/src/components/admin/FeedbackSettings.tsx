@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React from 'react';
 import { MessageSquare, Star, Heart, Bookmark, Shield, Eye, User, Users, Smile, Palette, Keyboard, Tag } from 'lucide-react';
 import { Card } from '../common';
@@ -100,7 +101,7 @@ export const FeedbackSettings: React.FC<FeedbackSettingsProps> = ({
                   </div>
                 </label>
 
-                <label
+                {!NO_EMAIL_MODE && (<label
                   className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer border transition ${
                     settings.identity_mode === 'guest'
                       ? 'border-accent-dark bg-accent-dark/15'
@@ -127,7 +128,7 @@ export const FeedbackSettings: React.FC<FeedbackSettingsProps> = ({
                       )}
                     </div>
                   </div>
-                </label>
+                </label>)}
 
                 {/* Shared colour tag (#1197). Deliberately worded around what
                     it changes and what it does not: it drops the identity from
@@ -449,9 +450,9 @@ export const FeedbackSettings: React.FC<FeedbackSettingsProps> = ({
                     className="w-4 h-4 text-accent bg-neutral-100 border-neutral-300 rounded focus:ring-primary-500"
                   />
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                    {!NO_EMAIL_MODE && (<div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                       {t('feedback.settings.requireInfo', 'Require Name & Email')}
-                    </div>
+                    </div>)}
                     <div className="text-xs text-neutral-500 dark:text-neutral-400">
                       {t('feedback.settings.requireInfoDesc', 'Guests must provide name and email to leave feedback')}
                     </div>

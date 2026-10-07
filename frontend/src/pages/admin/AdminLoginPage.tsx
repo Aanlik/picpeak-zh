@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState, useEffect } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -93,8 +94,8 @@ export const AdminLoginPage: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.email) {
-      newErrors.email = t('adminLogin.emailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = NO_EMAIL_MODE ? '请输入用户名' : t('adminLogin.emailRequired');
+    } else if (!NO_EMAIL_MODE && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = t('adminLogin.invalidEmail');
     }
 
@@ -296,17 +297,17 @@ export const AdminLoginPage: React.FC = () => {
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-1">
-                {t('adminLogin.emailLabel')}
+                {NO_EMAIL_MODE ? '用户名' : t('adminLogin.emailLabel')}
               </label>
               <Input
                 id="email"
-                type="email"
+                type={NO_EMAIL_MODE ? "text" : "email"}
                 value={formData.email}
                 onChange={handleInputChange('email')}
                 error={errors.email}
-                placeholder={t('adminLogin.emailPlaceholder')}
+                placeholder={NO_EMAIL_MODE ? '请输入管理员用户名' : t('adminLogin.emailPlaceholder')}
                 leftIcon={<Mail className="w-5 h-5 text-neutral-400" />}
-                autoComplete="email"
+                autoComplete={NO_EMAIL_MODE ? "username" : "email"}
                 autoFocus
               />
             </div>
@@ -482,7 +483,7 @@ export const AdminLoginPage: React.FC = () => {
             support email — publicSettings returns '' until then, and a
             placeholder address would send visitors nowhere. */}
         <div className="text-center mt-8">
-          {settingsData?.branding_support_email && (
+          {!NO_EMAIL_MODE && settingsData?.branding_support_email && (
             <p className="text-sm" style={{ color: 'var(--color-text, #171717)', opacity: 0.7 }}>
               {t('adminLogin.needHelp')}{' '}
               <a

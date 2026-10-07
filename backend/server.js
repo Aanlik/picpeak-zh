@@ -567,6 +567,7 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // Validate the origin independently of body length/content type.
 app.use('/api', require('./src/middleware/csrf'));
+app.use('/api', require('./src/utils/communicationProfile').middleware);
 
 app.use('/api', require('./src/middleware/apiRequestLogger'));
 
@@ -860,6 +861,7 @@ app.use('/api/admin/system', require('./src/routes/adminSystem'));
 // per event. Mounted at /api/admin so the routes appear at
 // /api/admin/events/:eventId/short-urls and /api/admin/short-urls/:id.
 app.use('/api/admin', require('./src/routes/adminShortUrls'));
+app.use('/api/admin/local-users', require('./src/routes/adminLocalUsers'));
 app.use('/api/admin/feature-flags', require('./src/routes/adminFeatureFlags'));
 app.use('/api/admin/whatsapp', require('./src/routes/adminWhatsapp'));
 app.use('/api/admin/backup', require('./src/routes/adminBackup'));

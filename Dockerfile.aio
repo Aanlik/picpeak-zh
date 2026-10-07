@@ -22,6 +22,8 @@ FROM node:22-alpine AS frontend-builder
 ARG CACHEBUST=1
 ARG VITE_DEFAULT_LANGUAGE=zh-CN
 ENV VITE_DEFAULT_LANGUAGE=${VITE_DEFAULT_LANGUAGE}
+ARG VITE_NO_EMAIL_MODE=true
+ENV VITE_NO_EMAIL_MODE=${VITE_NO_EMAIL_MODE}
 
 WORKDIR /app
 
@@ -161,6 +163,7 @@ ENV SERVE_FRONTEND=true \
 # SQLite path: legitimate multi-container deployments do both of those, and
 # none of them should lose the feature by accident.
 ENV PICPEAK_SINGLE_CONTAINER=true
+ENV NO_EMAIL_MODE=true
 
 # No USER directive — same as backend/Dockerfile: the container starts as root
 # so wait-for-db.sh can chown bind-mounted volumes to UID 1001, then drops

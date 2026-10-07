@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../../config/communication';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -235,7 +236,7 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({
                 onClick={() => setShowPublishDialog(true)}
                 isLoading={isPublishing}
               >
-                {t('events.publishAndNotify')}
+                {NO_EMAIL_MODE ? '发布画廊' : t('events.publishAndNotify')}
               </Button>
             </PermissionGate>
           </div>
@@ -257,7 +258,7 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({
               <p className={`text-sm mt-1 ${isExpired ? 'text-red-700' : 'text-orange-700'}`}>
                 {isExpired
                   ? t('events.guestsCannotAccessGallery')
-                  : t('events.warningEmailsHaveBeenSent')}
+                  : (NO_EMAIL_MODE ? '客户暂时无法访问此画廊' : t('events.warningEmailsHaveBeenSent'))}
               </p>
             </div>
             {!isExpired && (

@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
@@ -258,6 +259,7 @@ export const SettingsPage: React.FC = () => {
     // placeholder which would falsely snap-back away from a tab the server
     // has actually enabled.
     if (flagsLoading) return;
+    if (NO_EMAIL_MODE && ["email", "reminderTemplates", "crm", "contracts", "sso"].includes(activeTab)) { setActiveTab("general"); return; }
     const gatedOff: Record<string, boolean> = {
       crm: !(flags.quotes || flags.bills || flags.contracts),
       contracts: !flags.contracts,
@@ -278,6 +280,7 @@ export const SettingsPage: React.FC = () => {
   // isLoading early return to keep hook ordering stable.
   useEffect(() => {
     if (flagsLoading) return;
+    if (NO_EMAIL_MODE && ["email", "reminderTemplates", "crm", "contracts", "sso"].includes(activeTab)) { setActiveTab("general"); return; }
     if (hasAnyPermission(TAB_PERMISSIONS[activeTab] ?? ['settings.view'])) return;
     const flagOff: Partial<Record<TabType, boolean>> = {
       crm: !(flags.quotes || flags.bills || flags.contracts),
@@ -398,7 +401,7 @@ export const SettingsPage: React.FC = () => {
   // shown when the user holds any of its TAB_PERMISSIONS (super_admin bypasses
   // in the context). See TAB_PERMISSIONS above.
   const visibleGroups = navGroups
-    .map((g) => ({ ...g, items: g.items.filter((i) => hasAnyPermission(TAB_PERMISSIONS[i.key] ?? ['settings.view'])) }))
+    .map((g) => ({ ...g, items: g.items.filter((i) => (!NO_EMAIL_MODE || !['email', 'reminderTemplates', 'crm', 'contracts', 'sso'].includes(i.key)) && hasAnyPermission(TAB_PERMISSIONS[i.key] ?? ['settings.view'])) }))
     .filter((g) => g.items.length > 0);
 
   const allItems = visibleGroups.flatMap((g) => g.items);
@@ -537,7 +540,7 @@ export const SettingsPage: React.FC = () => {
           {activeTab === 'slideshow' && <SlideshowSettingsPage />}
           {activeTab === 'branding' && <BrandingPage />}
           {activeTab === 'cms' && <CMSPage />}
-          {activeTab === 'email' && <EmailConfigPage />}
+          {!NO_EMAIL_MODE && activeTab === 'email' && <EmailConfigPage />}
           {activeTab === 'backup' && <BackupManagement />}
           {activeTab === 'businessProfile' && <SettingsBusinessProfilePage />}
           {activeTab === 'crm' && <CrmSettingsPage />}

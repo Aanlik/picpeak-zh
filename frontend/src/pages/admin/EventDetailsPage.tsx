@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useExpiryRefresh } from '../../hooks/useExpiryRefresh';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -301,7 +302,7 @@ export const EventDetailsPage: React.FC = () => {
       // would leave the admin unsure whether anything went out (#1235).
       toast.success(
         result?.notified_customer === false
-          ? t('events.publishQuietSuccess', 'Gallery published. No email was sent.')
+          ? (NO_EMAIL_MODE ? '画廊已发布，请复制分享链接发送给客户' : t('events.publishQuietSuccess', 'Gallery published. No email was sent.'))
           : t('events.publishSuccess'),
       );
       setShowPublishDialog(false);

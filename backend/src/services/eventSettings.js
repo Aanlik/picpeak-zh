@@ -51,6 +51,7 @@ const getEventFieldRequirements = async () => {
       if (s.setting_key === 'event_require_expiration') requirements.require_expiration = value;
     });
 
+    if (require("../utils/communicationProfile").NO_EMAIL_MODE) { requirements.require_customer_email = false; requirements.require_admin_email = false; }
     return requirements;
   } catch (error) {
     logger.error('Failed to get event field requirements', { error: error.message });

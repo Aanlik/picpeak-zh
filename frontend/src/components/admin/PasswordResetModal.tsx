@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState } from 'react';
 import { X, Key, Copy, CheckCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -23,7 +24,7 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [sendEmail, setSendEmail] = useState(true);
+  const [sendEmail, setSendEmail] = useState(!NO_EMAIL_MODE);
   const [isResetting, setIsResetting] = useState(false);
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
   const [resultPassword, setResultPassword] = useState<string | null>(null);
@@ -161,7 +162,7 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
               )}
             </div>
 
-            <div className="mb-4">
+            {!NO_EMAIL_MODE && (<div className="mb-4">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -181,7 +182,7 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
                   </p>
                 </div>
               </label>
-            </div>
+            </div>)}
 
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
               <p className="text-sm text-amber-800">

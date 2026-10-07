@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -731,7 +732,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
       {/* Footer */}
       <footer className="gallery-footer mt-8 sm:mt-12 py-6 sm:py-8 border-t border-surface">
         <div className="container text-center px-4">
-          {brandingSettings?.support_email && (
+          {!NO_EMAIL_MODE && brandingSettings?.support_email && (
             <p className="text-xs sm:text-sm text-muted-theme mb-2">
               {t('gallery.needHelp')}{' '}
               <a

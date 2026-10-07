@@ -541,7 +541,7 @@ async function pollOnce() {
 
 /** Start the 1-minute poll loop (mirrors the outgoing queue cadence). */
 const mailPoller = require('./scheduledTask').scheduledTask(pollOnce, { interval: 60000, initialDelay: 15000 });
-function startIncomingMailPoller() { mailPoller.start(); }
+function startIncomingMailPoller() { if (!require('../utils/communicationProfile').NO_EMAIL_MODE) mailPoller.start(); }
 const stopIncomingMailPoller = () => mailPoller.stop();
 
 module.exports = { stopIncomingMailPoller, pollOnce, startIncomingMailPoller, listFolders, testConnection, roundTripTest, _internal: { getImapConfig, isEnabled, saveAttachment } };

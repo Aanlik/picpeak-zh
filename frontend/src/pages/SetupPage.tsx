@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE, EMAIL_FEATURES } from '../config/communication';
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -129,8 +130,8 @@ export const SetupPage: React.FC = () => {
 
   const validateAccount = (): boolean => {
     const next: Record<string, string> = {};
-    if (!form.email) next.email = t('setup.emailRequired');
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = t('setup.invalidEmail');
+    if (!form.email) next.email = NO_EMAIL_MODE ? '请输入用户名' : t('setup.emailRequired');
+    else if (!NO_EMAIL_MODE && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = t('setup.invalidEmail');
     if (!form.password) next.password = t('setup.passwordRequired');
     // Mirror the server's rule (validatePassword): >=8 chars with upper, lower
     // and a digit — so the user isn't bounced by the server after a green client.
@@ -178,7 +179,7 @@ export const SetupPage: React.FC = () => {
     try {
       const { user } = await setupService.createInitialAdmin({
         token: form.token.trim(),
-        email: form.email.trim(),
+        ...(NO_EMAIL_MODE ? { username: form.email.trim() } : { email: form.email.trim() }),
         password: form.password,
       });
       // Cookie is set by the backend; register the session and enter the app.
@@ -420,17 +421,17 @@ export const SetupPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="setup-email" className="block text-sm font-medium text-neutral-700 mb-1">
-                  {t('setup.emailLabel')}
+                  {NO_EMAIL_MODE ? '管理员用户名' : t('setup.emailLabel')}
                 </label>
                 <Input
                   id="setup-email"
-                  type="email"
+                  type={NO_EMAIL_MODE ? "text" : "email"}
                   value={form.email}
                   onChange={setField('email')}
                   error={errors.email}
-                  placeholder={t('setup.emailPlaceholder')}
+                  placeholder={NO_EMAIL_MODE ? '3–50 位字母、数字、下划线或短横线' : t('setup.emailPlaceholder')}
                   leftIcon={<Mail className="w-5 h-5 text-neutral-400" />}
-                  autoComplete="email"
+                  autoComplete={NO_EMAIL_MODE ? "username" : "email"}
                   autoFocus
                 />
               </div>
@@ -518,7 +519,7 @@ export const SetupPage: React.FC = () => {
                 <div key={group.id}>
                   <h3 className="text-sm font-semibold text-neutral-800 mb-2">{t(group.titleKey)}</h3>
                   <div className="space-y-2">
-                    {group.features.map((key) => (
+                    {group.features.filter(key => !NO_EMAIL_MODE || !EMAIL_FEATURES.has(key)).map((key) => (
                       <label
                         key={key}
                         className="flex items-start gap-3 rounded-lg border border-neutral-200 p-3 cursor-pointer hover:bg-neutral-50 transition-colors"

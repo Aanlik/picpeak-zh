@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../../config/communication';
 import React from 'react';
 import { Save, AlertCircle } from 'lucide-react';
 import { Button, Card } from '../../../components/common';
@@ -71,14 +72,14 @@ export const EventsTab: React.FC<EventsTabProps> = ({
           </div>
 
           <div>
-            <label className="flex items-start gap-3">
+            {!NO_EMAIL_MODE && (<label className="flex items-start gap-3">
               <input
                 type="checkbox"
                 checked={eventSettings.event_require_customer_email}
                 onChange={(e) => setEventSettings(prev => ({ ...prev, event_require_customer_email: e.target.checked }))}
                 className="mt-1 w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
               />
-              <div>
+              {!NO_EMAIL_MODE && (<div>
                 <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   {t('settings.events.requireCustomerEmail', 'Require customer email')}
                 </span>
@@ -91,19 +92,19 @@ export const EventsTab: React.FC<EventsTabProps> = ({
                     {t('settings.events.customerEmailWarning', 'Required for sending gallery invitations')}
                   </p>
                 )}
-              </div>
-            </label>
+              </div>)}
+            </label>)}
           </div>
 
           <div>
-            <label className="flex items-start gap-3">
+            {!NO_EMAIL_MODE && (<label className="flex items-start gap-3">
               <input
                 type="checkbox"
                 checked={eventSettings.event_require_admin_email}
                 onChange={(e) => setEventSettings(prev => ({ ...prev, event_require_admin_email: e.target.checked }))}
                 className="mt-1 w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
               />
-              <div>
+              {!NO_EMAIL_MODE && (<div>
                 <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   {t('settings.events.requireAdminEmail', 'Require admin email')}
                 </span>
@@ -116,8 +117,8 @@ export const EventsTab: React.FC<EventsTabProps> = ({
                     {t('settings.events.adminEmailWarning', 'Required for receiving event notifications')}
                   </p>
                 )}
-              </div>
-            </label>
+              </div>)}
+            </label>)}
           </div>
 
           <div>

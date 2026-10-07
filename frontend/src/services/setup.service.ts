@@ -14,7 +14,8 @@ export interface SetupAdminUser {
 
 export interface CreateInitialAdminInput {
   token: string;
-  email: string;
+  email?: string;
+  username?: string;
   password: string;
 }
 

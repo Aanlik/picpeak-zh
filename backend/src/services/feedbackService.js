@@ -158,7 +158,7 @@ class FeedbackService {
       // layer treats null/0/missing identically.
       settings.max_favorites_per_guest = settings.max_favorites_per_guest ?? null;
       settings.max_likes_per_guest = settings.max_likes_per_guest ?? null;
-      return settings;
+      return require("../utils/communicationProfile").NO_EMAIL_MODE ? require("../utils/communicationProfile").project(settings) : settings;
     } catch (error) {
       logger.error('Error getting feedback settings:', error);
       throw error;

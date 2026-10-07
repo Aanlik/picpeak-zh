@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../../config/communication';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Archive, Send, Copy, Mail } from 'lucide-react';
@@ -42,7 +43,7 @@ export const EventActionsCard: React.FC<EventActionsCardProps> = ({
   const hasRecipient = !!event.customer_email || assignedCustomerCount > 0;
   const isExpired = !!event.expires_at && new Date(event.expires_at) <= new Date();
   const isInactive = !toBoolean(event.is_active, true);
-  const canSendGalleryEmail = hasRecipient && !isExpired && !isInactive;
+  const canSendGalleryEmail = !NO_EMAIL_MODE && hasRecipient && !isExpired && !isInactive;
 
   return (
     <Card padding="md">

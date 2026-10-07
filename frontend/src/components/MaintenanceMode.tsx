@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../config/communication';
 import React, { useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -59,7 +60,7 @@ export const MaintenanceMode: React.FC = () => {
             {t('maintenance.message')}
           </p>
           
-          {settings?.branding_support_email && (
+          {!NO_EMAIL_MODE && settings?.branding_support_email && (
             <p className="text-sm text-neutral-500 mt-8">
               {t('maintenance.urgentMatters')}{' '}
               <a 

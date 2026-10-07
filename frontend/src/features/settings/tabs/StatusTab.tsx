@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../../config/communication';
 import React, { useEffect } from 'react';
 import {
   Save,
@@ -591,15 +592,15 @@ export const StatusTab: React.FC<StatusTabProps> = ({
                   ends now tell the truth: a stopped or bailing processor is the
                   reason queued mail never arrives, and this is one of the two
                   places an admin looks to find that out. */}
-              <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
+              {!NO_EMAIL_MODE && (<div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4">
+                {!NO_EMAIL_MODE && (<div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('settings.systemStatus.emailProcessor')}</p>
                   {systemStatus?.services?.emailProcessor?.status === 'active' ? (
                     <CheckCircle className="w-5 h-5 text-green-600" />
                   ) : (
                     <AlertTriangle className="w-5 h-5 text-red-600" />
                   )}
-                </div>
+                </div>)}
                 <p className="text-xs text-neutral-600 dark:text-neutral-400">
                   {systemStatus?.services?.emailProcessor?.status === 'stopped'
                     ? t('settings.systemStatus.emailProcessorStopped',
@@ -610,10 +611,10 @@ export const StatusTab: React.FC<StatusTabProps> = ({
                         { error: systemStatus?.services?.emailProcessor?.lastError })
                       : t('settings.systemStatus.emailProcessorDesc')}
                 </p>
-              </div>
+              </div>)}
             </div>
 
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+            {!NO_EMAIL_MODE && (<div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
               <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">{t('settings.systemStatus.emailQueue')}</h3>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
@@ -644,7 +645,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({
                   </p>
                 </div>
               )}
-            </div>
+            </div>)}
           </Card>
         </>
       )}

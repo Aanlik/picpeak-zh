@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, User, LogOut, Settings, Bell, Lock, CheckCircle, Trash2, Sun, Moon, Globe, ChevronDown, Eye, Download, Heart, Calendar, Image, Archive, AlertCircle, Clock, Database, FileText, Folder, Key, Mail, Tag, ToggleRight, UserCog, Webhook } from 'lucide-react';
@@ -402,7 +403,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
               >
                 <div className="text-right hidden sm:block">
                   <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{user?.username}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{user?.email}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{NO_EMAIL_MODE ? "" : user?.email}</p>
                 </div>
                 <div className="w-8 h-8 bg-accent-dark rounded-full flex items-center justify-center">
                   <User className="w-5 h-5 text-white" />
@@ -414,7 +415,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 py-1">
                   <div className="px-4 py-2 border-b border-neutral-100 dark:border-neutral-700 sm:hidden">
                     <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{user?.username}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{user?.email}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{NO_EMAIL_MODE ? "" : user?.email}</p>
                   </div>
                   {/* Language sub-section — phone-only (#523 follow-up).
                       Rekoo-PS asked for language to live inside the profile
