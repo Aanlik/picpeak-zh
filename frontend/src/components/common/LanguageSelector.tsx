@@ -79,6 +79,7 @@ const SLFlag: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => 
 );
 
 export const SUPPORTED_LANGUAGES = [
+  { code: 'zh-CN', name: '简体中文', Flag: Globe },
   { code: 'en', name: 'English', Flag: GBFlag },
   { code: 'de', name: 'Deutsch', Flag: DEFlag },
   { code: 'ru', name: 'Русский', Flag: RUFlag },

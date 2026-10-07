@@ -7,14 +7,22 @@ const localeFiles = import.meta.glob<Record<string, string>>('./locales/*.json',
 
 const resources = Object.fromEntries(
   Object.entries(localeFiles).map(([path, translations]) => {
-    const lang = path.match(/\/(\w+)\.json$/)?.[1];
+    const lang = path.match(/\/([\w-]+)\.json$/)?.[1];
     return [lang, { translation: translations }];
   })
 );
 
+// An optional build-time deployment default comes after the visitor's saved
+// choice and before browser detection. It never overrides an explicit choice.
+const detector = new LanguageDetector();
+detector.addDetector({
+  name: 'deploymentDefault',
+  lookup: () => import.meta.env.VITE_DEFAULT_LANGUAGE || undefined,
+});
+
 i18n
   .use(HttpBackend)
-  .use(LanguageDetector)
+  .use(detector)
   .use(initReactI18next)
   .init({
     fallbackLng: 'en',
@@ -29,6 +37,8 @@ i18n
     returnEmptyString: false,
 
     resources,
+    supportedLngs: Object.keys(resources),
+    load: 'currentOnly',
 
     interpolation: {
       escapeValue: false,
@@ -38,8 +48,11 @@ i18n
     compatibilityJSON: 'v4',
 
     detection: {
-      order: ['localStorage', 'cookie', 'navigator', 'htmlTag'],
+      order: ['localStorage', 'cookie', 'deploymentDefault', 'navigator', 'htmlTag'],
       caches: ['localStorage', 'cookie'],
+      convertDetectedLanguage: (language: string) => /^zh(?:-|$)/i.test(language)
+        ? 'zh-CN'
+        : language.split('-')[0],
     },
   });
 
