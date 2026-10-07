@@ -16,3 +16,8 @@ test('quiet publish preserves password protection', () => {
 test('upstream mode unchanged', () => {
   const p = load('false'); const req = { path: '/admin/email/send', body: { sendEmail: true } }; let called = false; p.middleware(req, {}, () => { called = true; }); assert.equal(called, true); assert.equal(req.body.sendEmail, true);
 });
+
+test("presentation hides legacy email fields without deleting stored records", () => {
+  const p = load("true"); const stored = { email: "old@example.com", customer_email: "client@example.com", actorName: "studio@example.com", comment_text: "请保留这条评论" };
+  assert.deepEqual(p.project(stored), { email: "", customer_email: "", actorName: "studio", comment_text: "请保留这条评论" }); assert.equal(stored.email, "old@example.com");
+});

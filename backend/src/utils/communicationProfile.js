@@ -5,6 +5,8 @@ function project(value) {
   if (Array.isArray(value)) return value.map(project);
   if (!value || typeof value !== "object" || value instanceof Date) return value;
   return Object.fromEntries(Object.entries(value).map(([key, v]) => {
+    if (typeof v === "string" && (key === "email" || key.endsWith("_email") || key.endsWith("Email"))) return [key, ""];
+    if (key === "actorName" && typeof v === "string" && v.includes("@")) return [key, v.split("@")[0]];
     if (EMAIL_FEATURES.has(key)) return [key, false];
     if (["event_require_customer_email", "event_require_admin_email", "require_name_email", "require_email", "guest_require_email"].includes(key)) return [key, false];
     if (key === "identity_mode" && v === "guest") return [key, "simple"];
