@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React from 'react';
 import { HelpCircle } from 'lucide-react';
 import DOMPurify from 'dompurify';
@@ -51,7 +52,7 @@ export const WelcomeMessageEditor: React.FC<WelcomeMessageEditorProps> = ({
       </div>
       
       <div className="text-xs text-neutral-500 dark:text-neutral-400">
-        Tip: Press Enter to create a new line. Each line will appear as a separate paragraph in emails.
+        {NO_EMAIL_MODE ? '提示：按回车换行，客户画廊会按段落显示。' : 'Tip: Press Enter to create a new line. Each line will appear as a separate paragraph in emails.'}
       </div>
 
       {value && (
