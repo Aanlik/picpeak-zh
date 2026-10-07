@@ -1,0 +1,56 @@
+name: Chinese fork validation
+on:
+  push:
+    branches: [zh-stable, 'feat/zh-cn', 'sync/**']
+    tags: ['*-zh.*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: node scripts/check-zh-cn.mjs
+      - run: npm ci --legacy-peer-deps
+        working-directory: frontend
+      # Upstream's legacy-peer-deps install omits this testing-library peer.
+      - run: npm install --no-save --package-lock=false --legacy-peer-deps @testing-library/dom@10.4.1
+        working-directory: frontend
+      - run: npm run build:check
+        working-directory: frontend
+        env:
+          VITE_DEFAULT_LANGUAGE: zh-CN
+      - run: npm test
+        working-directory: frontend
+  aio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.aio
+          tags: picpeak-zh:ci
+          load: true
+          cache-from: type=gha,scope=zh-aio
+          cache-to: type=gha,mode=max,scope=zh-aio
+      - run: docker run --rm --entrypoint node picpeak-zh:ci scripts/test-zh-unicode.cjs
+      - name: Boot SQLite AIO
+        run: |
+          docker run -d --name zh-smoke -p 3000:3000 -e PORT=3000 picpeak-zh:ci
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3000/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs zh-smoke
+          exit 1
+      - if: always()
+        run: docker rm -f zh-smoke || true
