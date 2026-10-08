@@ -136,7 +136,7 @@ router.get('/', async (req, res) => {
         ? settingsObject.branding_login_logo_size
         : 'medium',
       theme_config: settingsObject.theme_config || null,
-      default_language: settingsObject.general_default_language || 'en',
+      default_language: settingsObject.general_default_language || process.env.DEFAULT_LANGUAGE || 'en',
       enable_analytics: settingsObject.general_enable_analytics !== false,
       general_date_format: settingsObject.general_date_format || 'PPP',
       // '12h' / '24h' — controls how times are rendered in admin +

@@ -295,7 +295,7 @@ export function useSettingsState() {
           settings.general_use_original_filenames_for_downloads,
           false
         ),
-        default_language: settings.general_default_language || 'en',
+        default_language: settings.general_default_language || import.meta.env.VITE_DEFAULT_LANGUAGE || 'en',
         date_format: settings.general_date_format
           ? (typeof settings.general_date_format === 'string'
               ? { format: settings.general_date_format, locale: settings.general_date_format.includes('MM/dd') ? 'en-US' : 'en-GB' }

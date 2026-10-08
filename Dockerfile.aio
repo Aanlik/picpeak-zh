@@ -164,6 +164,7 @@ ENV SERVE_FRONTEND=true \
 # none of them should lose the feature by accident.
 ENV PICPEAK_SINGLE_CONTAINER=true
 ENV NO_EMAIL_MODE=true
+ENV DEFAULT_LANGUAGE=zh-CN
 
 # No USER directive — same as backend/Dockerfile: the container starts as root
 # so wait-for-db.sh can chown bind-mounted volumes to UID 1001, then drops
