@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../config/communication';
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AlertCircle, Check, Clock, Copy } from 'lucide-react';
@@ -389,7 +390,7 @@ export const GalleryPage: React.FC = () => {
           </div>
           
           {/* Legal Links */}
-          <div className="p-8 text-center">
+          {!NO_EMAIL_MODE && (<div className="p-8 text-center">
             <div className="flex items-center justify-center gap-4">
               <Link 
                 to="/impressum" 
@@ -406,7 +407,7 @@ export const GalleryPage: React.FC = () => {
               </Link>
             </div>
             <PoweredBy className="text-xs mt-2 text-neutral-500" />
-          </div>
+          </div>)}
         </div>
       </div>
     );
@@ -632,7 +633,7 @@ export const GalleryPage: React.FC = () => {
           </Card>
 
           {/* Legal Links */}
-          <div className="text-center mt-4 sm:mt-6">
+          {!NO_EMAIL_MODE && (<div className="text-center mt-4 sm:mt-6">
             <div className="flex items-center justify-center gap-4">
               <Link 
                 to="/impressum" 
@@ -649,7 +650,7 @@ export const GalleryPage: React.FC = () => {
               </Link>
             </div>
             <PoweredBy className="text-xs mt-2 text-neutral-500" />
-          </div>
+          </div>)}
         </div>
       </div>
     </div>

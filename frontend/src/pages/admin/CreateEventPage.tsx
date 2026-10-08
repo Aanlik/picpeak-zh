@@ -115,7 +115,7 @@ export const CreateEventPage: React.FC = () => {
   }, []);
   
   const [formData, setFormData] = useState<FormData>({
-    event_type: 'wedding',
+    event_type: NO_EMAIL_MODE ? 'other' : 'wedding',
     event_name: '',
     event_date: new Date().toISOString().split('T')[0], // Initialize with ISO date format
     event_time_start: '',
@@ -596,9 +596,10 @@ export const CreateEventPage: React.FC = () => {
           <div className="p-6 space-y-6">
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
               <Calendar className="w-5 h-5" />
-              {t('events.eventDetails')}
+              {NO_EMAIL_MODE ? '项目基本信息' : t('events.eventDetails')}
             </h2>
 
+            {!NO_EMAIL_MODE && (<>
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 {t('events.eventType')}
@@ -622,6 +623,7 @@ export const CreateEventPage: React.FC = () => {
               </div>
             </div>
 
+            </>)}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label={t('events.eventName')}
@@ -640,6 +642,7 @@ export const CreateEventPage: React.FC = () => {
               />
             </div>
 
+            {!NO_EMAIL_MODE && (<>
             {/* Migration 137 — calendar time fields. Full-day events stay
                 full-day; admins who unchecks "Full day" get two HH:MM
                 inputs that flow into the events row's event_time_start /
@@ -683,6 +686,7 @@ export const CreateEventPage: React.FC = () => {
                 rows={4}
               />
             </div>
+            </>)}
           </div>
         </Card>
 

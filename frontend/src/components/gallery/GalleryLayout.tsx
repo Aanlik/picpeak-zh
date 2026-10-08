@@ -325,8 +325,8 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
   // Legal links per #441: each CMS page has show_in_footer (default true).
   // When BOTH are hidden we still render the surrounding row only if
   // there's a guest "Forget me" button or socials to show.
-  const showImpressum = impressumPage?.show_in_footer !== false;
-  const showDatenschutz = datenschutzPage?.show_in_footer !== false;
+  const showImpressum = !!impressumPage && impressumPage.show_in_footer !== false && !NO_EMAIL_MODE;
+  const showDatenschutz = !!datenschutzPage && datenschutzPage.show_in_footer !== false && !NO_EMAIL_MODE;
   const hasLegalLinks = showImpressum || showDatenschutz;
   const hasFooterRow = hasLegalLinks || socialLinks.length > 0 || !!guestIdentity?.identity;
 

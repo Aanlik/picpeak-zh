@@ -862,6 +862,7 @@ app.use('/api/admin/system', require('./src/routes/adminSystem'));
 // /api/admin/events/:eventId/short-urls and /api/admin/short-urls/:id.
 app.use('/api/admin', require('./src/routes/adminShortUrls'));
 app.use('/api/admin/local-users', require('./src/routes/adminLocalUsers'));
+app.use('/api/admin/photography-workflow', require('./src/routes/photographyWorkflow'));
 app.use('/api/admin/feature-flags', require('./src/routes/adminFeatureFlags'));
 app.use('/api/admin/whatsapp', require('./src/routes/adminWhatsapp'));
 app.use('/api/admin/backup', require('./src/routes/adminBackup'));

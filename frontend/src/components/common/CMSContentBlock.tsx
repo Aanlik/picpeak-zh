@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -135,7 +136,7 @@ export const CMSContentBlock: React.FC<CMSContentBlockProps> = ({ slug, fallback
         className="py-8 text-center text-xs"
         style={{ color: 'var(--color-muted-text)' }}
       >
-        <div className="flex justify-center gap-4">
+        {!NO_EMAIL_MODE && <div className="flex justify-center gap-4">
           <Link to="/impressum" className="hover:underline">
             {lang === 'de' ? 'Impressum' : 'Legal Notice'}
           </Link>
@@ -143,7 +144,7 @@ export const CMSContentBlock: React.FC<CMSContentBlockProps> = ({ slug, fallback
           <Link to="/datenschutz" className="hover:underline">
             {lang === 'de' ? 'Datenschutz' : 'Privacy Policy'}
           </Link>
-        </div>
+        </div>}
         <PoweredBy className="mt-2" />
       </footer>
     </div>

@@ -1,3 +1,5 @@
+import { PhotographyWorkflowCard } from '../../../components/admin/PhotographyWorkflowCard';
+import { NO_EMAIL_MODE } from '../../../config/communication';
 import React from 'react';
 import type { Event } from '../../../types';
 import { FeedbackModerationPanel } from '../../../components/admin';
@@ -115,13 +117,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           onRevealNow={onRevealNow}
         />
 
+        {NO_EMAIL_MODE && <PhotographyWorkflowCard eventId={event.id} />}
+
         {/* Share Link */}
         <ShareLinkCard event={event} setShowPasswordReset={setShowPasswordReset} passwordVersion={passwordVersion} />
 
         {/* Branded short URLs (#699). Sits between the canonical share-link
             card and the Client Access card — same "things you share with
             the customer" cluster. */}
-        <ShortUrlsCard eventId={event.id} />
+        {!NO_EMAIL_MODE && <ShortUrlsCard eventId={event.id} />}
 
         {/* Client Access (#172) */}
         <ClientAccessCard event={event} refetchEvent={refetchEvent} />
