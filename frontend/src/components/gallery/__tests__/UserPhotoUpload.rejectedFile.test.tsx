@@ -72,7 +72,7 @@ describe('UserPhotoUpload rejected file', () => {
 
     await waitFor(() =>
       expect(toastMock.error).toHaveBeenCalledWith(
-        'fake.png: File content does not match declared type'
+        'ui.uploadFailedFile'
       )
     );
     expect(toastMock.success).not.toHaveBeenCalled();

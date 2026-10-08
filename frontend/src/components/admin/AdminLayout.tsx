@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { lazy, Suspense, useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 
@@ -15,6 +16,7 @@ const ProductUsageNotice = lazy(() => import('./ProductUsageNotice'));
 const UsageReportingPrompt = lazy(() => import('./UsageReportingPrompt'));
 
 export const AdminLayout: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { isAuthenticated, isLoading, mustChangePassword } = useAdminAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsedState] = useState<boolean>(() => {
@@ -37,7 +39,7 @@ export const AdminLayout: React.FC = () => {
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-accent-dark border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-neutral-600">Loading...</p>
+          <p className="text-neutral-600">{tAudit("ui.loading")}</p>
         </div>
       </div>
     );

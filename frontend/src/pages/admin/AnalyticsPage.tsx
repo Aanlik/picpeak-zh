@@ -50,6 +50,7 @@ interface ComponentAnalyticsData {
 }
 
 export const AnalyticsPage: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('7d');
   const [isEmbedMode, setIsEmbedMode] = useState(false);
@@ -255,7 +256,7 @@ export const AnalyticsPage: React.FC = () => {
           <iframe
             src={umamiConfig.shareUrl}
             className="w-full h-full border-0"
-            title="Umami Analytics Dashboard"
+            title={tAudit("ui.umamiDashboard")}
           />
         </Card>
       </div>

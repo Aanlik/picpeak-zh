@@ -76,7 +76,7 @@ export const UserPhotoUpload: React.FC<UserPhotoUploadProps> = ({
   const addFiles = (incoming: File[]) => {
     const validFiles = incoming.filter((file) => {
       if (!allowedMimeTypes.includes(normalizeFileMimeType(file.name, file.type))) {
-        toast.error(`Invalid file type: ${file.name}`);
+        toast.error(t('ui.invalidFileType', { name: file.name }));
         return false;
       }
       // Check file size against the configured per-file limit.
@@ -207,8 +207,7 @@ export const UserPhotoUpload: React.FC<UserPhotoUploadProps> = ({
             break;
           }
           failedCount++;
-          const reason = firstError?.error || t('upload.someFilesFailed');
-          toast.error(`${file.name}: ${reason}`);
+          toast.error(t('ui.uploadFailedFile', { name: file.name }));
           continue;
         }
 
@@ -227,8 +226,7 @@ export const UserPhotoUpload: React.FC<UserPhotoUploadProps> = ({
         failedCount++;
         
         // Show specific error message
-        const errorMessage = error.response?.data?.error || error.message || 'Upload failed';
-        toast.error(`${file.name}: ${errorMessage}`);
+        toast.error(t('ui.uploadFailedFile', { name: file.name }));
       }
     }
 

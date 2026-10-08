@@ -25,6 +25,7 @@ import { useMutationWithToast } from '../../hooks';
 // import { useNavigate } from 'react-router-dom';
 
 export const ArchivesPage: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const { formatTime: fmtTime } = useLocalizedDate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -205,7 +206,7 @@ export const ArchivesPage: React.FC = () => {
               <option value="wedding">{t('archives.wedding')}</option>
               <option value="birthday">{t('archives.birthday')}</option>
               <option value="corporate">{t('archives.corporate')}</option>
-              <option value="party">Party</option>
+              <option value="party">{tAudit("ui.party")}</option>
               <option value="other">{t('archives.other')}</option>
             </select>
 

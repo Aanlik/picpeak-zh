@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { Heart } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -50,6 +51,7 @@ const MosaicPhoto: React.FC<MosaicPhotoProps> = ({
   feedbackOptions,
   onQuickComment
 }) => {
+  const { t: tAudit } = useTranslation();
   const [showIdentityModal, setShowIdentityModal] = React.useState(false);
   const [pendingAction, setPendingAction] = React.useState<null | { type: 'like'; photoId: number }>(null);
   const [savedIdentity, setSavedIdentity] = React.useState<{ name: string; email: string } | null>(null);
@@ -118,7 +120,7 @@ const MosaicPhoto: React.FC<MosaicPhotoProps> = ({
         checkboxTestId
         afterOverlay={((photo.like_count ?? 0) > 0 || likedLocal) ? (
           <div className={`absolute ${photo.type === 'collage' ? 'bottom-8' : 'bottom-2'} left-2 z-10`}>
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm" title="Liked">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm" title={tAudit("ui.liked")}>
               <Heart className="w-3.5 h-3.5 text-red-500" fill="currentColor" />
             </span>
           </div>
@@ -127,8 +129,7 @@ const MosaicPhoto: React.FC<MosaicPhotoProps> = ({
         {photo.type === 'collage' && (
           <div className="absolute bottom-2 left-2">
             <span className="px-2 py-1 bg-black/60 text-white text-xs rounded">
-              Collage
-            </span>
+              {tAudit("ui.collage")}</span>
           </div>
         )}
       </PhotoCard>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { GalleryLayout, PhotoFilterBar } from '../../components/gallery';
@@ -29,6 +30,7 @@ const mockCategories = [
 ];
 
 export const PreviewPage: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { setTheme } = useTheme();
   const [brandingSettings, setBrandingSettings] = useState<any>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | string | null>(null);
@@ -124,8 +126,8 @@ export const PreviewPage: React.FC = () => {
     >
       <div className="mt-8">
         <div className="text-center mb-6">
-          <h2 className="text-xl font-semibold text-neutral-900">Theme Preview</h2>
-          <p className="text-neutral-600">This is how your galleries will look with the current theme settings</p>
+          <h2 className="text-xl font-semibold text-neutral-900">{tAudit("ui.themePreview")}</h2>
+          <p className="text-neutral-600">{tAudit("ui.galleryPreviewDescription")}</p>
         </div>
 
         {/* Filters */}

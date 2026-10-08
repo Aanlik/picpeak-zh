@@ -18,6 +18,7 @@ interface GuestInviteDialogProps {
  * guest. Opening the URL auto-registers that guest (single use).
  */
 export const GuestInviteDialog: React.FC<GuestInviteDialogProps> = ({ eventId, onClose }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -83,7 +84,7 @@ export const GuestInviteDialog: React.FC<GuestInviteDialogProps> = ({ eventId, o
                 label={t('admin.guests.inviteName', 'Guest name')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Alice"
+                placeholder={tAudit("ui.guestNameExample")}
                 required
               />
               <Input

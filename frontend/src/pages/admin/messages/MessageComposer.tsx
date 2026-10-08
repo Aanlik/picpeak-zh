@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useRef, useState } from 'react';
 import type { TFunction } from 'i18next';
 import { useMutation } from '@tanstack/react-query';
@@ -31,6 +32,7 @@ export const MessageComposer: React.FC<{
   onSent: () => void;
   t: TFunction;
 }> = ({ init, title, accountKey, onClose, onSent, t }) => {
+  const { t: tAudit } = useTranslation();
   const [to, setTo] = useState(init.to);
   const [cc, setCc] = useState(init.cc || '');
   const [subject, setSubject] = useState(init.subject);
@@ -81,7 +83,7 @@ export const MessageComposer: React.FC<{
             <input className={inputCls} value={to} onChange={(e) => setTo(e.target.value)} placeholder="name@example.com" />
           </label>
           <label className="flex items-center gap-2 text-sm">
-            <span className="w-16 text-neutral-500 dark:text-neutral-400">Cc</span>
+            <span className="w-16 text-neutral-500 dark:text-neutral-400">{tAudit("ui.cc")}</span>
             <input className={inputCls} value={cc} onChange={(e) => setCc(e.target.value)} placeholder={t('messages.optional', 'optional')} />
           </label>
           <label className="flex items-center gap-2 text-sm">

@@ -121,6 +121,7 @@ const healthColors: Record<HealthStatus, { badge: string; ring: string }> = {
 };
 
 export const BackupDashboard: React.FC<BackupDashboardProps> = ({ status, config, onRunBackup, isBackupRunning }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const { format, formatTime, formatDateTime, formatDistanceToNow } = useLocalizedDate();
   const lastBackup = status?.lastBackup;                       // any status
@@ -357,8 +358,7 @@ export const BackupDashboard: React.FC<BackupDashboardProps> = ({ status, config
                     {formatBytes(backup.statistics?.total_size || 0)}
                   </p>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {backup.statistics?.files_processed || 0} files
-                  </p>
+                    {backup.statistics?.files_processed || 0} {tAudit("ui.files")}</p>
                 </div>
               </div>
             ))}
@@ -374,7 +374,7 @@ export const BackupDashboard: React.FC<BackupDashboardProps> = ({ status, config
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Database className="h-5 w-5 text-neutral-400" />
-                <span className="text-neutral-700 dark:text-neutral-300">Database</span>
+                <span className="text-neutral-700 dark:text-neutral-300">{tAudit("ui.database")}</span>
               </div>
               <span className={`px-2 py-1 rounded text-xs font-medium ${
                 statistics.database_backed_up ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300' : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300'

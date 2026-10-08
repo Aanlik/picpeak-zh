@@ -54,6 +54,7 @@ const GridPhoto: React.FC<GridPhotoProps> = ({
   liked = false,
   onLikeSuccess
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
 
   const animationClass = animationType === 'scale'
@@ -148,17 +149,17 @@ const GridPhoto: React.FC<GridPhotoProps> = ({
       {(commentCount > 0 || averageRating > 0 || likeCount > 0 || liked) && (
         <div className={`absolute ${photo.type === 'collage' ? 'bottom-8' : 'bottom-2'} left-2 flex items-center gap-1 z-10`}>
           {(likeCount > 0 || liked) && (
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm" title="Liked">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm" title={tAudit("ui.liked")}>
               <Heart className="w-3.5 h-3.5 text-red-500" fill="currentColor" />
             </span>
           )}
           {averageRating > 0 && (
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm" title="Rated">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm" title={tAudit("ui.rated")}>
               <Star className="w-3.5 h-3.5 text-yellow-500" fill="currentColor" />
             </span>
           )}
           {commentCount > 0 && (
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm" title="Commented">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm" title={tAudit("ui.commented")}>
               <MessageSquare className="w-3.5 h-3.5 text-accent" fill="currentColor" />
             </span>
           )}
@@ -177,8 +178,7 @@ const GridPhoto: React.FC<GridPhotoProps> = ({
       {photo.type === 'collage' && (
         <div className="absolute bottom-2 right-2">
           <span className="px-2 py-1 bg-black/60 text-white text-xs rounded">
-            Collage
-          </span>
+            {tAudit("ui.collage")}</span>
         </div>
       )}
     </PhotoCard>
@@ -202,6 +202,7 @@ export const GridGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
   isClient = false,
   onToggleVisibility
 }) => {
+  const { t: tAudit } = useTranslation();
   const { theme } = useTheme();
   const gallerySettings = theme.gallerySettings || {};
   const columns = gallerySettings.gridColumns || { mobile: 2, tablet: 3, desktop: 4 };
@@ -283,7 +284,7 @@ export const GridGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                     ? 'bg-red-500/90 text-white hover:bg-red-600'
                     : 'bg-white/90 text-neutral-700 hover:bg-white dark:bg-neutral-800/90 dark:text-neutral-200 dark:hover:bg-neutral-700'
                 }`}
-                title={isHidden ? 'Hidden from guests' : 'Visible to guests'}
+                title={isHidden ? tAudit('ui.hiddenFromGuests') : tAudit('ui.visibleToGuests')}
               >
                 {isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>

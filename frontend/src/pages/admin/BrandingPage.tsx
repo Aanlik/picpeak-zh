@@ -16,6 +16,7 @@ import { usePublicSettings } from '../../hooks/usePublicSettings';
 import { useMutationWithToast } from '../../hooks';
 
 export const BrandingPage: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   // Used to gate the PDF typography card — when no PDF-producing
@@ -89,7 +90,7 @@ export const BrandingPage: React.FC = () => {
 
   // Update branding mutation
   const queryClient = useQueryClient();
-  
+
   const brandingMutation = useMutationWithToast({
     mutationFn: settingsService.updateBranding,
     successMessage: t('toast.brandingUpdated'),
@@ -625,9 +626,9 @@ export const BrandingPage: React.FC = () => {
               <div className="space-y-2">
                 {brandingSettings.favicon_url && (
                   <div className="flex items-center gap-2">
-                    <img 
-                      src={brandingSettings.favicon_url.startsWith('http') ? brandingSettings.favicon_url : buildResourceUrl(brandingSettings.favicon_url)} 
-                      alt="Current favicon" 
+                    <img
+                      src={brandingSettings.favicon_url.startsWith('http') ? brandingSettings.favicon_url : buildResourceUrl(brandingSettings.favicon_url)}
+                      alt={tAudit("ui.currentFavicon")}
                       className="w-8 h-8"
                     />
                     <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('branding.currentFavicon')}</span>
@@ -675,9 +676,9 @@ export const BrandingPage: React.FC = () => {
                 <div className="flex items-center gap-4">
                   {brandingSettings.logo_url && (
                     <div className="relative">
-                      <img 
-                        src={brandingSettings.logo_url.startsWith('http') ? brandingSettings.logo_url : buildResourceUrl(brandingSettings.logo_url)} 
-                        alt="Logo"
+                      <img
+                        src={brandingSettings.logo_url.startsWith('http') ? brandingSettings.logo_url : buildResourceUrl(brandingSettings.logo_url)}
+                        alt={tAudit("ui.logo")}
                         className="h-16 object-contain bg-neutral-100 dark:bg-neutral-700 rounded p-2"
                       />
                       <button
@@ -721,7 +722,7 @@ export const BrandingPage: React.FC = () => {
                     <div className="relative">
                       <img
                         src={logoDarkUrl.startsWith('http') ? logoDarkUrl : buildResourceUrl(logoDarkUrl)}
-                        alt="Dark logo"
+                        alt={tAudit("ui.darkLogo")}
                         className="h-16 object-contain bg-neutral-800 rounded p-2"
                       />
                       <button
@@ -984,9 +985,9 @@ export const BrandingPage: React.FC = () => {
                 <div className="space-y-2">
                   {brandingSettings.watermark_logo_url && (
                     <div className="flex items-center gap-2">
-                      <img 
-                        src={brandingSettings.watermark_logo_url.startsWith('http') ? brandingSettings.watermark_logo_url : buildResourceUrl(brandingSettings.watermark_logo_url)} 
-                        alt="Current watermark" 
+                      <img
+                        src={brandingSettings.watermark_logo_url.startsWith('http') ? brandingSettings.watermark_logo_url : buildResourceUrl(brandingSettings.watermark_logo_url)}
+                        alt={tAudit("ui.currentWatermark")}
                         className="h-16 w-auto object-contain bg-neutral-100 dark:bg-neutral-700 p-2 rounded"
                       />
                       <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('branding.currentWatermark')}</span>

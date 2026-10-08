@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { usePhotoSelection } from '../../../hooks/usePhotoSelection';
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Download, Maximize2, Play, Pause, Heart, MessageSquare } from 'lucide-react';
@@ -19,6 +20,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
   feedbackEnabled = false,
   feedbackOptions
 }) => {
+  const { t: tAudit } = useTranslation();
   const { theme } = useTheme();
   const { currentPhoto, currentIndex, setCurrentIndex } = usePhotoSelection(photos);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -106,7 +108,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
           <button
             onClick={goToPrevious}
             className="p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
-            aria-label="Previous photo"
+            aria-label={tAudit("ui.previousPhoto")}
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
@@ -114,7 +116,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
           <button
             onClick={goToNext}
             className="p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
-            aria-label="Next photo"
+            aria-label={tAudit("ui.nextPhoto")}
           >
             <ChevronRight className="w-6 h-6" />
           </button>
@@ -139,7 +141,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
               size="sm"
               onClick={togglePlayPause}
               className="text-white hover:bg-white/20"
-              title={isPlaying ? 'Pause slideshow' : 'Play slideshow'}
+              title={isPlaying ? tAudit('ui.pauseSlideshow') : tAudit('ui.playSlideshow')}
             >
               {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
             </Button>
@@ -149,7 +151,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
               size="sm"
               onClick={() => onPhotoClick(currentIndex)}
               className="text-white hover:bg-white/20"
-              title="View fullscreen"
+              title={tAudit("ui.viewFullscreen")}
             >
               <Maximize2 className="w-5 h-5" />
             </Button>
@@ -160,7 +162,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                 size="sm"
                 onClick={(e) => onDownload(currentPhoto, e)}
                 className="text-white hover:bg-white/20"
-                title="Download photo"
+                title={tAudit("ui.downloadPhoto")}
               >
                 <Download className="w-5 h-5" />
               </Button>
@@ -211,7 +213,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                   } catch (_) {}
                 }}
                 className={`bg-black/30 hover:bg-black/50 rounded-full border border-white/40 ${likedIds.has(currentPhoto.id) ? 'text-red-400' : 'text-white'}`}
-                title="Like photo"
+                title={tAudit("ui.likePhoto")}
                 aria-pressed={likedIds.has(currentPhoto.id)}
               >
                 <Heart className="w-5 h-5" />
@@ -223,8 +225,8 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                 size="sm"
                 onClick={() => { onOpenPhotoWithFeedback?.(currentIndex); }}
                 className="text-white bg-black/30 hover:bg-black/50 rounded-full border border-white/40"
-                title="Comment"
-                aria-label="Comment on photo"
+                title={tAudit("ui.comment")}
+                aria-label={tAudit("ui.commentOnPhoto")}
               >
                 <MessageSquare className="w-5 h-5" />
               </Button>

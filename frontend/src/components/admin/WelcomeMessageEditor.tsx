@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { NO_EMAIL_MODE } from '../../config/communication';
 import React from 'react';
 import { HelpCircle } from 'lucide-react';
@@ -16,6 +17,7 @@ export const WelcomeMessageEditor: React.FC<WelcomeMessageEditorProps> = ({
   placeholder,
   rows = 6
 }) => {
+  const { t: tAudit } = useTranslation();
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value);
   };
@@ -46,7 +48,7 @@ export const WelcomeMessageEditor: React.FC<WelcomeMessageEditorProps> = ({
           rows={rows}
           className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-accent-dark transition-colors resize-none font-mono text-sm"
         />
-        <div className="absolute top-2 right-2 text-neutral-400" title="Line breaks will be preserved in emails">
+        <div className="absolute top-2 right-2 text-neutral-400" title={tAudit("ui.preserveLineBreaks")}>
           <HelpCircle className="w-4 h-4" aria-hidden="true" />
         </div>
       </div>
@@ -57,7 +59,7 @@ export const WelcomeMessageEditor: React.FC<WelcomeMessageEditorProps> = ({
 
       {value && (
         <div className="mt-4">
-          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">Preview:</p>
+          <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">{tAudit("ui.preview")}</p>
           <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
             <div
               className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap"

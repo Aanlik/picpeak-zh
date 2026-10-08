@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import clsx from 'clsx';
 import { CornerDownRight, Lock, AlertTriangle } from 'lucide-react';
@@ -37,7 +38,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   lockedReason,
   warning,
   children,
-}) => (
+}) => { const { t: tAudit } = useTranslation(); return ((
   <li
     className={clsx(
       'rounded-xl border bg-white dark:bg-neutral-900 shadow-soft transition-colors',
@@ -76,7 +77,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             <span className="italic">{sidebarHiddenLabel}</span>
           ) : sidebarLabel ? (
             <>
-              <span>Sidebar:</span>
+              <span>{tAudit("ui.sidebar")}</span>
               <span className="font-medium text-neutral-700 dark:text-neutral-300">{sidebarLabel}</span>
             </>
           ) : null}
@@ -114,4 +115,4 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
       />
     </div>
   </li>
-);
+)); };

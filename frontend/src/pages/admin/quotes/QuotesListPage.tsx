@@ -24,6 +24,7 @@ const SORT_COLUMNS: SortColumnMap = {
 };
 
 export const QuotesListPage: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { format: fmtDate } = useLocalizedDate();
@@ -58,7 +59,7 @@ export const QuotesListPage: React.FC = () => {
                 still evolving (matches Customers + Invoices). */}
             <span
               className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-              title="Beta — feature is functional but still evolving"
+              title={tAudit("ui.betaHint")}
             >
               {t('navigation.betaTag', 'Beta')}
             </span>

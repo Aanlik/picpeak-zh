@@ -26,6 +26,7 @@ const NEW_WORKFLOW: WorkflowSavePayload = {
 };
 
 export const WorkflowsListPage: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -187,7 +188,7 @@ export const WorkflowsListPage: React.FC = () => {
                       <span className="text-neutral-400 w-6 shrink-0">{i + 1}.</span>
                       <span className="font-mono text-neutral-700 dark:text-neutral-300">{s.node_type}:{s.node_key}</span>
                       <span className="text-neutral-500 dark:text-neutral-400">{s.status}</span>
-                      {s.result && (s.result as any).would ? <span className="text-purple-600 dark:text-purple-400">→ would {String((s.result as any).would)}</span> : null}
+                      {s.result && (s.result as any).would ? <span className="text-purple-600 dark:text-purple-400">{tAudit("ui.would")}{String((s.result as any).would)}</span> : null}
                       {s.error ? <span className="text-red-600 dark:text-red-400">{s.error}</span> : null}
                     </li>
                   ))}

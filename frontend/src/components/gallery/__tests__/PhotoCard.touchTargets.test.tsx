@@ -111,7 +111,7 @@ function renderCard(props: Partial<React.ComponentProps<typeof PhotoCard>> = {})
 
 /** The overlay is the element the action buttons live in. */
 function overlayOf(container: HTMLElement) {
-  const button = container.querySelector('[aria-label="View full size"]');
+  const button = container.querySelector('[aria-label="ui.viewFullSize"]');
   return button?.parentElement as HTMLElement;
 }
 

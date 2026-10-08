@@ -16,6 +16,7 @@ import { useLocalizedDate } from '../../hooks/useLocalizedDate';
 import { useMutationWithToast } from '../../hooks';
 
 export const CMSPage: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const { formatDateTime: fmtDateTime, formatTime: fmtTime } = useLocalizedDate();
   const queryClient = useQueryClient();
@@ -492,7 +493,7 @@ export const CMSPage: React.FC = () => {
                 {publicSiteEnabled ? (
                   <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm bg-white dark:bg-neutral-800">
                     <iframe
-                      title="public-site-preview"
+                      title={tAudit("ui.publicSitePreview")}
                       sandbox="allow-same-origin"
                       className="w-full h-[480px] bg-white"
                       srcDoc={publicSitePreview}
@@ -581,19 +582,17 @@ export const CMSPage: React.FC = () => {
                 {isAutoSaving && (
                   <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                    Auto-saving...
-                  </div>
+                    {tAudit("ui.autoSaving")}</div>
                 )}
                 {!isAutoSaving && hasUnsavedChanges && (
                   <div className="flex items-center gap-2 text-yellow-600">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-                    Unsaved changes
-                  </div>
+                    {tAudit("ui.unsavedChanges")}</div>
                 )}
                 {!hasUnsavedChanges && lastSaved && (
                   <div className="flex items-center gap-2 text-green-600">
                     <Clock className="w-4 h-4" />
-                    Saved {fmtTime(new Date(lastSaved))}
+                    {tAudit("ui.saved")}{fmtTime(new Date(lastSaved))}
                   </div>
                 )}
               </div>
@@ -729,7 +728,7 @@ export const CMSPage: React.FC = () => {
                   {editForm.logo_url ? (
                     <img
                       src={buildResourceUrl(editForm.logo_url)}
-                      alt="Page logo"
+                      alt={tAudit("ui.pageLogo")}
                       className="h-16 w-auto object-contain bg-neutral-50 dark:bg-neutral-700 rounded border border-neutral-200 dark:border-neutral-600 px-3 py-1"
                     />
                   ) : (

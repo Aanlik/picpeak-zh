@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Download, Maximize2, Check, MessageSquare, Heart } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
@@ -116,6 +117,7 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
   afterOverlay,
   children,
 }) => {
+  const { t: tAudit } = useTranslation();
   const guestIdentity = useGuestIdentityOptional();
   const [overlayVisible, setOverlayVisible] = useState(false);
   // #1275 — the input in use right now, not what the device is capable of.
@@ -342,8 +344,8 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
           onQuickComment();
           hideOverlay();
         }}
-        aria-label="Comment on photo"
-        title="Comment"
+        aria-label={tAudit("ui.commentOnPhoto")}
+        title={tAudit("ui.comment")}
       >
         <MessageSquare className={actionIconClass} />
       </button>
@@ -356,9 +358,9 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
           liked ? 'bg-red-500/90 hover:bg-red-500' : 'bg-white/90 hover:bg-white'
         }`}
         onClick={handleLike}
-        aria-label={likeToggleLabels && liked ? 'Unlike photo' : 'Like photo'}
+        aria-label={likeToggleLabels && liked ? tAudit('feedback.unlike') : tAudit('feedback.like')}
         aria-pressed={liked}
-        title={likeToggleLabels ? (liked ? 'Unlike' : 'Like') : 'Like'}
+        title={likeToggleLabels && liked ? tAudit('feedback.unlike') : tAudit('feedback.like')}
       >
         <Heart className={`w-5 h-5 ${liked ? 'text-white fill-white' : 'text-neutral-800'}`} />
       </button>
@@ -413,7 +415,7 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
                     onClick(e);
                     hideOverlay();
                   }}
-                  aria-label="View full size"
+                  aria-label={tAudit("ui.viewFullSize")}
                 >
                   <Maximize2 className={actionIconClass} />
                 </button>
@@ -426,7 +428,7 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
                       onDownload(e);
                       hideOverlay();
                     }}
-                    aria-label="Download photo"
+                    aria-label={tAudit("ui.downloadPhoto")}
                   >
                     <Download className={actionIconClass} />
                   </button>

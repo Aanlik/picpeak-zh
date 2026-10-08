@@ -22,6 +22,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
   setRateLimitSettings,
   saveSecurityMutation,
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const setRateLimit = <K extends keyof RateLimitSettings>(key: K, value: RateLimitSettings[K]) =>
     setRateLimitSettings((prev) => ({ ...prev, [key]: value }));
@@ -293,7 +294,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
               <div className="text-sm text-blue-800 dark:text-blue-200">
-                <p>{t('settings.security.recaptchaHelp')} <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener noreferrer" className="underline">Google reCAPTCHA Admin</a></p>
+                <p>{t('settings.security.recaptchaHelp')} <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener noreferrer" className="underline">{tAudit("ui.recaptchaAdmin")}</a></p>
               </div>
             </div>
           </div>

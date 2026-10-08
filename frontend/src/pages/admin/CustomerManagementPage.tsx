@@ -35,6 +35,7 @@ import {
 type TabType = 'customers' | 'invitations';
 
 export const CustomerManagementPage: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   // formatDate respects the admin-configured `general_date_format`
@@ -165,7 +166,7 @@ export const CustomerManagementPage: React.FC = () => {
                 still evolving. Keeps expectations honest. */}
             <span
               className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-              title="Beta — feature is functional but still evolving"
+              title={tAudit("ui.betaHint")}
             >
               {t('navigation.betaTag', 'Beta')}
             </span>

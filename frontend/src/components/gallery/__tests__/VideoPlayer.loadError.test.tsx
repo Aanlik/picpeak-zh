@@ -38,7 +38,7 @@ describe('VideoPlayer load errors (#1370)', () => {
     const { container } = render(<VideoPlayer src="/api/gallery/e/photo/1" />);
     expect(container.querySelector('video')).toBeInTheDocument();
     // Two: the transport button and the centre overlay.
-    expect(screen.getAllByLabelText('Play')).toHaveLength(2);
+    expect(screen.getAllByLabelText('ui.play')).toHaveLength(2);
     expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument();
   });
 
@@ -65,7 +65,7 @@ describe('VideoPlayer load errors (#1370)', () => {
     expect(screen.queryByText('0:00 / 0:00')).not.toBeInTheDocument();
     // Including the centre overlay, which was the dead play button in the
     // screenshots on the issue.
-    expect(screen.queryAllByLabelText('Play')).toHaveLength(0);
+    expect(screen.queryAllByLabelText('ui.play')).toHaveLength(0);
   });
 
   it('clears the error when the lightbox arrows to the next video', () => {

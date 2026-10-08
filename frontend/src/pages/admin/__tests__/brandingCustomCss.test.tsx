@@ -82,7 +82,7 @@ describe('BrandingPage custom CSS persistence (#645)', () => {
     );
 
     const textarea = (await screen.findByPlaceholderText(
-      '/* Add custom CSS here */'
+      'ui.cssPlaceholder'
     )) as HTMLTextAreaElement;
 
     await waitFor(() => expect(textarea.value).toBe(CSS));

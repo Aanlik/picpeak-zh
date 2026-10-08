@@ -60,6 +60,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({
   overrideDirty,
   setOverrideDirty,
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const { formatDateTime: fmtDateTime } = useLocalizedDate();
   const { storageInfo, systemStatus } = useStatusTab(isActive);
@@ -507,7 +508,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({
               </div>
               <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4">
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('settings.systemStatus.uptime')}</p>
-                <p className="font-semibold text-neutral-900 dark:text-neutral-100">{Math.floor(systemStatus.system.uptime / 3600)}h {Math.floor((systemStatus.system.uptime % 3600) / 60)}m</p>
+                <p className="font-semibold text-neutral-900 dark:text-neutral-100">{Math.floor(systemStatus.system.uptime / 3600)}{tAudit("ui.hoursShort")}{Math.floor((systemStatus.system.uptime % 3600) / 60)}{tAudit("ui.minutesShort")}</p>
               </div>
               <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4">
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('settings.systemStatus.cpuCores')}</p>
@@ -641,7 +642,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({
                 <div className="mt-3 p-3 bg-orange-50 dark:bg-orange-900/30 rounded-md">
                   <p className="text-xs text-orange-800 dark:text-orange-200">
                     <span className="font-semibold">Warning: {systemStatus.emailQueue.stuck} email(s) stuck:</span> These emails have exceeded retry limits and won&apos;t be processed automatically.
-                    Only {systemStatus.emailQueue.processable} of {systemStatus.emailQueue.pending} pending emails will be processed.
+                    Only {systemStatus.emailQueue.processable} {tAudit("ui.of")}{systemStatus.emailQueue.pending} pending emails will be processed.
                   </p>
                 </div>
               )}

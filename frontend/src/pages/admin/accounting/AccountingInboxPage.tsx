@@ -48,6 +48,7 @@ const selectCls = 'w-full rounded-md border border-neutral-300 dark:border-neutr
  * the slip — #1.
  */
 const DocumentPreview: React.FC<{ doc: InboundDocument; maxHeight?: string; initialPage?: 'first' | 'last' }> = ({ doc, maxHeight = '60vh', initialPage = 'first' }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const isPdf = (doc.mimeType || '').includes('pdf');
   const pageCount = doc.pageCount || 1;
@@ -68,7 +69,7 @@ const DocumentPreview: React.FC<{ doc: InboundDocument; maxHeight?: string; init
     <div>
       <div className="overflow-auto rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800" style={{ maxHeight }}>
         {previewError ? <div className="flex items-center justify-center px-3 py-16 text-center text-sm text-neutral-500">{t('accounting.inbox.previewError', 'Preview unavailable — enter the fields manually.')}</div>
-          : imgUrl ? <img src={imgUrl} alt="document page" className="w-full h-auto" />
+          : imgUrl ? <img src={imgUrl} alt={tAudit("ui.documentPage")} className="w-full h-auto" />
             : <div className="flex items-center justify-center px-3 py-16 text-sm text-neutral-500">{t('accounting.inbox.previewLoading', 'Loading preview…')}</div>}
       </div>
       {/* Always show the pager for PDFs (disabled at the ends) so the control

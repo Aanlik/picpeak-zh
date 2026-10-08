@@ -71,6 +71,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
   allowLikes = false,
   index
 }) => {
+  const { t: tAudit } = useTranslation();
   // The height MasonryPhotoAlbum computed from photos.width/height is used,
   // not discarded (#1130). Letting the tile size itself from the image meant
   // the rendered shape came from whatever rendition happened to be served —
@@ -160,17 +161,17 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
       {feedbackEnabled && (likeCount > 0 || averageRating > 0 || commentCount > 0 || isLiked) && (
         <div className="gallery-premium-feedback">
           {(likeCount > 0 || isLiked) && (
-            <span className="gallery-premium-feedback-indicator" title="Liked">
+            <span className="gallery-premium-feedback-indicator" title={tAudit("ui.liked")}>
               <Heart className="w-3.5 h-3.5 text-red-500" fill="currentColor" />
             </span>
           )}
           {averageRating > 0 && (
-            <span className="gallery-premium-feedback-indicator" title="Rated">
+            <span className="gallery-premium-feedback-indicator" title={tAudit("ui.rated")}>
               <Star className="w-3.5 h-3.5 text-yellow-500" fill="currentColor" />
             </span>
           )}
           {commentCount > 0 && (
-            <span className="gallery-premium-feedback-indicator" title="Commented">
+            <span className="gallery-premium-feedback-indicator" title={tAudit("ui.commented")}>
               <MessageSquare className="w-3.5 h-3.5 text-blue-500" fill="currentColor" />
             </span>
           )}

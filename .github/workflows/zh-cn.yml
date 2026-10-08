@@ -24,6 +24,8 @@ jobs:
       # Upstream's legacy-peer-deps install omits this testing-library peer.
       - run: npm install --no-save --package-lock=false --legacy-peer-deps @testing-library/dom@10.4.1
         working-directory: frontend
+      - run: node scripts/check-locale-usage.mjs
+      - run: node --test scripts/check-zh-cn.test.mjs
       - run: npm run build:check
         working-directory: frontend
         env:

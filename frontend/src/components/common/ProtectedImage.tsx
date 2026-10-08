@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ProtectionLevel } from '../../hooks/useImageProtection';
 
@@ -29,6 +30,7 @@ export const ProtectedImage: React.FC<ProtectedImageProps> = ({
   crossOrigin = 'anonymous',
   ...canvasProps
 }) => {
+  const { t: tAudit } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -324,7 +326,7 @@ export const ProtectedImage: React.FC<ProtectedImageProps> = ({
         role="img"
         aria-label={`Error loading ${alt}`}
       >
-        <span>Image unavailable</span>
+        <span>{tAudit("ui.imageUnavailable")}</span>
       </div>
     );
   }

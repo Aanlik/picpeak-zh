@@ -76,6 +76,7 @@ const JustifiedPhoto: React.FC<JustifiedPhotoProps> = ({
   liked = false,
   onLikeSuccess,
 }) => {
+  const { t: tAudit } = useTranslation();
   const animationClass =
     animationType === 'scale'
       ? 'transition-transform duration-300 hover:scale-[1.02]'
@@ -154,7 +155,7 @@ const JustifiedPhoto: React.FC<JustifiedPhotoProps> = ({
           {(likeCount > 0 || liked) && (
             <span
               className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm"
-              title="Liked"
+              title={tAudit("ui.liked")}
             >
               <Heart className="w-3.5 h-3.5 text-red-500" fill="currentColor" />
             </span>
@@ -162,7 +163,7 @@ const JustifiedPhoto: React.FC<JustifiedPhotoProps> = ({
           {averageRating > 0 && (
             <span
               className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm"
-              title="Rated"
+              title={tAudit("ui.rated")}
             >
               <Star className="w-3.5 h-3.5 text-yellow-500" fill="currentColor" />
             </span>
@@ -170,7 +171,7 @@ const JustifiedPhoto: React.FC<JustifiedPhotoProps> = ({
           {commentCount > 0 && (
             <span
               className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm"
-              title="Commented"
+              title={tAudit("ui.commented")}
             >
               <MessageSquare className="w-3.5 h-3.5 text-accent" fill="currentColor" />
             </span>
@@ -183,15 +184,14 @@ const JustifiedPhoto: React.FC<JustifiedPhotoProps> = ({
         <div className="absolute bottom-2 right-2">
           <span className="px-2 py-1 bg-black/60 text-white text-xs rounded flex items-center gap-1">
             <Video className="w-3 h-3" />
-            Video
-          </span>
+            {tAudit("ui.video")}</span>
         </div>
       )}
 
       {/* Collage Badge */}
       {photo.type === 'collage' && (
         <div className="absolute bottom-2 right-2">
-          <span className="px-2 py-1 bg-black/60 text-white text-xs rounded">Collage</span>
+          <span className="px-2 py-1 bg-black/60 text-white text-xs rounded">{tAudit("ui.collage")}</span>
         </div>
       )}
     </PhotoCard>
@@ -222,6 +222,7 @@ export const JustifiedGalleryLayout: React.FC<JustifiedGalleryLayoutProps> = ({
   heroLogoSize = 'medium',
   heroLogoPosition = 'top',
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const { format } = useLocalizedDate();
   const { theme } = useTheme();
@@ -408,7 +409,7 @@ export const JustifiedGalleryLayout: React.FC<JustifiedGalleryLayoutProps> = ({
                   <div className="mb-6">
                     <img
                       src={buildResourceUrl(eventLogo)}
-                      alt="Event logo"
+                      alt={tAudit("ui.eventLogo")}
                       className={`${getLogoSizeClasses(heroLogoSize)} mx-auto`}
                       style={{
                         filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5))'
@@ -429,7 +430,7 @@ export const JustifiedGalleryLayout: React.FC<JustifiedGalleryLayoutProps> = ({
                   <div className="my-6">
                     <img
                       src={buildResourceUrl(eventLogo)}
-                      alt="Event logo"
+                      alt={tAudit("ui.eventLogo")}
                       className={`${getLogoSizeClasses(heroLogoSize)} mx-auto`}
                       style={{
                         filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5))'
@@ -461,7 +462,7 @@ export const JustifiedGalleryLayout: React.FC<JustifiedGalleryLayoutProps> = ({
                   <div className="mt-6">
                     <img
                       src={buildResourceUrl(eventLogo)}
-                      alt="Event logo"
+                      alt={tAudit("ui.eventLogo")}
                       className={`${getLogoSizeClasses(heroLogoSize)} mx-auto`}
                       style={{
                         filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5))'
@@ -483,7 +484,7 @@ export const JustifiedGalleryLayout: React.FC<JustifiedGalleryLayoutProps> = ({
                 }
               }}
               className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce cursor-pointer hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 rounded-full p-2"
-              aria-label="Scroll to gallery"
+              aria-label={tAudit("ui.scrollToGallery")}
             >
               <ChevronDown className="w-8 h-8 text-white drop-shadow-lg" />
             </button>

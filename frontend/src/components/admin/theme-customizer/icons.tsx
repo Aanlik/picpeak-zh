@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+function NoDividerLabel() { const { t } = useTranslation(); return <>{t('branding.dividerOptions.none')}</>; }
 import React from 'react';
 import { Layout, LayoutTemplate, Grid3X3, Layers, Play, Clock, Image, LayoutGrid, Minimize2, EyeOff, Columns, Film } from 'lucide-react';
 import { GalleryLayoutType, HeaderStyleType, HeroDividerStyle } from '../../../types/theme.types';
@@ -44,7 +46,7 @@ export const dividerStylePreviews: Record<HeroDividerStyle, React.ReactNode> = {
   none: (
     <svg className="w-full h-6" viewBox="0 0 100 24" preserveAspectRatio="none">
       <rect x="0" y="0" width="100" height="24" fill="currentColor" className="text-neutral-100" />
-      <text x="50" y="16" textAnchor="middle" fontSize="10" fill="currentColor" className="text-neutral-400">No divider</text>
+      <text x="50" y="16" textAnchor="middle" fontSize="10" fill="currentColor" className="text-neutral-400"><NoDividerLabel /></text>
     </svg>
   )
 };

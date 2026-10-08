@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { clsx } from 'clsx';
 import { Loader2 } from 'lucide-react';
@@ -26,6 +27,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
+  const { t: tAudit } = useTranslation();
     const baseStyles = 'btn';
     
     const variants = {
@@ -56,7 +58,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         aria-disabled={disabled || isLoading}
       >
         {isLoading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-label="Loading" />
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-label={tAudit("ui.loadingLabel")} />
         ) : (
           leftIcon && <span className="mr-2" aria-hidden="true">{leftIcon}</span>
         )}

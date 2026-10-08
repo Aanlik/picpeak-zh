@@ -63,6 +63,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
   people,
   onSelectPerson,
 }) => {
+  const { t: tAudit } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
@@ -864,7 +865,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
       <button
         onClick={onClose}
         className="absolute p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-30"
-        aria-label="Close"
+        aria-label={tAudit("ui.close")}
         style={{
           top: 'max(1rem, env(safe-area-inset-top))',
           right: isDesktopFeedback ? `${desktopFeedbackWidth + 16}px` : 'max(1rem, env(safe-area-inset-right))'
@@ -877,7 +878,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
       <button
         onClick={goToPrevious}
         className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-20"
-        aria-label="Previous photo"
+        aria-label={tAudit("ui.previousPhoto")}
       >
         <ChevronLeft className="w-6 h-6 text-white" />
       </button>
@@ -886,7 +887,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
         <button
           onClick={goToNext}
           className="absolute top-1/2 -translate-y-1/2 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-30"
-          aria-label="Next photo"
+          aria-label={tAudit("ui.nextPhoto")}
           style={{ right: isDesktopFeedback ? `${desktopFeedbackWidth + 16}px` : '1rem' }}
         >
           <ChevronRight className="w-6 h-6 text-white" />
@@ -963,7 +964,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
               onClick={handleZoomOut}
               disabled={zoom <= 1}
               className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Zoom out"
+              aria-label={tAudit("ui.zoomOut")}
             >
               <ZoomOut className="w-5 h-5 text-white" />
             </button>
@@ -974,7 +975,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
               onClick={handleZoomIn}
               disabled={zoom >= 3}
               className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Zoom in"
+              aria-label={tAudit("ui.zoomIn")}
             >
               <ZoomIn className="w-5 h-5 text-white" />
             </button>
@@ -984,8 +985,8 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
               onClick={resetZoom}
               disabled={zoom <= 1}
               className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Fit to screen"
-              title="Fit to screen"
+              aria-label={tAudit("ui.fitToScreen")}
+              title={tAudit("ui.fitToScreen")}
             >
               <Minimize2 className="w-5 h-5 text-white" />
             </button>
@@ -996,7 +997,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
               <button
                 onClick={handleDownload}
                 className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-                aria-label="Download photo"
+                aria-label={tAudit("ui.downloadPhoto")}
               >
                 <Download className="w-5 h-5 text-white" />
               </button>
@@ -1008,8 +1009,8 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                 <button
                   onClick={submitLike}
                   className={`p-2 rounded-full transition-colors ${myLiked ? 'bg-red-500/80 hover:bg-red-500' : 'bg-white/10 hover:bg-white/20'}`}
-                  aria-label={myLiked ? 'Unlike photo' : 'Like photo'}
-                  title={myLiked ? 'Unlike' : 'Like'}
+                  aria-label={myLiked ? t('feedback.unlike') : t('feedback.like')}
+                  title={myLiked ? t('feedback.unlike') : t('feedback.like')}
                 >
                   {/* fill-current on the liked state so the heart is
                       actually visible against the red background — both
@@ -1029,7 +1030,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
 
             {/* Inline Rating */}
             {feedbackEnabled && feedbackSettings?.allow_ratings && (
-              <div className="flex items-center gap-1 ml-1" aria-label="Rate photo">
+              <div className="flex items-center gap-1 ml-1" aria-label={tAudit("ui.ratePhoto")}>
                 {[1,2,3,4,5].map((i) => (
                   <button
                     key={i}
@@ -1037,8 +1038,8 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                     // 0 tells the backend to delete the guest's rating.
                     onClick={() => submitRating(i === myRating ? 0 : i)}
                     className="p-1"
-                    aria-label={i === myRating ? 'Remove rating' : `Rate ${i} star${i>1?'s':''}`}
-                    title={i === myRating ? 'Remove rating' : `Rate ${i}`}
+                    aria-label={i === myRating ? tAudit('ui.removeRating') : t('feedback.rateStar', { count: i })}
+                    title={i === myRating ? tAudit('ui.removeRating') : t('feedback.rateStar', { count: i })}
                   >
                     <Star className={`w-5 h-5 ${myRating >= i ? 'text-yellow-400 fill-yellow-400' : 'text-white/70'}`} />
                   </button>
@@ -1082,8 +1083,8 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                   setShowFeedback(!showFeedback);
                 }}
                 className="relative p-2 bg-black/40 hover:bg-black/60 rounded-full border border-white/40 transition-colors"
-                aria-label="Toggle feedback"
-                title={`Photo feedback${(currentPhoto.comment_count ?? 0) > 0 ? ` (${currentPhoto.comment_count ?? 0} comments)` : ''}`}
+                aria-label={tAudit("ui.toggleFeedback")}
+                title={tAudit('ui.feedbackButton')}
               >
                 <MessageSquare className="w-5 h-5 text-white" />
                 {((currentPhoto.comment_count ?? 0) > 0 || (currentPhoto.average_rating ?? 0) > 0) && (
@@ -1279,7 +1280,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
             <button
               onClick={() => setShowFeedback(false)}
               className="p-1 hover:bg-black/10 rounded transition-colors"
-              aria-label="Close feedback"
+              aria-label={tAudit("ui.closeFeedback")}
             >
               <X className="w-5 h-5" />
             </button>

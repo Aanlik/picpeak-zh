@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { MessageSquare, Star, Heart } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -83,6 +84,7 @@ const MasonryPhoto: React.FC<MasonryPhotoProps> = ({
   liked = false,
   onLikeSuccess,
 }) => {
+  const { t: tAudit } = useTranslation();
   // Calculate height based on actual photo aspect ratio
   // This preserves the photo's natural proportions in the masonry layout
   const imageHeight = useMemo(() => {
@@ -137,8 +139,7 @@ const MasonryPhoto: React.FC<MasonryPhotoProps> = ({
       {photo.type === 'collage' && (
         <div className="absolute bottom-2 left-2">
           <span className="px-2 py-1 bg-black/60 text-white text-xs rounded">
-            Collage
-          </span>
+            {tAudit("ui.collage")}</span>
         </div>
       )}
     </PhotoCard>
@@ -158,6 +159,7 @@ export const MasonryGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
   feedbackEnabled = false,
   feedbackOptions
 }) => {
+  const { t: tAudit } = useTranslation();
   const { theme } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(3);
@@ -440,7 +442,7 @@ export const MasonryGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
             >
               {photo.type === 'collage' && (
                 <div className="absolute bottom-2 left-2">
-                  <span className="px-2 py-1 bg-black/60 text-white text-xs rounded">Collage</span>
+                  <span className="px-2 py-1 bg-black/60 text-white text-xs rounded">{tAudit("ui.collage")}</span>
                 </div>
               )}
             </PhotoCard>
@@ -506,7 +508,7 @@ export const MasonryGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
             >
               {photo.type === 'collage' && (
                 <div className="absolute bottom-2 left-2">
-                  <span className="px-2 py-1 bg-black/60 text-white text-xs rounded">Collage</span>
+                  <span className="px-2 py-1 bg-black/60 text-white text-xs rounded">{tAudit("ui.collage")}</span>
                 </div>
               )}
             </PhotoCard>

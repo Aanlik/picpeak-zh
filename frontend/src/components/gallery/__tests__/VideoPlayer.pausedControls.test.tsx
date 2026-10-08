@@ -34,7 +34,7 @@ describe('VideoPlayer paused-state controls', () => {
   it('lets clicks through the paused overlay to the control bar', () => {
     render(<VideoPlayer src="/api/gallery/e/photo/1" />);
 
-    const [transportPlay, centrePlay] = screen.getAllByLabelText('Play');
+    const [transportPlay, centrePlay] = screen.getAllByLabelText('ui.play');
     const overlay = centrePlay.parentElement!;
 
     expect(overlay.className).toContain('pointer-events-none');
@@ -49,8 +49,8 @@ describe('VideoPlayer paused-state controls', () => {
     const request = vi.fn().mockResolvedValue(undefined);
     root.requestFullscreen = request;
 
-    fireEvent.click(screen.getByLabelText('Fullscreen'));
-    await vi.waitFor(() => expect(screen.getByLabelText('Exit fullscreen')).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText('ui.fullscreen'));
+    await vi.waitFor(() => expect(screen.getByLabelText('ui.exitFullscreen')).toBeInTheDocument());
     expect(request).toHaveBeenCalledTimes(1);
   });
 
@@ -65,10 +65,10 @@ describe('VideoPlayer paused-state controls', () => {
     const enter = vi.fn();
     video.webkitEnterFullscreen = enter;
 
-    fireEvent.click(screen.getByLabelText('Fullscreen'));
+    fireEvent.click(screen.getByLabelText('ui.fullscreen'));
     await vi.waitFor(() => expect(enter).toHaveBeenCalledTimes(1));
     // The native player owns the state until it fires webkitendfullscreen.
-    expect(screen.getByLabelText('Fullscreen')).toBeInTheDocument();
+    expect(screen.getByLabelText('ui.fullscreen')).toBeInTheDocument();
   });
 
   it('drops the fullscreen state when the user exits with Esc', async () => {
@@ -76,12 +76,12 @@ describe('VideoPlayer paused-state controls', () => {
     const root = container.firstElementChild as FullscreenTarget;
     root.requestFullscreen = vi.fn().mockResolvedValue(undefined);
 
-    fireEvent.click(screen.getByLabelText('Fullscreen'));
-    await vi.waitFor(() => expect(screen.getByLabelText('Exit fullscreen')).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText('ui.fullscreen'));
+    await vi.waitFor(() => expect(screen.getByLabelText('ui.exitFullscreen')).toBeInTheDocument());
 
     // jsdom never sets fullscreenElement; Esc leaves it null, as it would be.
     fireEvent(document, new Event('fullscreenchange'));
-    expect(screen.getByLabelText('Fullscreen')).toBeInTheDocument();
+    expect(screen.getByLabelText('ui.fullscreen')).toBeInTheDocument();
   });
 
   it('syncs an Esc exit on browsers that only fire the prefixed event', async () => {
@@ -90,11 +90,11 @@ describe('VideoPlayer paused-state controls', () => {
     root.requestFullscreen = undefined;
     root.webkitRequestFullscreen = vi.fn().mockResolvedValue(undefined);
 
-    fireEvent.click(screen.getByLabelText('Fullscreen'));
-    await vi.waitFor(() => expect(screen.getByLabelText('Exit fullscreen')).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText('ui.fullscreen'));
+    await vi.waitFor(() => expect(screen.getByLabelText('ui.exitFullscreen')).toBeInTheDocument());
 
     fireEvent(document, new Event('webkitfullscreenchange'));
-    expect(screen.getByLabelText('Fullscreen')).toBeInTheDocument();
+    expect(screen.getByLabelText('ui.fullscreen')).toBeInTheDocument();
   });
 
   it('ignores another element entering fullscreen', async () => {
@@ -103,7 +103,7 @@ describe('VideoPlayer paused-state controls', () => {
     Object.defineProperty(document, 'fullscreenElement', { value: other, configurable: true });
     try {
       fireEvent(document, new Event('fullscreenchange'));
-      expect(screen.getByLabelText('Fullscreen')).toBeInTheDocument();
+      expect(screen.getByLabelText('ui.fullscreen')).toBeInTheDocument();
       expect(container.querySelector('video')).toBeInTheDocument();
     } finally {
       Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true });
@@ -124,9 +124,9 @@ describe('VideoPlayer paused-state controls', () => {
         vi.advanceTimersByTime(3500);
       });
 
-      const bar = screen.getByLabelText('Fullscreen').closest('div.absolute')!;
+      const bar = screen.getByLabelText('ui.fullscreen').closest('div.absolute')!;
       expect(bar.className).toContain('opacity-100');
-      expect(screen.getAllByLabelText('Play')).toHaveLength(2);
+      expect(screen.getAllByLabelText('ui.play')).toHaveLength(2);
     } finally {
       vi.useRealTimers();
     }
@@ -138,7 +138,7 @@ describe('VideoPlayer paused-state controls', () => {
       const { container } = render(<VideoPlayer src="/api/gallery/e/photo/1" />);
       const video = container.querySelector('video')!;
       const root = container.firstElementChild as HTMLElement;
-      const bar = screen.getByLabelText('Fullscreen').closest('div.absolute')!;
+      const bar = screen.getByLabelText('ui.fullscreen').closest('div.absolute')!;
 
       fireEvent.play(video);
       fireEvent.mouseMove(root);

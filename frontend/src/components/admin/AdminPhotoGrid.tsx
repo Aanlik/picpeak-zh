@@ -39,6 +39,7 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
   onSelectionChange,
   categories = []
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const { format: formatDate } = useLocalizedDate();
   const queryClient = useQueryClient();
@@ -473,7 +474,7 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
                 </p>
                 {photo.original_filename && photo.original_filename !== photo.filename && (
                   <p className="text-white/60 text-[10px] truncate mb-1">
-                    Original: {photo.original_filename}
+                    {tAudit("ui.originalFilename")}{photo.original_filename}
                   </p>
                 )}
                 <p className="text-white/80 text-xs mb-2">

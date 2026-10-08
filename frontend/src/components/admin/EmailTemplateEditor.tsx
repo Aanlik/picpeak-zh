@@ -59,6 +59,7 @@ export const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
   onChange,
   variables = [],
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const [isSourceMode, setIsSourceMode] = useState(false);
   const [sourceContent, setSourceContent] = useState(content);
@@ -176,7 +177,7 @@ export const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
                 <MenuButton
                   onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
                   active={editor.isActive('heading', { level: 2 })}
-                  title="Heading 2"
+                  title={tAudit("ui.heading2")}
                 >
                   <Heading2 className="w-4 h-4" />
                 </MenuButton>
@@ -184,7 +185,7 @@ export const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
                 <MenuButton
                   onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
                   active={editor.isActive('heading', { level: 3 })}
-                  title="Heading 3"
+                  title={tAudit("ui.heading3")}
                 >
                   <Heading3 className="w-4 h-4" />
                 </MenuButton>

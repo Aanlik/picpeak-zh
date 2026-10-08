@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { Shield, AlertTriangle, X } from 'lucide-react';
 
@@ -18,6 +19,7 @@ export const ProtectionWarning: React.FC<ProtectionWarningProps> = ({
   autoClose = false,
   autoCloseDelay = 5000
 }) => {
+  const { t: tAudit } = useTranslation();
   // Auto close functionality
   React.useEffect(() => {
     if (autoClose && autoCloseDelay > 0 && onClose) {
@@ -86,7 +88,7 @@ export const ProtectionWarning: React.FC<ProtectionWarningProps> = ({
           <button
             onClick={onClose}
             className="flex-shrink-0 ml-2 -mr-1 -mt-1 p-1 rounded-full hover:bg-white/20 transition-colors"
-            aria-label="Close warning"
+            aria-label={tAudit("ui.closeWarning")}
           >
             <X className="w-4 h-4" />
           </button>

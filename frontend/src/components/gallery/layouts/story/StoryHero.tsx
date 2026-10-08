@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
@@ -21,6 +22,7 @@ export const StoryHero: React.FC<StoryHeroProps> = ({
   photo,
   slug,
 }) => {
+  const { t: tAudit } = useTranslation();
   const formattedDate = date
     ? new Date(date).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -41,7 +43,7 @@ export const StoryHero: React.FC<StoryHeroProps> = ({
             // of every Story gallery. Emitted unconditionally for every photo
             // (gallery.js:1139), so the fallbacks below are belt-and-braces.
             src={photo.hero_url || photo.url || photo.thumbnail_url || ''}
-            alt="Hero"
+            alt={tAudit("ui.hero")}
             className="w-full h-full object-cover"
             isGallery={true}
             slug={slug}

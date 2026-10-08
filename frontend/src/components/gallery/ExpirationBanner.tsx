@@ -13,6 +13,7 @@ export const ExpirationBanner: React.FC<ExpirationBannerProps> = ({
   daysRemaining, 
   expiresAt 
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const expirationDate = parseISO(expiresAt);
   
@@ -22,8 +23,7 @@ export const ExpirationBanner: React.FC<ExpirationBannerProps> = ({
     } else {
       return (
         <span className="font-mono">
-          {days}d {hours}h {minutes}m
-        </span>
+          {days}{tAudit("ui.daysShort")}{hours}{tAudit("ui.hoursShort")}{minutes}{tAudit("ui.minutesShort")}</span>
       );
     }
   };

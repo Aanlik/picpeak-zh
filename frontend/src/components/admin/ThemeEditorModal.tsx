@@ -34,6 +34,7 @@ export const ThemeEditorModal: React.FC<ThemeEditorModalProps> = ({
   currentCssTemplateId,
   eventName
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const [theme, setTheme] = useState<ThemeConfig>(GALLERY_THEME_PRESETS.default.config);
   const [presetName, setPresetName] = useState<string>('default');
@@ -179,7 +180,7 @@ export const ThemeEditorModal: React.FC<ThemeEditorModalProps> = ({
                           <span className="text-xs capitalize">
                             {layout}
                             {(layout === 'gallery-premium' || layout === 'gallery-story') && (
-                              <span className="ml-0.5 text-amber-600">(Beta)</span>
+                              <span className="ml-0.5 text-amber-600">{tAudit("ui.beta")}</span>
                             )}
                           </span>
                         </div>

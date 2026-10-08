@@ -48,7 +48,7 @@ const PreviewPhoto: React.FC<{
   photo, 
   className = '',
   aspectRatio = 'aspect-square'
-}) => (
+}) => { const { t: tAudit } = useTranslation(); return ((
   <div className={`relative overflow-hidden rounded-lg bg-gradient-to-br from-neutral-200 to-neutral-300 ${aspectRatio} ${className}`}>
     <div className="absolute inset-0 flex items-center justify-center">
       <Camera className="w-8 h-8 text-neutral-400" />
@@ -62,12 +62,11 @@ const PreviewPhoto: React.FC<{
     {photo.type === 'collage' && (
       <div className="absolute top-1 right-1">
         <span className="px-1.5 py-0.5 bg-black/60 text-white text-[10px] rounded">
-          Collage
-        </span>
+          {tAudit("ui.collage")}</span>
       </div>
     )}
   </div>
-);
+)); };
 
 export const GalleryPreview: React.FC<GalleryPreviewProps> = ({
   theme,
@@ -75,6 +74,7 @@ export const GalleryPreview: React.FC<GalleryPreviewProps> = ({
   layoutType,
   className = ''
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const mockPhotos = useMemo(() => generateMockPhotos(12), []);
   
@@ -255,11 +255,10 @@ export const GalleryPreview: React.FC<GalleryPreviewProps> = ({
                   textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
                 }}
               >
-                Sample Event
-              </h1>
+                {tAudit("ui.sampleEvent")}</h1>
               <div className="flex items-center justify-center text-white/80 text-sm" style={{ textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)' }}>
                 <Calendar className="w-4 h-4 mr-1" />
-                <span>January 15, 2026</span>
+                <span>{tAudit("ui.sampleDate")}</span>
               </div>
               {/* Hero photo placeholder hint */}
               <div className="mt-3 flex items-center justify-center gap-1.5 text-white/60 text-xs">
@@ -325,8 +324,7 @@ export const GalleryPreview: React.FC<GalleryPreviewProps> = ({
               fontFamily: theme.headingFontFamily || theme.fontFamily || 'Inter, sans-serif',
             }}
           >
-            Sample Event
-          </p>
+            {tAudit("ui.sampleEvent")}</p>
         </div>
       )}
 
@@ -335,7 +333,7 @@ export const GalleryPreview: React.FC<GalleryPreviewProps> = ({
 
       {/* Layout info bar */}
       <div className="px-4 py-1 border-b text-xs text-neutral-500 flex justify-between" style={{ borderColor: theme.primaryColor ? `${theme.primaryColor}20` : '#e5e7eb' }}>
-        <span>Gallery preview</span>
+        <span>{tAudit("ui.galleryPreview")}</span>
         <span className="capitalize">{isHeroHeader ? `Hero + ${activeLayout}` : isMinimalHeader ? `Minimal + ${activeLayout}` : isNoHeader ? `No header + ${activeLayout}` : `${activeLayout} layout`}</span>
       </div>
 

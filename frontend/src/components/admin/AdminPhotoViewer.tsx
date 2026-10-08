@@ -45,6 +45,7 @@ type ViewerContentProps = AdminPhotoViewerProps & {
 const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
   photos, eventId, onClose, onPhotoDeleted, categories, currentPhoto, currentIndex, setCurrentIndex
 }) => {
+  const { t: tAudit } = useTranslation();
   const [isDeleting, setIsDeleting] = useState(false);
   const { t } = useTranslation();
   // The photographer's own triage mark (#1044 follow-up). Held locally and
@@ -86,14 +87,14 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete "${currentPhoto.filename}"?`)) {
+    if (!confirm(tAudit('ui.deletePhotoConfirm', { name: currentPhoto.filename }))) {
       return;
     }
 
     setIsDeleting(true);
     try {
       await photosService.deletePhoto(eventId, currentPhoto.id);
-      toast.success('Photo deleted successfully');
+      toast.success(tAudit('ui.photoDeleted'));
       
       // Close viewer if this was the last photo
       if (photos.length === 1) {
@@ -107,7 +108,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
       
       onPhotoDeleted();
     } catch (error) {
-      toast.error('Failed to delete photo');
+      toast.error(tAudit('ui.deletePhotoFailed'));
     } finally {
       setIsDeleting(false);
     }
@@ -116,16 +117,16 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
   const handleDownload = async () => {
     try {
       await photosService.downloadPhoto(eventId, currentPhoto.id, currentPhoto.filename);
-      toast.success('Download started');
+      toast.success(t('events.downloadStarted'));
     } catch (error) {
-      toast.error('Failed to download photo');
+      toast.error(t('errors.downloadFailed'));
     }
   };
 
   const handleCategoryChange = async (categoryId: number | null) => {
     try {
       await photosService.updatePhotoCategory(eventId, currentPhoto.id, categoryId);
-      toast.success('Category updated');
+      toast.success(tAudit('ui.categoryUpdated'));
       categoryMenuModal.close();
       // Invalidate photos query to refresh data
       await queryClient.invalidateQueries({ queryKey: ['admin-event-photos', eventId.toString()] });
@@ -133,7 +134,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
       // Also trigger the parent's refresh callback
       onPhotoDeleted();
     } catch (error) {
-      toast.error('Failed to update category');
+      toast.error(tAudit('ui.categoryUpdateFailed'));
     }
   };
 
@@ -142,15 +143,15 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
     mutationFn: ({ feedbackId, action }: { feedbackId: string; action: 'approve' | 'hide' | 'reject' }) =>
       feedbackService.moderateFeedback(feedbackId, action),
     invalidateKeys: [['admin-photo-feedback', eventId, currentPhoto?.id]],
-    successMessage: 'Feedback moderated successfully',
-    errorMessage: () => 'Failed to moderate feedback'
+    successMessage: t('feedback.moderationSuccess'),
+    errorMessage: () => t('feedback.settingsUpdateError')
   });
 
   const deleteFeedbackMutation = useMutationWithToast({
     mutationFn: (feedbackId: string) => feedbackService.deleteFeedback(feedbackId),
     invalidateKeys: [['admin-photo-feedback', eventId, currentPhoto?.id]],
-    successMessage: 'Feedback deleted successfully',
-    errorMessage: () => 'Failed to delete feedback'
+    successMessage: t('feedback.deleted'),
+    errorMessage: () => t('errors.somethingWentWrong')
   });
 
   // The mark shown for a photo: the local edit if there is one, otherwise
@@ -273,7 +274,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                 <div className="flex items-center justify-center text-neutral-400">
                   <div className="text-center">
                     <Eye className="w-12 h-12 mx-auto mb-2" />
-                    <p className="text-sm">Failed to load media</p>
+                    <p className="text-sm">{tAudit("ui.mediaLoadFailed")}</p>
                   </div>
                 </div>
               }
@@ -287,7 +288,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                 <div className="flex items-center justify-center text-neutral-400">
                   <div className="text-center">
                     <Eye className="w-12 h-12 mx-auto mb-2" />
-                    <p className="text-sm">Failed to load image</p>
+                    <p className="text-sm">{tAudit("ui.imageLoadFailed")}</p>
                   </div>
                 </div>
               }
@@ -299,7 +300,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
         <div className="lg:w-80 bg-neutral-900 rounded-lg p-6 overflow-y-auto">
           <h3 className="text-white font-medium text-lg">{currentPhoto.filename}</h3>
           {currentPhoto.original_filename && currentPhoto.original_filename !== currentPhoto.filename && (
-            <p className="text-neutral-400 text-sm">Original: {currentPhoto.original_filename}</p>
+            <p className="text-neutral-400 text-sm">{tAudit("ui.originalFilename")}{currentPhoto.original_filename}</p>
           )}
           <div className="mb-4" />
 
@@ -312,16 +313,14 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
               leftIcon={<Download className="w-4 h-4" />}
               className="flex-1"
             >
-              Download
-            </Button>
+              {tAudit("ui.download")}</Button>
             <button
               onClick={handleDelete}
               disabled={isDeleting}
               className="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-red-400 rounded-lg flex items-center justify-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
-              Delete
-            </button>
+              {tAudit("ui.delete")}</button>
           </div>
 
           {/* Category */}
@@ -329,14 +328,12 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
             <div className="flex items-center justify-between mb-2">
               <span className="text-neutral-400 text-sm flex items-center gap-1">
                 <Tag className="w-4 h-4" />
-                Category
-              </span>
+                {tAudit("ui.category")}</span>
               <button
                 onClick={categoryMenuModal.toggle}
                 className="text-xs text-accent hover:text-accent-dark"
               >
-                Change
-              </button>
+                {tAudit("ui.change")}</button>
             </div>
             <p className="text-white">
               {currentPhoto.category_name || 'Uncategorized'}
@@ -348,8 +345,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                   onClick={() => handleCategoryChange(null)}
                   className="w-full text-left px-3 py-2 text-sm text-white hover:bg-neutral-700 rounded"
                 >
-                  Uncategorized
-                </button>
+                  {tAudit("ui.uncategorized")}</button>
                 {categories.map(cat => (
                   <button
                     key={cat.id}
@@ -368,16 +364,14 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
             <div>
               <span className="text-neutral-400 flex items-center gap-1 mb-1">
                 <HardDrive className="w-4 h-4" />
-                File Size
-              </span>
+                {tAudit("ui.fileSize")}</span>
               <p className="text-white">{photosService.formatBytes(currentPhoto.size)}</p>
             </div>
 
             <div>
               <span className="text-neutral-400 flex items-center gap-1 mb-1">
                 <Calendar className="w-4 h-4" />
-                Uploaded
-              </span>
+                {tAudit("ui.uploaded")}</span>
               <p className="text-white">
                 {fmtDateTime(currentPhoto.uploaded_at)}
               </p>
@@ -387,8 +381,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
               <div>
                 <span className="text-neutral-400 flex items-center gap-1 mb-1">
                   <Eye className="w-4 h-4" />
-                  Views
-                </span>
+                  {tAudit("ui.views")}</span>
                 <p className="text-white">{currentPhoto.view_count}</p>
               </div>
             )}
@@ -397,8 +390,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
               <div>
                 <span className="text-neutral-400 flex items-center gap-1 mb-1">
                   <MousePointer className="w-4 h-4" />
-                  Downloads
-                </span>
+                  {tAudit("ui.downloads")}</span>
                 <p className="text-white">{currentPhoto.download_count}</p>
               </div>
             )}
@@ -477,8 +469,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
             <div className="mt-6 pt-6 border-t border-neutral-700">
               <h4 className="text-white font-medium mb-4 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
-                Feedback & Comments
-              </h4>
+                {tAudit("ui.feedbackComments")}</h4>
               
               {/* Feedback Stats */}
               <div className="grid grid-cols-2 gap-3 mb-4">
@@ -488,7 +479,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                       <Star className="w-4 h-4" fill="currentColor" />
                       <span className="text-white font-medium">{Number(averageRating).toFixed(1)}</span>
                     </div>
-                    <p className="text-xs text-neutral-400">Avg Rating</p>
+                    <p className="text-xs text-neutral-400">{tAudit("ui.averageRating")}</p>
                   </div>
                 )}
                 
@@ -498,7 +489,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                       <Heart className="w-4 h-4" fill="currentColor" />
                       <span className="text-white font-medium">{likeCount}</span>
                     </div>
-                    <p className="text-xs text-neutral-400">Likes</p>
+                    <p className="text-xs text-neutral-400">{tAudit("ui.likes")}</p>
                   </div>
                 )}
                 
@@ -508,7 +499,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                       <Star className="w-4 h-4" />
                       <span className="text-white font-medium">{favoriteCount}</span>
                     </div>
-                    <p className="text-xs text-neutral-400">Favorites</p>
+                    <p className="text-xs text-neutral-400">{tAudit("ui.favorites")}</p>
                   </div>
                 )}
                 
@@ -518,7 +509,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                       <MessageSquare className="w-4 h-4" />
                       <span className="text-white font-medium">{comments.length}</span>
                     </div>
-                    <p className="text-xs text-neutral-400">Comments</p>
+                    <p className="text-xs text-neutral-400">{tAudit("ui.comments")}</p>
                   </div>
                 )}
               </div>
@@ -530,7 +521,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                     onClick={commentsModal.toggle}
                     className="text-xs text-accent hover:text-accent-dark mb-2"
                   >
-                    {commentsModal.isOpen ? 'Hide' : 'Show'} Comments ({comments.length})
+                    {commentsModal.isOpen ? t('common.hide') : t('common.show')} {tAudit("ui.commentsOpen")}{comments.length})
                   </button>
 
                   {commentsModal.isOpen && (
@@ -552,20 +543,17 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                                 {!comment.is_approved && !comment.is_hidden && (
                                   <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded flex items-center gap-1">
                                     <AlertCircle className="w-3 h-3" />
-                                    Pending
-                                  </span>
+                                    {tAudit("ui.pending")}</span>
                                 )}
                                 {comment.is_approved && !comment.is_hidden && (
                                   <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded flex items-center gap-1">
                                     <CheckCircle className="w-3 h-3" />
-                                    Approved
-                                  </span>
+                                    {tAudit("ui.approved")}</span>
                                 )}
                                 {comment.is_hidden && (
                                   <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded flex items-center gap-1">
                                     <XCircle className="w-3 h-3" />
-                                    Hidden
-                                  </span>
+                                    {tAudit("ui.hidden")}</span>
                                 )}
                               </div>
                             </div>
@@ -585,8 +573,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                                   disabled={moderateFeedbackMutation.isPending}
                                   className="text-xs px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
                                 >
-                                  Approve
-                                </button>
+                                  {tAudit("ui.approve")}</button>
                               )}
                               
                               {!comment.is_hidden && (
@@ -598,8 +585,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                                   disabled={moderateFeedbackMutation.isPending}
                                   className="text-xs px-2 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded"
                                 >
-                                  Hide
-                                </button>
+                                  {tAudit("ui.hide")}</button>
                               )}
                               
                               {comment.is_hidden && (
@@ -611,21 +597,19 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                                   disabled={moderateFeedbackMutation.isPending}
                                   className="text-xs px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
                                 >
-                                  Unhide
-                                </button>
+                                  {tAudit("ui.unhide")}</button>
                               )}
                               
                               <button
                                 onClick={() => {
-                                  if (confirm('Are you sure you want to delete this comment?')) {
+                                  if (confirm(tAudit('ui.deleteCommentConfirm'))) {
                                     deleteFeedbackMutation.mutate(comment.id.toString());
                                   }
                                 }}
                                 disabled={deleteFeedbackMutation.isPending}
                                 className="text-xs px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded"
                               >
-                                Delete
-                              </button>
+                                {tAudit("ui.delete")}</button>
                             </div>
                           </div>
                         ))}
@@ -636,7 +620,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
               
               {/* No feedback message */}
               {comments.length === 0 && (
-                <p className="text-neutral-400 text-sm">No feedback for this photo yet.</p>
+                <p className="text-neutral-400 text-sm">{tAudit("ui.noFeedback")}</p>
               )}
             </div>
           )}
@@ -644,7 +628,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
           {/* Navigation info */}
           <div className="mt-6 pt-6 border-t border-neutral-700">
             <p className="text-neutral-400 text-sm text-center">
-              {currentIndex + 1} of {photos.length}
+              {tAudit('ui.photoPosition', { current: currentIndex + 1, total: photos.length })}
             </p>
           </div>
         </div>

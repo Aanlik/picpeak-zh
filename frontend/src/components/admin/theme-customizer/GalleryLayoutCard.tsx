@@ -26,6 +26,7 @@ export const GalleryLayoutCard: React.FC<GalleryLayoutCardProps> = ({
   thumbnailHeight,
   minRecommendedThumbnailSize
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
 
   return (
@@ -53,7 +54,7 @@ export const GalleryLayoutCard: React.FC<GalleryLayoutCardProps> = ({
               <span className="font-medium text-sm capitalize text-neutral-900 dark:text-neutral-100">
                 {layout}
                 {(layout === 'gallery-premium' || layout === 'gallery-story') && (
-                  <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">(Beta)</span>
+                  <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">{tAudit("ui.beta")}</span>
                 )}
               </span>
               <span className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">

@@ -25,6 +25,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   width = '100%',
   height = 'auto'
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -300,7 +301,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <button
                 onClick={togglePlayPause}
                 className="hover:bg-white/20 p-2 rounded-full transition-colors"
-                aria-label={isPlaying ? 'Pause' : 'Play'}
+                aria-label={isPlaying ? tAudit('ui.pause') : tAudit('ui.play')}
               >
                 {isPlaying ? <Pause size={20} /> : <Play size={20} />}
               </button>
@@ -308,7 +309,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <button
                 onClick={toggleMute}
                 className="hover:bg-white/20 p-2 rounded-full transition-colors"
-                aria-label={isMuted ? 'Unmute' : 'Mute'}
+                aria-label={isMuted ? tAudit('ui.unmute') : tAudit('ui.mute')}
               >
                 {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
               </button>
@@ -321,7 +322,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <button
               onClick={toggleFullscreen}
               className="hover:bg-white/20 p-2 rounded-full transition-colors"
-              aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              aria-label={isFullscreen ? tAudit('ui.exitFullscreen') : tAudit('ui.fullscreen')}
             >
               {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
             </button>
@@ -338,7 +339,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           <button
             onClick={togglePlayPause}
             className="pointer-events-auto bg-black/50 hover:bg-black/70 text-white rounded-full p-6 transition-colors"
-            aria-label="Play"
+            aria-label={tAudit("ui.play")}
           >
             <Play size={48} fill="white" />
           </button>

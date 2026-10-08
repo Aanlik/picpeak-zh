@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { settingsService } from '../../services/settings.service';
 
 export const MaintenanceBanner: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const [dismissed, setDismissed] = React.useState(false);
   
   const { data: settings } = useQuery({
@@ -26,8 +28,7 @@ export const MaintenanceBanner: React.FC = () => {
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600" />
             <p className="text-sm font-medium text-amber-900">
-              Maintenance mode is currently enabled. Public access to galleries is restricted.
-            </p>
+              {tAudit("ui.maintenanceNotice")}</p>
           </div>
           <button
             onClick={() => setDismissed(true)}

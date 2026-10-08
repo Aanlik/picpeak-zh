@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { X, Mail, FileText } from 'lucide-react';
 import { Button, Card } from '../common';
@@ -17,6 +18,7 @@ export const EmailPreviewModal: React.FC<EmailPreviewModalProps> = ({
   htmlContent,
   textContent
 }) => {
+  const { t: tAudit } = useTranslation();
   const [viewMode, setViewMode] = React.useState<'html' | 'text'>('html');
 
   if (!isOpen) return null;
@@ -28,7 +30,7 @@ export const EmailPreviewModal: React.FC<EmailPreviewModalProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
           <div className="flex items-center gap-3">
             <Mail className="w-6 h-6 text-accent" />
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Email Preview</h2>
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{tAudit("ui.emailPreview")}</h2>
           </div>
           <button
             onClick={onClose}
@@ -40,7 +42,7 @@ export const EmailPreviewModal: React.FC<EmailPreviewModalProps> = ({
 
         {/* Subject */}
         <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
-          <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Subject:</p>
+          <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">{tAudit("ui.subject")}</p>
           <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mt-1">{subject}</p>
         </div>
 
@@ -53,8 +55,7 @@ export const EmailPreviewModal: React.FC<EmailPreviewModalProps> = ({
               onClick={() => setViewMode('html')}
               leftIcon={<Mail className="w-4 h-4" />}
             >
-              HTML View
-            </Button>
+              {tAudit("ui.htmlView")}</Button>
             {textContent && (
               <Button
                 variant={viewMode === 'text' ? 'primary' : 'outline'}
@@ -62,8 +63,7 @@ export const EmailPreviewModal: React.FC<EmailPreviewModalProps> = ({
                 onClick={() => setViewMode('text')}
                 leftIcon={<FileText className="w-4 h-4" />}
               >
-                Text View
-              </Button>
+                {tAudit("ui.textView")}</Button>
             )}
           </div>
         </div>
@@ -75,7 +75,7 @@ export const EmailPreviewModal: React.FC<EmailPreviewModalProps> = ({
               <iframe
                 srcDoc={htmlContent}
                 className="w-full h-[600px] border-0"
-                title="Email Preview"
+                title={tAudit("ui.emailPreview")}
                 sandbox="allow-same-origin"
               />
             </div>
@@ -91,8 +91,7 @@ export const EmailPreviewModal: React.FC<EmailPreviewModalProps> = ({
         {/* Footer */}
         <div className="flex justify-end gap-3 p-6 border-t border-neutral-200 dark:border-neutral-700">
           <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
+            {tAudit("ui.close")}</Button>
         </div>
       </Card>
     </div>

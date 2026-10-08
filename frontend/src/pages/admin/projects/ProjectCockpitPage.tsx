@@ -107,6 +107,7 @@ function minutesToHours(min: number): string {
 }
 
 export const ProjectCockpitPage: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const projectId = id ? parseInt(id, 10) : null;
@@ -488,7 +489,7 @@ export const ProjectCockpitPage: React.FC = () => {
                       can't accidentally trigger the live Accept/Decline URLs by
                       clicking inside the preview. Scrolling still works. */}
                   <iframe
-                    title="email-preview"
+                    title={tAudit("ui.emailPreviewFrame")}
                     srcDoc={preparePreviewHtml(preview.html)}
                     sandbox=""
                     style={{ colorScheme: 'normal' }}

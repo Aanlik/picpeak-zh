@@ -172,6 +172,7 @@ const TEMPLATE_DISPLAY_NAMES: Record<string, string> = {
 };
 
 export const EmailConfigPage: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'smtp' | 'templates' | 'sent' | 'received'>('smtp');
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>('gallery_created');
@@ -702,7 +703,7 @@ export const EmailConfigPage: React.FC = () => {
                   type="text"
                   value={smtpConfig.from_name}
                   onChange={(e) => setSmtpConfig(prev => ({ ...prev, from_name: e.target.value }))}
-                  placeholder="Photo Sharing"
+                  placeholder={tAudit("ui.photoSharing")}
                 />
               </div>
 
@@ -1091,7 +1092,7 @@ export const EmailConfigPage: React.FC = () => {
                     type="text"
                     value={currentTranslation.subject || ''}
                     onChange={(e) => handleTranslationChange('subject', e.target.value)}
-                    placeholder="Email subject"
+                    placeholder={tAudit("ui.emailSubject")}
                   />
                 </div>
 

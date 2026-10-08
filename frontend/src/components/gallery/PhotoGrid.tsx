@@ -246,6 +246,7 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
   slug,
   feedbackEnabled = false
 }) => {
+  const { t: tAudit } = useTranslation();
   const { ref, inView } = useInView({
     triggerOnce: true,
     threshold: 0.1,
@@ -309,7 +310,7 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
                     e.stopPropagation();
                     onClick(e);
                   }}
-                  aria-label="View full size"
+                  aria-label={tAudit("ui.viewFullSize")}
                 >
                   <Maximize2 className="w-5 h-5 text-theme" />
                 </button>
@@ -322,7 +323,7 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
                       e.stopPropagation();
                       onDownload(e);
                     }}
-                    aria-label="Download photo"
+                    aria-label={tAudit("ui.downloadPhoto")}
                   >
                     <Download className="w-5 h-5 text-theme" />
                   </button>
@@ -344,14 +345,12 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
           <div className="absolute bottom-2 left-2 flex gap-2">
             {photo.type === 'collage' && (
               <span className="px-2 py-1 bg-black/60 text-white text-xs rounded">
-                Collage
-              </span>
+                {tAudit("ui.collage")}</span>
             )}
             {photo.media_type === 'video' && (
               <span className="px-2 py-1 bg-black/60 text-white text-xs rounded flex items-center gap-1">
                 <Play className="w-3 h-3" fill="white" />
-                Video
-                {photo.duration && (
+                {tAudit("ui.video")}{photo.duration && (
                   <span className="ml-1">
                     {Math.floor(photo.duration / 60)}:{String(photo.duration % 60).padStart(2, '0')}
                   </span>

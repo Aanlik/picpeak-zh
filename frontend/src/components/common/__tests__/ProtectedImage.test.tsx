@@ -185,7 +185,7 @@ describe('ProtectedImage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Image unavailable')).toBeInTheDocument();
+      expect(screen.getByText('ui.imageUnavailable')).toBeInTheDocument();
     });
 
     expect(onViolation).toHaveBeenCalledWith('image_load_error');

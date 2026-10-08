@@ -44,6 +44,7 @@ async function fetchUpdateInfo(): Promise<UpdateInfo> {
 }
 
 export const VersionInfo: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const [modalOpen, setModalOpen] = useState(false);
   // Re-render trigger so dismissing in the modal immediately hides the
@@ -96,7 +97,7 @@ export const VersionInfo: React.FC = () => {
         </div>
         <div className="mt-1 space-y-0.5 text-xs text-neutral-500">
           <div>
-            Frontend:{' '}
+            {tAudit("ui.frontend")}{' '}
             <a
               href={releaseUrl(FRONTEND_VERSION)}
               target="_blank"
@@ -109,7 +110,7 @@ export const VersionInfo: React.FC = () => {
           </div>
           {versionInfo && (
             <div>
-              Backend:{' '}
+              {tAudit("ui.backend")}{' '}
               <a
                 href={releaseUrl(versionInfo.backend)}
                 target="_blank"

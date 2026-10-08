@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Calendar, Heart } from 'lucide-react';
 import { format, parseISO, startOfDay, startOfWeek, startOfMonth } from 'date-fns';
@@ -22,8 +23,9 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
   feedbackEnabled = false,
   feedbackOptions
 }) => {
+  const { t: tAudit } = useTranslation();
   const { theme } = useTheme();
-  const { formatTime: fmtTime } = useLocalizedDate();
+  const { formatTime: fmtTime, format: formatLocalized } = useLocalizedDate();
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
   // Seed from server is_liked on first non-empty payload (#590 follow-up).
   // Mount-only so refetches don't clobber in-session optimistic toggles.
@@ -83,11 +85,11 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
     return Array.from(groups.entries())
       .map(([date, photos]) => ({
         date,
-        label: photos[0] ? format(parseUploadedAt(photos[0].uploaded_at), grouping === 'month' ? 'MMMM yyyy' : grouping === 'week' ? "'Week of' MMM d, yyyy" : 'EEEE, MMMM d, yyyy') : date,
+        label: photos[0] ? (grouping === 'week' ? tAudit('ui.weekOf', { date: formatLocalized(parseUploadedAt(photos[0].uploaded_at), 'PPP') }) : formatLocalized(parseUploadedAt(photos[0].uploaded_at), grouping === 'month' ? 'LLLL yyyy' : 'PPP')) : date,
         photos: photos.sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime())
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [photos, grouping]);
+  }, [photos, grouping, formatLocalized, tAudit]);
 
   return (
     <div className="relative">
@@ -161,7 +163,7 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                     }
                     afterOverlay={((photo.like_count ?? 0) > 0 || likedIds.has(photo.id)) ? (
                       <div className={`absolute ${photo.type === 'collage' ? 'bottom-8' : 'bottom-2'} left-2 z-10`}>
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm" title="Liked">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/90 backdrop-blur-sm" title={tAudit("ui.liked")}>
                           <Heart className="w-3.5 h-3.5 text-red-500" fill="currentColor" />
                         </span>
                       </div>

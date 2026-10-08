@@ -17,6 +17,7 @@ export const TypographyStyleCard: React.FC<TypographyStyleCardProps> = ({
   handleChange,
   availableFonts
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
 
   return (
@@ -47,7 +48,7 @@ export const TypographyStyleCard: React.FC<TypographyStyleCardProps> = ({
               onChange={(e) => handleChange('fontFamily', e.target.value)}
               className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
             >
-              <option value="system-ui, sans-serif">System UI</option>
+              <option value="system-ui, sans-serif">{tAudit("ui.systemFont")}</option>
               {(availableFonts || []).map((f) => (
                 <option key={f.family} value={buildFontFamilyValue(f)}>
                   {f.family}
@@ -70,7 +71,7 @@ export const TypographyStyleCard: React.FC<TypographyStyleCardProps> = ({
               className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
             >
               <option value="">{t('branding.sameAsBody')}</option>
-              <option value="system-ui, sans-serif">System UI</option>
+              <option value="system-ui, sans-serif">{tAudit("ui.systemFont")}</option>
               {(availableFonts || []).map((f) => (
                 <option key={f.family} value={buildFontFamilyValue(f)}>
                   {f.family}

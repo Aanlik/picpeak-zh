@@ -141,6 +141,7 @@ export const adminNavigation: NavItem[] = [
 ];
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose, collapsed = false, onToggleCollapse }) => {
+  const { t: tAudit } = useTranslation();
   const location = useLocation();
   const { t } = useTranslation();
   const { hasPermission, isLoading: permissionsLoading } = usePermissions();
@@ -256,7 +257,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose, col
           <button
             onClick={onClose}
             className="lg:hidden text-neutral-400 hover:text-neutral-600"
-            aria-label="Close sidebar"
+            aria-label={tAudit("ui.closeSidebar")}
           >
             <X className="w-6 h-6" />
           </button>

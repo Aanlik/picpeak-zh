@@ -81,6 +81,7 @@ export const LineItemsTable: React.FC<Props> = ({
   items, currency, showDiscount = true, vatRate = 0, shippingAmount = 0, roundTotal = false,
   onChange, presets = [], onSaveAsPreset,
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
 
   // Track which rows have the details textarea expanded. Keyed by
@@ -432,29 +433,29 @@ export const LineItemsTable: React.FC<Props> = ({
                     </td>
                     <td className="px-2 py-2 align-top">
                       <div className="flex items-center gap-1 justify-end flex-wrap">
-                        <button type="button" onClick={() => move(idx, -1)} aria-label="Move up"
+                        <button type="button" onClick={() => move(idx, -1)} aria-label={tAudit("ui.moveUp")}
                           className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-30">
                           <ArrowUp className="w-4 h-4" />
                         </button>
-                        <button type="button" onClick={() => move(idx, 1)} aria-label="Move down"
+                        <button type="button" onClick={() => move(idx, 1)} aria-label={tAudit("ui.moveDown")}
                           className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-30">
                           <ArrowDown className="w-4 h-4" />
                         </button>
                         {!sub && (
-                          <button type="button" onClick={() => addSubItem(idx)} aria-label="Add sub-item"
+                          <button type="button" onClick={() => addSubItem(idx)} aria-label={tAudit("ui.addSubItem")}
                             className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700"
                             title={t('crm.lineItems.addSubItem', 'Add sub-item') as string}>
                             <CornerDownRight className="w-4 h-4" />
                           </button>
                         )}
                         {onSaveAsPreset && !sub && (
-                          <button type="button" onClick={() => onSaveAsPreset(li)} aria-label="Save as preset"
+                          <button type="button" onClick={() => onSaveAsPreset(li)} aria-label={tAudit("ui.saveAsPreset")}
                             className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-700"
                             title={t('crm.lineItems.saveAsPreset', 'Save as preset') as string}>
                             <SaveIcon className="w-4 h-4" />
                           </button>
                         )}
-                        <button type="button" onClick={() => removeRow(idx)} aria-label="Remove"
+                        <button type="button" onClick={() => removeRow(idx)} aria-label={tAudit("ui.remove")}
                           className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600">
                           <X className="w-4 h-4" />
                         </button>

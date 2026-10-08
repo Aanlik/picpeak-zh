@@ -29,6 +29,7 @@ const SORT_COLUMNS: SortColumnMap = {
 };
 
 export const BillsListPage: React.FC = () => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { format: fmtDate } = useLocalizedDate();
@@ -68,7 +69,7 @@ export const BillsListPage: React.FC = () => {
             {/* Beta badge — matches the Customers + Quotes pages. */}
             <span
               className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-              title="Beta — feature is functional but still evolving"
+              title={tAudit("ui.betaHint")}
             >
               {t('navigation.betaTag', 'Beta')}
             </span>

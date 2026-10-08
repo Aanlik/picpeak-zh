@@ -10,7 +10,7 @@ it('keeps the carousel usable when a refetch empties, reorders or removes photos
   const props = { slug: 'g', onPhotoClick: vi.fn(), onDownload: vi.fn(), photos: [] as Photo[] };
   const { rerender } = render(<CarouselGalleryLayout {...props} />);
   rerender(<CarouselGalleryLayout {...props} photos={[photo(1), photo(2)]} />);
-  fireEvent.click(screen.getByLabelText('Next photo')); expect(screen.getByAltText('photo-2')).toBeTruthy();
+  fireEvent.click(screen.getByLabelText('ui.nextPhoto')); expect(screen.getByAltText('photo-2')).toBeTruthy();
   rerender(<CarouselGalleryLayout {...props} photos={[photo(2), photo(1)]} />); expect(screen.getByAltText('photo-2')).toBeTruthy();
   rerender(<CarouselGalleryLayout {...props} photos={[photo(1)]} />); expect(screen.getByAltText('photo-1')).toBeTruthy();
   rerender(<CarouselGalleryLayout {...props} photos={[]} />);

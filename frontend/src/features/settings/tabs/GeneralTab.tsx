@@ -35,6 +35,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
   updateAdminProfileMutation,
   adminProfileLoading,
 }) => {
+  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
 
   // The public address reaches the CORS allowlist and the
@@ -360,10 +361,10 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
               }}
               className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
-              <option value="dd/MM/yyyy">DD/MM/YYYY (European)</option>
-              <option value="MM/dd/yyyy">MM/DD/YYYY (US)</option>
-              <option value="yyyy-MM-dd">YYYY-MM-DD (ISO)</option>
-              <option value="dd.MM.yyyy">DD.MM.YYYY (German)</option>
+              <option value="dd/MM/yyyy">{tAudit("ui.dateEuropean")}</option>
+              <option value="MM/dd/yyyy">{tAudit("ui.dateUs")}</option>
+              <option value="yyyy-MM-dd">{tAudit("ui.dateIso")}</option>
+              <option value="dd.MM.yyyy">{tAudit("ui.dateGerman")}</option>
             </select>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
               {t('settings.general.dateFormatHelp')}

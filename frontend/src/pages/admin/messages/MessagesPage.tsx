@@ -592,7 +592,7 @@ const ReadingPane: React.FC<{
   );
 };
 
-const QueueDetail: React.FC<{ d: import('../../../services/email.service').EmailQueueDetail; fromAddr?: string | null; t: TFunction }> = ({ d, fromAddr, t }) => (
+const QueueDetail: React.FC<{ d: import('../../../services/email.service').EmailQueueDetail; fromAddr?: string | null; t: TFunction }> = ({ d, fromAddr, t }) => { const { t: tAudit } = useTranslation(); return ((
   <>
     <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100" style={{ textWrap: 'balance' } as React.CSSProperties}>
       {friendlyType(d.emailType)}
@@ -602,7 +602,7 @@ const QueueDetail: React.FC<{ d: import('../../../services/email.service').Email
         {t('messages.from', 'from')} <span className="font-mono text-xs">{fromAddr || '—'}</span> · {t('messages.to', 'to')}{' '}
         <span className="font-semibold text-neutral-800 dark:text-neutral-100">{d.recipientEmail}</span>
       </div>
-      {d.cc && <div className="text-neutral-500 dark:text-neutral-400 text-xs mt-0.5">cc {d.cc}</div>}
+      {d.cc && <div className="text-neutral-500 dark:text-neutral-400 text-xs mt-0.5">{tAudit("ui.ccLower")}{d.cc}</div>}
       <div className="text-neutral-400 dark:text-neutral-500 text-xs mt-0.5 tabular-nums">{fmt(d.sentAt || d.createdAt)}</div>
     </div>
 
@@ -610,7 +610,7 @@ const QueueDetail: React.FC<{ d: import('../../../services/email.service').Email
       <div className="mt-4 rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden bg-white" style={{ height: '52vh' }}>
         {/* Our own template output, but rendered with a strict script-less,
             no-same-origin sandbox anyway — matches the inbound-mail pane. */}
-        <iframe title="Email body" sandbox="" srcDoc={d.renderedHtml} className="w-full h-full border-0" />
+        <iframe title={tAudit("ui.emailBody")} sandbox="" srcDoc={d.renderedHtml} className="w-full h-full border-0" />
       </div>
     ) : (
       <div className="mt-4 text-sm text-neutral-500 dark:text-neutral-400 italic">
@@ -637,7 +637,7 @@ const QueueDetail: React.FC<{ d: import('../../../services/email.service').Email
       </div>
     )}
   </>
-);
+)); };
 
 const ReceivedDetail: React.FC<{
   item: ReceivedEmail;
