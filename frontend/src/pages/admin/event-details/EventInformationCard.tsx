@@ -113,6 +113,7 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
 
       {isEditing ? (
         <div className="space-y-4">
+          {!NO_EMAIL_MODE && (<>
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
               {t('events.welcomeMessageLabel')}
@@ -125,6 +126,7 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
               placeholder={t('events.welcomeMessage')}
             />
           </div>
+          </>)}
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
@@ -864,12 +866,14 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
               ) : null}
             </dd>
           </div>
+          {!NO_EMAIL_MODE && (<>
           <div>
             <dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{t('events.welcomeMessage')}</dt>
             <dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100">
               {event.welcome_message || <span className="text-neutral-400">{t('events.noWelcomeMessageSet')}</span>}
             </dd>
           </div>
+          </>)}
 
           <div>
             <dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{t('events.hostName')}</dt>
@@ -878,6 +882,7 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
             </dd>
           </div>
 
+          {!NO_EMAIL_MODE && (<>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{t('events.hostEmail')}</dt>
@@ -889,6 +894,7 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
               <dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100">{event.admin_email}</dd>
             </div>)}
           </div>
+          </>)}
 
           {phoneFieldEnabled && (
             <div>

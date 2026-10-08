@@ -714,7 +714,7 @@ export const CreateEventPage: React.FC = () => {
               <div className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-neutral-900 dark:text-neutral-100" style={{ fontFamily: formData.theme_config.fontFamily }}>
-                    {GALLERY_THEME_PRESETS[formData.theme_preset]?.name || 'Custom Theme'}
+                    {NO_EMAIL_MODE ? ({ default: '经典网格', elegantWedding: '典雅风格', modernMasonry: '错落排版', birthdayFun: '欢庆风格', corporateTimeline: '时间线', artisticMosaic: '艺术拼贴' } as Record<string, string>)[formData.theme_preset] || '自定义主题' : GALLERY_THEME_PRESETS[formData.theme_preset]?.name || 'Custom Theme'}
                   </h3>
                   <div className="flex gap-2">
                     <div 
@@ -728,7 +728,7 @@ export const CreateEventPage: React.FC = () => {
                   </div>
                 </div>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  Gallery Layout: <span className="font-medium capitalize">{formData.theme_config.galleryLayout || 'grid'}</span>
+                  {NO_EMAIL_MODE ? '照片布局：' : 'Gallery Layout:'} <span className="font-medium capitalize">{NO_EMAIL_MODE ? ({ grid: '网格', masonry: '瀑布流', carousel: '轮播', timeline: '时间线', mosaic: '拼贴', hero: '大图封面' } as Record<string, string>)[formData.theme_config.galleryLayout || 'grid'] || '自定义' : formData.theme_config.galleryLayout || 'grid'}</span>
                 </p>
               </div>
             )}
