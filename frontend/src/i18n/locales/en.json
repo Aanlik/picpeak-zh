@@ -4968,7 +4968,10 @@
       "atLeastOne": "Keep at least one event type — every gallery needs one.",
       "loadFailed": "Could not load the event types — you can adjust them later in Settings → Event Types.",
       "saveFailed": "Some event type changes could not be saved — you can finish them in Settings → Event Types.",
-      "deleteFailed": "A deletion failed — the list has been reloaded. Built-in types can only be deleted here, so retry or continue with them kept."
+      "deleteFailed": "A deletion failed — the list has been reloaded. Built-in types can only be deleted here, so retry or continue with them kept.",
+      "photoIntro": "Enter photography type names. Share link prefixes are generated automatically. You can adjust these settings later.",
+      "photoHint": "For example: portraits, weddings or commercial photography. Change these in Settings → Event Types.",
+      "keepExisting": "Set up later, continue with existing types"
     },
     "usageReporting": {
       "subtitle": "One more thing",

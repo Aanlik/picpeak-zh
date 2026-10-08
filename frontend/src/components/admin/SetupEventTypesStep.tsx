@@ -1,3 +1,4 @@
+import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -40,7 +41,7 @@ export const SetupEventTypesStep: React.FC<Props> = ({ onDone }) => {
       const types = await eventTypesService.getEventTypes();
       // Initialize once — a re-run (remount) must not clobber in-progress edits.
       setOriginal((prev) => (prev.size > 0 ? prev : new Map(types.map((et) => [et.id, et]))));
-      setRows((prev) => prev ?? types.map((et) => ({ id: et.id, name: et.name, slug_prefix: et.slug_prefix, emoji: et.emoji })));
+      setRows((prev) => prev ?? types.map((et) => ({ id: et.id, name: et.name, slug_prefix: NO_EMAIL_MODE ? (et.slug_prefix || `photo-${et.id}`) : et.slug_prefix, emoji: et.emoji })));
       return types;
     },
     staleTime: Infinity,
@@ -63,7 +64,7 @@ export const SetupEventTypesStep: React.FC<Props> = ({ onDone }) => {
   };
 
   const addRow = () => {
-    setRows((prev) => (prev ? [...prev, { name: '', slug_prefix: '', emoji: '📷' }] : prev));
+    setRows((prev) => (prev ? [...prev, { name: '', slug_prefix: NO_EMAIL_MODE ? `photo-${Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, '0')).join('')}` : '', emoji: '📷' }] : prev));
   };
 
   // Apply the diff, then advance. Ordering matters twice over: deletes first
@@ -145,7 +146,7 @@ export const SetupEventTypesStep: React.FC<Props> = ({ onDone }) => {
       try {
         const types = await eventTypesService.getEventTypes();
         setOriginal(new Map(types.map((et) => [et.id, et])));
-        setRows(types.map((et) => ({ id: et.id, name: et.name, slug_prefix: et.slug_prefix, emoji: et.emoji })));
+        setRows(types.map((et) => ({ id: et.id, name: et.name, slug_prefix: NO_EMAIL_MODE ? (et.slug_prefix || `photo-${et.id}`) : et.slug_prefix, emoji: et.emoji })));
       } catch { /* keep the local rows if the reload fails */ }
       setDeletedIds([]);
       setSaving(false);
@@ -176,7 +177,7 @@ export const SetupEventTypesStep: React.FC<Props> = ({ onDone }) => {
   return (
     <div className="space-y-6">
       <p className="rounded-lg bg-neutral-50 border border-neutral-200 px-3 py-2 text-xs text-neutral-600">
-        {t('setup.eventTypes.intro')}
+        {NO_EMAIL_MODE ? t('setup.eventTypes.photoIntro') : t('setup.eventTypes.intro')}
       </p>
 
       <div className="space-y-2">
@@ -191,14 +192,14 @@ export const SetupEventTypesStep: React.FC<Props> = ({ onDone }) => {
                 aria-label={t('setup.eventTypes.nameLabel')}
               />
             </div>
-            <div className="w-32 flex-shrink-0">
+            {!NO_EMAIL_MODE && <div className="w-32 flex-shrink-0">
               <Input
                 value={row.slug_prefix}
                 onChange={(e) => setRow(index, { slug_prefix: normalizeSlug(e.target.value) })}
                 placeholder={t('setup.eventTypes.slugPlaceholder')}
                 aria-label={t('setup.eventTypes.slugLabel')}
               />
-            </div>
+            </div>}
             <button
               type="button"
               onClick={() => removeRow(index)}
@@ -221,7 +222,9 @@ export const SetupEventTypesStep: React.FC<Props> = ({ onDone }) => {
         <span className="text-sm font-medium text-neutral-800">{t('setup.eventTypes.add')}</span>
       </button>
 
-      <p className="text-xs text-neutral-500">{t('setup.eventTypes.hint')}</p>
+      <p className="text-xs text-neutral-500">{NO_EMAIL_MODE ? t('setup.eventTypes.photoHint') : t('setup.eventTypes.hint')}</p>
+
+      {NO_EMAIL_MODE && <Button type="button" variant="secondary" className="w-full" disabled={saving} onClick={onDone}>{t('setup.eventTypes.keepExisting')}</Button>}
 
       <Button
         type="button"
