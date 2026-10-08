@@ -689,7 +689,9 @@
         "attempts": "尝试"
       },
       "emptyButUnworked": "还没有任何东西逾期，但也没有寄出任何东西——请参见上面的处理器。 从现在开始，任何排队的东西都会坐在这里。",
-      "truncated": "等待的队列太大，无法完全检查——读行中没有发现任何逾期，但这不是全清的."
+      "truncated": "等待的队列太大，无法完全检查——读行中没有发现任何逾期，但这不是全清的.",
+      "attempted_one": "已尝试 {{count}} 次，最近一次错误：{{error}}",
+      "attempted_other": "已尝试 {{count}} 次，最近一次错误：{{error}}"
     },
     "processor": {
       "title": "邮件队列处理器",
@@ -845,9 +847,9 @@
     "betaTag": "测试版"
   },
   "transfers": {
-    "title": "Pic 传输器",
+    "title": "文件传输",
     "subtitle": "从任何项目发送原始文件作为下载链接.",
-    "new": "新调剂",
+    "new": "新建文件传输",
     "create": "创建传输",
     "created": "创建的传输",
     "createFailed": "无法创建传输",
@@ -1276,7 +1278,8 @@
     "preparingProgress_one": "已打包 {{count}} 张照片",
     "preparingProgress_other": "已打包 {{count}} 张照片",
     "videoFormatUnsupported": "当前浏览器不支持该视频格式，请下载后观看",
-    "videoLoadFailed": "视频加载失败"
+    "videoLoadFailed": "视频加载失败",
+    "batchSelect": "批量选择"
   },
   "categories": {
     "title": "照片分类",
@@ -2449,7 +2452,7 @@
       },
       "hoursLogging": {
         "title": "工时记录",
-        "description": "每客户时间跟踪. Admin日志日期+起始/结束时间+可选费率凌驾于+注. 月度模式客户自动将时数累积到运行的月报中;每项目客户看到一个\"创造草稿发票\"按钮，每条单行将一张独立的发票草稿薄荷. Adminoral of Bills – 甚至在开完满账单前的日志小时.",
+        "description": "按客户记录工时。管理员可填写日期、开始和结束时间，并可选填费率覆盖值和备注。按月计费的客户，其工时会自动计入当月草稿账单；按项目计费的客户可为每条记录创建独立的发票草稿。即使尚未启用完整账单功能，也可以单独记录工时。",
         "sidebar": "工时"
       },
       "projects": {
@@ -3090,7 +3093,7 @@
       "channelStable": "稳定",
       "channelBeta": "测试版",
       "beta": "测试版",
-      "viewReleaseNotes": "查看发布注释",
+      "viewReleaseNotes": "查看更新说明",
       "viewOnGithub": "在 GitHub 上查看 PicPeak",
       "updateAvailableShort": "可更新至 {{version}}",
       "upToDate": "当前已是最新版本",
@@ -3105,7 +3108,7 @@
         "completeChecklist": "更新前填写核对表",
         "error": "加载更新指令失败"
       },
-      "viewDetails": "查看发布注释和升级指令",
+      "viewDetails": "查看更新说明和升级指引",
       "registryMoved": {
         "title": "当前使用的镜像仓库已停止更新",
         "body": "请将 docker-compose.yml 中的镜像地址改为 {{newPath}} 后再更新。旧地址仍可能响应，但 docker compose pull 获取的是已停止更新的构建。",
@@ -3117,9 +3120,9 @@
       "howToUpgrade": "如何升级",
       "detectedEnv": "检测到的环境: {{env}}",
       "copyCommand": "复制命令",
-      "releaseNotes": "发布注释",
+      "releaseNotes": "更新说明",
       "changelogError": "更新说明加载失败，请查看 GitHub 发布页面。",
-      "noReleases": "没有可用的发行注释。",
+      "noReleases": "暂无可用的更新说明。",
       "viewOnGitHub": "在 GitHub 上查看",
       "noNotes": "此版本未提供更新说明。",
       "dismissUntilNext": "此版本不再提示"
@@ -3453,7 +3456,7 @@
       "guest_feedback_comment": "客户评论这张照片: {{eventName}}",
       "word_filter_added": "添加文字过滤器",
       "external_import_completed": "NAS 照片导入完成：新增 {{imported}} 张，跳过 {{skipped}} 张",
-      "bulk_archive_completed": "散装归档完成",
+      "bulk_archive_completed": "批量归档已完成",
       "event_activated": "项目已激活 : {{eventName}}",
       "event_deactivated": "项目已失效 : {{eventName}}",
       "photo_deleted": "照片从此删除 {{eventName}}",
@@ -3682,7 +3685,7 @@
     "catalogedMedia": "已索引 {{size}}",
     "storageUnavailable": "无",
     "catalogedMediaOnly": "根据文件记录计算用量，实际文件位于 S3 存储。",
-    "viewReleaseNotes": "在 GitHub 上查看发布注释",
+    "viewReleaseNotes": "在 GitHub 上查看更新说明",
     "expandSidebar": "展开侧边栏",
     "collapseSidebar": "折叠侧边栏",
     "viewOnGithub": "在 GitHub 上查看 PicPeak"
@@ -4004,7 +4007,7 @@
     "title": "内容页面",
     "subtitle": "管理法律和信息网页",
     "loadingPages": "正在加载页面...",
-    "pages": "页 次",
+    "pages": "页面",
     "previewLinks": "预览链接",
     "englishVersion": "英语版本",
     "germanVersion": "德语版本",
@@ -4097,7 +4100,8 @@
       }
     },
     "showInFooter": "在相册页脚中显示",
-    "showInFooterHelp": "关闭时，此页面会隐藏在公共相册页脚上。 页面本身仍可访问其直接 URL。"
+    "showInFooterHelp": "关闭时，此页面会隐藏在公共相册页脚上。 页面本身仍可访问其直接 URL。",
+    "unsavedChangesConfirm": "有尚未保存的更改，要保存吗？"
   },
   "eventTypes": {
     "title": "拍摄类型",
@@ -4608,7 +4612,10 @@
         "starting": "开始...",
         "validating": "正在验证...",
         "startNewRestore": "开始新恢复"
-      }
+      },
+      "validationFailed": "校验失败",
+      "started": "已开始恢复",
+      "startFailed": "无法启动恢复"
     },
     "messages": {
       "backupStarted": "备份已成功启动",
@@ -4723,7 +4730,7 @@
     "reactionError": "表情更新失败",
     "totalReactions": "表情总数",
     "comments": "评论",
-    "addComment": "添加注释",
+    "addComment": "添加评论",
     "yourName": "您的姓名",
     "yourEmail": "您的邮箱",
     "writeComment": "输入评论…",
@@ -5241,7 +5248,12 @@
     "movedToCategory_other": "{{count}}  照片移动到 {{category}}",
     "moveToCategoryFailed": "移动照片到分类失败",
     "moveToCategory": "移动到类别",
-    "folderOption": "{{name}}  (文件夹——隐藏在主网格之外)."
+    "folderOption": "{{name}}  (文件夹——隐藏在主网格之外).",
+    "confirmDeleteOne": "确定删除“{{name}}”吗？",
+    "confirmDeleteMany_one": "确定删除选中的 {{count}} 张照片吗？",
+    "confirmDeleteMany_other": "确定删除选中的 {{count}} 张照片吗？",
+    "deleted_one": "已成功删除 {{count}} 张照片",
+    "deleted_other": "已成功删除 {{count}} 张照片"
   },
   "customer": {
     "login": {
@@ -6329,7 +6341,7 @@
     "grandTotalNet": "净额共计",
     "grandTotalVat": "增值税共计",
     "grandTotalGross": "毛额共计",
-    "cancelledFootnote": "{{count}}  已注销发票——不包括总额(为审计拖车连续性而注销)。",
+    "cancelledFootnote": "{{count}} 张已取消的发票不计入合计；保留此记录是为了保持审计记录的连续性。",
     "skontoTooltip": "与 Skonto 支付",
     "costsTitle": "费用(收到的发票+支出)",
     "costsDisclaimer": "这个收入/支出概况是您记录(Einnahmen-Ausgaben-Recknung)的指南。增值税的可收回性和结果数字取决于每个成本的税收待遇 — — 在申报前与您的Treuhänder/税务当局核实。",
@@ -6371,8 +6383,8 @@
       "party": "客户/供应商",
       "tax": "税收"
     },
-    "cancelledFootnote_one": "{{count}}  已注销发票——不包括总额(为审计拖车连续性而注销)。",
-    "cancelledFootnote_other": "{{count}}  已注销发票——不包括总额(为审计拖车连续性而注销)。",
+    "cancelledFootnote_one": "{{count}} 张已取消的发票不计入合计；保留此记录是为了保持审计记录的连续性。",
+    "cancelledFootnote_other": "{{count}} 张已取消的发票不计入合计；保留此记录是为了保持审计记录的连续性。",
     "costsErrorTitle": "无法加载成本"
   },
   "quotes": {
@@ -6509,7 +6521,7 @@
       "addFromPreset": "从预设中添加...",
       "shipping": "航运",
       "addSubItem": "增加分项",
-      "detailsAdd": "+ 添加细节/ 注释",
+      "detailsAdd": "+ 添加明细 / 备注",
       "detailsFilled": "详情",
       "detailsPlaceholder": "可选笔记——精细的印刷品，包装包含，条件.",
       "autoTotaledHint": "以下分项目自动计算共计",
@@ -7120,7 +7132,7 @@
         "reverify": "重新验证",
         "unsignedTitle": "未签名的 PDF",
         "signedTitle": "已签名 PDF",
-        "match": "散装匹配",
+        "match": "哈希值一致",
         "mismatch": "hash 不匹配——文件已更改",
         "missing": "磁盘中缺少文件",
         "notIssued": "尚未印发",
@@ -7370,7 +7382,7 @@
     "send": "发送",
     "subject": "议题",
     "optional": "可选",
-    "bodyHint": "自由编辑消息——在发送前在任何地方添加一个注释.",
+    "bodyHint": "消息内容可自由编辑，发送前可在任意位置添加备注。",
     "sendsFromHint": "从您所配置的出处发送。",
     "sentToast": "发了消息。",
     "sendFailed": "发送消息失败。",
@@ -7666,8 +7678,20 @@
       "title": "大型发送——先检查您的发送声誉",
       "body": "邮寄 {{count}}  通常只发送交易邮件的域名上的人会立刻引起垃圾邮件过滤器的注意。 供应商可能会将整个批量的邮件推倒、丢弃或封堵，运行不良也会损坏您的相册邮件的发送。",
       "advice": "确认SPF,DKIM和DMARC 是为您的发送域设置的，先给自己发送一个测试，并考虑在几个较小的发送中分出第一次活动.",
-      "duration": "时 {{rate}} 一分钟，这需要约 {{minutes}}  分钟。 发送队列是共享的，因此当它运行其他邮件时—— 相册邀请，密码重置程序—— 可以延迟到它后面。"
-    }
+      "duration": "时 {{rate}} 一分钟，这需要约 {{minutes}}  分钟。 发送队列是共享的，因此当它运行其他邮件时—— 相册邀请，密码重置程序—— 可以延迟到它后面。",
+      "body_one": "如果一个平时只发送事务邮件的域名突然向 {{count}} 人群发邮件，容易触发垃圾邮件过滤。邮件服务商可能会限流、归入垃圾邮件或拦截整批邮件，投递情况不佳也可能影响照片分享通知邮件。",
+      "body_other": "如果一个平时只发送事务邮件的域名突然向 {{count}} 人群发邮件，容易触发垃圾邮件过滤。邮件服务商可能会限流、归入垃圾邮件或拦截整批邮件，投递情况不佳也可能影响照片分享通知邮件。"
+    },
+    "queueBody_one": "将向 {{count}} 位客户发送邮件，发送速率为每分钟 {{rate}} 位（预计约 {{minutes}} 分钟）。开始发送后无法撤回。",
+    "queueBody_other": "将向 {{count}} 位客户发送邮件，发送速率为每分钟 {{rate}} 位（预计约 {{minutes}} 分钟）。开始发送后无法撤回。",
+    "queueConfirm_one": "向 {{count}} 位客户发送",
+    "queueConfirm_other": "向 {{count}} 位客户发送",
+    "recipientCount_one": "{{count}} 位收件人",
+    "recipientCount_other": "{{count}} 位收件人",
+    "skippedOptOut_one": "已跳过 {{count}} 位已退订的客户",
+    "skippedOptOut_other": "已跳过 {{count}} 位已退订的客户",
+    "cancelled_one": "已取消 {{count}} 封待发送邮件。",
+    "cancelled_other": "已取消 {{count}} 封待发送邮件。"
   },
   "documentVerification": {
     "title": "确认是你",
@@ -7692,7 +7716,9 @@
       "noRecipientEmail": "文件没有发送代码的邮件地址。 请联系发送者。",
       "emailUnavailable": "代码无法马上发送。 请稍候再试，或联系发送者。",
       "codeFormat": "从邮件中输入6位数代码。",
-      "generic": "操作失败，请重试"
+      "generic": "操作失败，请重试",
+      "invalid_one": "验证码不正确，还可尝试 {{count}} 次。",
+      "invalid_other": "验证码不正确，还可尝试 {{count}} 次。"
     }
   },
   "ui": {

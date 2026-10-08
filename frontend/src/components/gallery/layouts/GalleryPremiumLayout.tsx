@@ -13,7 +13,7 @@ import 'yet-another-react-lightbox/plugins/thumbnails.css';
 import { ColorLabelBadge } from '../ColorLabelBadge';
 import 'yet-another-react-lightbox/plugins/captions.css';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download as DownloadIcon, Heart, Check, Star, MessageSquare, Package, LogOut } from 'lucide-react';
+import { Heart, Check, Star, MessageSquare, Package, LogOut, ListChecks, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 
@@ -198,6 +198,7 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
   selectedPhotos = new Set(),
   isSelectionMode = false,
   onPhotoSelect,
+  onToggleSelectionMode,
   onSelectAll,
   onDeselectAll,
   eventName,
@@ -582,19 +583,15 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
                 <Heart className="w-4 h-4" />
               </button>
             )}
-            {allowDownloads && photos.length > 0 && (
+            {allowDownloads && photos.length > 0 && onToggleSelectionMode && (
               <button
                 className="gallery-premium-nav-btn"
-                title={t('common.downloadAll', 'Download All')}
-                onClick={() => {
-                  filteredPhotos.forEach(p => {
-                    if (!selectedPhotos.has(p.id)) {
-                      onPhotoSelect?.(p.id);
-                    }
-                  });
-                }}
+                title={isSelectionMode ? t('gallery.cancelSelection') : t('gallery.batchSelect')}
+                aria-label={isSelectionMode ? t('gallery.cancelSelection') : t('gallery.batchSelect')}
+                aria-pressed={isSelectionMode}
+                onClick={onToggleSelectionMode}
               >
-                <DownloadIcon className="w-4 h-4" />
+                {isSelectionMode ? <X className="w-4 h-4" /> : <ListChecks className="w-4 h-4" />}
               </button>
             )}
             {onLogout && (

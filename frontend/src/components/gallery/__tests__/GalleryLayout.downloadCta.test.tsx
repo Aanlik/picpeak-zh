@@ -1,18 +1,12 @@
 /**
- * The download CTA must survive every header style.
+ * The batch-selection CTA must survive every header style.
  *
- * `showDownloadAll` (the old primary "Download all" button) is hard-wired to
- * false by GalleryView — the live entry point is `showHeaderDownload`, the
- * accent CTA that opens the resolution picker. That CTA was rendered in the
- * standard, minimal and hero headers but not in `headerStyle: 'none'`, whose
- * comment claimed the variant was "fully chromeless by design" — it is not: it
- * still renders the menu, headerExtra and logout. So `none` silently dropped
- * the gallery's primary download affordance, leaving guests with per-tile
- * downloads and the selection-mode bulk button only (QA P4-B.05).
+ * Download All remains a separate action. The always-visible header action
+ * enters batch-selection mode and must never call the download handler.
  *
- * 'none' means "no title header", not "no downloads".
+ * 'none' means "no title header", not "no gallery actions".
  */
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -44,6 +38,8 @@ vi.mock('../../../services/cms.service', () => ({
 
 const renderLayout = (headerStyle: HeaderStyleType) => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const onDownloadAll = vi.fn();
+  const onToggleSelectionMode = vi.fn();
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
@@ -51,9 +47,9 @@ const renderLayout = (headerStyle: HeaderStyleType) => {
           event={{ event_name: 'ZZTEST Wedding' }}
           headerStyle={headerStyle}
           showDownloadAll={false}
-          onDownloadAll={vi.fn()}
-          showHeaderDownload
-          onHeaderDownload={vi.fn()}
+          onDownloadAll={onDownloadAll}
+          showHeaderSelection
+          onToggleSelectionMode={onToggleSelectionMode}
           showLogout
           onLogout={vi.fn()}
         >
@@ -64,15 +60,43 @@ const renderLayout = (headerStyle: HeaderStyleType) => {
   );
 };
 
-describe('GalleryLayout header download CTA', () => {
+describe('GalleryLayout header batch-selection CTA', () => {
   it.each<HeaderStyleType>(['standard', 'minimal', 'hero', 'none', 'banner'])(
-    'renders the download CTA with headerStyle "%s"',
+    'renders the batch-selection CTA with headerStyle "%s"',
     (headerStyle) => {
       const { unmount } = renderLayout(headerStyle);
-      expect(screen.getAllByRole('button', { name: 'Download' }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('button', { name: 'gallery.batchSelect' }).length).toBeGreaterThan(0);
       unmount();
     }
   );
+
+  it('toggles batch selection without downloading the gallery', () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const onDownloadAll = vi.fn();
+    const onToggleSelectionMode = vi.fn();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <GalleryLayout
+            event={{ event_name: 'ZZTEST Wedding' }}
+            headerStyle="standard"
+            showDownloadAll={false}
+            onDownloadAll={onDownloadAll}
+            showHeaderSelection
+            onToggleSelectionMode={onToggleSelectionMode}
+            showLogout
+            onLogout={vi.fn()}
+          >
+            <div>photos</div>
+          </GalleryLayout>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'gallery.batchSelect' }));
+    expect(onToggleSelectionMode).toHaveBeenCalledOnce();
+    expect(onDownloadAll).not.toHaveBeenCalled();
+  });
 
   it('omits the CTA when the gallery does not allow downloads', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -83,7 +107,8 @@ describe('GalleryLayout header download CTA', () => {
             event={{ event_name: 'ZZTEST Wedding' }}
             headerStyle="none"
             showDownloadAll={false}
-            showHeaderDownload={false}
+            showHeaderSelection={false}
+            onToggleSelectionMode={vi.fn()}
             showLogout
             onLogout={vi.fn()}
           >
@@ -92,6 +117,6 @@ describe('GalleryLayout header download CTA', () => {
         </MemoryRouter>
       </QueryClientProvider>
     );
-    expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'gallery.batchSelect' })).not.toBeInTheDocument();
   });
 });

@@ -18,6 +18,7 @@ export interface BaseGalleryLayoutProps {
   selectedPhotos?: Set<number>;
   isSelectionMode?: boolean;
   onPhotoSelect?: (photoId: number) => void;
+  onToggleSelectionMode?: () => void;
   onSelectAll?: () => void;
   onDeselectAll?: () => void;
   eventName?: string;

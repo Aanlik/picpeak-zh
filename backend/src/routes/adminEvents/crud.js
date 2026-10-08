@@ -20,7 +20,7 @@ const logger = require('../../utils/logger');
 const { sanitizeForLog, sanitizeValidationErrors } = require('../../utils/sanitizeForLog');
 const { errorResponse, safeValidationErrors } = require('../../utils/routeHelpers');
 const { isUniqueViolation } = require('../../utils/dbErrors');
-const { buildShareLinkVariants } = require('../../services/shareLinkService');
+const { buildShareLinkVariants, resolveShareLinkUrl } = require('../../services/shareLinkService');
 const { parseBooleanInput } = require('../../utils/parsers');
 const eventTypeService = require('../../services/eventTypeService');
 const { normaliseEventTimeTriple } = require('../../services/eventService');
@@ -414,14 +414,18 @@ module.exports = (router) => {
       }, {});
 
       // Add photo counts to events and convert dates
-      const eventsWithCounts = events.map(event => ({
+      const eventsWithCounts = await Promise.all(events.map(async (event) => ({
         ...event,
         photo_count: photoCountMap[event.id] || 0,
         // Convert Unix timestamps to ISO strings
         created_at: event.created_at ? new Date(event.created_at).toISOString() : null,
         expires_at: event.expires_at ? new Date(event.expires_at).toISOString() : null,
         archived_at: event.archived_at ? new Date(event.archived_at).toISOString() : null
-      })).map((event) => withoutForeignEventSecrets(mapEventForApi(event), req.admin));
+      })).map(async (event) => {
+        const mapped = mapEventForApi(event);
+        if (mapped.share_link) mapped.share_link = await resolveShareLinkUrl(mapped.share_link);
+        return withoutForeignEventSecrets(mapped, req.admin);
+      }));
 
       res.json({
         events: eventsWithCounts,
@@ -500,7 +504,7 @@ module.exports = (router) => {
         }
       }
 
-      res.json(withoutForeignEventSecrets(mapEventForApi({
+      const mapped = mapEventForApi({
         ...event,
         photo_count: parseInt(photoCount) || 0,
         total_size: parseInt(totalSize) || 0,
@@ -522,7 +526,9 @@ module.exports = (router) => {
           is_active: c.is_active,
           can_sign_in: c.can_sign_in,
         })),
-      }), req.admin));
+      });
+      if (mapped.share_link) mapped.share_link = await resolveShareLinkUrl(mapped.share_link);
+      res.json(withoutForeignEventSecrets(mapped, req.admin));
     } catch (error) {
       errorResponse(res, error, 500, 'Failed to fetch event details');
     }

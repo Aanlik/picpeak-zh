@@ -10,8 +10,7 @@ const { db } = require('../../database/db');
 const { adminAuth } = require('../../middleware/auth');
 const { requirePermission } = require('../../middleware/permissions');
 const { requireEventOwnership } = require('../../middleware/ownership');
-const { buildShareLinkVariants, getEventShareToken } = require('../../services/shareLinkService');
-const { getFrontendBaseUrl } = require('../../utils/frontendUrl');
+const { buildShareLinkVariants, getEventShareToken, resolveShareLinkUrl } = require('../../services/shareLinkService');
 const logger = require('../../utils/logger');
 const { errorResponse } = require('../../utils/routeHelpers');
 
@@ -42,51 +41,20 @@ const TEMPLATES = {
 const FONT_BOLD = path.join(__dirname, '../../../assets/fonts/IBM-Plex-Sans-Full/700.ttf');
 const FONT_REGULAR = path.join(__dirname, '../../../assets/fonts/IBM-Plex-Sans-Full/400.ttf');
 
-// A same-origin admin GET carries no Origin header, so the frontend passes
-// window.location.origin explicitly. Only accept a plain http(s) origin.
-const ORIGIN_RE = /^https?:\/\/[^\s/]+$/i;
-// Configured FRONTEND_URL defaults to localhost on unconfigured installs —
-// a QR pointing there is unusable on any other device (codex review of #847).
-const LOCAL_BASE_RE = /^https?:\/\/(localhost|127\.|0\.0\.0\.0|\[::1\])/i;
-
 async function loadShareUrl(eventId, requestOrigin) {
   const event = await db('events').where({ id: eventId }).first();
   if (!event) return { event: null, shareUrl: null };
 
-  // Single source of truth is the STORED share_link — exactly what the
-  // ShareLinkCard displays and the admin copies. Rebuilding from the
-  // current slug/token/short-URL setting can diverge for legacy absolute
-  // links or events created under a different short-URL setting, and a
-  // printed QR encoding a different URL than the card is a permanent
-  // mistake (codex review of #847, confirmation round). Only when no
-  // share_link is stored do we fall back to rebuilding it.
+  // Keep the stored path/token as the source of truth, but resolve its
+  // customer-facing origin from the current site setting. This keeps the QR
+  // aligned with the link shown in the admin UI after the address changes.
   let link = event.share_link;
   if (!link) {
     const shareToken = getEventShareToken(event);
     if (!shareToken) return { event, shareUrl: null };
     ({ shareLinkToStore: link } = await buildShareLinkVariants({ slug: event.slug, shareToken }));
   }
-
-  const origin = typeof requestOrigin === 'string' && ORIGIN_RE.test(requestOrigin)
-    ? requestOrigin.replace(/\/$/, '')
-    : null;
-
-  // Absolute + reachable → use as-is; loopback-absolute → re-anchor its
-  // path; relative → absolutize. Mirrors the frontend's buildShareLinkUrl.
-  if (/^https?:\/\//i.test(link) && !LOCAL_BASE_RE.test(link)) {
-    return { event, shareUrl: link };
-  }
-  let sharePath = link;
-  if (/^https?:\/\//i.test(link)) {
-    try { const u = new URL(link); sharePath = `${u.pathname}${u.search}`; } catch { /* keep as-is */ }
-  }
-  // Bare stored values (quote-/contract-converted events persist the raw
-  // token) resolve as /gallery/<token> — mirroring the frontend's
-  // buildShareLinkUrl exactly (codex review of #847, final round).
-  if (!sharePath.startsWith('/')) sharePath = `/gallery/${sharePath}`;
-  if (origin) return { event, shareUrl: `${origin}${sharePath}` };
-  const frontendBase = await getFrontendBaseUrl();
-  return { event, shareUrl: frontendBase ? `${frontendBase}${sharePath}` : sharePath };
+  return { event, shareUrl: await resolveShareLinkUrl(link, { requestOrigin }) };
 }
 
 module.exports = (router) => {

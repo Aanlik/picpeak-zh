@@ -64,6 +64,11 @@ function renderTab(overrides: Partial<GeneralSettings>) {
 }
 
 describe('GeneralTab — Site URL validation', () => {
+  it('shows the China flag in the Simplified Chinese language option', () => {
+    renderTab({ default_language: 'zh-CN' });
+    expect(screen.getByRole('option', { name: '🇨🇳 简体中文' })).toHaveValue('zh-CN');
+  });
+
   it('does not block Save on a stored value the admin never touched', () => {
     // The upgrade case: schemeless value already in the database.
     const { saveButton } = renderTab({

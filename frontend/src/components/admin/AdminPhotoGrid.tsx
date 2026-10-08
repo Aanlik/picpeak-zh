@@ -133,17 +133,17 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
   const handleDeleteSingle = async (photo: AdminPhoto, e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (!confirm(`Are you sure you want to delete "${photo.filename}"?`)) {
+    if (!confirm(t('photos.confirmDeleteOne', 'Delete “{{name}}”?', { name: photo.filename }))) {
       return;
     }
 
     setDeletingPhotos(prev => new Set(prev).add(photo.id));
     try {
       await photosService.deletePhoto(eventId, photo.id);
-      toast.success('Photo deleted successfully');
+      toast.success(t('ui.photoDeleted'));
       onPhotosDeleted();
     } catch {
-      toast.error('Failed to delete photo');
+      toast.error(t('ui.deletePhotoFailed'));
       setDeletingPhotos(prev => {
         const newSet = new Set(prev);
         newSet.delete(photo.id);
@@ -156,7 +156,7 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
     if (selectedPhotos.size === 0) return;
 
     const count = selectedPhotos.size;
-    if (!confirm(`Are you sure you want to delete ${count} photo${count > 1 ? 's' : ''}?`)) {
+    if (!confirm(t('photos.confirmDeleteMany', 'Delete {{count}} selected photos?', { count }))) {
       return;
     }
 
@@ -166,14 +166,14 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
     
     try {
       await photosService.deletePhotos(eventId, selectedIds);
-      toast.success(`${count} photo${count > 1 ? 's' : ''} deleted successfully`);
+      toast.success(t('photos.deleted', { count }));
       setSelectedPhotos(new Set());
       setAnchor(null);
       setIsSelectionMode(false);
       onSelectionChange?.([]);
       onPhotosDeleted();
     } catch {
-      toast.error('Failed to delete photos');
+      toast.error(t('ui.deletePhotoFailed'));
       setDeletingPhotos(new Set());
     } finally {
       setIsDeleting(false);
@@ -184,9 +184,9 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
     e.stopPropagation();
     try {
       await photosService.downloadPhoto(eventId, photo.id, photo.filename);
-      toast.success('Download started');
+      toast.success(t('events.downloadStarted'));
     } catch {
-      toast.error('Failed to download photo');
+      toast.error(t('errors.downloadFailed'));
     }
   };
 
@@ -438,7 +438,7 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
                         // updates without a full reload.
                         queryClient.invalidateQueries({ queryKey: ['admin-event-photos'] });
                       } catch (err: any) {
-                        toast.error(err?.response?.data?.error || 'Retry failed');
+                        toast.error(err?.response?.data?.error || t('upload.retryFailed'));
                       }
                     }}
                     className="mt-1 px-2 py-0.5 rounded bg-red-200 dark:bg-red-800 text-[10px] inline-flex items-center gap-1"

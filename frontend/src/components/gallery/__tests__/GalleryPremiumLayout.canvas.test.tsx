@@ -98,6 +98,18 @@ async function readyCanvas(dialog: HTMLElement, id = 1) {
 }
 
 describe('Premium lightbox canvas rendering (#1325)', () => {
+  it('opens batch-selection mode instead of selecting or downloading every photo', () => {
+    const onToggleSelectionMode = vi.fn();
+    const onPhotoSelect = vi.fn();
+    mount({ allowDownloads: true, onToggleSelectionMode, onPhotoSelect });
+
+    fireEvent.click(screen.getByRole('button', { name: 'gallery.batchSelect' }));
+
+    expect(onToggleSelectionMode).toHaveBeenCalledOnce();
+    expect(onPhotoSelect).not.toHaveBeenCalled();
+    expect(download).not.toHaveBeenCalled();
+  });
+
   it.each([
     { useCanvasRendering: true, protectionLevel: 'standard' as const },
     { useCanvasRendering: false, protectionLevel: 'maximum' as const },

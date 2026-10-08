@@ -1,7 +1,7 @@
 const { db } = require('../database/db');
 const { formatBoolean } = require('../utils/dbCompat');
 const { extractShareToken, isPotentialShareToken, buildSharePath } = require('../utils/shareLinkUtils');
-const { getFrontendBaseUrl } = require('../utils/frontendUrl');
+const { getFrontendBaseUrl, isLoopbackBase } = require('../utils/frontendUrl');
 const logger = require('../utils/logger');
 
 const SETTING_KEY = 'general_short_gallery_urls';
@@ -98,6 +98,53 @@ const buildShareLinkVariants = async ({ slug, shareToken }) => {
     shareUrl,
     shareLinkToStore: sharePath
   };
+};
+
+/**
+ * Resolve a stored gallery path to the customer-facing URL used by the
+ * current installation. The database normally stores relative paths, so the
+ * configured Site URL must be applied when an admin copies a link or creates
+ * a QR code. Keep the old absolute origin only when no site origin is
+ * configured; when one is configured, retain the path/token and move it to
+ * that origin so changing the customer access address takes effect for
+ * existing galleries too.
+ */
+const resolveShareLinkUrl = async (link, { req, requestOrigin } = {}) => {
+  if (!link || typeof link !== 'string') return null;
+
+  let sharePath = link;
+  if (/^https?:\/\//i.test(link)) {
+    try {
+      const parsed = new URL(link);
+      sharePath = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } catch {
+      return link;
+    }
+  }
+  if (!sharePath.startsWith('/')) sharePath = `/gallery/${sharePath}`;
+
+  // Resolve without the request first so general_site_url (and an explicit
+  // FRONTEND_URL) beats the host used by the admin browser, which may be a
+  // LAN-only address or an internal reverse-proxy hostname.
+  const configuredBase = await getFrontendBaseUrl();
+  if (configuredBase) return `${configuredBase}${sharePath}`;
+
+  // Preserve a legacy reachable absolute address when no global customer
+  // address is configured. Loopback URLs are unusable to customers on other
+  // devices, so they may still use the explicit/request-derived fallback.
+  if (/^https?:\/\//i.test(link) && !isLoopbackBase(link)) return link;
+
+  const explicitOrigin = typeof requestOrigin === 'string'
+    && /^https?:\/\/[^\s/]+$/i.test(requestOrigin)
+    ? requestOrigin.replace(/\/$/, '')
+    : '';
+  if (explicitOrigin) return `${explicitOrigin}${sharePath}`;
+
+  const requestBase = req ? await getFrontendBaseUrl(req) : '';
+  if (requestBase) return `${requestBase}${sharePath}`;
+
+  // No configured or request-derived base: retain a legacy absolute URL.
+  return /^https?:\/\//i.test(link) ? link : sharePath;
 };
 
 const getEventShareToken = (event) => {
@@ -197,6 +244,7 @@ module.exports = {
   isShortGalleryUrlsEnabled,
   clearShareLinkSettingsCache,
   buildShareLinkVariants,
+  resolveShareLinkUrl,
   getEventShareToken,
   resolveShareIdentifier
 };

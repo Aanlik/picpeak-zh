@@ -689,7 +689,9 @@
         "attempts": "Attempts"
       },
       "emptyButUnworked": "Nothing is overdue yet, but nothing is sending either — see the processor above. Anything queued from now on will sit here.",
-      "truncated": "The pending queue is too large to check in full — nothing overdue was found in the rows read, but this is not an all-clear."
+      "truncated": "The pending queue is too large to check in full — nothing overdue was found in the rows read, but this is not an all-clear.",
+      "attempted_one": "{{count}} attempt, last error: {{error}}",
+      "attempted_other": "{{count}} attempts, last error: {{error}}"
     },
     "processor": {
       "title": "Email queue processor",
@@ -1276,7 +1278,8 @@
     "preparingProgress_one": "{{count}} photos packaged",
     "preparingProgress_other": "{{count}} photos packaged",
     "videoFormatUnsupported": "This video format cannot be played in this browser. Download it to watch it.",
-    "videoLoadFailed": "This video could not be loaded."
+    "videoLoadFailed": "This video could not be loaded.",
+    "batchSelect": "Select multiple photos"
   },
   "categories": {
     "title": "Photo Categories",
@@ -4097,7 +4100,8 @@
       }
     },
     "showInFooter": "Show in gallery footer",
-    "showInFooterHelp": "When off, this page is hidden from the public gallery footer. The page itself remains accessible at its direct URL."
+    "showInFooterHelp": "When off, this page is hidden from the public gallery footer. The page itself remains accessible at its direct URL.",
+    "unsavedChangesConfirm": "You have unsaved changes. Do you want to save them?"
   },
   "eventTypes": {
     "title": "Event Types",
@@ -4608,7 +4612,10 @@
         "starting": "Starting...",
         "validating": "Validating...",
         "startNewRestore": "Start New Restore"
-      }
+      },
+      "validationFailed": "Validation failed",
+      "started": "Restore started successfully",
+      "startFailed": "Failed to start restore"
     },
     "messages": {
       "backupStarted": "Backup started successfully",
@@ -5241,7 +5248,12 @@
     "movedToCategory_other": "{{count}} photos moved to {{category}}",
     "moveToCategoryFailed": "Failed to move photos to category",
     "moveToCategory": "Move to Category",
-    "folderOption": "{{name}} (folder — hidden from the main grid)"
+    "folderOption": "{{name}} (folder — hidden from the main grid)",
+    "confirmDeleteOne": "Delete “{{name}}”?",
+    "confirmDeleteMany_one": "Delete {{count}} selected photo?",
+    "confirmDeleteMany_other": "Delete {{count}} selected photos?",
+    "deleted_one": "{{count}} photo deleted successfully",
+    "deleted_other": "{{count}} photos deleted successfully"
   },
   "customer": {
     "login": {
@@ -7666,8 +7678,20 @@
       "title": "Large send — check your sending reputation first",
       "body": "Mailing {{count}} people at once from a domain that usually sends only transactional email is what makes spam filters take notice. Providers may throttle, junk or block the whole batch, and a bad run damages delivery of your gallery emails too.",
       "advice": "Confirm SPF, DKIM and DMARC are set up for your sending domain, send yourself a test first, and consider splitting a first campaign across several smaller sends.",
-      "duration": "At {{rate}}/minute this takes about {{minutes}} minutes. The send queue is shared, so while it runs other email — gallery invitations, password resets — can be delayed behind it."
-    }
+      "duration": "At {{rate}}/minute this takes about {{minutes}} minutes. The send queue is shared, so while it runs other email — gallery invitations, password resets — can be delayed behind it.",
+      "body_one": "Mailing {{count}} person at once from a domain that usually sends only transactional email is what makes spam filters take notice. Providers may throttle, junk or block the whole batch, and a bad run damages delivery of your gallery emails too.",
+      "body_other": "Mailing {{count}} people at once from a domain that usually sends only transactional email is what makes spam filters take notice. Providers may throttle, junk or block the whole batch, and a bad run damages delivery of your gallery emails too."
+    },
+    "queueBody_one": "This will email {{count}} customer at {{rate}} per minute (roughly {{minutes}} min). It cannot be undone once messages start going out.",
+    "queueBody_other": "This will email {{count}} customers at {{rate}} per minute (roughly {{minutes}} min). It cannot be undone once messages start going out.",
+    "queueConfirm_one": "Send to {{count}} customer",
+    "queueConfirm_other": "Send to {{count}} customers",
+    "recipientCount_one": "{{count}} recipient",
+    "recipientCount_other": "{{count}} recipients",
+    "skippedOptOut_one": "{{count}} skipped (opted out)",
+    "skippedOptOut_other": "{{count}} skipped (opted out)",
+    "cancelled_one": "{{count}} pending email cancelled.",
+    "cancelled_other": "{{count}} pending emails cancelled."
   },
   "documentVerification": {
     "title": "Confirm it's you",
@@ -7692,7 +7716,9 @@
       "noRecipientEmail": "There is no email address on file to send a code to. Please contact the sender.",
       "emailUnavailable": "The code could not be sent right now. Please try again later or contact the sender.",
       "codeFormat": "Enter the 6-digit code from the email.",
-      "generic": "Something went wrong. Please try again."
+      "generic": "Something went wrong. Please try again.",
+      "invalid_one": "That code is not correct. {{count}} attempt remaining.",
+      "invalid_other": "That code is not correct. {{count}} attempts remaining."
     }
   },
   "ui": {

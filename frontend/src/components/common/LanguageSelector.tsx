@@ -13,6 +13,17 @@ const GBFlag: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => 
   </svg>
 );
 
+const CNFlag: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+  <svg className={className} viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect width="30" height="20" fill="#DE2910" />
+    <path fill="#FFDE00" d="M5 2 5.7 4.1 8 4.1 6.2 5.4 6.9 7.6 5 6.2 3.1 7.6 3.8 5.4 2 4.1 4.3 4.1Z" />
+    <path fill="#FFDE00" d="M10 1 10.45 2.15 11.7 2.2 10.75 2.9 11.1 4.1 10 3.4 8.9 4.1 9.25 2.9 8.3 2.2 9.55 2.15Z" transform="rotate(25 10 2.55)" />
+    <path fill="#FFDE00" d="M12 4 12.45 5.15 13.7 5.2 12.75 5.9 13.1 7.1 12 6.4 10.9 7.1 11.25 5.9 10.3 5.2 11.55 5.15Z" transform="rotate(45 12 5.55)" />
+    <path fill="#FFDE00" d="M12 8 12.45 9.15 13.7 9.2 12.75 9.9 13.1 11.1 12 10.4 10.9 11.1 11.25 9.9 10.3 9.2 11.55 9.15Z" transform="rotate(65 12 9.55)" />
+    <path fill="#FFDE00" d="M10 11 10.45 12.15 11.7 12.2 10.75 12.9 11.1 14.1 10 13.4 8.9 14.1 9.25 12.9 8.3 12.2 9.55 12.15Z" transform="rotate(85 10 12.55)" />
+  </svg>
+);
+
 const DEFlag: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
   <svg className={className} viewBox="0 0 640 480" xmlns="http://www.w3.org/2000/svg">
     <path fill="#000" d="M0 0h640v160H0z"/>
@@ -79,7 +90,7 @@ const SLFlag: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => 
 );
 
 export const SUPPORTED_LANGUAGES = [
-  { code: 'zh-CN', name: '简体中文', Flag: Globe },
+  { code: 'zh-CN', name: '简体中文', Flag: CNFlag },
   { code: 'en', name: 'English', Flag: GBFlag },
   { code: 'de', name: 'Deutsch', Flag: DEFlag },
   { code: 'ru', name: 'Русский', Flag: RUFlag },

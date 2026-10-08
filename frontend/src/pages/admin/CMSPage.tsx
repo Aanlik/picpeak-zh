@@ -521,7 +521,7 @@ export const CMSPage: React.FC = () => {
                   key={page.slug}
                   onClick={() => {
                     if (hasUnsavedChanges) {
-                      if (confirm('You have unsaved changes. Do you want to save them?')) {
+                      if (confirm(t('cms.unsavedChangesConfirm', 'You have unsaved changes. Do you want to save them?'))) {
                         handleSave();
                       }
                     }

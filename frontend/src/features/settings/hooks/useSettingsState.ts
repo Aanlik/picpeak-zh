@@ -440,6 +440,14 @@ export function useSettingsState() {
     onSuccess: () => {
       toast.success(t('toast.settingsSaved'));
       queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
+      // Project links are returned with the current customer-facing origin.
+      // Refresh cached event data immediately when that origin changes so
+      // copy/open actions do not keep using the old address until navigation.
+      if (!generalSettings.site_url_env_pinned
+        && generalSettings.site_url !== generalSettings.site_url_stored) {
+        queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-event'] });
+      }
     },
     onError: () => {
       toast.error(t('toast.saveError'));

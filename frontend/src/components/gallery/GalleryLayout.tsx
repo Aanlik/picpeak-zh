@@ -2,7 +2,7 @@ import { NO_EMAIL_MODE } from '../../config/communication';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Clock, Download, LogOut, Facebook, Instagram, Twitter, Youtube, MessageCircle } from 'lucide-react';
+import { Calendar, Clock, Download, LogOut, ListChecks, X, Facebook, Instagram, Twitter, Youtube, MessageCircle } from 'lucide-react';
 import { parseISO } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useLocalizedDate } from '../../hooks/useLocalizedDate';
@@ -73,15 +73,13 @@ interface GalleryLayoutProps {
   onDownloadAll?: () => void;
   isDownloading?: boolean;
   /**
-   * "Download" CTA shown immediately to the left of the Logout button in the
-   * standard / banner header. Same handler as Download All; the label and
-   * placement are intentionally simpler — single primary action right before
-   * Logout, the natural step at the end of a gallery visit (#386). Always
-   * visible when allowed (independent of sidebar state) so guests aren't
-   * forced to discover the download in the menu.
+   * Batch-selection control shown beside Logout. Download All stays in its
+   * own sidebar/content action so this button never starts an unexpected
+   * whole-gallery download.
    */
-  showHeaderDownload?: boolean;
-  onHeaderDownload?: () => void;
+  showHeaderSelection?: boolean;
+  isSelectionMode?: boolean;
+  onToggleSelectionMode?: () => void;
   headerExtra?: React.ReactNode;
   menuButton?: React.ReactNode;
   headerStyle?: HeaderStyleType;
@@ -89,7 +87,7 @@ interface GalleryLayoutProps {
 }
 
 /**
- * Accent-coloured "Download" CTA shown immediately to the left of the
+ * Accent-coloured batch-selection control shown immediately to the left of the
  * Logout button. Identical markup is rendered in three header variants
  * (standard/banner, minimal, hero) — extracted into a small component
  * here so changes (label, icon, contrast) only need to happen in one
@@ -99,23 +97,23 @@ interface GalleryLayoutProps {
  * gets white. Falls back to white if the variable isn't set (legacy
  * deployments before the contrast helper landed).
  */
-const HeaderDownloadButton: React.FC<{
+const HeaderSelectionButton: React.FC<{
   onClick: () => void;
-  isDownloading?: boolean;
+  isSelectionMode: boolean;
   label: string;
-}> = ({ onClick, isDownloading = false, label }) => (
+}> = ({ onClick, isSelectionMode, label }) => (
   <button
     type="button"
     onClick={onClick}
-    disabled={isDownloading}
     aria-label={label}
+    aria-pressed={isSelectionMode}
     className="gallery-btn gallery-btn-download inline-flex items-center gap-2 px-3 sm:px-4 h-9 rounded-lg text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
     style={{
       backgroundColor: 'var(--color-accent)',
       color: 'var(--color-accent-fg, #ffffff)',
     }}
   >
-    <Download className="w-4 h-4" />
+    {isSelectionMode ? <X className="w-4 h-4" /> : <ListChecks className="w-4 h-4" />}
     <span className="hidden sm:inline">{label}</span>
   </button>
 );
@@ -130,8 +128,9 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
   showDownloadAll = false,
   onDownloadAll,
   isDownloading = false,
-  showHeaderDownload = false,
-  onHeaderDownload,
+  showHeaderSelection = false,
+  isSelectionMode = false,
+  onToggleSelectionMode,
   headerExtra,
   menuButton,
   headerStyle: headerStyleProp,
@@ -430,16 +429,16 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
                 )}
 
                 {/*
-                 * "Download" CTA — accent-coloured button immediately left of
-                 * Logout, always visible when the gallery allows downloads.
-                 * Markup lives in HeaderDownloadButton above; reused in the
+                 * Batch-selection CTA — accent-coloured button immediately left of
+                 * Logout, always visible when downloads are allowed.
+                 * Markup lives in HeaderSelectionButton above; reused in the
                  * minimal and hero headers below.
                  */}
-                {showHeaderDownload && onHeaderDownload && (
-                  <HeaderDownloadButton
-                    onClick={onHeaderDownload}
-                    isDownloading={isDownloading}
-                    label={t('gallery.download', 'Download')}
+                {showHeaderSelection && onToggleSelectionMode && (
+                  <HeaderSelectionButton
+                    onClick={onToggleSelectionMode}
+                    isSelectionMode={isSelectionMode}
+                    label={isSelectionMode ? t('gallery.cancelSelection') : t('gallery.batchSelect')}
                   />
                 )}
 
@@ -505,14 +504,14 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
                     <span className="hidden sm:inline">{t('gallery.downloadAll')}</span>
                   </Button>
                 )}
-                {/* Accent Download CTA — also rendered in the minimal header
+                {/* Batch-selection CTA — also rendered in the minimal header
                     so the action stays one click away regardless of header
                     style. */}
-                {showHeaderDownload && onHeaderDownload && (
-                  <HeaderDownloadButton
-                    onClick={onHeaderDownload}
-                    isDownloading={isDownloading}
-                    label={t('gallery.download', 'Download')}
+                {showHeaderSelection && onToggleSelectionMode && (
+                  <HeaderSelectionButton
+                    onClick={onToggleSelectionMode}
+                    isSelectionMode={isSelectionMode}
+                    label={isSelectionMode ? t('gallery.cancelSelection') : t('gallery.batchSelect')}
                   />
                 )}
                 {showLogout && onLogout && (
@@ -552,15 +551,15 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
                     <span className="hidden sm:inline">{t('gallery.downloadAll')}</span>
                   </Button>
                 )}
-                {/* Accent Download CTA — 'none' suppresses the *title* header,
-                    not the download affordance: this bar still renders the
+                {/* Batch-selection CTA — 'none' suppresses the *title* header,
+                    not the selection affordance: this bar still renders the
                     menu, headerExtra and logout, so leaving the CTA out just
                     stranded guests with per-tile downloads only (QA P4-B.05). */}
-                {showHeaderDownload && onHeaderDownload && (
-                  <HeaderDownloadButton
-                    onClick={onHeaderDownload}
-                    isDownloading={isDownloading}
-                    label={t('gallery.download', 'Download')}
+                {showHeaderSelection && onToggleSelectionMode && (
+                  <HeaderSelectionButton
+                    onClick={onToggleSelectionMode}
+                    isSelectionMode={isSelectionMode}
+                    label={isSelectionMode ? t('gallery.cancelSelection') : t('gallery.batchSelect')}
                   />
                 )}
                 {showLogout && onLogout && (
@@ -606,13 +605,13 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
                   </Button>
                 )}
 
-                {/* Accent Download CTA — also rendered above the hero so the
-                    primary download action is reachable without scrolling. */}
-                {showHeaderDownload && onHeaderDownload && (
-                  <HeaderDownloadButton
-                    onClick={onHeaderDownload}
-                    isDownloading={isDownloading}
-                    label={t('gallery.download', 'Download')}
+                {/* Batch-selection CTA — also rendered above the hero so
+                    photo selection is reachable without scrolling. */}
+                {showHeaderSelection && onToggleSelectionMode && (
+                  <HeaderSelectionButton
+                    onClick={onToggleSelectionMode}
+                    isSelectionMode={isSelectionMode}
+                    label={isSelectionMode ? t('gallery.cancelSelection') : t('gallery.batchSelect')}
                   />
                 )}
 

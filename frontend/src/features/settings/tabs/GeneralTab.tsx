@@ -331,7 +331,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
               className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
               {SUPPORTED_LANGUAGES.map(lang => (
-                <option key={lang.code} value={lang.code}>{lang.name}</option>
+                <option key={lang.code} value={lang.code}>
+                  {lang.code === 'zh-CN' ? '🇨🇳 简体中文' : lang.name}
+                </option>
               ))}
             </select>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">

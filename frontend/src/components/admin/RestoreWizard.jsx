@@ -127,7 +127,7 @@ export const RestoreWizard = ({ onVerifyIntegrity } = {}) => {
       setCurrentStep(3);
     },
     onError: (error) => {
-      toast.error(error.response?.data?.error || 'Validation failed');
+      toast.error(error.response?.data?.error || t('backup.restore.validationFailed'));
     }
   });
 
@@ -148,10 +148,10 @@ export const RestoreWizard = ({ onVerifyIntegrity } = {}) => {
     },
     onSuccess: () => {
       setCurrentStep(4);
-      toast.success('Restore started successfully');
+      toast.success(t('backup.restore.started'));
     },
     onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to start restore');
+      toast.error(error.response?.data?.error || t('backup.restore.startFailed'));
     }
   });
 

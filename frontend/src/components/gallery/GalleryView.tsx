@@ -1339,9 +1339,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
         headerStyle={data?.event?.header_style || theme.headerStyle}
         showLogout={showLogoutControl}
         onLogout={logout}
-        // Old Download All header button is replaced by the new
-        // showHeaderDownload below — accent-coloured, always visible when
-        // downloads are allowed, sits right before Logout (#386).
+        // Keep Download All available in the sidebar. The header action is
+        // reserved for entering batch-selection mode.
         showDownloadAll={false}
         onDownloadAll={handleDownloadAll}
         isDownloading={downloadAllMutation.isPending}
@@ -1363,8 +1362,9 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
             </Button>
           ) : undefined
         }
-        showHeaderDownload={allowDownloads}
-        onHeaderDownload={handleDownloadAll}
+        showHeaderSelection={allowDownloads}
+        isSelectionMode={isSelectionMode}
+        onToggleSelectionMode={() => setIsSelectionMode(!isSelectionMode)}
         headerExtra={(() => {
           const items = [];
           
