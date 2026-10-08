@@ -1,3 +1,5 @@
+import { NasFolderSelection } from '../../components/admin/NasFolderSelection';
+import { externalMediaService } from '../../services/externalMedia.service';
 import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -378,9 +380,16 @@ export const CreateEventPage: React.FC = () => {
     }
   }, [formData.event_type, availableEventTypes]);
 
+  const [nasFolder, setNasFolder] = useState('');
+  const [nasWatch, setNasWatch] = useState(true);
+
   const createMutation = useMutation({
     mutationFn: eventsService.createEvent,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      if (NO_EMAIL_MODE && nasFolder) {
+        try { await externalMediaService.linkEvent(data.id, nasFolder, nasWatch); }
+        catch (error: any) { toast.error(`项目已创建，请在“照片”页继续关联文件夹：${error.message || '关联失败'}`); }
+      }
       if (isMountedRef.current) {
         toast.success(t('toast.eventCreated'));
         navigate(`/admin/events/${data.id}`);
@@ -689,6 +698,11 @@ export const CreateEventPage: React.FC = () => {
             </>)}
           </div>
         </Card>
+
+        {NO_EMAIL_MODE && <Card><div className="p-6 space-y-3">
+          <h2 className="text-lg font-semibold">关联 NAS 照片文件夹（可选）</h2>
+          <NasFolderSelection value={nasFolder} onChange={setNasFolder} watch={nasWatch} onWatchChange={setNasWatch} />
+        </div></Card>}
 
         {/* Theme Selection */}
         <Card>

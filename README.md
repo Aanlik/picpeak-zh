@@ -242,3 +242,7 @@ PicPeak is released under the [MIT License](LICENSE). Use it freely for personal
   <a href="https://docs.picpeak.app">Documentation</a> ·
   <a href="https://github.com/PicPeak/picpeak/issues">Support</a>
 </p>
+
+### NAS 文件夹关联
+
+无邮箱摄影工作流提供新建项目关联和已有项目“照片”页关联/重新扫描入口，支持自动追加。部署管理员须预先添加只读绑定，例如 `/vol1/1000/Home/Camera:/external-media/Camera:ro`。请选择单次拍摄文件夹；详细步骤与 Bridge 配置边界见 [NAS 文件夹关联说明](docs/nas-folder-linking-zh.md)。

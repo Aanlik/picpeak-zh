@@ -32,6 +32,16 @@ export const externalMediaService = {
     return res.data;
   },
 
+  async linkEvent(eventId: number, externalPath: string, watch: boolean): Promise<ExternalMediaImportResult> {
+    const imported = await this.importEvent(eventId, externalPath, { recursive: true });
+    try {
+      await api.put(`/admin/events/${eventId}`, { external_watch: watch });
+    } catch {
+      throw new Error('照片已导入，但自动导入设置未保存。请在项目资料中检查自动导入开关。');
+    }
+    return imported;
+  },
+
   async importEvent(
     eventId: number,
     externalPath: string,

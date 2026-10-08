@@ -1,3 +1,5 @@
+import { NO_EMAIL_MODE } from '../../../config/communication';
+import { NasFolderSelection } from '../../../components/admin/NasFolderSelection';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -48,6 +50,7 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
   const [showPhotoUpload, setShowPhotoUpload] = useState(false);
   const [showExternalImport, setShowExternalImport] = useState(false);
   const [externalPath, setExternalPath] = useState<string>('');
+  const [externalWatch, setExternalWatch] = useState(event.source_mode === 'reference' ? Boolean(event.external_watch) : true);
   const [importing, setImporting] = useState<boolean>(false);
   const [selectedPhoto, setSelectedPhoto] = useState<{ photo: AdminPhoto; index: number } | null>(null);
   const [selectedPhotoIds, setSelectedPhotoIds] = useState<number[]>([]);
@@ -110,14 +113,14 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
               {t('events.uploadPhotos')}
             </Button>
           </PermissionGate>
-          {event.source_mode === 'reference' && (
+          {(NO_EMAIL_MODE || event.source_mode === 'reference') && (
             <PermissionGate permission="photos.upload">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowExternalImport(true)}
+                onClick={() => { setExternalPath(event.external_path || ''); setExternalWatch(event.source_mode === 'reference' ? Boolean(event.external_watch) : true); setShowExternalImport(true); }}
               >
-                {t('events.importExternal', 'Import from External Folder')}
+                {NO_EMAIL_MODE ? '关联 NAS 文件夹 / 重新扫描' : t('events.importExternal', 'Import from External Folder')}
               </Button>
             </PermissionGate>
           )}
@@ -186,19 +189,21 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="max-w-2xl w-full">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{t('events.importExternal', 'Import from External Folder')}</h2>
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{NO_EMAIL_MODE ? '关联 NAS 文件夹 / 重新扫描' : t('events.importExternal', 'Import from External Folder')}</h2>
               <button onClick={() => setShowExternalImport(false)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
+            {NO_EMAIL_MODE ? <NasFolderSelection value={externalPath} onChange={setExternalPath} watch={externalWatch} onWatchChange={setExternalWatch} /> : <>
             <div className="mb-3 text-sm text-neutral-700 dark:text-neutral-300">
               {t('events.externalImportInfo', 'All pictures from the selected folder will be imported.')}
             </div>
             <div className="mb-2 text-sm text-neutral-700 dark:text-neutral-300">
               {t('events.selectExternalFolder', 'Select external folder under /external-media')}
             </div>
-            <ExternalFolderPicker value={externalPath || event.external_path || ''} onChange={setExternalPath} />
+            <ExternalFolderPicker value={externalPath} onChange={setExternalPath} />
+            </>}
 
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowExternalImport(false)}>
@@ -210,24 +215,27 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
                 onClick={async () => {
                   try {
                     setImporting(true);
-                    const selected = externalPath || event.external_path || '';
+                    const selected = externalPath;
                     if (!selected) {
                       toast.error(t('errors.somethingWentWrong', 'Something went wrong'));
                       return;
                     }
-                    await externalMediaService.importEvent(parseInt(id!), selected, { recursive: true });
-                    toast.success(t('toast.saveSuccess'));
+                    const result = NO_EMAIL_MODE
+                      ? await externalMediaService.linkEvent(parseInt(id!), selected, externalWatch)
+                      : await externalMediaService.importEvent(parseInt(id!), selected, { recursive: true });
+                    if (NO_EMAIL_MODE) toast.success(`已关联 NAS 文件夹：新增 ${result.imported} 张，跳过 ${result.skipped} 张`);
+                    else toast.success(t('toast.saveSuccess'));
                     queryClient.invalidateQueries({ queryKey: ['admin-event', id] });
                     queryClient.invalidateQueries({ queryKey: ['admin-event-photos', id] });
                     setShowExternalImport(false);
                   } catch (e: any) {
-                    toast.error(e?.response?.data?.error || 'Import failed');
+                    toast.error(e?.response?.data?.error || e?.message || '关联失败');
                   } finally {
                     setImporting(false);
                   }
                 }}
               >
-                {t('events.importFromSelectedFolder', 'Import from selected folder')}
+                {NO_EMAIL_MODE ? '关联并导入照片' : t('events.importFromSelectedFolder', 'Import from selected folder')}
               </Button>
             </div>
           </Card>
