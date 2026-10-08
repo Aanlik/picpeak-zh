@@ -1,3 +1,13 @@
+# PicPeak 简体中文 Fork
+
+客户选片及摄影师后台简体中文支持，保留 `upstream` 官方 stable 同步。当前中文审校提交 `7a38c5ce` 对应一体化版 PicPeak `3.134.1-zh.6`。
+
+**推荐飞牛部署：一个容器运行 PicPeak + PixCake Bridge。** 完整部署、初始化、NAS 目录、更新及迁移说明见 [一体化 README](https://github.com/Aanlik/pixcake-bridge/blob/feat/zh-cn/README.md)。Bridge 独立维护，一体化打包位于 Bridge 仓库，避免修改 PicPeak 业务后端。单独运行 PicPeak 时仍可使用 `Dockerfile.aio`。
+
+下方保留上游项目介绍与使用说明。
+
+---
+
 <div align="center">
   <img src="docs/picpeak-logo.png" alt="PicPeak Logo" width="300" />
 
