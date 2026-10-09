@@ -26,7 +26,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'mark-vanish-secret';
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const ADMIN = 11;
 
@@ -40,12 +40,12 @@ let photoId;
 let deleteBeforeNextUpdate = null;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
 
   const inserted = await db('events').insert({
     slug: 'mark-vanish-event',
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Mark Vanish',
     event_date: '2026-07-20',
     host_email: 'host@example.com',

@@ -1,13 +1,13 @@
 'use strict';
 
-// First-run bootstrap service. bootCrmDb() must run BEFORE requiring the service
-// so setupService shares this test's db instance (see crmDb.js note).
+// First-run bootstrap service. bootTestDb() must run BEFORE requiring the service
+// so setupService shares this test's db instance (see sqliteTestDb.js note).
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-at-least-32-characters-long!!';
 
 const fs = require('fs');
 const path = require('path');
 const request = require('supertest');
-const { bootCrmDb, buildRouteApp } = require('./helpers/crmDb');
+const { bootTestDb, buildRouteApp } = require('./helpers/sqliteTestDb');
 
 let db;
 let cleanup;
@@ -19,10 +19,10 @@ let app;
 
 const VALID_PW = 'Str0ng-Passw0rd!';
 
-// bootCrmDb MUST run before any require of db.js (directly or transitively via a
+// bootTestDb MUST run before any require of db.js (directly or transitively via a
 // service/util), or db.js binds to the default path instead of the temp one.
 beforeAll(async () => {
-  ({ db, cleanup, tmpDir } = await bootCrmDb());
+  ({ db, cleanup, tmpDir } = await bootTestDb());
   process.env.DATA_DIR = tmpDir; // isolate the SETUP_TOKEN file to the temp dir
   setupService = require('../../src/services/setupService');
   ({ getAppSetting, upsertAppSetting } = require('../../src/utils/appSettings'));

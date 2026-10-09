@@ -1,5 +1,4 @@
 const { neutralizeSpreadsheetFormula } = require('../../src/utils/spreadsheetSafe');
-const { _internal } = require('../../src/services/ledgerService');
 
 describe('neutralizeSpreadsheetFormula — CSV/Banana formula-injection defence (PR #622 blocker 1)', () => {
   it.each([
@@ -28,16 +27,11 @@ describe('neutralizeSpreadsheetFormula — CSV/Banana formula-injection defence 
     expect(neutralizeSpreadsheetFormula(undefined)).toBe('');
   });
 
-  it('ledgerService.csvEscape applies the prefix AND the RFC-4180 quote wrap', () => {
-    // formula cell → prefixed then quote-wrapped
-    expect(_internal.csvEscape('=1+1')).toBe('"\'=1+1"');
-    // embedded quotes still doubled; safe value not prefixed
-    expect(_internal.csvEscape('a"b')).toBe('"a""b"');
-  });
+
 });
 
 describe('neutralizeSpreadsheetFormula — negative amounts stay numbers (security review 2026-09-29)', () => {
-  // Cost rows in the tax report and storno invoices in the ledger are
+  // Negative numeric values in exported data are
   // written with a leading minus. Prefixing them turned every one into a
   // text cell, and a SUM over the imported column silently dropped them.
   it.each([

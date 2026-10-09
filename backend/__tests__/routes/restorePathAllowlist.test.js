@@ -20,9 +20,9 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'restorepath-test-secret';
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
-// `bootCrmDb()` hands back the process-wide `db` singleton (module cache —
+// `bootTestDb()` hands back the process-wide `db` singleton (module cache —
 // see its own comment), so it must only be called ONCE per test file: a
 // second call re-runs migrations against the same connection, and the first
 // call's `cleanup()` (db.destroy()) would tear down the connection both
@@ -31,7 +31,7 @@ const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
 let db; let cleanup; let checkRestorePathsAllowed;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
   ({ checkRestorePathsAllowed } = require('../../src/routes/adminRestore')._internal);
 }, 120000);

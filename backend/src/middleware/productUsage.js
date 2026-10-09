@@ -13,22 +13,9 @@ const webhookTransportConfigured = () =>
   );
 
 const RULES = [
-  [/^\/customers(?:\/|$)/, ['crm']],
-  [/^\/quotes(?:\/|$)/, ['crm', 'crm_quotes']],
-  [/^\/invoices(?:\/|$)/, ['crm', 'crm_invoices']],
-  [/^\/contracts(?:\/|$)/, ['crm', 'crm_contracts']],
-  [/^\/projects(?:\/|$)/, ['crm', 'crm_projects']],
-  [/^\/calendar(?:\/|$)/, ['crm', 'crm_calendar']],
-  [/^\/customers\/(?:[^/]+\/)?hour-entries(?:\/|$)/, ['crm', 'crm_hours']],
   [/^\/customers\/(?:invite|[^/]+\/send-invite)(?:\/|$)/, ['customer_portal']],
-  [
-    /^\/(?:ledger|expenses|tax-report|incoming-invoices)(?:\/|$)/,
-    ['accounting']
-  ],
   [/^\/workflows(?:\/|$)/, ['workflows']],
-  [/^\/newsletters(?:\/|$)/, ['newsletters']],
   [/^\/events\/[^/]+\/(?:faces|people)(?:\/|$)/, ['face_recognition']],
-  [/^\/whatsapp\/(?:send|test)(?:\/|$)/, ['whatsapp']],
   [
     /^\/(?:backup|database-backup)\/(?:run|backup|create|start|test|picpeak\/export)(?:\/|$)/,
     ['backup']

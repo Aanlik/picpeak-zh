@@ -24,13 +24,13 @@ fs.mkdirSync(process.env.STORAGE_PATH, { recursive: true });
 
 const sharp = require('sharp');
 const imageProcessor = require('../../src/services/imageProcessor');
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup;
 
 describe('preview tiers (#1095)', () => {
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
   }, 120000);
 
   afterAll(async () => {
@@ -76,7 +76,7 @@ describe('preview tiers (#1095)', () => {
     async function seedPhoto() {
       const [e] = await db('events').insert({
         slug: `tier-${Math.random().toString(36).slice(2, 8)}`,
-        event_type: 'wedding',
+        event_type: 'project',
         event_name: 'tier',
         event_date: '2026-01-01',
         host_email: 'h@example.com',
@@ -200,7 +200,7 @@ describe('preview tiers (#1095)', () => {
     async function seedThumbPhoto(w = 3000, h = 2000) {
       const [e] = await db('events').insert({
         slug: `tt-${Math.random().toString(36).slice(2, 8)}`,
-        event_type: 'wedding', event_name: 'tt', event_date: '2026-01-01',
+        event_type: 'project', event_name: 'tt', event_date: '2026-01-01',
         host_email: 'h@example.com', admin_email: 'a@example.com',
         password_hash: 'x', share_link: `tt-${Math.random()}`,
         expires_at: new Date().toISOString(),

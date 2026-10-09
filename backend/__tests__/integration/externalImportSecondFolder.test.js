@@ -60,7 +60,7 @@ describe('a second external import (#1163)', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    ({ db } = await require('./helpers/crmDb').bootCrmDb());
+    ({ db } = await require('./helpers/sqliteTestDb').bootTestDb());
     ({ resolvePhotoFilePath } = require('../../src/services/photoResolver'));
 
     app = express();
@@ -80,7 +80,7 @@ describe('a second external import (#1163)', () => {
     await fs.promises.mkdir(mediaRoot, { recursive: true });
     const [e] = await db('events').insert({
       slug: `ext2nd-${Math.random().toString(36).slice(2, 8)}`,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'ext2nd',
       event_date: '2026-01-01',
       host_email: 'h@example.com',

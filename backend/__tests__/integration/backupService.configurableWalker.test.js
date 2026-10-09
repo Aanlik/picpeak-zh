@@ -21,7 +21,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
@@ -32,7 +32,7 @@ describe('backupService — configurable walker (backup_paths)', () => {
   let backupService;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     storagePath = process.env.STORAGE_PATH;
     backupService = require('../../src/services/backupService');
   }, 120000);
@@ -54,14 +54,14 @@ describe('backupService — configurable walker (backup_paths)', () => {
     const {
       DEFAULT_PATHS,
     } = require('../../migrations/core/109_add_backup_paths');
-    await db('backup_paths').insert(DEFAULT_PATHS.map((row) => ({
+    await db('backup_paths').insert(DEFAULT_PATHS.filter((row) => row.path !== 'business-docs').map((row) => ({
       ...row,
       created_at: new Date(),
       updated_at: new Date(),
     })));
   });
 
-  it('migration 109 seeds the canonical 7 paths', async () => {
+  it('active backups contain only the six current storage paths', async () => {
     const rows = await db('backup_paths').orderBy('display_order', 'asc').select();
     expect(rows.map((r) => r.path)).toEqual([
       'events/active',
@@ -70,7 +70,6 @@ describe('backupService — configurable walker (backup_paths)', () => {
       'previews',
       'heroes',
       'uploads',
-      'business-docs',
     ]);
     // Only events/archived is gated by a feature flag.
     expect(rows.filter((r) => r.feature_flag).map((r) => r.path)).toEqual([
@@ -84,7 +83,6 @@ describe('backupService — configurable walker (backup_paths)', () => {
     seedFile('previews/E1/a.jpg');
     seedFile('heroes/E1/hero.jpg');
     seedFile('uploads/intake/x.bin');
-    seedFile('business-docs/quote/2026/Q-001.pdf');
     // events/archived is gated — left out of this test; covered below.
 
     const files = await backupService.getFilesToBackup({ backup_include_archived: true });
@@ -96,7 +94,6 @@ describe('backupService — configurable walker (backup_paths)', () => {
       'previews/E1/a.jpg',
       'heroes/E1/hero.jpg',
       'uploads/intake/x.bin',
-      'business-docs/quote/2026/Q-001.pdf',
     ]));
   });
 
@@ -157,18 +154,15 @@ describe('backupService — configurable walker (backup_paths)', () => {
     // cannot silently degrade to no-op.
     await db('backup_paths').del();
     seedFile('events/active/E1/photo.jpg');
-    seedFile('business-docs/quote/2026/Q-002.pdf');
 
     const files = await backupService.getFilesToBackup({ backup_include_archived: true });
     const rels = files.map((f) => f.relativePath);
 
     expect(rels).toContain('events/active/E1/photo.jpg');
-    expect(rels).toContain('business-docs/quote/2026/Q-002.pdf');
   });
 
   it('legacy boolean call signature still works (backward compat)', async () => {
-    // Existing call sites (and the businessDocs regression test) pass
-    // a boolean for `includeArchived`. Refactor must not break them.
+    // Existing call sites pass a boolean for `includeArchived`.
     seedFile('events/archived/E3/legacy.jpg');
 
     const filesOff = await backupService.getFilesToBackup(false);

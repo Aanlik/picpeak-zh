@@ -41,7 +41,6 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
     ? { require_expiration: false } : await getEventFieldRequirements();
 
   const {
-    event_type,
     event_name,
     event_date,
     // Migration 137 — calendar time fields. is_full_day defaults to
@@ -201,7 +200,7 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
 
   // Use event_date in slug if provided, otherwise use random suffix
   const slugSuffix = event_date || crypto.randomBytes(3).toString('hex');
-  const baseSlug = `${event_type}-${processedEventName}-${slugSuffix}`;
+  const baseSlug = `${processedEventName}-${slugSuffix}`;
   let slug = baseSlug;
   let counter = 1;
 
@@ -347,7 +346,7 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
 
   const insertData = {
     slug,
-    event_type,
+    event_type: 'project', // legacy non-null DB column; no longer a user-selectable category
     event_name,
     ...slideshowSeed,
     event_date: event_date || null,
@@ -475,7 +474,7 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
 
   // Log activity
   await logActivity('event_created',
-    { event_type, expires_at, require_password: requirePassword, password_strength: passwordValidation?.score },
+    { expires_at, require_password: requirePassword, password_strength: passwordValidation?.score },
     eventId,
     { type: 'admin', id: actor.id, name: actor.username }
   );
@@ -492,7 +491,6 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
           id: eventId,
           slug,
           event_name,
-          event_type,
           event_date,
           share_url: shareUrl,
           share_token: shareToken,
@@ -555,29 +553,6 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
     }
   }
 
-  // WhatsApp gallery_ready notification (#640D). Fires when the event is
-  // created NOT as a draft, the `whatsapp` flag is on, a config exists, and
-  // the customer supplied a phone number. Non-fatal: a queue failure should
-  // never block gallery creation.
-  if (!isDraft && customerPhone) {
-    try {
-      const { queueWhatsapp, getWhatsAppConfig } = require('./whatsappProcessor');
-      const waConfig = await getWhatsAppConfig();
-      if (waConfig && waConfig.enabled) {
-        await queueWhatsapp(eventId, customerPhone, 'gallery_created', {
-          customer_name: customerName || '',
-          event_name,
-          gallery_link: shareUrl,
-          gallery_password: requirePassword ? password : '',
-          expiry_date: expires_at ? expires_at.toISOString() : null,
-          language: null, // resolved by processor via general_default_language
-        });
-      }
-    } catch (waError) {
-      logger.warn('Failed to queue WhatsApp notification on create', { error: waError.message });
-    }
-  }
-
   // Fire event.published when the event is created NOT as a draft. The
   // separate /publish endpoint fires it for the draft → live transition;
   // this covers the "create-and-publish in one shot" path.
@@ -589,7 +564,6 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
           id: eventId,
           slug,
           event_name,
-          event_type,
           event_date,
           share_url: shareUrl,
           share_token: shareToken,
@@ -614,7 +588,6 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
     id: eventId,
     slug,
     event_name,
-    event_type,
     customer_name: customerName,
     customer_email: customerEmail,
     require_password: requirePassword,

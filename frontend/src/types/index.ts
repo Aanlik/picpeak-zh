@@ -2,7 +2,6 @@
 export interface Event {
   id: number;
   slug: string;
-  event_type: string;
   event_name: string;
   event_date: string | null;
   customer_name?: string;
@@ -58,9 +57,7 @@ export interface Event {
   login_logo_visible?: boolean | null;
   // Per-event opt-in for using the hero photo as the social-share
   // preview image (#474). When false, og:image falls back to the
-  // brand logo. Defaults false on existing rows so no admin's hero
-  // photo gets surfaced via WhatsApp share until they consciously
-  // flip it on.
+  // brand logo. Defaults false on existing rows until an admin enables it.
   og_image_share_enabled?: boolean;
   // Header style settings (decoupled from layout)
   header_style?: 'hero' | 'standard' | 'minimal' | 'none';
@@ -105,7 +102,6 @@ export type GalleryAccessLevel = 'guest' | 'client';
 
 export interface GalleryInfo {
   event_name: string;
-  event_type: string;
   event_date: string | null;
   expires_at: string | null;
   is_active: boolean;
@@ -270,7 +266,6 @@ export interface GalleryData {
   event: {
     id: number;
     event_name: string;
-    event_type: string;
     event_date: string | null;
     // Download resolutions (#858). `choices` is empty when the picker is off,
     // so the UI never offers a size the server would reject.
@@ -390,7 +385,6 @@ export interface GalleryAuthResponse {
   event: {
     id: number;
     event_name: string;
-    event_type: string;
     event_date: string;
     welcome_message?: string;
     color_theme?: string;

@@ -31,7 +31,7 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'download-all-category-secret';
 
@@ -46,7 +46,7 @@ describe('Download All with a download-restricted category', () => {
     const slug = `download-all-cat-${seq}`;
     const id = unwrap(await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: `Download All ${seq}`,
       event_date: '2026-08-01',
       host_email: 'host@example.com',
@@ -87,7 +87,7 @@ describe('Download All with a download-restricted category', () => {
     });
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     downloadZipService = require('../../src/services/downloadZipService');
     app = express();

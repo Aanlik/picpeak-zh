@@ -21,7 +21,7 @@ const os = require('os');
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'rename-test-secret';
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 describe('event rename through the storage backend', () => {
   let db; let cleanup; let tmpDir;
@@ -30,7 +30,7 @@ describe('event rename through the storage backend', () => {
 
   beforeAll(async () => {
     tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'picpeak-rename-'));
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
 
     const LocalFsStorage = require('../../src/services/storage/LocalFsStorage');
     class RemoteStorage extends LocalFsStorage {
@@ -60,7 +60,7 @@ describe('event rename through the storage backend', () => {
     const slug = `wedding-old-name-2026-01-0${seq}`;
     const [e] = await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Old Name',
       event_date: `2026-01-0${seq}`,
       host_email: 'h@example.com',

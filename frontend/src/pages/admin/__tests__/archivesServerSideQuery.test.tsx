@@ -1,5 +1,5 @@
 /**
- * /admin/archives search, type filter and sort were applied client-side to
+ * /admin/archives search and sort were applied client-side to
  * whatever 20-row page happened to be loaded (QA I.01), while the
  * pagination footer kept reporting the full server-side total. An archive on
  * page 7 was invisible to a search, with no hint the search was page-scoped.
@@ -65,12 +65,11 @@ const page = (archives: unknown[], total: number, totals?: Totals) => ({
   totals: totals ?? { archives: total, photos: total * 3, archiveSize: total * 100 },
 });
 
-const archive = (id: number, eventName: string, eventType = 'wedding') => ({
+const archive = (id: number, eventName: string) => ({
   id,
   slug: `slug-${id}`,
   eventName,
   eventDate: '2026-08-01',
-  eventType,
   hostEmail: 'h@example.com',
   archivedAt: '2026-08-02T10:00:00.000Z',
   expiresAt: '2026-09-01T10:00:00.000Z',
@@ -100,32 +99,27 @@ describe('ArchivesPage server-side query (QA I.01)', () => {
   it('sends the search term to the server instead of filtering the loaded page', async () => {
     renderPage();
     const input = await screen.findByPlaceholderText('archives.searchPlaceholder');
-    expect(getArchives).toHaveBeenLastCalledWith(1, 20, undefined, 'all', 'date');
+    expect(getArchives).toHaveBeenLastCalledWith(1, 20, undefined, 'date');
 
     await userEvent.type(input, 'bravo');
 
     // Debounced — one request for the settled term, not one per keystroke.
     await waitFor(
-      () => expect(getArchives).toHaveBeenLastCalledWith(1, 20, 'bravo', 'all', 'date'),
+      () => expect(getArchives).toHaveBeenLastCalledWith(1, 20, 'bravo', 'date'),
       { timeout: 2000 }
     );
   });
 
-  it('sends the type filter and the sort key to the server', async () => {
+  it('sends the sort key to the server', async () => {
     renderPage();
-    await screen.findByDisplayValue('archives.allTypes');
-
-    await userEvent.selectOptions(screen.getByDisplayValue('archives.allTypes'), 'birthday');
-    await waitFor(() => expect(getArchives).toHaveBeenLastCalledWith(1, 20, undefined, 'birthday', 'date'));
-
-    await userEvent.selectOptions(screen.getByDisplayValue('archives.sortByDate'), 'size');
-    await waitFor(() => expect(getArchives).toHaveBeenLastCalledWith(1, 20, undefined, 'birthday', 'size'));
+    await userEvent.selectOptions(await screen.findByDisplayValue('archives.sortByDate'), 'size');
+    await waitFor(() => expect(getArchives).toHaveBeenLastCalledWith(1, 20, undefined, 'size'));
   });
 
   it('renders exactly the rows the server returned, unfiltered by the client', async () => {
     // A row the old client-side filter would have dropped: the server decided
     // it matches, so the page must show it.
-    getArchives.mockResolvedValue(page([archive(2, 'Bravo Birthday', 'birthday')], 1));
+    getArchives.mockResolvedValue(page([archive(2, 'Bravo Birthday')], 1));
     renderPage();
     expect(await screen.findByText('Bravo Birthday')).toBeInTheDocument();
   });
@@ -133,10 +127,7 @@ describe('ArchivesPage server-side query (QA I.01)', () => {
   it('goes back to page 1 when the query changes', async () => {
     renderPage();
     await userEvent.click(await screen.findByText('common.next'));
-    await waitFor(() => expect(getArchives).toHaveBeenLastCalledWith(2, 20, undefined, 'all', 'date'));
-
-    await userEvent.selectOptions(screen.getByDisplayValue('archives.allTypes'), 'corporate');
-    await waitFor(() => expect(getArchives).toHaveBeenLastCalledWith(1, 20, undefined, 'corporate', 'date'));
+    await waitFor(() => expect(getArchives).toHaveBeenLastCalledWith(2, 20, undefined, 'date'));
   });
 
   it('reads the stat cards from the server totals, not from the loaded page', async () => {

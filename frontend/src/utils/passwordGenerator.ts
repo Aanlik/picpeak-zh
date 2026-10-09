@@ -15,7 +15,6 @@ interface PasswordConfig {
 interface GeneratePasswordOptions {
   eventName?: string;
   eventDate?: string;
-  eventType?: string;
   config?: Partial<PasswordConfig>;
 }
 
@@ -77,11 +76,6 @@ function formatVenueName(eventName: string): string {
   // Extract venue/location from event name
   // Common patterns: "Wedding at Venue Name", "Birthday - Venue", "Corporate Event Venue"
   let venue = eventName;
-  
-  // Remove event type prefixes
-  venue = venue
-    .replace(/^(wedding|birthday|corporate|event)\s*(at|[-\s])\s*/i, '')
-    .trim();
   
   // If no venue extracted, use first meaningful word
   if (!venue || venue === eventName) {

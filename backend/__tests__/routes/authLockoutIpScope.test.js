@@ -15,7 +15,7 @@ const bcrypt = require('bcrypt');
 const fsSync = require('fs');
 const osMod = require('os');
 const pathMod = require('path');
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 process.env.NODE_ENV = 'test';
 process.env.TEST_DATABASE_PATH = pathMod.join(
@@ -31,7 +31,7 @@ const OWNER_IP = '203.0.113.9';
 let app; let db; let cleanup;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   const hash = await bcrypt.hash(PASSWORD, 4);
   await db('admin_users').insert({
     username: 'scope-admin', email: 'scope-admin@example.com', password_hash: hash, is_active: true,

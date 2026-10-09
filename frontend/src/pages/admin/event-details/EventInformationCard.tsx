@@ -214,8 +214,8 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
                 </span>
                 <span className="block text-xs text-neutral-600 dark:text-neutral-400 mt-0.5">
                   {editForm.hero_photo_id
-                    ? t('events.ogShare.help', 'When this gallery URL is shared on WhatsApp, Facebook, Slack, etc., the link preview will show the hero photo above. The thumbnail is fetched unauthenticated by link-preview crawlers — anyone with the URL effectively makes this image public. Off by default; pick a hero you are comfortable surfacing publicly before enabling.')
-                    : t('events.ogShare.heroRequired', 'Pick a hero photo above first — this option uses it as the WhatsApp / Facebook / Slack preview image.')}
+                    ? t('events.ogShare.help', 'When this gallery URL is shared on social platforms, the link preview will show the hero photo above. The thumbnail is fetched unauthenticated by link-preview crawlers — anyone with the URL effectively makes this image public. Off by default; pick a hero you are comfortable surfacing publicly before enabling.')
+                    : t('events.ogShare.heroRequired', 'Pick a hero photo above first — this option uses it as the social preview image.')}
                 </span>
               </span>
             </label>

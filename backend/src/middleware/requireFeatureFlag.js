@@ -6,7 +6,7 @@
  * hit must still be refused so a disabled feature is never actable. Mirrors the
  * truthy logic feature_flags uses everywhere (true | 1 | '1').
  *
- * Cached: the accounting area alone is 10+ gated endpoints and the dashboard
+ * Cached: several gated endpoints and the dashboard
  * polls several, so a per-request DB read is wasteful. Flags change rarely and
  * only via `PUT /admin/feature-flags`, which calls invalidateFeatureFlagCache()
  * — so a short TTL is belt-and-braces against any other mutation path.

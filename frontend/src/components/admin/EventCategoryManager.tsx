@@ -106,7 +106,7 @@ export const EventCategoryManager: React.FC<EventCategoryManagerProps> = ({ even
   });
 
   // Per-event order override (#782). Sends the full ordered id list; the backend
-  // pins it for this gallery only. Up/down buttons match the invoice line-item
+  // pins it for this gallery only. Up/down buttons match the ordered category
   // convention (no drag-and-drop dependency).
   const reorderMutation = useMutationWithToast({
     mutationFn: (orderedIds: number[]) => categoriesService.reorderCategories(eventId, orderedIds),

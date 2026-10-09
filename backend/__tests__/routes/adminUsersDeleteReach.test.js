@@ -20,8 +20,8 @@ process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-users-
 
 const request = require('supertest');
 const {
-  bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
-} = require('../integration/helpers/crmDb');
+  bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
+} = require('../integration/helpers/sqliteTestDb');
 const svc = require('../../src/services/userManagementService');
 const { clearPermissionCache } = require('../../src/middleware/permissions');
 
@@ -40,7 +40,7 @@ describe('DELETE /api/admin/users/:id — target reach', () => {
     must_change_password: false, is_active: true, created_at: new Date().toISOString(),
   });
   const mkEvent = (slug, createdBy) => insertId('events', {
-    slug, event_type: 'wedding', event_name: `Event ${slug}`, event_date: '2026-08-01',
+    slug, event_type: 'project', event_name: `Event ${slug}`, event_date: '2026-08-01',
     host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
     share_link: `/gallery/${slug}/share`, share_token: `${slug}-share`,
     expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
@@ -50,7 +50,7 @@ describe('DELETE /api/admin/users/:id — target reach', () => {
   const exists = async (id) => Boolean(await db('admin_users').where({ id }).first());
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId: superId } = await seedMinimal(db));
     await assignAdminRole(db, superId, 'super_admin');
     superTok = mintAdminToken(superId);

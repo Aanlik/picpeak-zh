@@ -42,7 +42,7 @@ describe('regenerate-thumbnails script (#1148)', () => {
     await fs.promises.mkdir(externalRoot, { recursive: true });
 
     jest.resetModules();
-    ({ db, cleanup } = await require('./helpers/crmDb').bootCrmDb());
+    ({ db, cleanup } = await require('./helpers/sqliteTestDb').bootTestDb());
 
     // A real image on the external mount — never under events/active.
     await sharp({
@@ -51,7 +51,7 @@ describe('regenerate-thumbnails script (#1148)', () => {
 
     const [ev] = await db('events').insert({
       slug: 'regen-script-event',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Regen Script',
       event_date: '2026-08-01',
       host_email: 'h@example.com',

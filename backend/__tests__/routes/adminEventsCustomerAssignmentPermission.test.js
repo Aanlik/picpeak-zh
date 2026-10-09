@@ -22,8 +22,8 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const {
-  bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken,
-} = require('../integration/helpers/crmDb');
+  bootTestDb, seedMinimal, assignAdminRole, mintAdminToken,
+} = require('../integration/helpers/sqliteTestDb');
 const { clearPermissionCache } = require('../../src/middleware/permissions');
 
 describe('event routes — customer assignments need customers.* permissions', () => {
@@ -38,13 +38,13 @@ describe('event routes — customer assignments need customers.* permissions', (
   };
   const assignments = (evId) => db('event_customer_assignments').where({ event_id: evId }).pluck('customer_account_id');
   const createBody = (over = {}) => ({
-    event_type: 'wedding', event_name: 'Perm Wedding', event_date: '2026-09-01',
+    event_type: 'project', event_name: 'Perm Wedding', event_date: '2026-09-01',
     customer_name: 'Client Person', customer_email: 'client@example.com', admin_email: 'admin@example.com',
     require_password: false, is_draft: true, ...over,
   });
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId: superId, customerId } = await seedMinimal(db));
     await assignAdminRole(db, superId, 'super_admin');
     superTok = mintAdminToken(superId);
@@ -61,7 +61,7 @@ describe('event routes — customer assignments need customers.* permissions', (
     await db('feature_flags').insert({ key: 'customerPortal', value: true }).onConflict('key').merge({ value: true });
 
     eventId = await insertId('events', {
-      slug: 'perm-ev', event_type: 'wedding', event_name: 'Perm Event', event_date: '2026-08-01',
+      slug: 'perm-ev', event_type: 'project', event_name: 'Perm Event', event_date: '2026-08-01',
       host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
       share_link: '/gallery/perm-ev/share', share_token: 'perm-ev-share',
       expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),

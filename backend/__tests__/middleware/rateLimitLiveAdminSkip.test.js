@@ -19,7 +19,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'ratelimit-live-secret-with-32-chars!!';
 
-const { bootCrmDb, seedMinimal, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 const { shouldSkipRateLimit } = require('../../src/services/rateLimitService');
 
 const config = { enabled: true, skipAuthenticated: true, publicEndpointsOnly: false };
@@ -32,7 +32,7 @@ describe('general rate limiter skip requires a live admin session', () => {
   const fresh = (extra = {}) => mintAdminToken(adminId, { expiresIn: '24h', extraClaims: { jti: crypto.randomUUID(), ...extra } });
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId } = await seedMinimal(db));
   }, 120000);
   afterAll(async () => {

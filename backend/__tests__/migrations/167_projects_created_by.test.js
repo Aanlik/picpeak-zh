@@ -6,11 +6,11 @@ const path=require('path'), fs=require('fs'), os=require('os');
 process.env.NODE_ENV='test';
 process.env.TEST_DATABASE_PATH=path.join(fs.mkdtempSync(path.join(os.tmpdir(),'picpeak-mig167-')),'db.sqlite');
 process.env.JWT_SECRET='mig';
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 const mig = require('../../migrations/core/167_add_projects_created_by');
 describe('migration 167', () => {
   let db, cleanup;
-  beforeAll(async()=>{ ({db,cleanup}=await bootCrmDb()); await seedMinimal(db); },120000);
+  beforeAll(async()=>{ ({db,cleanup}=await bootTestDb()); await seedMinimal(db); },120000);
   afterAll(async()=>{ if(cleanup) await cleanup(); });
   it('is idempotent on re-run and reversible', async () => {
     await mig.up(db);            // already applied by boot; must no-op

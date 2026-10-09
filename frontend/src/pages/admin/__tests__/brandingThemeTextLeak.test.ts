@@ -24,23 +24,17 @@ const EXPLICIT_COLOR = /\btext-(neutral|white|amber|blue|red|green|primary|accen
 const HEADING_TAG = /<(h[1-4])(\s[^>]*?)?>/gs;
 
 const HEADING_FILES = [
-  'pages/admin/settings/SettingsBusinessProfilePage.tsx',
-  'pages/admin/settings/CrmSettingsPage.tsx',
   'pages/admin/settings/ReminderTemplatesPage.tsx',
   'pages/public/LegalPage.tsx',
   // Follow-up (QA B14): these three were the known remaining offenders —
   // they set `text-theme` explicitly, which beats the AdminLayout default.
   'pages/admin/SystemHealthPage.tsx',
-  'components/admin/CrmOverviewSection.tsx',
-  'components/admin/HoursSection.tsx',
 ];
 
 // Admin-only surfaces: the themed utilities are correct on the customer
 // portal and the public token pages, but wrong here.
 const ADMIN_ONLY_FILES = [
   'pages/admin/SystemHealthPage.tsx',
-  'components/admin/CrmOverviewSection.tsx',
-  'components/admin/HoursSection.tsx',
   // Issue 1741: the whole usage tab was wrapped in `text-theme`, so a
   // dark-toned branding theme greyed out every control on it in light mode.
   'features/settings/tabs/ProductUsageTab.tsx',

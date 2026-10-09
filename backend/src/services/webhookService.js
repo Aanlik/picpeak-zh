@@ -51,7 +51,7 @@ function getByPath(obj, dotPath) {
 /**
  * Evaluate a webhook's filter against an outgoing payload. The filter is a
  * flat object of dot-path → expected value pairs:
- *   { "data.event.event_type": "wedding" }
+ *   { "data.event.event_name": "Summer portraits" }
  *   { "type": "event.published", "data.event.id": 42 }
  *
  * All keys must match (logical AND). Equality is `===` after JSON-style

@@ -89,7 +89,7 @@ export const SEOTab: React.FC<SEOTabProps> = ({
 
     if (seoSettings.block_social_bots) {
       lines.push('# Social media bot blocking');
-      for (const bot of ['Twitterbot', 'facebookexternalhit', 'LinkedInBot', 'Slackbot', 'WhatsApp', 'TelegramBot', 'Discordbot']) {
+      for (const bot of ['Twitterbot', 'facebookexternalhit', 'LinkedInBot', 'Slackbot', 'TelegramBot', 'Discordbot']) {
         lines.push(`User-agent: ${bot}`);
         lines.push('Disallow: /');
         lines.push('');

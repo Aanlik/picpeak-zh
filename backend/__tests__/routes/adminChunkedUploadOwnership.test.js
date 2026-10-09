@@ -26,7 +26,7 @@ jest.mock('../../src/services/photoProcessor', () => ({
 const request = require('supertest');
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 describe('admin chunked upload ownership', () => {
   let db; let cleanup; let app;
@@ -55,7 +55,7 @@ describe('admin chunked upload ownership', () => {
     const slug = `chunk-own-${seq}`;
     return unwrap(await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: `Owned ${seq}`,
       event_date: '2026-08-01',
       host_email: 'host@example.com',
@@ -96,7 +96,7 @@ describe('admin chunked upload ownership', () => {
     .set('Authorization', `Bearer ${token}`);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');
     superToken = mintAdminToken(adminId);

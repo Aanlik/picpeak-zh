@@ -10,7 +10,7 @@
  * a byte-identical footer until an admin opts in.
  */
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 describe('wrapEmailHtml — business-profile signature footer', () => {
   let db;
@@ -20,7 +20,7 @@ describe('wrapEmailHtml — business-profile signature footer', () => {
   let businessProfileService;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ wrapEmailHtml, renderEmailSignatureText } = require('../../src/services/emailProcessor'));
     businessProfileService = require('../../src/services/businessProfileService');
   }, 120000);
@@ -92,7 +92,7 @@ describe('wrapEmailHtml — business-profile signature footer', () => {
     expect(withDisabledSignature).toBe(withEmptyProfile);
   });
 
-  it('renders address, contacts, VAT id and the legal line when enabled', async () => {
+  it('renders business contact details when enabled', async () => {
     await enable();
 
     const html = await wrapEmailHtml('<p>Body</p>', 'Subject');
@@ -100,10 +100,10 @@ describe('wrapEmailHtml — business-profile signature footer', () => {
     expect(html).toContain('Müller Fotografie GmbH');
     expect(html).toContain('Bahnhofstrasse 1');
     expect(html).toContain('Postfach 42');
-    // "LI-9494 Schaan / Liechtenstein" — same shape as the PDF issuer block.
-    expect(html).toContain('LI-9494 Schaan / Liechtenstein');
-    expect(html).toContain('VAT ID: CHE-123.456.789');
-    expect(html).toContain('Handelsregister Vaduz<br />FL-0002.123.456-7');
+    expect(html).toContain('LI-9494 Schaan Liechtenstein');
+    // Legacy tax and registry fields are no longer part of the signature.
+    expect(html).not.toContain('CHE-123.456.789');
+    expect(html).not.toContain('Handelsregister Vaduz');
   });
 
   it('links phone, mobile, email and website with safe schemes', async () => {
@@ -140,18 +140,13 @@ describe('wrapEmailHtml — business-profile signature footer', () => {
     await enable({
       company_name: '<script>alert(1)</script>',
       address_line1: 'Rue "des" Fleurs & Co',
-      vat_id: '<img src=x onerror=alert(1)>',
-      email_signature_extra: '</p><script>alert(2)</script>',
     });
 
     const html = await wrapEmailHtml('<p>Body</p>', 'Subject');
 
     // Escaped, so the markup is inert text — the tags never open.
     expect(html).not.toContain('<script>alert(1)</script>');
-    expect(html).not.toContain('<script>alert(2)</script>');
-    expect(html).not.toContain('<img src=x');
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
-    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(html).toContain('Rue &quot;des&quot; Fleurs &amp; Co');
   });
 
@@ -176,14 +171,16 @@ describe('wrapEmailHtml — business-profile signature footer', () => {
     await db('app_settings').where({ setting_key: 'branding_company_name' }).del();
   });
 
-  it('uses the German VAT label for a German mail', async () => {
+  it('omits legacy VAT identifiers for all languages', async () => {
     await enable();
 
     const de = await wrapEmailHtml('<p>Body</p>', 'Subject', 'de');
     const en = await wrapEmailHtml('<p>Body</p>', 'Subject', 'en');
 
-    expect(de).toContain('USt-IdNr.: CHE-123.456.789');
-    expect(en).toContain('VAT ID: CHE-123.456.789');
+    expect(de).not.toContain('USt-IdNr.');
+    expect(en).not.toContain('VAT ID:');
+    expect(de).not.toContain('CHE-123.456.789');
+    expect(en).not.toContain('CHE-123.456.789');
   });
 
   it('omits empty fields instead of rendering blank rows', async () => {
@@ -220,8 +217,8 @@ describe('wrapEmailHtml — business-profile signature footer', () => {
 
       expect(text).toContain('Bahnhofstrasse 1');
       expect(text).toContain('hello@example.com');
-      expect(text).toContain('VAT ID: CHE-123.456.789');
-      expect(text).toContain('Handelsregister Vaduz');
+      expect(text).not.toContain('VAT ID:');
+      expect(text).not.toContain('Handelsregister Vaduz');
       // A separator, the text equivalent of the footer's top border.
       expect(text).toMatch(/^\n\n--\n/);
     });
@@ -241,12 +238,12 @@ describe('wrapEmailHtml — business-profile signature footer', () => {
       expect(renderEmailSignatureText(null, {})).toBe('');
     });
 
-    it('uses the German VAT label for a German mail', async () => {
+    it('omits legacy VAT identifiers', async () => {
       await enable();
       const signature = await businessProfileService.getEmailSignature();
 
-      expect(renderEmailSignatureText(signature, { language: 'de' })).toContain('USt-IdNr.');
-      expect(renderEmailSignatureText(signature, { language: 'en' })).toContain('VAT ID');
+      expect(renderEmailSignatureText(signature, { language: 'de' })).not.toContain('USt-IdNr.');
+      expect(renderEmailSignatureText(signature, { language: 'en' })).not.toContain('VAT ID');
     });
 
     it('does not repeat the branding company name', async () => {

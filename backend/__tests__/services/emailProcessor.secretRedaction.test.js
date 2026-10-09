@@ -13,7 +13,7 @@ process.env.TEST_DATABASE_PATH = path.join(fs.mkdtempSync(path.join(os.tmpdir(),
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'mailredact-test-secret';
 process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-mailredact-storage-'));
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 const { MASK } = require('../../src/utils/emailSecretRedaction');
 
 function stubWebhookTransport(impl) {
@@ -43,10 +43,10 @@ describe('email archive redaction', () => {
   }).returning('id').then((r) => r[0]?.id ?? r[0]);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     const ins = await db('events').insert({
-      slug: 'redaction-wedding', event_type: 'wedding', event_name: 'Redaction Wedding', event_date: '2026-09-07',
+      slug: 'redaction-wedding', event_type: 'project', event_name: 'Redaction Wedding', event_date: '2026-09-07',
       customer_email: 'client@example.com', customer_name: 'Ada', password_hash: 'x', share_link: '/gallery/redaction-wedding/tok',
       share_token: 'tok', expires_at: new Date(Date.now() + 86400000).toISOString(), is_active: true, created_at: new Date().toISOString(),
     }).returning('id');
@@ -76,28 +76,23 @@ describe('email archive redaction', () => {
     expect(String(stub.mails[0].html)).toContain(PASSWORD);
     expect(String(stub.mails[0].html)).not.toContain(MASK);
 
-    // Messages "resend" copies the archived variables into a new pending
-    // row and "retry" re-queues the row itself: both mails must say the
-    // password is not shown rather than print the mask (or the password).
-    const { resendEmail, retryEmail } = require('../../src/services/projectService');
-    const resent = await resendEmail(id);
-    await retryEmail(id);
-    for (const rowId of [resent.id, id]) {
-      const stub2 = stubWebhookTransport(async () => ({ messageId: `sent-again-${rowId}` }));
-      try {
-        const { processEmailQueue } = require('../../src/services/emailProcessor');
-        await processEmailQueue({ ignoreSchedule: true, onlyId: rowId });
-      } finally { stub2.restore(); }
-      expect(stub2.mails).toHaveLength(1);
-      const html = String(stub2.mails[0].html);
-      expect(html).not.toContain(MASK);
-      expect(html).not.toContain(PASSWORD);
-      expect(html).not.toContain(PIN);
-      expect(html).not.toContain('{{password_security_message}}');
-      expect(html).toContain('security');
-      // archived again without the password (mask or sentinel, never the value)
-      expect(JSON.parse((await db('email_queue').where('id', rowId).first()).email_data).gallery_password).not.toBe(PASSWORD);
-    }
+    // A retry of the archived row must use the safe template sentinel rather
+    // than mailing the mask or the original credentials.
+    await db('email_queue').where({ id }).update({ status: 'pending', retry_count: 0 });
+    const retry = stubWebhookTransport(async () => ({ messageId: 'sent-retry' }));
+    try {
+      const { processEmailQueue } = require('../../src/services/emailProcessor');
+      await processEmailQueue({ ignoreSchedule: true, onlyId: id });
+    } finally { retry.restore(); }
+    expect(retry.mails).toHaveLength(1);
+    const retryHtml = String(retry.mails[0].html);
+    expect(retryHtml).not.toContain(MASK);
+    expect(retryHtml).not.toContain(PASSWORD);
+    expect(retryHtml).not.toContain(PIN);
+    expect(retryHtml).not.toContain('{{password_security_message}}');
+    expect(retryHtml).toContain('security');
+    expect(JSON.parse((await db('email_queue').where('id', id).first()).email_data).gallery_password)
+      .toBe('{{password_security_message}}');
   });
 
   it('keeps the variables in the clear while the row can still be retried', async () => {
@@ -109,8 +104,8 @@ describe('email archive redaction', () => {
       let row = await db('email_queue').where('id', id).first();
       expect(row.retry_count).toBe(2);
       expect(JSON.parse(row.email_data).gallery_password).toBe(PASSWORD);
-      // out of retries — a Messages "retry" resets the counter and this row
-      // must still be able to send the real password
+      // A manual retry can reset the counter, so a failed message must retain
+      // its real credential until it is finally sent.
       await processEmailQueue({ ignoreSchedule: true, onlyId: id });
       row = await db('email_queue').where('id', id).first();
       expect(row.retry_count).toBe(3);

@@ -47,7 +47,6 @@ export interface BrandingSettings {
   // in 'inherit' mode. Position controls global default placement.
   facebook_url?: string;
   instagram_url?: string;
-  whatsapp_url?: string;
   twitter_url?: string;
   youtube_url?: string;
   promo_markdown?: string;
@@ -405,7 +404,6 @@ export const settingsService = {
       // the gallery footer kept rendering them until the next save.
       facebook_url: rawSettings.branding_facebook_url || '',
       instagram_url: rawSettings.branding_instagram_url || '',
-      whatsapp_url: rawSettings.branding_whatsapp_url || '',
       twitter_url: rawSettings.branding_twitter_url || '',
       youtube_url: rawSettings.branding_youtube_url || '',
       promo_markdown: rawSettings.branding_promo_markdown || '',

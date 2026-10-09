@@ -72,7 +72,7 @@ describe('external media symlink containment', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    ({ db } = await require('./helpers/crmDb').bootCrmDb());
+    ({ db } = await require('./helpers/sqliteTestDb').bootTestDb());
     ({ list, resolveExternalPhotoPath } = require('../../src/services/externalMediaService'));
     ({ importExternalFolder } = require('../../src/services/externalImportService'));
 
@@ -89,7 +89,7 @@ describe('external media symlink containment', () => {
   async function seedEvent() {
     const [e] = await db('events').insert({
       slug: `extlink-${Math.random().toString(36).slice(2, 8)}`,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'extlink',
       event_date: '2026-01-01',
       host_email: 'h@example.com',

@@ -20,15 +20,12 @@ import { EmailPreviewModal } from '../../components/admin/EmailPreviewModal';
 import { EmailTemplateEditor } from '../../components/admin/EmailTemplateEditor';
 import { SentEmailsPanel } from '../../components/admin/SentEmailsPanel';
 import { ReceivedEmailsPanel } from '../../components/admin/ReceivedEmailsPanel';
-import { IncomingMailConfigCard } from '../../components/admin/IncomingMailConfigCard';
 import { CustomerMailboxCard } from '../../components/admin/CustomerMailboxCard';
 import { Palette, RefreshCw, Info } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useModal, useMutationWithToast } from '../../hooks';
 import { emailService, type EmailConfig, type EmailTemplate, type EmailTemplateTranslation } from '../../services/email.service';
 import { settingsService } from '../../services/settings.service';
-import { businessProfileService } from '../../services/businessProfile.service';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES } from "../../components/common/LanguageSelector.tsx";
 import { useFeatureFlags, type FeatureKey } from '../../contexts/FeatureFlagsContext';
@@ -44,16 +41,6 @@ import { useFeatureFlags, type FeatureKey } from '../../contexts/FeatureFlagsCon
 const CATEGORY_ORDER: readonly string[] = [
   'core',
   'customers',
-  'calendar',
-  'quotes',
-  // 'contracts' sits between quotes and billing — matches the
-  // quote → contract → invoice document flow + the order of the
-  // Admin → Clients sub-nav so admins find the right bucket at a
-  // glance. Migration 130 seeds rows with category='contracts';
-  // before this entry existed they fell through to 'core' via the
-  // unknown-category fallback below.
-  'contracts',
-  'billing',
 ] as const;
 
 /**
@@ -77,7 +64,7 @@ const CORE_SUBCATEGORY_ORDER: readonly string[] = [
  * `buildPreviewSampleData` below covers the rest.
  */
 const PREVIEW_SAMPLE_VALUES: Record<string, string> = {
-  event_name: 'John & Jane Wedding',
+  event_name: 'Sample project',
   event_date: 'December 25, 2024',
   expiry_date: 'January 25, 2025',
   gallery_link: 'https://photos.example.com/gallery/john-jane-wedding',
@@ -114,9 +101,7 @@ export const buildPreviewSampleData = (variables: string[] = []): Record<string,
  * sample keys came from. It also covered four keys, so every other template
  * rendered its raw snake_case key as its name.
  *
- * Keys come from backend/migrations/core/*.js (core, customers, transfers)
- * and backend/src/services/{crm,contract,eventReminder}EmailTemplates.js
- * (quotes, billing, contracts, event reminders).
+ * Keys come from the remaining gallery, customer and project-reminder templates.
  */
 const TEMPLATE_DISPLAY_NAMES: Record<string, string> = {
   // core / gallery
@@ -144,31 +129,8 @@ const TEMPLATE_DISPLAY_NAMES: Record<string, string> = {
   customer_invitation: 'Customer Invitation',
   customer_password_reset: 'Customer Password Reset',
   customer_gallery_assigned: 'Gallery Assigned to Customer',
-  // quotes
-  quote_sent: 'Quote Sent',
-  quote_accepted_customer: 'Quote Accepted (Customer)',
-  quote_accepted_admin: 'Quote Accepted (Admin)',
-  quote_declined_admin: 'Quote Declined (Admin)',
-  // contracts
-  contract_sent: 'Contract Sent',
-  contract_fully_signed: 'Contract Fully Signed',
-  contract_signed_admin_notification: 'Contract Signed (Admin)',
-  // billing
-  invoice_sent: 'Invoice Sent',
-  invoice_reminder_first: 'Invoice Reminder (1st)',
-  invoice_reminder_second: 'Invoice Reminder (2nd)',
-  invoice_paid_receipt: 'Invoice Paid — Receipt',
-  invoice_paid_admin_notification: 'Invoice Paid (Admin)',
-  invoice_cancelled: 'Invoice Cancelled',
-  invoice_payment_check: 'Payment Check (Admin)',
-  invoice_collections_handoff: 'Collections Handoff',
-  storno_issued: 'Credit Note Issued',
   // event reminders
   event_reminder_default: 'Event Reminder (Default)',
-  event_reminder_wedding: 'Event Reminder (Wedding)',
-  event_reminder_birthday: 'Event Reminder (Birthday)',
-  event_reminder_corporate: 'Event Reminder (Corporate)',
-  event_reminder_other: 'Event Reminder (Other)',
 };
 
 export const EmailConfigPage: React.FC = () => {
@@ -221,19 +183,6 @@ export const EmailConfigPage: React.FC = () => {
   // 403, and reporting that as "signature is off" would be stating something
   // false about a mail they are about to send — so an unreadable profile
   // renders nothing at all rather than a guess (#1264 review).
-  const { data: businessProfile, isError, isPending } = useQuery({
-    queryKey: ['business-profile'],
-    queryFn: () => businessProfileService.get(),
-    enabled: activeTab === 'smtp',
-    retry: false,
-  });
-  // Pending counts as unknown too. The other queries on this tab are often
-  // cached and paint first, so `?? false` announced "signature is off" for
-  // as long as this request was in flight — a wrong statement about a mail
-  // the admin is about to send, not merely a slow one.
-  const signatureUnknown = isError || isPending || !businessProfile;
-  const signatureEnabled = businessProfile?.profile?.emailSignatureEnabled ?? false;
-
   // Fetch SMTP config
   const { isLoading: configLoading } = useQuery({
     queryKey: ['email-config'],
@@ -536,18 +485,16 @@ export const EmailConfigPage: React.FC = () => {
           >
             {t('email.sentEmails.tab', 'Sent emails')}
           </button>
-          {featureFlags.incomingMail && (
-            <button
-              onClick={() => setActiveTab('received')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'received'
-                  ? 'border-accent text-accent'
-                  : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
-              }`}
-            >
-              {t('email.received.tab', 'Received emails')}
-            </button>
-          )}
+          <button
+            onClick={() => setActiveTab('received')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'received'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+            }`}
+          >
+            {t('email.received.tab', 'Received emails')}
+          </button>
         </nav>
       </div>
 
@@ -560,24 +507,6 @@ export const EmailConfigPage: React.FC = () => {
       {/* SMTP Settings Tab */}
       {activeTab === 'smtp' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* The footer signature (migration 198) is applied by the email
-              wrapper to every send from this page, but it's configured on
-              the Business profile — point at it from where the mail is set
-              up rather than making the operator hunt for it. */}
-          {!signatureUnknown && (
-          <div className="lg:col-span-2 flex items-start gap-2 rounded-md border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/60 p-3 text-sm text-neutral-600 dark:text-neutral-400">
-            <Info className="w-4 h-4 mt-0.5 shrink-0" />
-            <span>
-              {signatureEnabled
-                ? t('email.signatureOn', 'Footer signature is on — your business address is appended to automatic emails. Replies you write in Messages are sent as typed.')
-                : t('email.signatureOff', 'Footer signature is off — emails show the logo and company name only.')}
-              {' '}
-              <Link to="/admin/settings?tab=businessProfile" className="underline hover:no-underline" style={{ color: 'var(--color-accent)' }}>
-                {t('email.signatureEdit', 'Edit in Business profile')}
-              </Link>
-            </span>
-          </div>
-          )}
           <Card padding="md">
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">{t('email.smtpConfiguration')}</h2>
 
@@ -874,7 +803,6 @@ export const EmailConfigPage: React.FC = () => {
 
       {/* Email Templates Tab */}
       {/* Incoming mail (IMAP) — a second block under SMTP, flag-gated. */}
-      {activeTab === 'smtp' && featureFlags.incomingMail && <IncomingMailConfigCard />}
       {activeTab === 'smtp' && featureFlags.messaging && <CustomerMailboxCard />}
 
       {activeTab === 'templates' && (

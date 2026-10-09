@@ -249,7 +249,7 @@ export const notificationsService = {
           username: notification.metadata.username || notification.metadata.email,
         });
 
-      // ---- Webhooks (#327) + API tokens (#322) + event types --------------
+      // ---- Webhooks (#327) + API tokens (#322) ----------------------------
       case 'webhook_created':
         return t('admin.notificationMessages.webhookCreated', { name: notification.metadata.name });
       case 'webhook_updated':
@@ -260,14 +260,6 @@ export const notificationsService = {
         return t('admin.notificationMessages.apiTokenCreated', { name: notification.metadata.name });
       case 'api_token_revoked':
         return t('admin.notificationMessages.apiTokenRevoked', { name: notification.metadata.name });
-      case 'event_type_created':
-        return t('admin.notificationMessages.eventTypeCreated', { name: notification.metadata.name });
-      case 'event_type_updated':
-        return t('admin.notificationMessages.eventTypeUpdated', { name: notification.metadata.name });
-      case 'event_type_deleted':
-        return t('admin.notificationMessages.eventTypeDeleted', { name: notification.metadata.name });
-      case 'event_types_reordered':
-        return t('admin.notificationMessages.eventTypesReordered');
 
       // ---- Other recent surfaces ------------------------------------------
       case 'event_published':
@@ -305,11 +297,9 @@ export const notificationsService = {
 
       default: {
         // Smart fallback: try to resolve admin.notificationMessages.<camelCase>
-        // directly before giving up to the systemActivity template. Most CRM
-        // and accounting activity types follow a stable shape (a doc number /
-        // customer email / count interpolated into a short sentence), so we
-        // add their translation entries to the locale files and rely on this
-        // default to pick them up — no per-type switch case needed.
+        // directly before giving up to the systemActivity template. Activity
+        // metadata is passed through so each translation can use its values
+        // without a per-type switch case.
         const camelCase = notification.type.replace(/_(\w)/g, (_match, c) => c.toUpperCase());
         const key = `admin.notificationMessages.${camelCase}`;
         const translated = t(key, {
@@ -381,7 +371,7 @@ export const notificationsService = {
 
       // Feature flag toggles + customer / admin / webhook surfaces. Icon
       // choices favour the tone of the action (settings / users / network)
-      // over per-event-type cleverness.
+      // instead of type-specific template rules.
       case 'feature_flags_updated':
         return { icon: 'ToggleRight', color: 'text-amber-600' };
       case 'customer_login':
@@ -418,11 +408,6 @@ export const notificationsService = {
       case 'api_token_created':
       case 'api_token_revoked':
         return { icon: 'Key', color: 'text-orange-600' };
-      case 'event_type_created':
-      case 'event_type_updated':
-      case 'event_type_deleted':
-      case 'event_types_reordered':
-        return { icon: 'Tag', color: 'text-violet-600' };
       case 'event_published':
         return { icon: 'CheckCircle', color: 'text-green-600' };
       case 'event_logo_uploaded':

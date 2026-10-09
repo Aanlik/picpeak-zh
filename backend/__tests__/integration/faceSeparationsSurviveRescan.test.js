@@ -24,7 +24,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'sep-test-secret';
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup; let clustering;
 
@@ -43,7 +43,7 @@ function pairAtSimilarity(target, basis) {
 
 async function seedEvent(slug) {
   const [row] = await db('events').insert({
-    slug, event_type: 'wedding', event_name: slug, event_date: '2026-01-01',
+    slug, event_type: 'project', event_name: slug, event_date: '2026-01-01',
     host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
     share_link: `${slug}-share`, expires_at: new Date().toISOString(),
   }).returning('id');
@@ -108,7 +108,7 @@ async function simulateRescan(eventId, vectors) {
 
 describe('separations survive re-derivation (#1132)', () => {
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     clustering = require('../../src/services/faceClustering');
   }, 120000);
 

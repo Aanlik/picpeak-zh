@@ -1,9 +1,9 @@
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup; let app; let superId; let editorId; let targetId; let service;
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId: superId } = await seedMinimal(db));
   await assignAdminRole(db, superId);
   service = require('../../src/services/userManagementService');

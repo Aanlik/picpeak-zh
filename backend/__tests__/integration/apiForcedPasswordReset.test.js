@@ -1,7 +1,7 @@
 const request = require('supertest');
 const knex = require('knex');
 const { randomUUID } = require('crypto');
-const { bootCrmDb, seedMinimal, assignAdminRole, buildRouteApp } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, buildRouteApp } = require('./helpers/sqliteTestDb');
 const pgUrl = process.env.PICPEAK_PG_TEST_URL;
 let db; let cleanup; let app; let adminId; let otherId; let owner; let schema; let token;
 beforeAll(async () => {
@@ -12,7 +12,7 @@ beforeAll(async () => {
     process.env.DATABASE_CLIENT = 'pg';
     jest.doMock('../../knexfile', () => ({ client: 'pg', connection: pgUrl, searchPath: [schema] }));
   }
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId } = await seedMinimal(db));
   await assignAdminRole(db, adminId);
   const [other] = await db('admin_users').insert({ username: 'other', email: 'other@example.test', password_hash: 'unused',

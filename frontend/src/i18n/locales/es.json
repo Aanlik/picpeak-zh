@@ -163,7 +163,6 @@
     "events": "Eventos",
     "archives": "Archivos",
     "settings": "Ajustes",
-    "eventTypes": "Tipos de evento",
     "branding": "Firma",
     "analytics": "Analíticas",
     "emailSettings": "Ajustes de correo",
@@ -180,17 +179,11 @@
     "totalPhotos": "Fotos totales",
     "avgArchiveSize": "Tamaño medio de archivo",
     "searchPlaceholder": "Buscar archivos...",
-    "allTypes": "Todos los tipos",
-    "wedding": "Boda",
-    "birthday": "Cumpleaños",
-    "corporate": "Corporativo",
-    "other": "Otro",
     "sortByDate": "Ordenar por fecha",
     "sortByName": "Ordenar por nombre",
     "sortBySize": "Ordenar por tamaño",
     "tableHeaders": {
       "event": "Evento",
-      "type": "Tipo",
       "archivedDate": "Fecha archivado",
       "size": "Tamaño",
       "photos": "Fotos",
@@ -382,12 +375,6 @@
     "confirmPasswordPlaceholder": "Confirmar contraseña",
     "galleryExpiresOn": "La galería expirará el {{date}}",
     "guestsWillReceiveWarning": "Los invitados recibirán un email de aviso 7 días antes de la expiración.",
-    "types": {
-      "wedding": "Boda",
-      "birthday": "Cumpleaños",
-      "corporate": "Corporativo",
-      "other": "Otro"
-    },
     "themes": {
       "default": "Predeterminado",
       "oceanBlue": "Azul océano",
@@ -397,7 +384,6 @@
     },
     "eventDetails": "Detalles del evento",
     "eventName": "Nombre del evento",
-    "eventType": "Tipo de evento",
     "eventDate": "Fecha del evento",
     "hostEmail": "Correo del cliente",
     "hostName": "Nombre del cliente",
@@ -575,10 +561,6 @@
     "heroPreview": "Vista previa hero",
     "noPhotosAvailable": "No hay fotos disponibles",
     "processingRequest": "Procesando tu solicitud...",
-    "eventTypeWedding": "Boda",
-    "eventTypeBirthday": "Cumpleaños",
-    "eventTypeCorporate": "Corporativo",
-    "eventTypeOther": "Otro",
     "days30": "30 días",
     "days60": "60 días",
     "days90": "90 días",
@@ -1845,54 +1827,6 @@
     "externalUrlPlaceholder": "https://example.com/impressum",
     "externalUrlInvalid": "Debe ser una URL https:// válida",
     "externalUrlActive": "La URL externa está activa — el contenido interno se conserva pero no se muestra."
-  },
-  "eventTypes": {
-    "title": "Tipos de evento",
-    "subtitle": "Personaliza tipos de evento y sus temas por defecto",
-    "loading": "Cargando tipos de evento...",
-    "loadError": "Error al cargar tipos de evento",
-    "createNew": "Nuevo tipo de evento",
-    "edit": "Editar tipo de evento",
-    "created": "Tipo de evento creado con éxito",
-    "updated": "Tipo de evento actualizado con éxito",
-    "deleted": "Tipo de evento eliminado con éxito",
-    "createError": "Error al crear el tipo de evento",
-    "updateError": "Error al actualizar el tipo de evento",
-    "deleteError": "Error al eliminar el tipo de evento",
-    "searchPlaceholder": "Buscar tipos de evento...",
-    "showInactive": "Mostrar inactivos",
-    "noResults": "No se encontraron tipos de evento",
-    "empty": "Aún no hay tipos de evento",
-    "system": "Sistema",
-    "table": {
-      "type": "Tipo",
-      "slugPrefix": "Prefijo URL",
-      "theme": "Tema por defecto",
-      "status": "Estado",
-      "actions": "Acciones"
-    },
-    "form": {
-      "name": "Nombre visible",
-      "namePlaceholder": "p. ej., Sesión familiar",
-      "slugPrefix": "Prefijo URL",
-      "slugPrefixPlaceholder": "p. ej., familia",
-      "slugPreview": "URL de ejemplo:",
-      "emoji": "Icono",
-      "themePreset": "Tema por defecto",
-      "isActive": "Activo (visible al crear eventos)"
-    },
-    "validation": {
-      "slugFormat": "Solo se permiten letras, números y guiones"
-    },
-    "slugInfo": {
-      "title": "Info del prefijo URL:",
-      "description": "El prefijo se usa para generar URLs de galería. Por ejemplo, un tipo con prefijo \"family\" generará URLs como: family-smith-family-2025-01-22"
-    },
-    "deleteConfirm": {
-      "title": "Eliminar tipo de evento",
-      "message": "¿Seguro que quieres eliminarlo?",
-      "warning": "Esta acción no se puede deshacer. Asegúrate de que ningún evento esté usando este tipo."
-    }
   },
   "backup": {
     "external": {

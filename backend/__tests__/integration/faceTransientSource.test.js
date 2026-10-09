@@ -41,14 +41,14 @@ jest.mock('../../src/services/faceClient', () => ({
   SidecarUnavailableError: class extends Error {},
 }));
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup; let faceProcessor;
 
 async function seedExternalPhoto({ externalPath, relpath = 'individual/a.jpg' }) {
   const [e] = await db('events').insert({
     slug: `tr-${Math.random().toString(36).slice(2, 8)}`,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'tr',
     event_date: '2026-01-01',
     host_email: 'h@example.com',
@@ -82,7 +82,7 @@ async function seedExternalPhoto({ externalPath, relpath = 'individual/a.jpg' })
 
 describe('transient source vs dead photo', () => {
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await db('feature_flags').insert({ key: 'faces', value: true })
       .onConflict('key').merge()
       .catch(async () => { await db('feature_flags').where({ key: 'faces' }).update({ value: true }); });
@@ -200,7 +200,7 @@ describe('transient source vs dead photo', () => {
     // preview is broken, and there is no mount to blame.
     const [e] = await db('events').insert({
       slug: `tr-m-${Math.random().toString(36).slice(2, 8)}`,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'trm',
       event_date: '2026-01-01',
       host_email: 'h@example.com',

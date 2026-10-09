@@ -35,7 +35,7 @@
  *     potentially-millions of photos)
  *
  * Read-only. Returns a JSON report — same shape as
- * backupIntegrityService.verifyDocumentArtefacts.
+ * retained photo and application data.
  */
 
 const fs = require('fs').promises;
@@ -48,8 +48,8 @@ const backupService = require('./backupService');
 // The shared resolver, not a second `STORAGE_PATH || cwd` expression. With
 // STORAGE_PATH unset the two disagree — getStoragePath() falls back
 // module-relative while cwd is normally backend/ — and this diagnostic would
-// then report the business-docs tree as missing while the backup walker, which
-// uses the module-relative root, was backing it up correctly.
+// then report a retired storage tree as missing while the active backup
+// walker correctly leaves it out.
 const STORAGE_ROOT = () => getStoragePath();
 
 /**
@@ -307,7 +307,6 @@ async function getCoverageReport() {
     { path: 'previews',         include_in_default: true,  feature_flag: null,                       display_order: 40, description: 'Legacy fallback (backup_paths missing)' },
     { path: 'heroes',           include_in_default: true,  feature_flag: null,                       display_order: 50, description: 'Legacy fallback (backup_paths missing)' },
     { path: 'uploads',          include_in_default: true,  feature_flag: null,                       display_order: 60, description: 'Legacy fallback (backup_paths missing)' },
-    { path: 'business-docs',    include_in_default: true,  feature_flag: null,                       display_order: 70, description: 'Legacy fallback (backup_paths missing)' },
   ];
 
   const [database, paths] = await Promise.all([

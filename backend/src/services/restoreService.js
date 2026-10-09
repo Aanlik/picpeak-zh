@@ -698,7 +698,7 @@ class RestoreService {
         }
       } else {
         this.log('warn', 'No pre-restore backup available — cannot auto-rollback. ' +
-          'Destination may be in a partial state. Verify business-docs/ and the DB before retrying.');
+          'Destination may be in a partial state. Verify restored files and the database before retrying.');
       }
 
       // Update restore run record. We persist BOTH the original

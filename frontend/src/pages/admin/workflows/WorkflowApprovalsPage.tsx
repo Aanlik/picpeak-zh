@@ -1,6 +1,6 @@
 /**
  * Admin → Workflows → Approvals inbox. Lists workflow runs paused on a gate
- * (e.g. "confirm there's no payment") and lets the admin confirm or deny,
+ * (for a workflow action) and lets the admin confirm or deny,
  * resuming the run down the matching edge. The same decision is also possible
  * from the emailed confirm/deny link.
  */
@@ -33,12 +33,11 @@ export const WorkflowApprovalsPage: React.FC = () => {
 
   const promptOf = (a: WorkflowApproval) => (a.payload && (a.payload.prompt as string)) || t('workflows.approvals.defaultPrompt', 'A workflow needs your confirmation.');
 
-  // The admin detail route for the run's entity, so a row click opens the
-  // document they're being asked to approve. `invoice` lives under /bills.
+  // The admin detail route for the run's entity, when it has one.
   const entityHref = (a: WorkflowApproval): string | null => {
     if (!a.entity_type || a.entity_id == null) return null;
     const base: Record<string, string> = {
-      quote: 'quotes', invoice: 'bills', event: 'events', contract: 'contracts', customer: 'customers',
+      event: 'events', customer: 'customers',
     };
     const seg = base[a.entity_type];
     return seg ? `/admin/${seg}/${a.entity_id}` : null;

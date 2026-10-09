@@ -17,7 +17,7 @@ import { useMutationWithToast } from '../../hooks';
 
 export const CMSPage: React.FC = () => {
   const { t: tAudit } = useTranslation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatDateTime: fmtDateTime, formatTime: fmtTime } = useLocalizedDate();
   const queryClient = useQueryClient();
   const [selectedPage, setSelectedPage] = useState<string>('impressum');
@@ -304,6 +304,7 @@ export const CMSPage: React.FC = () => {
   };
 
   const publicSitePreview = useMemo(() => {
+    const previewLanguage = i18n.resolvedLanguage || i18n.language || 'en';
     const branding = publicSiteBranding || publicSiteDefaults?.branding;
     const substitutedHtml = applyBrandTokens(publicSiteSanitizedHtml, branding);
     const inlineStyles = [
@@ -312,7 +313,7 @@ export const CMSPage: React.FC = () => {
       publicSiteSanitizedCss ? `/* Custom styles */\n${publicSiteSanitizedCss}` : ''
     ].filter(Boolean).join('\n\n');
 
-    const logo = branding?.logoUrl ? `<img src="${branding.logoUrl}" alt="${branding.companyName || 'Brand logo'}" class="brand-logo" loading="lazy" decoding="async" />` : '';
+    const logo = branding?.logoUrl ? `<img src="${branding.logoUrl}" alt="${branding.companyName || t('cms.preview.brandLogo')}" class="brand-logo" loading="lazy" decoding="async" />` : '';
     const tagline = branding?.companyTagline ? `<p class="brand-tagline">${branding.companyTagline}</p>` : '';
     const support = branding?.supportEmail ? `<a href="mailto:${branding.supportEmail}">${branding.supportEmail}</a>` : '';
     const footerNote = branding?.footerText ? `<p>${branding.footerText}</p>` : '';
@@ -320,7 +321,7 @@ export const CMSPage: React.FC = () => {
     const displayName = branding?.companyName || 'Celebration Stories';
 
     return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${previewLanguage}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -338,10 +339,10 @@ export const CMSPage: React.FC = () => {
           </div>
         </div>
         <nav class="site-nav">
-          <a href="#collections">Collections</a>
-          <a href="#features">Features</a>
-          <a href="#stories">Stories</a>
-          <a href="#contact">Contact</a>
+          <a href="#collections">${t('cms.preview.navigation.collections')}</a>
+          <a href="#features">${t('cms.preview.navigation.features')}</a>
+          <a href="#stories">${t('cms.preview.navigation.stories')}</a>
+          <a href="#contact">${t('cms.preview.navigation.contact')}</a>
         </nav>
       </div>
     </header>
@@ -362,7 +363,7 @@ export const CMSPage: React.FC = () => {
   </div>
 </body>
 </html>`;
-  }, [publicSiteBranding, publicSiteDefaults, publicSiteSanitizedHtml, publicSiteBaseCss, publicSiteSanitizedCss]);
+  }, [publicSiteBranding, publicSiteDefaults, publicSiteSanitizedHtml, publicSiteBaseCss, publicSiteSanitizedCss, i18n.language, i18n.resolvedLanguage, t]);
 
   const publicSiteLoading = isLoadingAdminSettings || isLoadingPublicDefaults;
 

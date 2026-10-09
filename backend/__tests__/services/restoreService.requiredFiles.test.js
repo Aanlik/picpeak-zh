@@ -18,7 +18,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'restore-required-test-secret';
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
@@ -34,7 +34,7 @@ describe('restoreService — required files are fatal', () => {
   };
 
   beforeAll(async () => {
-    ({ cleanup } = await bootCrmDb());
+    ({ cleanup } = await bootTestDb());
     ({ restoreService } = require('../../src/services/restoreService'));
     storageRoot = process.env.STORAGE_PATH;
     backupRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-restore-required-backup-'));

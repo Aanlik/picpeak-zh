@@ -18,7 +18,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'manifest-secrets-test-secret';
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 const ACCESS_KEY = 'AKIA-SENTINEL-ACCESS-KEY';
 const SECRET_KEY = 'sentinel-s3-secret-key-value';
@@ -28,7 +28,7 @@ describe('backupManifest — credentials never enter the manifest', () => {
   let db; let cleanup; let backupManifest;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     backupManifest = require('../../src/services/backupManifest');
 
     const upsert = async (key, value) => {

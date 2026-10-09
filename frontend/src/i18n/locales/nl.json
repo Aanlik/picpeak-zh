@@ -164,11 +164,9 @@
     "archives": "Archieven",
     "emailSettings": "E-mailinstellingen",
     "branding": "Huisstijl",
-    "eventTypes": "Evenementtypes",
     "backup": "Back-up en herstel",
     "cmsPages": "CMS-pagina's",
     "users": "Gebruikers",
-    "calendar": "Agenda",
     "clients": "Klanten"
   },
   "archives": {
@@ -180,17 +178,11 @@
     "totalPhotos": "Totaal foto's",
     "avgArchiveSize": "Gem. archiefgrootte",
     "searchPlaceholder": "Archieven zoeken...",
-    "allTypes": "Alle types",
-    "wedding": "Bruiloft",
-    "birthday": "Verjaardag",
-    "corporate": "Zakelijk",
-    "other": "Overig",
     "sortByDate": "Sorteren op datum",
     "sortByName": "Sorteren op naam",
     "sortBySize": "Sorteren op grootte",
     "tableHeaders": {
       "event": "Evenement",
-      "type": "Type",
       "archivedDate": "Archiefdatum",
       "size": "Grootte",
       "photos": "Foto's",
@@ -393,7 +385,6 @@
     "confirmPasswordPlaceholder": "Bevestig wachtwoord",
     "eventDetails": "Evenementdetails",
     "eventName": "Evenementnaam",
-    "eventType": "Evenementtype",
     "eventDate": "Evenementdatum",
     "hostEmail": "E-mail klant",
     "hostName": "Naam klant",
@@ -673,8 +664,8 @@
     },
     "ogShare": {
       "title": "Hero-foto gebruiken als social-share-voorbeeld",
-      "help": "Wanneer deze galerij-URL wordt gedeeld op WhatsApp, Facebook, Slack enz., toont de link-preview de bovenstaande hero-foto. De thumbnail wordt niet-geauthenticeerd opgehaald door link-preview-crawlers — wie de URL deelt maakt deze afbeelding daarmee in feite openbaar. Standaard uit; kies eerst een hero die je bewust openbaar wilt tonen voordat je dit inschakelt.",
-      "heroRequired": "Kies eerst hierboven een hero-foto — deze optie gebruikt die als WhatsApp- / Facebook- / Slack-voorbeeldafbeelding."
+      "help": "Wanneer deze galerij-URL wordt gedeeld op Facebook, Slack enz., toont de link-preview de bovenstaande hero-foto. De thumbnail wordt niet-geauthenticeerd opgehaald door link-preview-crawlers — wie de URL deelt maakt deze afbeelding daarmee in feite openbaar. Standaard uit; kies eerst een hero die je bewust openbaar wilt tonen voordat je dit inschakelt.",
+      "heroRequired": "Kies eerst hierboven een hero-foto — deze optie gebruikt die als- / Facebook- / Slack-voorbeeldafbeelding."
     }
   },
   "settings": {
@@ -890,7 +881,7 @@
       "showGalleryFilterBar": "Filterbalk in galerijen tonen",
       "showGalleryFilterBarHelp": "Toont de zoek-op-bestandsnaam en sorteerbediening boven rasterindelingsgalerijen. Uitschakelen voor een cleaner lay-out.",
       "enablePhoneField": "Telefoonnummerveld inschakelen",
-      "enablePhoneFieldHelp": "Voegt een optioneel telefoonnumerinvoerveld toe aan het evenementformulier. Handig voor automatisering zoals WhatsApp-levering via n8n. Altijd optioneel, ook als ingeschakeld.",
+      "enablePhoneFieldHelp": "Voegt een optioneel telefoonnummer toe aan het projectformulier voor vervolgcommunicatie en automatisering. Het veld blijft optioneel.",
       "feedbackTypeDefaultsHelp": "Met welke feedbacktypen nieuwe galerijen starten. Bestaande galerijen veranderen niet — elke galerij blijft afzonderlijk instelbaar.",
       "defaultAllowRatings": "Sterbeoordelingen",
       "defaultAllowLikes": "Likes",
@@ -1089,9 +1080,6 @@
     },
     "sectionLabel": "Instellingensectie",
     "navAriaLabel": "Instellingennavigatie",
-    "eventTypes": {
-      "title": "Evenementtypes"
-    },
     "cms": {
       "title": "CMS-pagina's"
     },
@@ -1118,11 +1106,7 @@
       "sections": {
         "core": "Kern",
         "communication": "Communicatie",
-        "scheduling": "Planning",
-        "sales": "Verkoop",
-        "insights": "Inzichten & Toegang",
-        "customers": "Klanten",
-        "clients": "Klanten"
+        "insights": "Inzichten & Toegang"
       },
       "status": {
         "stable": "stabiel",
@@ -1145,21 +1129,6 @@
         "description": "In-app gesprekken met gasten, gekoppeld aan een galerij. E-mail volstaat voor de meeste teams — dit is voor studios die alles op één plek willen.",
         "sidebar": "Berichten"
       },
-      "calendar": {
-        "title": "Agenda",
-        "description": "Bekijk alle aankomende en eerdere evenementen in een maand- of weekoverzicht. Accepteer optioneel boekingen van klanten.",
-        "sidebar": "Agenda"
-      },
-      "quotes": {
-        "title": "Offertes",
-        "description": "Stuur offertes met regelitems naar klanten. Ze kunnen accepteren of afwijzen via een openbare link; betaling wordt handmatig bijgehouden.",
-        "sidebar": "Offertes"
-      },
-      "bills": {
-        "title": "Facturen",
-        "description": "Genereer een factuur uit elke geaccepteerde offerte. Markeer handmatig als betaald — geen integratie met betaalproviders.",
-        "sidebar": "Facturen"
-      },
       "analytics": {
         "title": "Analyses",
         "description": "Opslaggebruik, galerijweergaven, downloadtellingen en statistieken per evenement."
@@ -1172,10 +1141,6 @@
       "customerPortal": {
         "title": "Klanten",
         "description": "Permanente klantlogins. Terugkerende klanten zien al hun toegewezen galerijen op één plek — geen wachtwoorden per evenement. Klanten loggen in op /customer/login en je beheert ze onder Klanten → Accounts."
-      },
-      "clients": {
-        "title": "Klanten",
-        "description": "Hoofdschakelaar voor het Klanten-onderdeel in de zijbalk. Uitgeschakeld verbergt het onderdeel en alle subfuncties ongeacht hun individuele schakelaars — opnieuw inschakelen herstelt de vorige status."
       }
     },
     "customerSurface": {
@@ -1382,7 +1347,6 @@
     "previewLayout": "Lay-outvoorbeeld",
     "livePreview": "Live voorbeeld",
     "pdfTypography": "PDF-typografie",
-    "pdfTypographyHelp": "Wordt gebruikt voor briefhoofden van facturen en offertes. Kies een van de meegeleverde lettertypen, of laat de standaardinstelling staan om Helvetica te gebruiken.",
     "pdfFontFamily": "Bodylettertype",
     "pdfFontFamilyDefault": "Helvetica gebruiken (standaard)",
     "pdfFontFamilyMissing": "ontbreekt",
@@ -1619,10 +1583,6 @@
       "webhookDeleted": "Webhook verwijderd: {{name}}",
       "apiTokenCreated": "API-token aangemaakt: {{name}}",
       "apiTokenRevoked": "API-token ingetrokken: {{name}}",
-      "eventTypeCreated": "Evenementtype aangemaakt: {{name}}",
-      "eventTypeUpdated": "Evenementtype bijgewerkt: {{name}}",
-      "eventTypeDeleted": "Evenementtype verwijderd: {{name}}",
-      "eventTypesReordered": "Evenementtypes gesorteerd",
       "eventPublished": "Evenement gepubliceerd: {{eventName}}",
       "eventLogoUploaded": "Evenementlogo geüpload voor {{eventName}}",
       "eventLogoRemoved": "Evenementlogo verwijderd voor {{eventName}}",
@@ -1842,10 +1802,6 @@
       "webhook_deleted": "Webhook verwijderd: {{name}}",
       "api_token_created": "API-token aangemaakt: {{name}}",
       "api_token_revoked": "API-token ingetrokken: {{name}}",
-      "event_type_created": "Evenementtype aangemaakt: {{name}}",
-      "event_type_updated": "Evenementtype bijgewerkt: {{name}}",
-      "event_type_deleted": "Evenementtype verwijderd: {{name}}",
-      "event_types_reordered": "Evenementtypes gesorteerd",
       "event_published": "Evenement gepubliceerd: {{eventName}}",
       "event_logo_uploaded": "Evenementlogo geüpload voor {{eventName}}",
       "event_logo_removed": "Evenementlogo verwijderd voor {{eventName}}",
@@ -2049,9 +2005,7 @@
     "categories": {
       "core": "Kern",
       "customers": "Klanten",
-      "calendar": "Agenda",
-      "quotes": "Offertes",
-      "billing": "Facturatie"
+      "calendar": "Agenda"
     },
     "featureOff": "Functie uit",
     "featureOffTooltip": "De functie waar deze sjabloon bij hoort, is momenteel uitgeschakeld. U kunt de sjabloon nog steeds bewerken — deze wordt gebruikt zodra de functie weer is ingeschakeld.",
@@ -2091,54 +2045,6 @@
     "replaceLogo": "Logo vervangen",
     "uploadLogo": "Logo uploaden",
     "clearLogo": "Sitestandaard gebruiken"
-  },
-  "eventTypes": {
-    "title": "Evenementtypes",
-    "subtitle": "Pas evenementtypes en hun standaardthema's aan",
-    "loading": "Evenementtypes laden...",
-    "loadError": "Kan evenementtypes niet laden",
-    "createNew": "Nieuw evenementtype",
-    "edit": "Evenementtype bewerken",
-    "created": "Evenementtype succesvol aangemaakt",
-    "updated": "Evenementtype succesvol bijgewerkt",
-    "deleted": "Evenementtype succesvol verwijderd",
-    "createError": "Kan evenementtype niet aanmaken",
-    "updateError": "Kan evenementtype niet bijwerken",
-    "deleteError": "Kan evenementtype niet verwijderen",
-    "searchPlaceholder": "Evenementtypes zoeken...",
-    "showInactive": "Inactieve tonen",
-    "noResults": "Geen evenementtypes gevonden",
-    "empty": "Nog geen evenementtypes",
-    "system": "Systeem",
-    "table": {
-      "type": "Type",
-      "slugPrefix": "URL-voorvoegsel",
-      "theme": "Standaardthema",
-      "status": "Status",
-      "actions": "Acties"
-    },
-    "form": {
-      "name": "Weergavenaam",
-      "namePlaceholder": "bijv. Familieshoot",
-      "slugPrefix": "URL-voorvoegsel",
-      "slugPrefixPlaceholder": "bijv. familie",
-      "slugPreview": "Voorbeeld-URL:",
-      "emoji": "Icoon",
-      "themePreset": "Standaardthema",
-      "isActive": "Actief (zichtbaar bij het aanmaken van evenementen)"
-    },
-    "validation": {
-      "slugFormat": "Alleen letters, cijfers en koppeltekens toegestaan"
-    },
-    "slugInfo": {
-      "title": "URL-voorvoegselinfo:",
-      "description": "Het URL-voorvoegsel wordt gebruikt om galerij-URL's te genereren. Bijvoorbeeld, een evenementtype met voorvoegsel \"familie\" maakt URL's zoals: familie-jansen-familie-2025-01-22"
-    },
-    "deleteConfirm": {
-      "title": "Evenementtype verwijderen",
-      "message": "Weet u zeker dat u wilt verwijderen",
-      "warning": "Deze actie kan niet ongedaan worden gemaakt. Zorg ervoor dat geen evenementen dit type gebruiken."
-    }
   },
   "backup": {
     "title": "Back-upbeheer",
@@ -2866,8 +2772,6 @@
     "nav": {
       "galleries": "Galerijen",
       "calendar": "Agenda",
-      "quotes": "Offertes",
-      "bills": "Facturen",
       "profile": "Profiel",
       "soon": "Binnenkort"
     },
@@ -2877,14 +2781,6 @@
     "calendar": {
       "title": "Agenda",
       "body": "Aankomende shoots, leverdata van galerijen en andere shoot-gerelateerde gebeurtenissen verschijnen hier. We laten je weten wanneer dit klaar is."
-    },
-    "quotes": {
-      "title": "Offertes",
-      "body": "Bekijk en accepteer offertes voor aankomende shoots op één plek. We werken er nog aan — je fotograaf blijft tot dan offertes op de gebruikelijke manier sturen."
-    },
-    "bills": {
-      "title": "Facturen",
-      "body": "Facturen en betaalgeschiedenis voor je shoots verschijnen hier. We sturen een e-mail wanneer dit live is."
     },
     "profile": {
       "title": "Klantprofiel",
@@ -2916,7 +2812,6 @@
         "displayNameHint": "Hoe we je in het dashboard begroeten.",
         "phone": "Telefoon",
         "companyName": "Bedrijfsnaam",
-        "vatId": "Btw-nummer",
         "addressLine1": "Adresregel 1",
         "addressLine2": "Adresregel 2",
         "postalCode": "Postcode",
@@ -3023,7 +2918,6 @@
       "expires": "verloopt",
       "accountSection": "Account",
       "personalSection": "Persoonlijke gegevens",
-      "billingSection": "Adres & facturering",
       "notesSection": "Interne notities",
       "eventsSection": "Toegewezen evenementen",
       "noEvents": "Nog niet aan evenementen toegewezen. Voeg deze klant toe aan een evenement via het evenementformulier.",
@@ -3036,8 +2930,6 @@
       "displayName": "Weergavenaam",
       "phone": "Telefoon",
       "company": "Bedrijf",
-      "billingEmail": "Factuur-e-mail",
-      "vatId": "Btw / belasting-ID",
       "addressLine1": "Adresregel 1",
       "addressLine2": "Adresregel 2",
       "postalCode": "Postcode",
@@ -3088,58 +2980,6 @@
       "removedN": "{{count}} verwijderd",
       "error": "Toewijzingen konden niet worden bijgewerkt",
       "clearSearchAria": "Zoekopdracht wissen"
-    }
-  },
-  "clients": {
-    "title": "Klanten",
-    "subtitle": "Klantaccounts, planning, offertes en facturering voor terugkerende klanten.",
-    "navAriaLabel": "Klanten-navigatie",
-    "empty": {
-      "title": "Geen klantfuncties ingeschakeld",
-      "body": "Schakel Accounts (of een andere Klanten-subfunctie) in onder Instellingen → Functies om te beginnen."
-    },
-    "subnav": {
-      "accounts": "Accounts",
-      "quotes": "Offertes",
-      "bills": "Facturen",
-      "taxReport": "Belasting",
-      "development": "Ontwikkeling"
-    }
-  },
-  "taxReport": {
-    "title": "Belastingrapport",
-    "intro": "Periodegebonden omzetlijst met netto + btw-uitsplitsing gegroepeerd per btw-tarief. Geannuleerde facturen blijven zichtbaar voor de continuïteit van het audit-spoor, maar zijn uitgesloten van de totalen.",
-    "filters": {
-      "period": "Periode",
-      "thisYear": "Dit jaar",
-      "lastYear": "Vorig jaar",
-      "thisQuarter": "Dit kwartaal",
-      "lastQuarter": "Vorig kwartaal",
-      "custom": "Aangepast bereik",
-      "from": "Van",
-      "to": "Tot",
-      "currency": "Valuta"
-    },
-    "exportPdf": "PDF exporteren",
-    "exportCsv": "CSV exporteren",
-    "exportFailed": "Export mislukt. Probeer het opnieuw.",
-    "errorTitle": "Belastingrapport kon niet worden geladen",
-    "empty": "Geen facturen in deze periode.",
-    "statusCancelled": "Geannuleerd",
-    "totalsByVatRate": "Totalen per btw-tarief",
-    "grandTotalNet": "Totaal netto",
-    "grandTotalVat": "Totaal btw",
-    "grandTotalGross": "Totaal bruto",
-    "cancelledFootnote": "{{count}} geannuleerde factu(u)r(en) — bedragen uitgesloten van totalen (getoond voor continuïteit van het audit-spoor).",
-    "col": {
-      "date": "Datum",
-      "invoice": "Factuur",
-      "customer": "Klant",
-      "event": "Evenement",
-      "vatRate": "Btw %",
-      "net": "Netto",
-      "vat": "Btw",
-      "total": "Bruto"
     }
   }
 }

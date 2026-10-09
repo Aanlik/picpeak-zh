@@ -8,8 +8,8 @@
  * Now collects the full profile (#354 follow-up):
  *   - admin can pre-fill any subset on /admin/customers invite, those
  *     values appear pre-populated and editable here
- *   - customer can correct or fill in anything else (phone, billing
- *     address, company)
+ *   - customer can correct or fill in anything else (phone, address,
+ *     company)
  *   - password is the only required field besides the display name
  *
  * The profile fields are optional — a customer who just wants to log in
@@ -39,7 +39,6 @@ interface FormState {
   last_name: string;
   phone: string;
   company_name: string;
-  vat_id: string;
   address_line1: string;
   address_line2: string;
   postal_code: string;
@@ -59,7 +58,7 @@ const SALUTATION_OPTIONS = [
 const EMPTY: FormState = {
   display_name: '', password: '', confirm: '',
   salutation: '', first_name: '', last_name: '',
-  phone: '', company_name: '', vat_id: '',
+  phone: '', company_name: '',
   address_line1: '', address_line2: '', postal_code: '', city: '', state: '', country_code: '',
 };
 
@@ -157,7 +156,6 @@ export const CustomerAcceptInvitePage: React.FC = () => {
         display_name: form.display_name || undefined,
         phone: form.phone || undefined,
         company_name: form.company_name || undefined,
-        vat_id: form.vat_id || undefined,
         address_line1: form.address_line1 || undefined,
         address_line2: form.address_line2 || undefined,
         postal_code: form.postal_code || undefined,
@@ -333,17 +331,6 @@ export const CustomerAcceptInvitePage: React.FC = () => {
                       onChange={(e) => update('company_name', e.target.value)}
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-theme mb-1" htmlFor="invite-vat">
-                      {t('customer.profile.field.vatId', 'VAT ID')}
-                    </label>
-                    <Input
-                      id="invite-vat"
-                      name="vat-id"
-                      value={form.vat_id}
-                      onChange={(e) => update('vat_id', e.target.value)}
-                    />
-                  </div>
                 </div>
               </section>
 
@@ -351,7 +338,7 @@ export const CustomerAcceptInvitePage: React.FC = () => {
               <section className="space-y-3">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-theme flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
-                  {t('customer.acceptInvite.section.address', 'Billing address (optional)')}
+                  {t('customer.acceptInvite.section.address', 'Address (optional)')}
                 </h2>
                 {/* Same `name`+`autoComplete` pairing the profile page
                     uses — see CustomerProfilePage for the rationale. */}
@@ -363,7 +350,7 @@ export const CustomerAcceptInvitePage: React.FC = () => {
                     <Input
                       id="invite-address-line1"
                       name="address-line1"
-                      autoComplete="billing address-line1"
+                      autoComplete="address-line1"
                       value={form.address_line1}
                       onChange={(e) => update('address_line1', e.target.value)}
                     />
@@ -375,7 +362,7 @@ export const CustomerAcceptInvitePage: React.FC = () => {
                     <Input
                       id="invite-address-line2"
                       name="address-line2"
-                      autoComplete="billing address-line2"
+                      autoComplete="address-line2"
                       value={form.address_line2}
                       onChange={(e) => update('address_line2', e.target.value)}
                     />
@@ -387,7 +374,7 @@ export const CustomerAcceptInvitePage: React.FC = () => {
                     <Input
                       id="invite-postal-code"
                       name="postal-code"
-                      autoComplete="billing postal-code"
+                      autoComplete="postal-code"
                       inputMode="numeric"
                       value={form.postal_code}
                       onChange={(e) => update('postal_code', e.target.value)}
@@ -400,7 +387,7 @@ export const CustomerAcceptInvitePage: React.FC = () => {
                     <Input
                       id="invite-city"
                       name="address-level2"
-                      autoComplete="billing address-level2"
+                      autoComplete="address-level2"
                       value={form.city}
                       onChange={(e) => update('city', e.target.value)}
                     />
@@ -412,7 +399,7 @@ export const CustomerAcceptInvitePage: React.FC = () => {
                     <Input
                       id="invite-state"
                       name="address-level1"
-                      autoComplete="billing address-level1"
+                      autoComplete="address-level1"
                       value={form.state}
                       onChange={(e) => update('state', e.target.value)}
                     />
@@ -491,7 +478,6 @@ function mergePrefillIntoForm(current: FormState, prefill: CustomerProfilePrefil
   if (prefill.display_name && !current.display_name) out.display_name = prefill.display_name;
   if (prefill.phone && !current.phone) out.phone = prefill.phone;
   if (prefill.company_name && !current.company_name) out.company_name = prefill.company_name;
-  if (prefill.vat_id && !current.vat_id) out.vat_id = prefill.vat_id;
   if (prefill.address_line1 && !current.address_line1) out.address_line1 = prefill.address_line1;
   if (prefill.address_line2 && !current.address_line2) out.address_line2 = prefill.address_line2;
   if (prefill.postal_code && !current.postal_code) out.postal_code = prefill.postal_code;

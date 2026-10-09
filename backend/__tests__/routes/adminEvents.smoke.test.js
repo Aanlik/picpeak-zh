@@ -23,12 +23,12 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'admin-events-test-secret';
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 async function insertEvent(db, adminId, over = {}) {
   const base = {
     slug: `ev-${Math.random().toString(16).slice(2)}`,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Test Wedding',
     event_date: '2026-05-29',
     host_email: 'host@example.com',
@@ -49,10 +49,10 @@ async function insertEvent(db, adminId, over = {}) {
 describe('admin events CRUD endpoints (smoke)', () => {
   let db; let cleanup; let app; let adminId; let token;
 
-  // bootCrmDb's full migration run intermittently exceeds Jest's default
+  // bootTestDb's full migration run intermittently exceeds Jest's default
   // 5s beforeAll timeout on slower CI runners; raise it.
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId } = await seedMinimal(db));
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);
@@ -84,7 +84,7 @@ describe('admin events CRUD endpoints (smoke)', () => {
   describe('POST /', () => {
     it('creates an event, mints slug + share link and persists the row', async () => {
       const res = await auth(request(app).post('/api/admin/events')).send({
-        event_type: 'wedding',
+        event_type: 'project',
         event_name: 'Smoke Wedding',
         event_date: '2026-09-01',
         // Field requirements default to ON (getEventFieldRequirements)
@@ -135,7 +135,7 @@ describe('admin events CRUD endpoints (smoke)', () => {
 
       try {
         const res = await auth(request(app).post('/api/admin/events')).send({
-          event_type: 'wedding',
+          event_type: 'project',
           event_name: 'Race Wedding',
           event_date: '2026-09-02',
           customer_name: 'Client Person',

@@ -31,12 +31,12 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'admin-events-logo-test-secre
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 async function insertEvent(db, adminId, over = {}) {
   const base = {
     slug: `ev-${Math.random().toString(16).slice(2)}`,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Test Wedding',
     event_date: '2026-05-29',
     host_email: 'host@example.com',
@@ -58,7 +58,7 @@ describe('POST /api/admin/events/:id/logo — path traversal guard', () => {
   let db; let cleanup; let app; let adminId; let token;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId } = await seedMinimal(db));
     // super_admin: requireEventOwnership short-circuits with no DB lookup
     // for this role, so it reaches multer with nothing upstream having

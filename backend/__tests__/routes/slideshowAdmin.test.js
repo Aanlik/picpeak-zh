@@ -24,7 +24,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'slideshow-test-secret';
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 const { invalidateFeatureFlagCache } = require('../../src/middleware/requireFeatureFlag');
 
 async function setFlag(db, key, on) {
@@ -36,7 +36,7 @@ async function setFlag(db, key, on) {
 async function insertEvent(db, adminId, over = {}) {
   const base = {
     slug: `ev-${Math.random().toString(16).slice(2)}`,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Test Wedding',
     event_date: '2026-05-29',
     host_email: 'host@example.com',
@@ -57,11 +57,11 @@ async function insertEvent(db, adminId, over = {}) {
 describe('admin Live Slideshow endpoints', () => {
   let db; let cleanup; let app; let adminId; let token;
 
-  // Match slideshowPublic.test.js — bootCrmDb's full migration run intermittently
+  // Match slideshowPublic.test.js — bootTestDb's full migration run intermittently
   // exceeds Jest's default 5s `beforeAll` timeout on slower CI runners; raise
   // it so this doesn't block PRs.
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId } = await seedMinimal(db));
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);

@@ -31,7 +31,7 @@ process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-draft-
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 // Share-token fixtures, deliberately low-entropy and obviously fake. They
 // have to satisfy SHARE_TOKEN_REGEX (32 hex chars), and random-looking hex of
@@ -50,7 +50,7 @@ describe('draft preview through the short share URL (#1386)', () => {
   async function insertEvent({ slug, token, isDraft }) {
     await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: slug,
       event_date: '2026-09-01',
       host_email: 'h@example.com',
@@ -69,7 +69,7 @@ describe('draft preview through the short share URL (#1386)', () => {
   }
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId } = await seedMinimal(db));
     await assignAdminRole(db, adminId);
     const [row] = await db('admin_users').insert({

@@ -1,27 +1,12 @@
 /**
- * Admin → System Health
- *
- * Endpoint mounted at /api/admin/system-health. The "Backup
- * integrity" sub-endpoint is the on-demand verifier for CRM
- * document artefacts — confirms every `*_path` column on quotes /
- * contracts / invoices points at a file that actually exists on
- * disk and (where a `*_sha256` column is set) the file's bytes
- * still hash to the expected value.
- *
- * Per the design decisions locked with the maintainer:
- *   - On-demand only; no scheduler (D1)
- *   - Not auto-triggered after restore (D2)
- *   - Wet-upload contracts are hash-verified same as system-rendered (D3)
- *
- * Read-only. Returns a JSON report — never mutates DB or fs.
+ * Admin → System Health. Reports backup coverage and email queue health.
+ * Read-only: these routes never mutate the database or stored files.
  */
 
 const express = require('express');
-const { query } = require('express-validator');
 const { adminAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
-const { handleAsync, validateRequest, successResponse } = require('../utils/routeHelpers');
-const { verifyDocumentArtefacts } = require('../services/backupIntegrityService');
+const { handleAsync, successResponse } = require('../utils/routeHelpers');
 const { getCoverageReport } = require('../services/backupCoverageService');
 const { getQueueProcessorStatus } = require('../services/emailProcessor');
 const { toMillis } = require('../utils/queueTimestamps');
@@ -30,40 +15,6 @@ const { db } = require('../database/db');
 const router = express.Router();
 
 router.use(adminAuth);
-
-const VALID_SCOPES = ['quote', 'contract', 'contract-signature', 'invoice'];
-
-router.get(
-  '/backup-integrity',
-  requirePermission(['settings.view', 'system.view']),
-  [
-    // CSV string like `?scope=contract,invoice`. Each member must be
-    // one of the four known scopes. Empty / omitted means full scan.
-    query('scope').optional({ values: 'falsy' }).isString().isLength({ max: 128 }),
-  ],
-  handleAsync(async (req, res) => {
-    validateRequest(req);
-    let scope;
-    if (req.query.scope) {
-      scope = String(req.query.scope)
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      // Defense-in-depth: reject unknown scope tokens so a typo doesn't
-      // silently scan everything when the caller wanted just one slice.
-      const unknown = scope.filter((s) => !VALID_SCOPES.includes(s));
-      if (unknown.length > 0) {
-        return res.status(400).json({
-          error: `Unknown scope(s): ${unknown.join(', ')}`,
-          code: 'BACKUP_INTEGRITY_UNKNOWN_SCOPE',
-          validScopes: VALID_SCOPES,
-        });
-      }
-    }
-    const report = await verifyDocumentArtefacts({ scope });
-    return successResponse(res, { report });
-  }),
-);
 
 /**
  * GET /api/admin/system-health/backup-coverage
@@ -111,7 +62,7 @@ const WAITING_EMAIL_GRACE_MS = 10 * 60 * 1000;
  *
  * The time filtering happens in JS, so the candidate rows have to be paged
  * rather than cut off with a single LIMIT: a queue holding a thousand
- * future-scheduled rows (split-payment invoices) would otherwise fill one page
+ * future-scheduled rows would otherwise fill one page
  * with rows that all get filtered out and hide the due row behind them,
  * reporting an empty waiting list. Paging also removes the dependency on
  * ORDER BY created_at being meaningful, which it is not on SQLite when numeric
@@ -141,8 +92,8 @@ const mapEmailRow = (r) => ({
  * covers stuck/failed outbound emails: rows the queue processor has
  * given up on (status='failed') or exhausted its retries on
  * (status='pending' AND retry_count >= 3 — the processor only picks up
- * retry_count < 3). Trigger: a 14h window where 'quote_sent' template
- * errors left invoices unsent with no admin-visible signal.
+ * retry_count < 3). This also surfaces messages that failed before a customer
+ * receives an update.
  *
  * #1262 added the other half. A queue nobody is working produces no failures
  * at all: the rows sit at status='pending' with retry_count 0, matching
@@ -178,19 +129,15 @@ router.get(
     const dueBefore = now - WAITING_EMAIL_GRACE_MS;
     const isWaiting = (r) => {
       const scheduledAt = toMillis(r.scheduled_at);
-      // Parked for later on purpose — split-payment invoices, the
-      // business-hours floor. Not being sent yet is the point of those.
+      // Parked for later on purpose by the scheduled-send or business-hours rule.
       if (scheduledAt !== null && scheduledAt > now) return false;
       const createdAt = toMillis(r.created_at);
       // An unreadable created_at cannot be judged overdue; leave it alone
       // rather than reporting every such row as waiting.
       if (createdAt === null) return false;
-      // The grace window runs from the moment the row became DUE, not from
-      // when it was queued. An invoice created three days ago and scheduled
-      // until a minute ago has had one minute of the processor's attention,
-      // not three days of it — measuring from created_at would report every
-      // split-payment and business-hours mail as unworked the instant it came
-      // due, which is most of what this panel would then be showing.
+      // The grace window runs from the moment the row became due, not from
+      // when it was queued. Measuring from created_at would report scheduled
+      // messages as unworked the instant they became due.
       const dueSince = scheduledAt === null ? createdAt : Math.max(createdAt, scheduledAt);
       return dueSince <= dueBefore;
     };

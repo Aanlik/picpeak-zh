@@ -59,7 +59,7 @@ const EXCLUDED_TABLES = new Set([
 ]);
 
 // Storage subdirs holding non-recalculable blobs — always included.
-const DOC_DIRS = ['business-docs', 'uploads'];
+const DOC_DIRS = ['uploads'];
 // Original gallery photos — only when includePhotos is true (large; otherwise
 // the admin re-uploads originals per gallery and previews are re-rendered).
 const PHOTO_DIRS = ['events/active', 'events/archived'];
@@ -208,7 +208,7 @@ async function createPicpeak({ includePhotos = false, includeFiles = true, outDi
       tableMeta[table] = await writeTableNdjson(table, dataDir, pathMap);
     }
 
-    // 2. Gather the non-recalculable blobs (PDFs, business-docs, uploads, and
+    // 2. Gather the non-recalculable blobs (uploads and
     //    optionally original photos).
     // includeFiles:false is for the SQLite → Postgres migration (#1038): it moves
     // rows between engines on the SAME install, so the storage volume is already

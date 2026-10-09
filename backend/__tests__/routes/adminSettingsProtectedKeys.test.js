@@ -22,8 +22,8 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const {
-  bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken,
-} = require('../integration/helpers/crmDb');
+  bootTestDb, seedMinimal, assignAdminRole, mintAdminToken,
+} = require('../integration/helpers/sqliteTestDb');
 const svc = require('../../src/services/userManagementService');
 const { clearPermissionCache } = require('../../src/middleware/permissions');
 
@@ -40,7 +40,7 @@ describe('settings protected-key boundary (/general)', () => {
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId: superId } = await seedMinimal(db);
     await assignAdminRole(db, superId, 'super_admin');
     superTok = mintAdminToken(superId);

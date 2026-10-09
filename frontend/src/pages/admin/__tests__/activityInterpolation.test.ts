@@ -6,8 +6,8 @@
  *  - Dashboard "recent activity" feed — `buildActivityParams` used to pass a
  *    fixed five-value allowlist (eventName / email / count / template /
  *    categoryName), so every `admin.activities.*` string interpolating
- *    anything else rendered its literal token: "Quote created: {{quoteNumber}}",
- *    "Webhook erstellt: {{name}}". The backend does record those values, they
+ *    anything else rendered its literal token: "Webhook erstellt: {{name}}".
+ *    The backend does record those values, they
  *    just never reached i18next.
  *
  *  - Notification bell — `bulk_archive_completed` fell through to the generic
@@ -57,14 +57,8 @@ describe('dashboard activity feed interpolation', () => {
   });
 
   it('interpolates {{name}} for webhook_created', () => {
-    const msg = render(activity('webhook_created', { name: 'n8n WhatsApp', events: ['event.published'] }));
-    expect(msg).toContain('n8n WhatsApp');
-    expect(msg).not.toContain('{{');
-  });
-
-  it('interpolates {{quoteNumber}} for quote_created', () => {
-    const msg = render(activity('quote_created', { quoteId: 7, quoteNumber: 'Q-2026-0007' }));
-    expect(msg).toContain('Q-2026-0007');
+    const msg = render(activity('webhook_created', { name: 'Gallery automation', events: ['event.published'] }));
+    expect(msg).toContain('Gallery automation');
     expect(msg).not.toContain('{{');
   });
 
@@ -84,61 +78,6 @@ describe('dashboard activity feed interpolation', () => {
     expect(msg).toContain('ZZTEST-hook');
     expect(msg).not.toContain('{{');
     await i18n.changeLanguage('en');
-  });
-});
-
-describe('newsletter activity strings (#1264)', () => {
-  beforeAll(async () => {
-    await i18n.changeLanguage('en');
-  });
-
-  // The exact metadata newsletterService writes for each type. Anything that
-  // drifts between the log call and the i18n string surfaces as a raw
-  // `{{token}}` in the dashboard feed and the bell.
-  const CASES: Array<[string, Record<string, unknown>]> = [
-    ['newsletter_created',   { campaignId: 1, name: 'Spring' }],
-    ['newsletter_updated',   { campaignId: 1, fields: ['subject'] }],
-    ['newsletter_test_sent', { campaignId: 1, to: 'you@example.com' }],
-    ['newsletter_queued',    { campaignId: 1, name: 'Spring', recipients: 42, skippedOptOut: 3, sendRatePerMinute: 10 }],
-    ['newsletter_cancelled', { campaignId: 1, name: 'Spring', cancelledRows: 12 }],
-    ['newsletter_completed', { campaignId: 1, name: 'Spring', sent: 40, failed: 2 }],
-    ['newsletter_deleted',   { campaignId: 1, name: 'Spring' }],
-    ['customer_marketing_opt_out', { customerId: 7, optOut: true, source: 'link' }],
-  ];
-
-  it.each(CASES)('renders %s without a raw placeholder', (type, metadata) => {
-    const msg = render(activity(type, metadata));
-    expect(msg).not.toContain('{{');
-    // A missing key would render the key path itself.
-    expect(msg).not.toContain('admin.activities.');
-  });
-
-  it('interpolates the recipient count into newsletter_queued', () => {
-    const msg = render(activity('newsletter_queued', { name: 'Spring', recipients: 42 }));
-    expect(msg).toContain('42');
-  });
-
-  it('interpolates both counts into newsletter_completed', () => {
-    const msg = render(activity('newsletter_completed', { name: 'Spring', sent: 40, failed: 2 }));
-    expect(msg).toContain('40');
-    expect(msg).toContain('2');
-  });
-
-  it('renders every newsletter string in German too', async () => {
-    await i18n.changeLanguage('de');
-    for (const [type, metadata] of CASES) {
-      const msg = render(activity(type, metadata));
-      expect(msg).not.toContain('{{');
-      expect(msg).not.toContain('admin.activities.');
-    }
-    await i18n.changeLanguage('en');
-  });
-
-  it('renders in the notification bell as well as the dashboard feed', () => {
-    for (const [type, metadata] of CASES) {
-      const msg = notificationsService.formatNotificationMessage(notification(type, metadata));
-      expect(msg).not.toContain('{{');
-    }
   });
 });
 
@@ -163,14 +102,9 @@ describe('notification bell interpolation', () => {
     expect(msg).not.toContain('{{');
   });
 
-  it('keeps interpolating the webhook/quote bell rows', () => {
+  it('keeps interpolating webhook notification rows', () => {
     expect(
       notificationsService.formatNotificationMessage(notification('webhook_created', { name: 'n8n' }))
     ).not.toContain('{{');
-    expect(
-      notificationsService.formatNotificationMessage(
-        notification('quote_created', { quoteNumber: 'Q-2026-0007' })
-      )
-    ).toContain('Q-2026-0007');
   });
 });

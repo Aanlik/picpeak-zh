@@ -93,7 +93,6 @@ function categorize(relPath) {
   case 'watermarks': return 'watermarks';
   case 'uploads': return 'uploads';
   case 'temp': return 'temp';
-  case 'business-docs': return 'businessDocs';
   case 'events':
     return segments[1] === 'archived' ? 'archives' : 'originals';
   default:
@@ -109,7 +108,6 @@ const EMPTY_BREAKDOWN = () => ({
   heroes: 0,
   watermarks: 0,
   uploads: 0,
-  businessDocs: 0,
   downloadCache: 0,
   temp: 0,
   other: 0,

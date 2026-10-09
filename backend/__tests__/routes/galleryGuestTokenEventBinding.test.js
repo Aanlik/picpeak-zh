@@ -13,7 +13,7 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'guest-token-event-binding-secret';
 
@@ -34,7 +34,7 @@ describe('guest token event binding', () => {
 
   const addEvent = async (slug, name) => unwrap(await db('events').insert({
     slug,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: name,
     event_date: '2026-08-01',
     host_email: 'host@example.com',
@@ -71,7 +71,7 @@ describe('guest token event binding', () => {
   });
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     eventA = await addEvent(SLUG_A, 'Gallery A');

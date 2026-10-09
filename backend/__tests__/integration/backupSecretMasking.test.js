@@ -12,7 +12,7 @@
 const request = require('supertest');
 const express = require('express');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 jest.mock('../../src/middleware/auth', () => ({
   adminAuth: (req, _res, next) => {
@@ -34,7 +34,7 @@ describe('backup credential masking', () => {
   let app;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
 
     // Upsert: several backup_* keys are pre-seeded by the backup migrations.
     const seed = [

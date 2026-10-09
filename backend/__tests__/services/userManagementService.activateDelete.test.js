@@ -24,7 +24,7 @@ process.env.STORAGE_PATH = path.join(tmpDir, 'storage');
 fs.mkdirSync(process.env.STORAGE_PATH, { recursive: true });
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'user-act-test-secret';
 
-const { bootCrmDb, seedMinimal, assignAdminRole } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole } = require('../integration/helpers/sqliteTestDb');
 const userManagementService = require('../../src/services/userManagementService');
 
 describe('userManagementService — activate + delete (#574 follow-up)', () => {
@@ -34,7 +34,7 @@ describe('userManagementService — activate + delete (#574 follow-up)', () => {
   let targetId;    // The admin we'll deactivate / reactivate / delete
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId: actorId } = await seedMinimal(db));
     await assignAdminRole(db, actorId, 'super_admin');
 

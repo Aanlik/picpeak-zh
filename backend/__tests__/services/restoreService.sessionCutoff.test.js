@@ -28,7 +28,7 @@ jest.mock('../../src/utils/safeExec', () => ({
 }));
 jest.mock('../../src/services/emailProcessor', () => ({ queueEmail: jest.fn() }));
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 describe('restoreService — pre-restore sessions are invalidated', () => {
   let cleanup; let RestoreService; let _internal; let cutoff;
@@ -54,7 +54,7 @@ describe('restoreService — pre-restore sessions are invalidated', () => {
   };
 
   beforeAll(async () => {
-    ({ cleanup } = await bootCrmDb());
+    ({ cleanup } = await bootTestDb());
     ({ RestoreService, _internal } = require('../../src/services/restoreService'));
     cutoff = require('../../src/utils/sessionCutoff');
   }, 120000);

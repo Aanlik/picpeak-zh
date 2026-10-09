@@ -22,7 +22,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 // Stub the heavy lifting so the test stays fast + portable.
 const mockRestore = jest.fn();
@@ -45,7 +45,7 @@ describe('installFromBackupBoot', () => {
   let originalForceEnv;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     storagePath = process.env.STORAGE_PATH;
     backupRoot = path.join(storagePath, 'backup');
     manifestsDir = path.join(backupRoot, 'manifests');
@@ -164,7 +164,7 @@ describe('installFromBackupBoot', () => {
     await db('events').insert({
       slug: 'existing-event',
       event_name: 'Existing Event',
-      event_type: 'wedding',
+      event_type: 'project',
       event_date: new Date(),
       host_email: 'host@example.com',
       admin_email: 'host@example.com',
@@ -191,7 +191,7 @@ describe('installFromBackupBoot', () => {
     await db('events').insert({
       slug: 'existing-event-2',
       event_name: 'Existing Event 2',
-      event_type: 'wedding',
+      event_type: 'project',
       event_date: new Date(),
       host_email: 'host@example.com',
       admin_email: 'host@example.com',

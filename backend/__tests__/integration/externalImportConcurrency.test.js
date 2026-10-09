@@ -83,7 +83,7 @@ describe('concurrent external imports (#1162)', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    ({ db } = await require('./helpers/crmDb').bootCrmDb());
+    ({ db } = await require('./helpers/sqliteTestDb').bootTestDb());
 
     app = express();
     app.use(express.json());
@@ -102,7 +102,7 @@ describe('concurrent external imports (#1162)', () => {
     thumbnailDelayMs = 0;
     const [e] = await db('events').insert({
       slug: `extdup-${Math.random().toString(36).slice(2, 8)}`,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'extdup',
       event_date: '2026-01-01',
       host_email: 'h@example.com',

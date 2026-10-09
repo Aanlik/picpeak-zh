@@ -71,9 +71,6 @@ maybe('product usage on Postgres', () => {
     for (const table of ['email_configs', 'mail_accounts']) {
       await db.schema.createTable(table, (t) => { t.increments('id'); t.string('smtp_host'); });
     }
-    await db.schema.createTable('whatsapp_configs', (t) => {
-      t.increments('id'); t.boolean('enabled'); t.string('phone_number_id'); t.string('access_token');
-    });
 
     ({ UsageService } = require('../../src/usage/UsageService'));
   }, 120000);

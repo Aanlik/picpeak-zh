@@ -314,7 +314,7 @@ export const EventsTab: React.FC<EventsTabProps> = ({
                   {t('settings.events.enablePhoneField', 'Enable phone number field')}
                 </span>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                  {t('settings.events.enablePhoneFieldHelp', 'Adds an optional phone number input to the event form. Useful for downstream automations like WhatsApp delivery via n8n. Always optional even when enabled.')}
+                  {t('settings.events.enablePhoneFieldHelp', 'Adds an optional phone number input to the event form for customer contact.')}
                 </p>
               </div>
             </label>

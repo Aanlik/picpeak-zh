@@ -33,10 +33,10 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const SLUG = 'video-size-test-event';
-// Resolved lazily: bootCrmDb() repoints STORAGE_PATH at its own tmp dir, so a
+// Resolved lazily: bootTestDb() repoints STORAGE_PATH at its own tmp dir, so a
 // path captured at module load is not the one the route uploads into.
 const tempRoot = () => path.join(process.env.STORAGE_PATH, 'temp');
 
@@ -87,12 +87,12 @@ describe('admin upload per-file video size limit (general_max_video_size_mb)', (
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const inserted = await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Video Size Test',
       event_date: '2026-09-01',
       host_email: 'host@example.com',

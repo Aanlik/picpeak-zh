@@ -22,14 +22,14 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'mig177-test-secret';
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 const migration = require('../../migrations/core/177_add_face_recognition');
 
 describe('migration 177 — face recognition schema', () => {
   let db; let cleanup;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
   }, 120000);
 
   afterAll(async () => { if (cleanup) await cleanup(); });
@@ -69,7 +69,7 @@ describe('migration 177 — face recognition schema', () => {
     // The whole "zero behaviour change by default" guarantee rests on this.
     const [{ id: eventId }] = await db('events').insert({
       slug: 'mig177-event',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Migration 177',
       event_date: '2026-01-01',
       host_email: 'h@example.com',
@@ -135,7 +135,7 @@ describe('migration 177 — face recognition schema', () => {
 
     const [{ id: eventId }] = await db('events').insert({
       slug: 'mig177-cascade',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Cascade',
       event_date: '2026-01-01',
       host_email: 'h@example.com',

@@ -9,7 +9,7 @@
  *      (src/routes/auth.js, mounted /api/auth).
  *
  * Uses the same real-SQLite harness as the CRM route tests
- * (bootCrmDb + seedMinimal + mintAdminToken). Valid TOTP codes are
+ * (bootTestDb + seedMinimal + mintAdminToken). Valid TOTP codes are
  * generated in-test via otplib's authenticator against the secret the
  * /setup endpoint returns in plaintext.
  *
@@ -36,8 +36,8 @@ const bcrypt = require('bcrypt');
 const { authenticator } = require('otplib');
 
 const {
-  bootCrmDb, mintAdminToken, buildRouteApp,
-} = require('../integration/helpers/crmDb');
+  bootTestDb, mintAdminToken, buildRouteApp,
+} = require('../integration/helpers/sqliteTestDb');
 const mfaService = require('../../src/services/mfaService');
 
 jest.setTimeout(120000);
@@ -93,7 +93,7 @@ async function enroll(adminId) {
 }
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   adminApp = buildRouteApp('/api/admin/auth', require('../../src/routes/adminAuth'));
   authApp = buildRouteApp('/api/auth', require('../../src/routes/auth'));
 }, 120000);

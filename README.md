@@ -1,6 +1,8 @@
 # PicPeak 简体中文 Fork
 
-客户选片及摄影师后台简体中文支持，保留 `upstream` 官方 stable 同步。当前中文审校提交 `7a38c5ce` 对应一体化版 PicPeak `3.134.1-zh.6`。
+客户选片及摄影师后台简体中文支持，保留 `upstream` 官方 stable 同步。同步前比对、已移除模块过滤和冲突处理流程见[维护文档](docs/zh-CN-maintenance.md)。当前中文审校提交 `7a38c5ce` 对应一体化版 PicPeak `3.134.1-zh.6`。
+
+> **上游更新必须先选择一种同步方式：** ① `--all` 完整同步官方代码，可能恢复本 Fork 已删除的模块；② `--exclude-retired` 自动剔除已删除模块后同步其余官方改动。两种方式都先运行 `--plan` 审阅，再用相同选项运行 `--merge`。详见[上游同步维护规范](docs/zh-CN-maintenance.md)。
 
 **推荐 NAS / Docker 部署：一个容器运行 PicPeak + PixCake Bridge。** 完整部署、初始化、NAS 目录、更新及迁移说明见 [一体化 README](https://github.com/Aanlik/pixcake-bridge/blob/main/README.md)。Bridge 独立维护，一体化打包位于 Bridge 仓库，避免修改 PicPeak 业务后端。单独运行 PicPeak 时仍可使用 `Dockerfile.aio`。
 
@@ -125,20 +127,6 @@ Unlike expensive SaaS solutions, PicPeak gives you:
 
 **Technical** — Docker-ready, automatic thumbnail generation, external media reference mode, smart archiving of expired galleries, S3-compatible [storage backends](https://docs.picpeak.app/features/storage-backends), [webhooks](https://docs.picpeak.app/features/webhooks), and security-first defaults (JWT, rate limiting, CORS).
 
-<details>
-<summary><strong>🧾 For studios — CRM &amp; Accounting (Beta, off by default)</strong></summary>
-
-- 📝 **Quotes → Contracts → Invoices** — one deal lineage; cancel-and-reissue (Storno) keeps issued invoices immutable
-- ⏱️ **Hours Logging & Calendar** — per-customer time tracking; admin calendar of events, logged hours, and pending quotes/contracts
-- 🧾 **Inbound Supplier Invoices & Expenses** — capture received invoices (upload/camera, rasterised server-side), categorise, and re-bill costs to clients
-- 📊 **Tax Report & Accountant Export** — period-scoped income/cost report with VAT breakdown; PDF/CSV plus a Treuhänder/Banana (Swiss/LI) journal export
-- 🌍 **VAT & Multi-currency** — single VAT-code registry snapshotted onto each document
-
-</details>
-
-> [!WARNING]
-> **CRM & Accounting — examples only, verify locally.** Feature-flagged off by default. Seeded contract blocks are written by the maintainer, **not a lawyer**; QR-bills/SEPA payloads and every tax, VAT and Treuhänder/Banana figure are computed from your input and defaults and are **jurisdiction-specific guidance only**. Have your lawyer review contracts, scan a test QR with your bank's app, and verify all numbers with your accountant / Treuhänder / tax authority before customer-facing use. Read **[the CRM disclaimers](https://docs.picpeak.app/features/crm/disclaimers)** first.
-
 ## 📖 Documentation
 
 Full documentation lives at **[docs.picpeak.app](https://docs.picpeak.app)** — deployment, admin settings, API, branding, and more.
@@ -156,7 +144,6 @@ Full documentation lives at **[docs.picpeak.app](https://docs.picpeak.app)** —
 | 🪝 Webhooks | [docs.picpeak.app/features/webhooks](https://docs.picpeak.app/features/webhooks) |
 | 💾 Storage backends (local / S3) | [docs.picpeak.app/features/storage-backends](https://docs.picpeak.app/features/storage-backends) |
 | 💻 System requirements & tuning | [docs.picpeak.app/deployment/system-requirements](https://docs.picpeak.app/deployment/system-requirements) |
-| 🧾 CRM & Accounting | [docs.picpeak.app/features/crm](https://docs.picpeak.app/features/crm) · [disclaimers](https://docs.picpeak.app/features/crm/disclaimers) |
 | 🗺️ Roadmap | [GitHub Issues](https://github.com/PicPeak/picpeak/issues) |
 
 **Project meta:** [Support](SUPPORT.md) · [Contributing](CONTRIBUTING.md) · [License](LICENSE) · [Security](SECURITY.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
@@ -173,10 +160,8 @@ Full documentation lives at **[docs.picpeak.app](https://docs.picpeak.app)** —
 | API Access | ✅ | Paid | ❌ | ❌ |
 | Open Source | ✅ | ❌ | ❌ | ❌ |
 | Customer Accounts | ✅ | ❌ | ❌ | ✅ |
-| Quotes / Contracts / Invoices | 🧪 Beta | ❌ | ❌ | ✅ |
-| Incoming Invoices & Accounting | 🧪 Beta | ❌ | ❌ | ❌ |
 
-<sub>*You bring your own server and, optionally, a domain. **Limited only by your server storage. ***Pixieset's "unlimited" is photos only; video is capped by plan. 🧪 Beta = built but feature-flagged off by default.</sub>
+<sub>*You bring your own server and, optionally, a domain. **Limited only by your server storage. ***Pixieset's "unlimited" is photos only; video is capped by plan.</sub>
 
 ## 🏗️ Tech Stack
 
@@ -228,8 +213,6 @@ A huge thank you to the people whose code, reports, and feedback have shaped Pic
 
 **[@Luca-Timo](https://github.com/Luca-Timo)**
 - Native Apple Silicon multi-arch images
-- CRM & accounting suite (quotes/contracts/invoices)
-- Hours logging & Treuhänder/Banana tax export
 - Gallery header/banner decoupling
 
 **[@Rekoo-PS](https://github.com/Rekoo-PS)** — bug reports & product feedback

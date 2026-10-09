@@ -18,8 +18,8 @@ const pgUrl = process.env.PICPEAK_PG_TEST_URL;
     process.env.STORAGE_PATH = path.join(tmpDir, 'storage');
     jest.doMock('../../knexfile', () => ({ client: 'pg', connection: pgUrl, searchPath: [schema] }));
     ({ db } = require('../../src/database/db'));
-    // bootCrmDb runs the complete core chain against the shared db singleton.
-    ({ cleanup } = await require('../integration/helpers/crmDb').bootCrmDb());
+    // bootTestDb runs the complete core chain against the shared db singleton.
+    ({ cleanup } = await require('../integration/helpers/sqliteTestDb').bootTestDb());
   }, 120000);
   afterAll(async () => {
     await require('../../src/services/serviceShutdown').stopServices();
@@ -30,13 +30,13 @@ const pgUrl = process.env.PICPEAK_PG_TEST_URL;
     jest.dontMock('../../knexfile');
   });
   it('creates through the real admin route, then toggles a typed boolean and timestamp', async () => {
-    const { seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('../integration/helpers/crmDb');
+    const { seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId);
     const app = buildRouteApp('/api/admin/events', require('../../src/routes/adminEvents'));
     const bearer = `Bearer ${mintAdminToken(adminId)}`;
     const created = await request(app).post('/api/admin/events').set('Authorization', bearer).send({
-      event_type: 'wedding', event_name: 'Fresh PostgreSQL', event_date: '2026-10-01',
+      event_type: 'project', event_name: 'Fresh PostgreSQL', event_date: '2026-10-01',
       customer_name: 'Customer', customer_email: 'customer@example.test', admin_email: 'admin@example.test',
       password: 'Strong-Test-Photo-Pass-924!', expiration_days: 30, feedback_enabled: true,
     });

@@ -35,7 +35,7 @@ function approvalLifetimeDays(cfg) {
 
 // A NULL or unreadable expiry fails closed: rows created before the lifetime
 // became mandatory are refused instead of being valid forever (same rule as
-// publicTokenGuards for quote/contract links).
+// the same rule used for other one-time workflow links).
 function isExpired(approval) {
   if (!approval.expires_at) return true;
   const at = new Date(approval.expires_at).getTime();
@@ -56,7 +56,7 @@ async function createApproval(ctx) {
   await db('workflow_approvals').insert({
     run_id: run.id,
     node_key: node.node_key,
-    type: cfg.type || 'payment_confirm',
+    type: cfg.type || 'manual_approval',
     status: 'pending',
     token_hash: hashToken(raw),
     payload: JSON.stringify({ prompt: cfg.prompt || null, vars: ctx.vars || {} }),

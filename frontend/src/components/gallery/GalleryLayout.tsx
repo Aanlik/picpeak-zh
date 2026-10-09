@@ -2,7 +2,7 @@ import { NO_EMAIL_MODE } from '../../config/communication';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, Clock, Download, LogOut, ListChecks, X, Facebook, Instagram, Twitter, Youtube, MessageCircle } from 'lucide-react';
+import { Calendar, Clock, Download, LogOut, ListChecks, X, Facebook, Instagram, Twitter, Youtube } from 'lucide-react';
 import { parseISO } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { useLocalizedDate } from '../../hooks/useLocalizedDate';
@@ -17,7 +17,6 @@ import type { HeaderStyleType } from '../../types/theme.types';
 interface GalleryLayoutProps {
   event: {
     event_name: string;
-    event_type?: string;
     event_date?: string | null;
     expires_at?: string | null;
     // Per-event promotional override (#440). 'inherit' uses the global
@@ -56,7 +55,6 @@ interface GalleryLayoutProps {
     // Footer overhaul (#441 + #440). Empty strings hide each socials icon.
     facebook_url?: string;
     instagram_url?: string;
-    whatsapp_url?: string;
     twitter_url?: string;
     youtube_url?: string;
     promo_markdown?: string;
@@ -245,7 +243,6 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
   const socialLinks: Array<{ key: string; href: string; label: string; Icon: React.ComponentType<{ className?: string }> }> = [
     { key: 'facebook', href: brandingSettings?.facebook_url || '', label: 'Facebook', Icon: Facebook },
     { key: 'instagram', href: brandingSettings?.instagram_url || '', label: 'Instagram', Icon: Instagram },
-    { key: 'whatsapp', href: brandingSettings?.whatsapp_url || '', label: 'WhatsApp', Icon: MessageCircle },
     { key: 'twitter', href: brandingSettings?.twitter_url || '', label: 'X / Twitter', Icon: Twitter },
     { key: 'youtube', href: brandingSettings?.youtube_url || '', label: 'YouTube', Icon: Youtube },
   ].filter(link => link.href.trim().length > 0);

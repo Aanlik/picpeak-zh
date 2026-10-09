@@ -52,7 +52,7 @@ describe('external import: photo cap and walk bounds', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    ({ db } = await require('./helpers/crmDb').bootCrmDb());
+    ({ db } = await require('./helpers/sqliteTestDb').bootTestDb());
     ({ importExternalFolder } = require('../../src/services/externalImportService'));
   }, 180000);
 
@@ -64,7 +64,7 @@ describe('external import: photo cap and walk bounds', () => {
   async function seedEvent(extra = {}) {
     const [e] = await db('events').insert({
       slug: `extcap-${Math.random().toString(36).slice(2, 8)}`,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'extcap',
       event_date: '2026-01-01',
       host_email: 'h@example.com',

@@ -21,7 +21,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 const { MockOidcProvider } = require('./helpers/mockOidcProvider');
 
 describe('OIDC logout-to-IdP (#798 phase 3)', () => {
@@ -34,7 +34,7 @@ describe('OIDC logout-to-IdP (#798 phase 3)', () => {
   beforeAll(async () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'oidc-logout-test-secret';
     process.env.FRONTEND_URL = 'http://localhost:5199';
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
 
     idp = new MockOidcProvider();
     const issuer = await idp.start();

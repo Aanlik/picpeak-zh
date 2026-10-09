@@ -21,7 +21,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
@@ -32,7 +32,7 @@ describe('backupService — per-Stage-B-path statistics', () => {
   let backupService;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     storagePath = process.env.STORAGE_PATH;
     backupService = require('../../src/services/backupService');
   }, 120000);
@@ -63,14 +63,14 @@ describe('backupService — per-Stage-B-path statistics', () => {
     // Restore canonical backup_paths from migration 109
     const { DEFAULT_PATHS } = require('../../migrations/core/109_add_backup_paths');
     await db('backup_paths').del();
-    await db('backup_paths').insert(DEFAULT_PATHS.map((row) => ({
+    await db('backup_paths').insert(DEFAULT_PATHS.filter((row) => row.path !== 'business-docs').map((row) => ({
       ...row,
       created_at: new Date(),
       updated_at: new Date(),
     })));
 
     // Wipe leftover files between tests
-    for (const dir of ['events', 'business-docs', 'thumbnails', 'previews', 'heroes', 'uploads']) {
+    for (const dir of ['events', 'thumbnails', 'previews', 'heroes', 'uploads']) {
       const p = path.join(storagePath, dir);
       if (fs.existsSync(p)) fs.rmSync(p, { recursive: true, force: true });
     }
@@ -79,7 +79,7 @@ describe('backupService — per-Stage-B-path statistics', () => {
   it('attributes files to their owning backup_paths row', async () => {
     mkFile('events/active/E1/photo-a.jpg', 'X'.repeat(1000));
     mkFile('events/active/E1/photo-b.jpg', 'X'.repeat(2000));
-    mkFile('business-docs/quote/2026/Q-1.pdf', 'X'.repeat(500));
+    mkFile('uploads/custom/logo.svg', 'X'.repeat(500));
     mkFile('thumbnails/E1/photo-a.jpg', 'X'.repeat(50));
 
     // Disable the inline DB dump so we don't need pg_dump in tests;
@@ -115,8 +115,8 @@ describe('backupService — per-Stage-B-path statistics', () => {
 
     // events/active should have 2 files (3000 bytes)
     expect(statsRaw.per_path['events/active']).toEqual({ count: 2, size: 3000 });
-    // business-docs should have 1 file (500 bytes)
-    expect(statsRaw.per_path['business-docs']).toEqual({ count: 1, size: 500 });
+    // uploads should have 1 file (500 bytes)
+    expect(statsRaw.per_path.uploads).toEqual({ count: 1, size: 500 });
     // thumbnails should have 1 file (50 bytes)
     expect(statsRaw.per_path['thumbnails']).toEqual({ count: 1, size: 50 });
 

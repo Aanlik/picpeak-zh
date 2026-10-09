@@ -9,7 +9,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-at-least-32-char
 
 const fs = require('fs');
 const path = require('path');
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db;
 let cleanup;
@@ -37,7 +37,7 @@ async function setMarker(value) {
 }
 
 beforeAll(async () => {
-  ({ db, cleanup, tmpDir } = await bootCrmDb());
+  ({ db, cleanup, tmpDir } = await bootTestDb());
   process.env.STORAGE_PATH = tmpDir;
   ({ createPicpeak } = require('../../src/services/picpeakExportService'));
   ({ importFromPicpeak, readManifestFromZip, assertArchiveWithinLimits } = require('../../src/services/picpeakImportService'));

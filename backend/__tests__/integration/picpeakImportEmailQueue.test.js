@@ -8,7 +8,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 const { STALE_MESSAGE } = require('../../src/utils/queueTimestamps');
 
 let db; let cleanup; let tmpDir;
@@ -19,7 +19,7 @@ const HOUR = 3600 * 1000;
 const sqliteText = (ms) => new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
 
 beforeAll(async () => {
-  ({ db, cleanup, tmpDir } = await bootCrmDb());
+  ({ db, cleanup, tmpDir } = await bootTestDb());
   process.env.STORAGE_PATH = tmpDir;
   const { adminId } = await seedMinimal(db);
   ({ createPicpeak } = require('../../src/services/picpeakExportService'));

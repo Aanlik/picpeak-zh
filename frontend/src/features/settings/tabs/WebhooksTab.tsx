@@ -188,7 +188,7 @@ export const WebhooksTab: React.FC = () => {
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                 {t('settings.webhooks.name', 'Name')}
               </label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('settings.webhooks.namePlaceholder', 'e.g. n8n WhatsApp')} />
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('settings.webhooks.namePlaceholder', 'e.g. Gallery automation')} />
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
@@ -234,7 +234,7 @@ export const WebhooksTab: React.FC = () => {
                 <textarea
                   value={filterText}
                   onChange={(e) => { setFilterText(e.target.value); setFilterError(null); }}
-                  placeholder='{"data.event.event_type": "wedding"}'
+                  placeholder='{"data.event.event_name": "Sample project"}'
                   rows={3}
                   className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 rounded text-sm font-mono"
                 />

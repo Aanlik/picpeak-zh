@@ -11,7 +11,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-at-least-32-char
 
 const fs = require('fs');
 const path = require('path');
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db;
 let cleanup;
@@ -22,7 +22,7 @@ let validateManifest;
 let superAdminRoleId;
 
 beforeAll(async () => {
-  ({ db, cleanup, tmpDir } = await bootCrmDb());
+  ({ db, cleanup, tmpDir } = await bootTestDb());
   process.env.STORAGE_PATH = tmpDir;
   ({ createPicpeak } = require('../../src/services/picpeakExportService'));
   ({ importFromPicpeak, validateManifest } = require('../../src/services/picpeakImportService'));
@@ -119,11 +119,11 @@ describe('.picpeak roundtrip (export → import)', () => {
   });
 
   it('restores files/ and reports filesRestored', async () => {
-    // A business-doc that lives in storage → travels in the backup.
-    const docDir = path.join(tmpDir, 'business-docs');
-    const marker = path.join(docDir, 'roundtrip-doc.txt');
-    fs.mkdirSync(docDir, { recursive: true });
-    fs.writeFileSync(marker, 'hello');
+    // A branding asset under uploads/ travels in the portable backup.
+    const logoDir = path.join(tmpDir, 'uploads', 'logos');
+    const marker = path.join(logoDir, 'roundtrip.svg');
+    fs.mkdirSync(logoDir, { recursive: true });
+    fs.writeFileSync(marker, '<svg>hello</svg>');
     await db('admin_users').del();
     const [id] = await db('admin_users').insert(adminRow('files@example.com', 'H')).returning('id');
     const currentAdminId = typeof id === 'object' ? id.id : id;
@@ -134,10 +134,10 @@ describe('.picpeak roundtrip (export → import)', () => {
       const result = await importFromPicpeak({ picpeakPath: filePath, currentAdminId });
       expect(result.filesRestored).toBeGreaterThanOrEqual(1);
       expect(fs.existsSync(marker)).toBe(true);
-      expect(fs.readFileSync(marker, 'utf8')).toBe('hello');
+      expect(fs.readFileSync(marker, 'utf8')).toBe('<svg>hello</svg>');
     } finally {
       fs.rmSync(path.dirname(filePath), { recursive: true, force: true });
-      fs.rmSync(docDir, { recursive: true, force: true });
+      fs.rmSync(logoDir, { recursive: true, force: true });
     }
   });
 });

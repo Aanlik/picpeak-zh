@@ -24,7 +24,7 @@ const request = require('supertest');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal, buildRouteApp } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
 
 describe('GET /admin/archives query params (#I.01)', () => {
   let db; let cleanup; let app; let token;
@@ -67,7 +67,7 @@ describe('GET /admin/archives query params (#I.01)', () => {
   const names = (body) => body.archives.map((a) => a.eventName);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const role = await db('roles').where({ name: 'super_admin' }).first();
@@ -127,7 +127,7 @@ describe('GET /admin/archives query params (#I.01)', () => {
     // A live event that must never surface in the archives list.
     await db('events').insert({
       slug: 'not-archived',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Alpha Live Wedding',
       event_date: '2026-08-01',
       host_email: 'h@example.com',
@@ -314,7 +314,7 @@ describe('GET /admin/archives query params (#I.01)', () => {
     await fs.promises.writeFile(path.join(storagePath, 'events/archived/backfill.zip'), Buffer.alloc(4096));
 
     const base = {
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Backfill Me',
       event_date: '2026-08-01',
       host_email: 'h@example.com',

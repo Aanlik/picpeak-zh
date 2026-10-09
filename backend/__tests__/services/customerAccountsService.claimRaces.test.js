@@ -25,7 +25,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'claim-races-secret-with-32-c
 jest.mock('../../src/services/emailProcessor', () => ({ queueEmail: jest.fn(async () => {}) }));
 jest.mock('../../src/services/workflows', () => ({ emitWorkflowEvent: jest.fn(async () => {}) }));
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 let db; let cleanup; let adminId; let service;
 // Epoch milliseconds, the shape the service itself stores on SQLite.
@@ -33,7 +33,7 @@ const future = () => Date.now() + 86400000;
 const hex = () => crypto.randomBytes(32).toString('hex');
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   // Under Jest the sqlite3 binding does not recognise sandbox-created Dates
   // (CLAUDE.md: they land as the string "[object Object]"), so the service's
   // `expires_at > new Date()` reads would never match. Bind Dates as epoch

@@ -162,13 +162,11 @@
     "events": "Événements",
     "archives": "Archives",
     "settings": "Paramètres",
-    "eventTypes": "Types d'événements",
     "branding": "Marque",
     "emailSettings": "Paramètres e-mail",
     "backup": "Sauvegarde & Restauration",
     "cmsPages": "Pages CMS",
     "users": "Utilisateurs",
-    "calendar": "Calendrier",
     "clients": "Clients"
   },
   "archives": {
@@ -180,17 +178,11 @@
     "totalPhotos": "Photos totales",
     "avgArchiveSize": "Taille moyenne des archives",
     "searchPlaceholder": "Rechercher des archives...",
-    "allTypes": "Tous types",
-    "wedding": "Mariage",
-    "birthday": "Anniversaire",
-    "corporate": "Entreprise",
-    "other": "Autre",
     "sortByDate": "Trier par date",
     "sortByName": "Trier par nom",
     "sortBySize": "Trier par taille",
     "tableHeaders": {
       "event": "Événement",
-      "type": "Type",
       "archivedDate": "Date d'archivage",
       "size": "Taille",
       "photos": "Photos",
@@ -393,7 +385,6 @@
     "confirmPasswordPlaceholder": "Confirmez le mot de passe",
     "eventDetails": "Détails de l'événement",
     "eventName": "Nom de l'événement",
-    "eventType": "Type d'événement",
     "eventDate": "Date de l'événement",
     "hostEmail": "E-mail du client",
     "hostName": "Nom du client",
@@ -673,8 +664,8 @@
     },
     "ogShare": {
       "title": "Utiliser la photo d'en-tête comme aperçu de partage social",
-      "help": "Lorsque cette URL de galerie est partagée sur WhatsApp, Facebook, Slack, etc., l'aperçu du lien affichera la photo d'en-tête ci-dessus. La miniature est récupérée de manière non authentifiée par les robots d'aperçu de lien — toute personne disposant de l'URL peut effectivement rendre cette image publique. Désactivé par défaut ; choisissez une photo d'en-tête que vous êtes prêt à afficher publiquement avant d'activer.",
-      "heroRequired": "D'abord, choisissez une photo d'en-tête ci-dessus — cette option l'utilise comme image d'aperçu pour WhatsApp / Facebook / Slack."
+      "help": "Lorsque cette URL de galerie est partagée sur Facebook, Slack, etc., l'aperçu du lien affichera la photo d'en-tête ci-dessus. La miniature est récupérée de manière non authentifiée par les robots d'aperçu de lien — toute personne disposant de l'URL peut effectivement rendre cette image publique. Désactivé par défaut ; choisissez une photo d'en-tête que vous êtes prêt à afficher publiquement avant d'activer.",
+      "heroRequired": "D'abord, choisissez une photo d'en-tête ci-dessus — cette option l'utilise comme image d'aperçu pour Facebook / Slack."
     }
   },
   "settings": {
@@ -894,7 +885,7 @@
       "showGalleryFilterBar": "Afficher la barre de filtre dans les galeries",
       "showGalleryFilterBarHelp": "Afficher la recherche par nom de fichier et les contrôles de tri au-dessus des galeries en disposition grille. Désactivez pour une disposition plus épurée.",
       "enablePhoneField": "Activer le champ de numéro de téléphone",
-      "enablePhoneFieldHelp": "Ajoute une entrée de numéro de téléphone optionnelle dans le formulaire d'événement. Utile pour les automatisations en aval comme la livraison WhatsApp via n8n. Toujours optionnel même lorsqu'il est activé.",
+      "enablePhoneFieldHelp": "Ajoute un champ facultatif de numéro de téléphone au formulaire du projet pour les échanges et les automatisations ultérieurs. Il reste facultatif.",
       "feedbackTypeDefaultsHelp": "Types de retours activés par défaut pour les nouvelles galeries. Les galeries existantes ne sont pas modifiées — chaque galerie reste réglable individuellement.",
       "defaultAllowRatings": "Notes en étoiles",
       "defaultAllowLikes": "J'aime",
@@ -1100,9 +1091,6 @@
     },
     "sectionLabel": "Section des paramètres",
     "navAriaLabel": "Navigation des paramètres",
-    "eventTypes": {
-      "title": "Types d'événements"
-    },
     "cms": {
       "title": "Pages CMS"
     },
@@ -1129,11 +1117,7 @@
       "sections": {
         "core": "Noyau",
         "communication": "Communication",
-        "scheduling": "Planification",
-        "sales": "Ventes",
-        "insights": "Analytique & Accès",
-        "customers": "Clients",
-        "clients": "Clients"
+        "insights": "Analytique & Accès"
       },
       "status": {
         "stable": "stable",
@@ -1156,21 +1140,6 @@
         "description": "Threads dans l'application avec les invités, attachés à une galerie. L'e-mail est vraiment bien pour la plupart des équipes — ceci est pour les studios qui veulent tout au même endroit.",
         "sidebar": "Messages"
       },
-      "calendar": {
-        "title": "Calendrier",
-        "description": "Voir tous les événements à venir et passés sur une vue mensuelle/hebdomadaire. Accepter éventuellement de nouvelles réservations de la part des clients.",
-        "sidebar": "Calendrier"
-      },
-      "quotes": {
-        "title": "Devis",
-        "description": "Envoyer des devis détaillés aux clients. Ils peuvent accepter ou refuser via un lien public ; le paiement est suivi manuellement.",
-        "sidebar": "Devis"
-      },
-      "bills": {
-        "title": "Factures",
-        "description": "Générer une facture à partir d'un devis accepté. Marquer comme payé manuellement — aucune intégration de processeur de paiement.",
-        "sidebar": "Factures"
-      },
       "analytics": {
         "title": "Analytique",
         "description": "Utilisation du stockage, vues des galeries, nombre de téléchargements et statistiques par événement."
@@ -1183,10 +1152,6 @@
       "customerPortal": {
         "title": "Clients",
         "description": "Connexions clients persistantes. Les clients réguliers voient toutes leurs galeries assignées au même endroit — pas de mots de passe par événement. Les clients se connectent via /customer/login et vous les gérez sous Clients → Comptes."
-      },
-      "clients": {
-        "title": "Clients",
-        "description": "Interrupteur principal pour la section Clients de la barre latérale. Désactivé masque la section et toutes les sous-fonctionnalités ci-dessous, quel que soit leur état individuel — réactivez pour restaurer selon ce que vous avez défini en dernier."
       }
     },
     "customerSurface": {
@@ -1413,7 +1378,6 @@
     "previewLayout": "Aperçu de la disposition",
     "livePreview": "Aperçu en direct",
     "pdfTypography": "Typographie PDF",
-    "pdfTypographyHelp": "Utilisée pour les en-têtes de factures et de devis. Choisissez l'une des polices fournies ou laissez la valeur par défaut pour utiliser Helvetica.",
     "pdfFontFamily": "Police du corps",
     "pdfFontFamilyDefault": "Utiliser Helvetica (par défaut)",
     "pdfFontFamilyMissing": "manquante",
@@ -1650,10 +1614,6 @@
       "webhookDeleted": "Webhook supprimé : {{name}}",
       "apiTokenCreated": "Jeton API créé : {{name}}",
       "apiTokenRevoked": "Jeton API révoqué : {{name}}",
-      "eventTypeCreated": "Type d'événement créé : {{name}}",
-      "eventTypeUpdated": "Type d'événement mis à jour : {{name}}",
-      "eventTypeDeleted": "Type d'événement supprimé : {{name}}",
-      "eventTypesReordered": "Types d'événements réorganisés",
       "eventPublished": "Événement publié : {{eventName}}",
       "eventLogoUploaded": "Logo de l'événement téléversé pour {{eventName}}",
       "eventLogoRemoved": "Logo de l'événement supprimé pour {{eventName}}",
@@ -1873,10 +1833,6 @@
       "webhook_deleted": "Webhook supprimé : {{name}}",
       "api_token_created": "Jeton API créé : {{name}}",
       "api_token_revoked": "Jeton API révoqué : {{name}}",
-      "event_type_created": "Type d'événement créé : {{name}}",
-      "event_type_updated": "Type d'événement mis à jour : {{name}}",
-      "event_type_deleted": "Type d'événement supprimé : {{name}}",
-      "event_types_reordered": "Types d'événements réorganisés",
       "event_published": "Événement publié : {{eventName}}",
       "event_logo_uploaded": "Logo de l'événement téléversé pour {{eventName}}",
       "event_logo_removed": "Logo de l'événement supprimé pour {{eventName}}",
@@ -2080,9 +2036,7 @@
     "categories": {
       "core": "Noyau",
       "customers": "Clients",
-      "calendar": "Calendrier",
-      "quotes": "Devis",
-      "billing": "Facturation"
+      "calendar": "Calendrier"
     },
     "featureOff": "Fonctionnalité désactivée",
     "featureOffTooltip": "La fonctionnalité à laquelle ce modèle appartient est actuellement désactivée. Vous pouvez toujours modifier le modèle — il sera utilisé une fois la fonctionnalité réactivée.",
@@ -2122,54 +2076,6 @@
     "replaceLogo": "Remplacer le logo",
     "uploadLogo": "Téléverser le logo",
     "clearLogo": "Utiliser le logo par défaut du site"
-  },
-  "eventTypes": {
-    "title": "Types d'événements",
-    "subtitle": "Personnaliser les types d'événements et leurs thèmes par défaut",
-    "loading": "Chargement des types d'événements...",
-    "loadError": "Échec du chargement des types d'événements",
-    "createNew": "Nouveau type d'événement",
-    "edit": "Modifier le type d'événement",
-    "created": "Type d'événement créé avec succès",
-    "updated": "Type d'événement mis à jour avec succès",
-    "deleted": "Type d'événement supprimé avec succès",
-    "createError": "Échec de la création du type d'événement",
-    "updateError": "Échec de la mise à jour du type d'événement",
-    "deleteError": "Échec de la suppression du type d'événement",
-    "searchPlaceholder": "Rechercher des types d'événements...",
-    "showInactive": "Afficher les inactifs",
-    "noResults": "Aucun type d'événement trouvé",
-    "empty": "Aucun type d'événement pour l'instant",
-    "system": "Système",
-    "table": {
-      "type": "Type",
-      "slugPrefix": "Préfixe URL",
-      "theme": "Thème par défaut",
-      "status": "Statut",
-      "actions": "Actions"
-    },
-    "form": {
-      "name": "Nom d'affichage",
-      "namePlaceholder": "ex. : Séance familiale",
-      "slugPrefix": "Préfixe URL",
-      "slugPrefixPlaceholder": "ex. : famille",
-      "slugPreview": "URL exemple :",
-      "emoji": "Icône",
-      "themePreset": "Thème par défaut",
-      "isActive": "Actif (visible lors de la création d'événements)"
-    },
-    "validation": {
-      "slugFormat": "Seulement des lettres, chiffres et tirets autorisés"
-    },
-    "slugInfo": {
-      "title": "Informations sur le préfixe URL :",
-      "description": "Le préfixe URL est utilisé pour générer les URL des galeries. Par exemple, un type d'événement avec le préfixe \"famille\" créera des URL comme : famille-dupont-famille-2025-01-22"
-    },
-    "deleteConfirm": {
-      "title": "Supprimer le type d'événement",
-      "message": "Êtes-vous sûr de vouloir supprimer",
-      "warning": "Cette action ne peut pas être annulée. Assurez-vous qu'aucun événement n'utilise ce type."
-    }
   },
   "backup": {
     "title": "Gestion des sauvegardes",
@@ -2897,8 +2803,6 @@
     "nav": {
       "galleries": "Galeries",
       "calendar": "Calendrier",
-      "quotes": "Devis",
-      "bills": "Factures",
       "profile": "Profil",
       "soon": "Bientôt"
     },
@@ -2908,14 +2812,6 @@
     "calendar": {
       "title": "Calendrier",
       "body": "Les séances à venir, les dates de livraison des galeries et autres événements liés aux séances s'afficheront ici. Nous vous préviendrons quand ce sera prêt."
-    },
-    "quotes": {
-      "title": "Devis",
-      "body": "Passez en revue et acceptez les devis pour les séances à venir en un seul endroit. Nous sommes encore en train de construire cela — pour l'instant, votre photographe continuera à vous envoyer les devis de la manière habituelle."
-    },
-    "bills": {
-      "title": "Factures",
-      "body": "Les factures et l'historique de paiement pour vos séances seront disponibles ici. Nous vous enverrons un e-mail lorsque cela sera opérationnel."
     },
     "profile": {
       "title": "Profil client",
@@ -2947,7 +2843,6 @@
         "displayNameHint": "Comment nous vous saluons dans le tableau de bord.",
         "phone": "Téléphone",
         "companyName": "Nom de l'entreprise",
-        "vatId": "Numéro de TVA",
         "addressLine1": "Adresse ligne 1",
         "addressLine2": "Adresse ligne 2",
         "postalCode": "Code postal",
@@ -3054,7 +2949,6 @@
       "expires": "expire",
       "accountSection": "Compte",
       "personalSection": "Informations personnelles",
-      "billingSection": "Adresse et facturation",
       "notesSection": "Notes internes",
       "eventsSection": "Événements assignés",
       "noEvents": "Aucun événement assigné pour l'instant. Ajoutez ce client à un événement depuis le formulaire d'événement.",
@@ -3067,8 +2961,6 @@
       "displayName": "Nom d'affichage",
       "phone": "Téléphone",
       "company": "Entreprise",
-      "billingEmail": "E-mail de facturation",
-      "vatId": "Numéro de TVA / fiscal",
       "addressLine1": "Adresse ligne 1",
       "addressLine2": "Adresse ligne 2",
       "postalCode": "Code postal",
@@ -3119,58 +3011,6 @@
       "removedN": "{{count}} supprimé",
       "error": "Impossible de mettre à jour les assignations",
       "clearSearchAria": "Effacer la recherche"
-    }
-  },
-  "clients": {
-    "title": "Clients",
-    "subtitle": "Comptes clients, planification, devis et facturation pour les clients récurrents.",
-    "navAriaLabel": "Navigation clients",
-    "empty": {
-      "title": "Aucune fonctionnalité client activée",
-      "body": "Activez Comptes (ou une autre sous-fonctionnalité Clients) dans Paramètres → Fonctionnalités pour commencer."
-    },
-    "subnav": {
-      "accounts": "Comptes",
-      "quotes": "Devis",
-      "bills": "Factures",
-      "taxReport": "Fiscalité",
-      "development": "Développement"
-    }
-  },
-  "taxReport": {
-    "title": "Rapport fiscal",
-    "intro": "Liste des revenus sur une période donnée avec ventilation net + TVA groupée par taux de TVA. Les factures annulées restent visibles pour la continuité de la piste d'audit, mais sont exclues des totaux.",
-    "filters": {
-      "period": "Période",
-      "thisYear": "Cette année",
-      "lastYear": "Année dernière",
-      "thisQuarter": "Ce trimestre",
-      "lastQuarter": "Trimestre dernier",
-      "custom": "Plage personnalisée",
-      "from": "Du",
-      "to": "Au",
-      "currency": "Devise"
-    },
-    "exportPdf": "Exporter en PDF",
-    "exportCsv": "Exporter en CSV",
-    "exportFailed": "Échec de l'export. Veuillez réessayer.",
-    "errorTitle": "Impossible de charger le rapport fiscal",
-    "empty": "Aucune facture sur cette période.",
-    "statusCancelled": "Annulée",
-    "totalsByVatRate": "Totaux par taux de TVA",
-    "grandTotalNet": "Total net",
-    "grandTotalVat": "Total TVA",
-    "grandTotalGross": "Total brut",
-    "cancelledFootnote": "{{count}} facture(s) annulée(s) — montants exclus des totaux (affichés pour la continuité de la piste d'audit).",
-    "col": {
-      "date": "Date",
-      "invoice": "Facture",
-      "customer": "Client",
-      "event": "Événement",
-      "vatRate": "TVA %",
-      "net": "Net",
-      "vat": "TVA",
-      "total": "Brut"
     }
   }
 }

@@ -8,7 +8,6 @@ import { Button, Card, Input, PasswordGenerator } from '../common';
 interface PasswordResetModalProps {
   eventName: string;
   eventDate?: string;
-  eventType?: string;
   onConfirm: (sendEmail: boolean, password?: string) => Promise<{ newPassword: string; emailSent: boolean }>;
   onClose: () => void;
 }
@@ -16,7 +15,6 @@ interface PasswordResetModalProps {
 export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
   eventName,
   eventDate,
-  eventType,
   onConfirm,
   onClose
 }) => {
@@ -138,7 +136,6 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
                   <PasswordGenerator
                     eventName={eventName}
                     eventDate={eventDate}
-                    eventType={eventType}
                     onPasswordGenerated={handlePasswordGenerated}
                     passwordComplexity="moderate"
                     className="w-full"

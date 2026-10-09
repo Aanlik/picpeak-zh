@@ -17,12 +17,12 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'admin-events-qr-test-secret'
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 async function insertEvent(db, adminId, over = {}) {
   const base = {
     slug: `ev-${Math.random().toString(16).slice(2)}`,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'QR Test Wedding',
     event_date: '2026-05-29',
     host_email: 'host@example.com',
@@ -44,7 +44,7 @@ describe('admin event QR endpoints', () => {
   let db; let cleanup; let app; let adminId; let token;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId } = await seedMinimal(db));
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);

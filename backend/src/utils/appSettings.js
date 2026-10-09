@@ -10,8 +10,6 @@
  *     other service (shareLinkService, customerAccountsService,
  *     authSecurity, dateFormatter, …).
  *
- * The CRM services use this helper instead of settingsService so the
- * crm_* keys seeded by migration 102 are actually readable.
  */
 
 const { db } = require('../database/db');

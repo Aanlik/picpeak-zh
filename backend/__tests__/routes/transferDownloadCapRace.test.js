@@ -8,7 +8,7 @@
  * UPDATE made before anything streams.
  */
 const request = require('supertest');
-const { bootCrmDb, buildRouteApp } = require('../integration/helpers/crmDb');
+const { bootTestDb, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
@@ -23,7 +23,7 @@ async function makeTransfer(maxDownloads) {
 }
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   // Under jest a service's `new Date()` binds as a foreign-realm Date that
   // node-sqlite3 stringifies; normalise bindings the same way the other
   // service-level suites do.

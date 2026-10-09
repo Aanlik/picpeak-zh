@@ -37,7 +37,7 @@ export const externalMediaService = {
     try {
       await api.put(`/admin/events/${eventId}`, { external_watch: watch });
     } catch {
-      throw new Error('照片已导入，但自动导入设置未保存。请在项目资料中检查自动导入开关。');
+      throw new Error('NAS_AUTO_IMPORT_SETTING_SAVE_FAILED');
     }
     return imported;
   },

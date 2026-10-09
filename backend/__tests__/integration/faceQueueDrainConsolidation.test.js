@@ -22,14 +22,14 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'facedrain-test-secret';
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup; let faceQueue; let clustering;
 
 async function seedEvent(slug) {
   const [row] = await db('events').insert({
     slug,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: slug,
     event_date: '2026-01-01',
     host_email: 'h@example.com',
@@ -64,7 +64,7 @@ async function insertPhoto(eventId, faceStatus) {
 
 describe('faceQueue drain consolidation (#1107)', () => {
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     faceQueue = require('../../src/services/faceQueue');
     clustering = require('../../src/services/faceClustering');
     await enableFacesGlobally();

@@ -2,7 +2,7 @@
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { bootCrmDb, seedMinimal, assignAdminRole, buildRouteApp } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
 process.env.JWT_SECRET = 'session-symmetry-test-secret-with-at-least-32-characters';
 let db, cleanup, app, adminId, customerId, eventId, cutoff;
 const slug = 'session-symmetry';
@@ -12,11 +12,11 @@ process.env.JWT_SECRET, { issuer: 'picpeak-auth', expiresIn: '4h' });
 const gallery = (claims = {}) => sign({ type: 'gallery', eventId, eventSlug: slug, ...claims });
 const session = bearer => request(app).get(`/api/auth/session?slug=${slug}`).set('Authorization', `Bearer ${bearer}`);
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId, customerId } = await seedMinimal(db));
   await assignAdminRole(db, adminId);
   const row = await require('../../src/services/eventCreationService').createEvent({
-    event_type: 'wedding', event_name: 'Session symmetry', event_date: '2026-10-01',
+    event_type: 'project', event_name: 'Session symmetry', event_date: '2026-10-01',
     slug, password: 'Session-Strong-Password-924!', expiration_days: 30,
     customer_email: 'customer@example.test', admin_email: 'admin@example.test',
   }, { actor: { id: adminId }, source: 'v1' });

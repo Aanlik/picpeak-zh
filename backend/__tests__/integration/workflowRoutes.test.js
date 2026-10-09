@@ -3,10 +3,10 @@
  */
 const request = require('supertest');
 const {
-  bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
-} = require('./helpers/crmDb');
+  bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
+} = require('./helpers/sqliteTestDb');
 
-// bootCrmDb runs the full core-migration set in beforeAll; under full-suite
+// bootTestDb runs the full core-migration set in beforeAll; under full-suite
 // parallel load on a small CI runner that can exceed the 5s default. Match the
 // other migration-heavy CRM suites (discountLineItems, incomingInvoiceRebill).
 jest.setTimeout(120000);
@@ -29,7 +29,7 @@ const sampleGraph = {
 };
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   const { adminId } = await seedMinimal(db);
   await assignAdminRole(db, adminId, 'super_admin');
   token = mintAdminToken(adminId);
@@ -83,7 +83,7 @@ describe('admin workflows API', () => {
     expect(res.body.error).toMatch(/not.*implemented|totally_not_a_real_action/i);
   });
 
-  test('allows enabling a flow using the now-implemented booking invoice actions', async () => {
+  test('refuses to enable a flow that uses retired invoice actions', async () => {
     const create = await request(app).post('/api/admin/workflows').set(auth(token)).send({
       name: 'Invoice-only booking', trigger_type: 'quote.accepted', enabled: false,
       nodes: [
@@ -100,8 +100,8 @@ describe('admin workflows API', () => {
     });
     expect(create.status).toBe(201);
     const res = await request(app).patch(`/api/admin/workflows/${create.body.id}/enabled`).set(auth(token)).send({ enabled: true });
-    expect(res.status).toBe(200);
-    expect(res.body.enabled).toBe(true);
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/not.*implemented|prepare_invoice|send_document/i);
   });
 
   test('get one returns the graph', async () => {

@@ -20,7 +20,7 @@ process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-resolv
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const SLUG = 'resolve-test-event';
 const SHARE_TOKEN = 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6';
@@ -29,11 +29,11 @@ describe('GET /api/gallery/resolve/:identifier (GHSA-rh8r)', () => {
   let db; let cleanup; let app;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Resolve Test',
       event_date: '2026-08-01',
       host_email: 'h@example.com',

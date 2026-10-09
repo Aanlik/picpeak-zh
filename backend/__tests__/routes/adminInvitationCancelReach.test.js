@@ -20,8 +20,8 @@ process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-invite
 const request = require('supertest');
 const crypto = require('crypto');
 const {
-  bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
-} = require('../integration/helpers/crmDb');
+  bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
+} = require('../integration/helpers/sqliteTestDb');
 const svc = require('../../src/services/userManagementService');
 const { clearPermissionCache } = require('../../src/middleware/permissions');
 
@@ -43,7 +43,7 @@ describe('DELETE /api/admin/users/invitations/:id — target reach', () => {
   const exists = async (id) => Boolean(await db('admin_invitations').where({ id }).first());
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId: superId } = await seedMinimal(db));
     await assignAdminRole(db, superId, 'super_admin');
     superTok = mintAdminToken(superId);

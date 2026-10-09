@@ -5,11 +5,11 @@
  * applied: branching, bounded loops, wait pauses + scheduler-style resume,
  * gate pauses + confirm/deny resume, dedup idempotency, and step recording.
  */
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
-// bootCrmDb runs the full core-migration set in beforeAll; under full-suite
+// bootTestDb runs the full core-migration set in beforeAll; under full-suite
 // parallel load on a small CI runner that can exceed the 5s default. Match the
-// other migration-heavy CRM suites (discountLineItems, incomingInvoiceRebill).
+// other migration-heavy integration suites.
 jest.setTimeout(120000);
 
 let db;
@@ -44,8 +44,8 @@ async function seedBuiltins(logger) {
 }
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
-  // Engine requires the singleton db — require AFTER bootCrmDb wired the test path.
+  ({ db, cleanup } = await bootTestDb());
+  // Engine requires the singleton db — require AFTER bootTestDb wired the test path.
   engine = require('../../src/services/workflows');
   // Enable the workflows flag so emitWorkflowEvent doesn't fail closed.
   await db('feature_flags').insert({ key: 'workflows', value: true });
@@ -81,7 +81,7 @@ describe('workflow engine', () => {
       ],
     });
 
-    const runIds = await engine.emitWorkflowEvent('test.event', { entityType: 'invoice', entityId: 1 });
+    const runIds = await engine.emitWorkflowEvent('test.event', { entityType: 'project', entityId: 1 });
     expect(runIds.length).toBe(1);
     const runId = runIds[0];
 
@@ -122,7 +122,7 @@ describe('workflow engine', () => {
       trigger: 'gate.event',
       nodes: [
         { key: 'g1', type: 'trigger' },
-        { key: 'g2', type: 'gate', config: { type: 'payment_confirm' } },
+        { key: 'g2', type: 'gate', config: { type: 'manual_approval' } },
         { key: 'g3', type: 'action', config: { action: 'noop' } },
         { key: 'g4', type: 'action', config: { action: 'noop' } },
       ],
@@ -183,7 +183,7 @@ describe('workflow engine', () => {
       edges: [{ from: 'm1', to: 'm2' }],
     });
     const runIds = await engine.emitWorkflowEvent('mail.event', {
-      entityType: 'invoice', entityId: 3, payload: { customerEmail: 'cust@example.com' },
+      entityType: 'project', entityId: 3, payload: { customerEmail: 'cust@example.com' },
     });
     const run = await db('workflow_runs').where({ id: runIds[0] }).first();
     expect(run.status).toBe('done');
@@ -193,21 +193,13 @@ describe('workflow engine', () => {
     expect(JSON.parse(step.result).respectBusinessHours).toBe(true);
   });
 
-  test('invoice_paid condition reads the entity', async () => {
-    const registry = require('../../src/services/workflows/registry');
-    const cond = registry.getCondition('invoice_paid');
-    const makeCtx = (row) => ({ run: { entity_id: 1 }, db: () => ({ where: () => ({ first: async () => row }) }) });
-    expect(await cond(makeCtx({ paid_at: '2026-01-01', status: 'sent' }))).toBe(true);
-    expect(await cond(makeCtx({ paid_at: null, status: 'paid' }))).toBe(true);
-    expect(await cond(makeCtx({ paid_at: null, status: 'sent', paid_amount_minor: 0, total_amount_minor: 1000 }))).toBe(false);
-  });
 
   test('gate creates a pending approval + admin email, token confirm resumes the run', async () => {
     await makeWorkflow({
       trigger: 'approval.event',
       nodes: [
         { key: 'a1', type: 'trigger' },
-        { key: 'a2', type: 'gate', config: { type: 'payment_confirm', prompt: 'No payment yet?' } },
+        { key: 'a2', type: 'gate', config: { type: 'manual_approval', prompt: 'Please review this step.' } },
         { key: 'a3', type: 'action', config: { action: 'noop' } }, // confirm path
         { key: 'a4', type: 'action', config: { action: 'noop' } }, // deny path
       ],
@@ -218,7 +210,7 @@ describe('workflow engine', () => {
       ],
     });
     const runIds = await engine.emitWorkflowEvent('approval.event', {
-      entityType: 'invoice', entityId: 42, payload: { adminEmail: 'admin@example.com' },
+      entityType: 'project', entityId: 42, payload: { adminEmail: 'admin@example.com' },
     });
     const runId = runIds[0];
 
@@ -248,53 +240,7 @@ describe('workflow engine', () => {
     expect(again.already).toBe(true);
   });
 
-  test('seeds the invoice-dunning built-in as the delegation graph (disabled for first beta)', async () => {
-    const { DUNNING_KEY } = require('../../src/services/_workflowSeedBoot');
-    const noopLogger = { info() {}, warn() {} };
-    await seedBuiltins(noopLogger);
 
-    const wf = await db('workflows').where({ builtin_key: DUNNING_KEY }).first();
-    expect(wf).toBeTruthy();
-    expect(!!wf.is_builtin).toBe(true);
-    expect(!!wf.enabled).toBe(false); // first beta: ships disabled; legacy ladder runs until enabled
-    expect(JSON.parse(wf.trigger_config).seedVersion).toBe(7);
-
-    const nodes = await db('workflow_nodes').where({ workflow_id: wf.id, version: wf.version });
-    expect(nodes.filter((n) => n.type === 'trigger')).toHaveLength(1);
-    expect(nodes.some((n) => n.type === 'gate')).toBe(false); // payment-check email IS the gate
-    expect(nodes.some((n) => JSON.parse(n.config || '{}').action === 'queue_payment_check')).toBe(true);
-    expect(nodes.some((n) => JSON.parse(n.config || '{}').action === 'escalate_to_collections')).toBe(true);
-
-    await seedBuiltins(noopLogger); // idempotent at current seed version
-    const all = await db('workflows').where({ builtin_key: DUNNING_KEY });
-    expect(all.length).toBe(1);
-  });
-
-  test('re-seeds a stale built-in on version bump, but never an admin-owned one', async () => {
-    const { DUNNING_KEY } = require('../../src/services/_workflowSeedBoot');
-    const noopLogger = { info() {}, warn() {} };
-
-    // Simulate an older, never-touched seed (v1, with a legacy gate node).
-    const wf = await db('workflows').where({ builtin_key: DUNNING_KEY }).first();
-    await db('workflows').where({ id: wf.id }).update({ enabled: true, admin_toggled_at: null, trigger_config: JSON.stringify({ seedVersion: 1 }) });
-    await db('workflow_nodes').insert({ workflow_id: wf.id, version: wf.version, node_key: 'legacyGate', type: 'gate', config: '{}', pos_x: 0, pos_y: 0 });
-
-    await seedBuiltins(noopLogger);
-    const reseeded = await db('workflows').where({ id: wf.id }).first();
-    expect(reseeded.version).toBe(wf.version + 1); // bumped
-    expect(JSON.parse(reseeded.trigger_config).seedVersion).toBe(7);
-    expect(!!reseeded.enabled).toBe(false); // seed default re-applied (not admin-owned → flips enabled→disabled)
-    const newNodes = await db('workflow_nodes').where({ workflow_id: wf.id, version: reseeded.version });
-    expect(newNodes.some((n) => n.type === 'gate')).toBe(false); // legacy graph replaced
-
-    // Admin-owned (admin_toggled_at set) + stale → must NOT be touched.
-    await db('workflows').where({ id: wf.id }).update({ enabled: true, admin_toggled_at: new Date().toISOString(), trigger_config: JSON.stringify({ seedVersion: 1 }) });
-    const before = await db('workflows').where({ id: wf.id }).first();
-    await seedBuiltins(noopLogger);
-    const after = await db('workflows').where({ id: wf.id }).first();
-    expect(after.version).toBe(before.version); // unchanged
-    expect(!!after.enabled).toBe(true); // admin's choice preserved
-  });
 
   test('seeds the gallery, pre-event + booking built-ins (all disabled for first beta)', async () => {
     await seedBuiltins({ info() {}, warn() {} });
@@ -314,39 +260,6 @@ describe('workflow engine', () => {
     expect(expired.trigger_type).toBe('gallery.expired');
     const expiredNodes = await db('workflow_nodes').where({ workflow_id: expired.id, version: expired.version });
     expect(expiredNodes.some((n) => JSON.parse(n.config || '{}').action === 'notify_gallery_expired')).toBe(true);
-
-    // Invoice-only booking variant (quote → invoice, no gallery).
-    const invoiceOnly = await db('workflows').where({ builtin_key: 'booking_invoice_only' }).first();
-    expect(invoiceOnly).toBeTruthy();
-    expect(!!invoiceOnly.enabled).toBe(false);
-    expect(invoiceOnly.trigger_type).toBe('quote.accepted');
-    const ioNodes = await db('workflow_nodes').where({ workflow_id: invoiceOnly.id, version: invoiceOnly.version });
-    expect(ioNodes.some((n) => n.type === 'wait')).toBe(false); // no event wait — sends on approval
-    expect(ioNodes.some((n) => JSON.parse(n.config || '{}').action === 'prepare_event')).toBe(false); // no gallery
-
-    const bookingFull = await db('workflows').where({ builtin_key: 'booking_full' }).first();
-    expect(bookingFull).toBeTruthy();
-    expect(!!bookingFull.enabled).toBe(false); // illustrative/stub — stays disabled
-    expect(bookingFull.trigger_type).toBe('quote.accepted');
-    const fullNodes = await db('workflow_nodes').where({ workflow_id: bookingFull.id, version: bookingFull.version });
-    expect(fullNodes.some((n) => JSON.parse(n.config || '{}').action === 'prepare_contract')).toBe(true);
-    // Admin review gate guards BOTH document sends (adjust line items, then OK).
-    const fullGateKeys = fullNodes.filter((n) => n.type === 'gate').map((n) => n.node_key);
-    expect(fullGateKeys).toEqual(expect.arrayContaining(['reviewContract', 'reviewInvoice']));
-    const fullEdges = await db('workflow_edges').where({ workflow_id: bookingFull.id, version: bookingFull.version });
-    // reviewContract --confirm--> sendContract. The invoice is prepared + approved
-    // EARLY; reviewInvoice --confirm--> waitEvent, and the wait --> sendInvoice, so
-    // dispatch is held until the event date after the admin's early OK.
-    expect(fullEdges.some((e) => e.from_node === 'reviewContract' && e.from_handle === 'confirm' && e.to_node === 'sendContract')).toBe(true);
-    expect(fullEdges.some((e) => e.from_node === 'reviewInvoice' && e.from_handle === 'confirm' && e.to_node === 'waitEvent')).toBe(true);
-    expect(fullEdges.some((e) => e.from_node === 'waitEvent' && e.to_node === 'sendInvoice')).toBe(true);
-
-    const bookingSimple = await db('workflows').where({ builtin_key: 'booking_simple' }).first();
-    expect(bookingSimple).toBeTruthy();
-    expect(bookingSimple.trigger_type).toBe('quote.accepted');
-    const simpleEdges = await db('workflow_edges').where({ workflow_id: bookingSimple.id, version: bookingSimple.version });
-    expect(simpleEdges.some((e) => e.from_node === 'reviewInvoice' && e.from_handle === 'confirm' && e.to_node === 'waitEvent')).toBe(true);
-    expect(simpleEdges.some((e) => e.from_node === 'waitEvent' && e.to_node === 'sendInvoice')).toBe(true);
 
     const preEvent = await db('workflows').where({ builtin_key: 'pre_event_email' }).first();
     expect(preEvent).toBeTruthy();
@@ -370,7 +283,7 @@ describe('workflow engine', () => {
     const inWindow = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
     const tooFar = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     const farFuture = new Date(Date.now() + 365 * 86400000).toISOString();
-    const evt = { event_type: 'wedding', password_hash: 'x', expires_at: farFuture, is_active: true, is_archived: false, customer_email: 'c@x.test' };
+    const evt = { event_type: 'project', password_hash: 'x', expires_at: farFuture, is_active: true, is_archived: false, customer_email: 'c@x.test' };
     await db('events').insert({ ...evt, slug: 'pe-soon', share_link: 'pe-soon', event_name: 'Soon', event_date: inWindow });
     await db('events').insert({ ...evt, slug: 'pe-far', share_link: 'pe-far', event_name: 'Far', event_date: tooFar });
 
@@ -391,7 +304,7 @@ describe('workflow engine', () => {
     // not exist — so an event with only customer_email/host_email got no mail.
     const farFuture = new Date(Date.now() + 365 * 86400000).toISOString();
     await db('events').insert({
-      event_type: 'wedding', password_hash: 'x', expires_at: farFuture,
+      event_type: 'project', password_hash: 'x', expires_at: farFuture,
       is_active: true, is_archived: false,
       slug: 'rem-direct', share_link: 'rem-direct', event_name: 'Direct',
       event_date: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10),
@@ -410,19 +323,10 @@ describe('workflow engine', () => {
     expect(again.reason).toBe('already_sent');
   });
 
-  test('reminder template resolves per event type within the chosen group, else group default', async () => {
+  test('reminder uses one shared project template', async () => {
     const { _internal } = require('../../src/services/eventReminderService');
-    // Per-type template exists within a custom group → used.
-    await db('email_templates').insert({ template_key: 'promo_wedding' });
-    expect(await _internal.resolveTemplateKey('wedding', 'promo')).toBe('promo_wedding');
-    // A type with no authored template (in any group) → the group's default.
-    expect(await _internal.resolveTemplateKey('zzznotype', 'promo')).toBe('promo_default');
-    // Blank group → the default event_reminder group.
-    expect(await _internal.resolveTemplateKey('zzznotype')).toBe('event_reminder_default');
-    // Trailing underscore on the group is tolerated.
-    expect(await _internal.resolveTemplateKey('zzznotype', 'promo_')).toBe('promo_default');
+    expect(await _internal.resolveTemplateKey()).toBe('event_reminder_default');
   });
-
   test('pre-event payload passes the RAW event_date (processor formats it — no "Invalid Date")', async () => {
     const { _internal } = require('../../src/services/eventReminderService');
     const p = _internal.composePayload({
@@ -437,7 +341,7 @@ describe('workflow engine', () => {
     const webhook = engine.registry.getAction('webhook');
     expect(typeof webhook).toBe('function'); // registered — no longer a silent no-op
     const ctx = (config, vars = {}) => ({
-      run: { id: 1, workflow_id: 1, version: 1, trigger_event: 'invoice.sent', entity_type: 'invoice', entity_id: 5 },
+      run: { id: 1, workflow_id: 1, version: 1, trigger_event: 'project.updated', entity_type: 'project', entity_id: 5 },
       node: { config }, vars, db, logger: { warn() {} },
     });
     // No webhook selected → observable skip, not a crash.
@@ -461,7 +365,7 @@ describe('workflow engine', () => {
     const del = await db('webhook_deliveries').where({ webhook_id: whId }).first();
     expect(del).toBeTruthy();
     expect(del.status).toBe('pending');
-    expect(del.event_type).toBe('workflow.invoice.sent');
+    expect(del.event_type).toBe('workflow.project.updated');
 
     // Inactive / missing subscription → skip.
     await db('webhooks').where({ id: whId }).update({ active: false });
@@ -476,7 +380,7 @@ describe('workflow engine', () => {
     });
     // Event with NO inline customer_email / host_email.
     await db('events').insert({
-      event_type: 'wedding', password_hash: 'x', expires_at: farFuture, is_active: true, is_archived: false,
+      event_type: 'project', password_hash: 'x', expires_at: farFuture, is_active: true, is_archived: false,
       slug: 'rem-assigned', share_link: 'rem-assigned', event_name: 'Assigned',
       event_date: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10),
     });
@@ -504,9 +408,9 @@ describe('workflow engine', () => {
 
   test('legacy event-reminder pass stands down ONLY when the pre_event_email flow is enabled', async () => {
     await seedBuiltins({ info() {}, warn() {} }); // pre_event_email seeded DISABLED
-    // crm_event_reminders_enabled must be on to reach the mutex guard.
+    // project_reminders_enabled must be on to reach the mutex guard.
     await db('app_settings')
-      .insert({ setting_key: 'crm_event_reminders_enabled', setting_value: JSON.stringify(true), setting_type: 'boolean' })
+      .insert({ setting_key: 'project_reminders_enabled', setting_value: JSON.stringify(true), setting_type: 'boolean' })
       .onConflict('setting_key').merge();
     const eventReminderService = require('../../src/services/eventReminderService');
 
@@ -534,7 +438,7 @@ describe('workflow engine', () => {
       edges: [{ from: 'o1', to: 'o2' }],
     });
 
-    const runIds = await engine.emitWorkflowEvent('pick.event', { entityType: 'quote', entityId: 99, targetWorkflowId: chosen });
+    const runIds = await engine.emitWorkflowEvent('pick.event', { entityType: 'project', entityId: 99, targetWorkflowId: chosen });
     expect(runIds.length).toBe(1);
     const chosenRuns = await db('workflow_runs').where({ workflow_id: chosen, entity_id: 99 });
     const otherRuns = await db('workflow_runs').where({ workflow_id: other, entity_id: 99 });
@@ -565,14 +469,12 @@ describe('workflow engine', () => {
   });
 
   test('admin confirms a gate early; the following wait holds dispatch until its date', async () => {
-    // The booking pattern: prepare → REVIEW GATE → WAIT(event date) → send. The
-    // admin can approve at the gate whenever; the run then parks at the wait and
-    // the scheduler dispatches when the date arrives.
+    // An admin can approve at the gate; the run then waits before continuing.
     const wfId = await makeWorkflow({
       trigger: 'gatewait.event',
       nodes: [
         { key: 'g0', type: 'trigger' },
-        { key: 'g1', type: 'gate', config: { prompt: 'Approve invoice?' } },
+        { key: 'g1', type: 'gate', config: { prompt: 'Approve this step?' } },
         { key: 'g2', type: 'wait', config: { delayDays: 5 } },
         { key: 'g3', type: 'action', config: { action: 'noop' } },
       ],
@@ -582,7 +484,7 @@ describe('workflow engine', () => {
         { from: 'g2', to: 'g3' },
       ],
     });
-    const [runId] = await engine.emitWorkflowEvent('gatewait.event', { entityType: 'invoice', entityId: 7 });
+    const [runId] = await engine.emitWorkflowEvent('gatewait.event', { entityType: 'project', entityId: 7 });
     let run = await db('workflow_runs').where({ id: runId }).first();
     expect(run.status).toBe('waiting');
     expect(run.current_node).toBe('g1'); // parked at the review gate
@@ -643,7 +545,7 @@ describe('workflow engine', () => {
       nodes: [
         { key: 't', type: 'trigger' },
         { key: 'w', type: 'wait', config: { delayDays: 14 } },
-        { key: 'g', type: 'gate', config: { type: 'payment_confirm' } },
+        { key: 'g', type: 'gate', config: { type: 'manual_approval' } },
         { key: 'a', type: 'action', config: { action: 'send_email', recipientClass: 'customer' } },
         { key: 'end', type: 'action', config: { action: 'noop' } },
       ],
@@ -666,12 +568,12 @@ describe('workflow engine', () => {
   });
 
   test('the once-per-process guard short-circuits a second boot seed', async () => {
-    const { seedBuiltinWorkflowsAtBoot, DUNNING_KEY } = require('../../src/services/_workflowSeedBoot');
+    const { seedBuiltinWorkflowsAtBoot } = require('../../src/services/_workflowSeedBoot');
     await seedBuiltins({ info() {}, warn() {} });
 
     // Make the row look stale + never-touched, so an UNGUARDED call would
     // re-seed it (that's exactly what the version-bump test above asserts).
-    const before = await db('workflows').where({ builtin_key: DUNNING_KEY }).first();
+    const before = await db('workflows').where({ builtin_key: 'gallery_expiring' }).first();
     await db('workflows').where({ id: before.id })
       .update({ admin_toggled_at: null, trigger_config: JSON.stringify({ seedVersion: 1 }) });
 

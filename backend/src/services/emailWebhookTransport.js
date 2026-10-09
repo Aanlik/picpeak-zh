@@ -32,8 +32,7 @@ const SIGNATURE_HEADER = 'X-PicPeak-Signature';
 const HTTP_TIMEOUT_MS = 15000;
 
 // Attachments are base64 in the JSON body, which inflates them by a third.
-// Invoices and quotes are the real users of this and run to a few hundred KB;
-// the cap exists so a pathological attachment cannot build a payload large
+// Keep a cap so a pathological attachment cannot build a payload large
 // enough to take the process down while serialising it.
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 
@@ -84,14 +83,14 @@ function isEnabled() {
 /**
  * Turn nodemailer's attachment list into something a JSON body can carry.
  *
- * Callers pass `{ filename, path }` for a file already written to disk (quotes
- * and invoices do this) or `{ filename, content }` for an in-memory buffer.
+ * Callers pass `{ filename, path }` for a file already written to disk or
+ * `{ filename, content }` for an in-memory buffer.
  * Both become base64.
  *
  * Throws rather than dropping. The downstream implementation this was modelled
  * on logged a warning and sent the body without its attachment, which turns
- * "your invoice email failed" into "your customer received an empty invoice
- * email" — a silent partial success is the worse outcome, and the email queue
+ * "the message failed" into "your customer received an empty attachment" — a
+ * silent partial success is the worse outcome, and the email queue
  * already surfaces and retries a throw.
  */
 async function encodeAttachments(attachments) {
@@ -216,7 +215,7 @@ async function send(mail) {
   // Callers log the error object (emailProcessor's `logger.error('Error
   // sending template email:', error)`), and winston serialises it, so a DNS
   // blip or a connection refusal would write password-reset links, recovery
-  // codes and multi-megabyte invoices into combined.log — the log file being
+  // codes and multi-megabyte attachments into combined.log — the log file being
   // exactly where none of that belongs. Only the message survives.
   let response;
   try {

@@ -35,9 +35,7 @@ const { buildShareLinkVariants } = require('../../services/shareLinkService');
 const { generateThumbnail } = require('../../services/imageProcessor');
 const logger = require('../../utils/logger');
 
-const { formatBoolean } = require('../../utils/dbCompat');
 
-const { isValidEventType } = require('../../services/eventTypeService');
 const { replacePhoto } = require('../../services/photoReplacementService');
 const { getMaxFileSizeBytes, DEFAULT_MAX_FILE_SIZE_MB } = require('../../services/uploadSettings');
 const downloadZipService = require('../../services/downloadZipService');
@@ -119,12 +117,9 @@ const photoUpload = async (req, res, next) => {
  *         application/json:
  *           schema:
  *             type: object
- *             required: [event_name, event_type]
+ *             required: [event_name]
  *             properties:
  *               event_name: { type: string }
- *               event_type:
- *                 type: string
- *                 description: "Slug of an active event type from the catalog (Settings → Event Types). Defaults on a fresh install: wedding, birthday, corporate, other. GET /api/v1/event-types lists the live values."
  *               event_date: { type: string, format: date, nullable: true }
  *               customer_name: { type: string, nullable: true }
  *               customer_email: { type: string, format: email, nullable: true }
@@ -165,14 +160,6 @@ router.post(
   requirePermission('events.create'),
   [
     body('event_name').isString().trim().notEmpty(),
-    // Validate against the live event_types catalog (admins can rename/delete
-    // the defaults and add custom types), not a hardcoded whitelist (#800).
-    body('event_type').isString().trim().notEmpty().bail().custom(async (value) => {
-      if (!(await isValidEventType(value))) {
-        throw new Error('Unknown event type — must match an active event type slug');
-      }
-      return true;
-    }),
     body('event_date').optional({ nullable: true, checkFalsy: true }).isISO8601(),
     body('customer_name').optional({ nullable: true }).isString(),
     body('customer_email').optional({ nullable: true, checkFalsy: true }).isEmail(),
@@ -263,7 +250,7 @@ router.get(
       const [events, totalRow] = await Promise.all([
         scopeEventsQuery(
           db('events')
-            .select('id', 'slug', 'event_name', 'event_type', 'event_date', 'expires_at',
+            .select('id', 'slug', 'event_name', 'event_date', 'expires_at',
               'is_active', 'is_archived', 'is_draft', 'created_at'),
           req.admin
         )
@@ -280,48 +267,6 @@ router.get(
     }
   }
 );
-
-// ──────────────────────────────────────────────────────────────────────────
-// GET /event-types — read (catalog discovery for event creation, #800)
-// ──────────────────────────────────────────────────────────────────────────
-
-/**
- * @openapi
- * /event-types:
- *   get:
- *     tags: [Events]
- *     summary: List active event types
- *     description: The slugs accepted as `event_type` when creating events. The catalog is admin-customizable (Settings → Event Types), so integrations should discover values here instead of hardcoding them.
- *     security: [{ bearerAuth: [] }]
- *     responses:
- *       200:
- *         description: Active event types
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 eventTypes:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       slug_prefix: { type: string }
- *                       name: { type: string }
- *                       emoji: { type: string }
- */
-router.get('/event-types', apiTokenAuth, requireApiScope('read'), requirePermission('events.view'), async (req, res) => {
-  try {
-    const types = await db('event_types')
-      .where('is_active', formatBoolean(true))
-      .orderBy('display_order', 'asc')
-      .select('slug_prefix', 'name', 'emoji');
-    res.json({ eventTypes: types });
-  } catch (error) {
-    logger.error('v1 GET /event-types failed', { error: error.message });
-    res.status(500).json({ error: 'Failed to list event types' });
-  }
-});
 
 // ──────────────────────────────────────────────────────────────────────────
 // GET /events/:id — read

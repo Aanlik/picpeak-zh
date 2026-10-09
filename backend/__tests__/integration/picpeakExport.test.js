@@ -8,17 +8,17 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-at-least-32-char
 const fs = require('fs');
 const path = require('path');
 const StreamZip = require('node-stream-zip');
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db;
 let cleanup;
 let tmpDir;
 let createPicpeak;
 
-// bootCrmDb MUST run before requiring the service (which transitively requires
+// bootTestDb MUST run before requiring the service (which transitively requires
 // db.js) so the export reads this test's DB, not the default path.
 beforeAll(async () => {
-  ({ db, cleanup, tmpDir } = await bootCrmDb());
+  ({ db, cleanup, tmpDir } = await bootTestDb());
   process.env.STORAGE_PATH = tmpDir; // isolate file collection to the temp dir
   ({ createPicpeak } = require('../../src/services/picpeakExportService'));
 }, 120000);

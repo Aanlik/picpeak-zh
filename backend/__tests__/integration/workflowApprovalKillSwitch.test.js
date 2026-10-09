@@ -7,7 +7,7 @@
  * the run stays waiting until the flag is back on. Scanner finding c9dfda4a.
  */
 const crypto = require('crypto');
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
@@ -62,7 +62,7 @@ const state = async (runId, approvalId) => ({
 });
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   engine = require('../../src/services/workflows');
   flags = require('../../src/middleware/requireFeatureFlag');
   require('../../src/services/workflows/registry').registerAction('kill_confirm', async () => { calls.confirm += 1; return {}; });

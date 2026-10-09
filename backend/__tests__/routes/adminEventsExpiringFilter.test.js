@@ -15,7 +15,7 @@ process.env.NODE_ENV = 'test';
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 let db, cleanup, app, adminId, token;
 const DAY = 24 * 60 * 60 * 1000;
@@ -36,7 +36,7 @@ const FIXTURES = [
 ];
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId } = await seedMinimal(db));
   await assignAdminRole(db, adminId, 'super_admin');
   token = mintAdminToken(adminId);
@@ -45,7 +45,7 @@ beforeAll(async () => {
   await db('events').del();
   for (const [slug, expires_at] of FIXTURES) {
     await db('events').insert({
-      slug, event_type: 'other', event_name: slug, event_date: '2026-09-01',
+      slug, event_type: 'project', event_name: slug, event_date: '2026-09-01',
       customer_name: 'A', customer_email: 'a@example.com', host_name: 'A', host_email: 'a@example.com',
       admin_email: 'admin@example.com', password_hash: 'x',
       share_link: `/gallery/${slug}/tok`, share_token: `tok-${slug}`,
@@ -113,7 +113,7 @@ test('POST and PUT store the same instant for the same zone-less expires_at', as
   const created = await request(app).post('/api/admin/events')
     .set('Authorization', `Bearer ${token}`)
     .send({
-      event_type: 'wedding', event_name: `Zoneless ${Date.now()}`, event_date: '2026-09-01',
+      event_type: 'project', event_name: `Zoneless ${Date.now()}`, event_date: '2026-09-01',
       customer_name: 'A', customer_email: 'a@example.com', admin_email: 'admin@example.com',
       password: 'ZonelessPass!1', expires_at: '2026-10-06T12:00:00',
     });
@@ -132,7 +132,7 @@ test('POST refuses an expires_at it cannot read instead of failing on it', async
   const res = await request(app).post('/api/admin/events')
     .set('Authorization', `Bearer ${token}`)
     .send({
-      event_type: 'wedding', event_name: `Unreadable ${Date.now()}`, event_date: '2026-09-01',
+      event_type: 'project', event_name: `Unreadable ${Date.now()}`, event_date: '2026-09-01',
       customer_name: 'A', customer_email: 'a@example.com', admin_email: 'admin@example.com',
       password: 'ZonelessPass!1', expires_at: '20261006T120000Z',
     });

@@ -9,7 +9,7 @@
  * 90 days, and a NULL expiry on an existing row fails closed.
  * Scanner finding 1065a3a1.
  */
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
@@ -52,7 +52,7 @@ async function pendingGate(trigger, gateConfig) {
 const daysFromNow = (iso) => (new Date(iso).getTime() - Date.now()) / DAY;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   engine = require('../../src/services/workflows');
   require('../../src/services/workflows/registry').registerAction('lifetime_confirm', async () => { calls.confirm += 1; return {}; });
   await db('feature_flags').insert({ key: 'workflows', value: true });

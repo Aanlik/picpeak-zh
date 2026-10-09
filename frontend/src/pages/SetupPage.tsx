@@ -16,7 +16,6 @@ import { productUsageService } from '../services/productUsage.service';
 import { ProductUsageConsentDialog } from '../features/settings/components/ProductUsageConsentDialog';
 import { PicpeakRestoreCard } from '../components/admin/PicpeakBackupCard';
 import { SetupConfigStep } from '../components/admin/SetupConfigStep';
-import { SetupEventTypesStep } from '../components/admin/SetupEventTypesStep';
 import { UsageReportingPoints } from '../components/admin/UsageReportingPitch';
 import { resolveLoginLogoClasses } from '../utils/loginLogoSize';
 import type { AdminUser } from '../types';
@@ -44,12 +43,9 @@ const COMMUNITY_LINKS: {
 // account is created. galleries/analytics/userManagement are always on and not
 // listed. Labels/descriptions reuse the existing Settings→Features i18n keys
 // (`settings.features.<key>.title/description`) so translations stay in sync.
-// Server-side applyDependencyRules resolves dependencies (e.g. Invoices pulls in
-// Accounting) when we PUT the selection, so we only send the raw ticks.
 const USAGE_GROUPS: { id: string; titleKey: string; features: FeatureKey[] }[] = [
-  { id: 'crm', titleKey: 'setup.usageGroupCrm', features: ['quotes', 'contracts', 'bills', 'hoursLogging', 'customerPortal', 'calendar'] },
-  { id: 'accounting', titleKey: 'setup.usageGroupAccounting', features: ['taxReport', 'incomingInvoices', 'expenses'] },
-  { id: 'automation', titleKey: 'setup.usageGroupAutomation', features: ['reminderEmails', 'slideshow', 'workflows', 'whatsapp', 'incomingMail'] },
+  { id: 'galleries', titleKey: 'setup.usageGroupGalleries', features: ['customerPortal', 'slideshow'] },
+  { id: 'automation', titleKey: 'setup.usageGroupAutomation', features: ['reminderEmails', 'workflows'] },
 ];
 const ALL_USAGE_FEATURES: FeatureKey[] = USAGE_GROUPS.flatMap((g) => g.features);
 
@@ -75,7 +71,7 @@ export const SetupPage: React.FC = () => {
     staleTime: Infinity,
   });
 
-  const [step, setStep] = useState<'token' | 'account' | 'usage' | 'eventTypes' | 'restore' | 'config' | 'usageReporting' | 'community'>('token');
+  const [step, setStep] = useState<'token' | 'account' | 'usage' | 'restore' | 'config' | 'usageReporting' | 'community'>('token');
   const [form, setForm] = useState({ token: '', email: '', password: '', confirm: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -130,7 +126,7 @@ export const SetupPage: React.FC = () => {
 
   const validateAccount = (): boolean => {
     const next: Record<string, string> = {};
-    if (!form.email) next.email = NO_EMAIL_MODE ? '请输入用户名' : t('setup.emailRequired');
+    if (!form.email) next.email = NO_EMAIL_MODE ? t('setup.usernameRequired') : t('setup.emailRequired');
     else if (!NO_EMAIL_MODE && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = t('setup.invalidEmail');
     if (!form.password) next.password = t('setup.passwordRequired');
     // Mirror the server's rule (validatePassword): >=8 chars with upper, lower
@@ -271,10 +267,7 @@ export const SetupPage: React.FC = () => {
       toast.warn(t('setup.featuresSaveFailed'));
     } finally {
       setIsSavingFeatures(false);
-      // Event types come next (#800) — the wizard is the one window in which
-      // the seeded defaults can be freely renamed or deleted, because nothing
-      // (events, quotes, reminder mails) references them yet.
-      setStep('eventTypes');
+      setStep('config');
     }
   };
 
@@ -284,10 +277,6 @@ export const SetupPage: React.FC = () => {
   // the public address its client links are built from, and the SMTP settings
   // that send them. Both sections are feature-independent; the invoicing block
   // is still conditional inside the step.
-  const continueAfterEventTypes = () => {
-    setStep('config');
-  };
-
   // Best-effort, same as the feature-flag save above: a collector hiccup on a
   // fresh install must not trap the admin here. They can always opt in later
   // from Settings → Product usage, where the full disclosure lives.
@@ -338,9 +327,7 @@ export const SetupPage: React.FC = () => {
               ? t('setup.tokenStepSubtitle')
               : step === 'account'
                 ? t('setup.accountStepSubtitle')
-                : step === 'eventTypes'
-                  ? t('setup.eventTypes.subtitle')
-                  : step === 'restore'
+                : step === 'restore'
                     ? t('setup.restoreStepSubtitle')
                     : step === 'config'
                       ? t('setup.config.subtitle')
@@ -421,7 +408,7 @@ export const SetupPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="setup-email" className="block text-sm font-medium text-neutral-700 mb-1">
-                  {NO_EMAIL_MODE ? '管理员用户名' : t('setup.emailLabel')}
+                  {NO_EMAIL_MODE ? t('setup.usernameLabel') : t('setup.emailLabel')}
                 </label>
                 <Input
                   id="setup-email"
@@ -429,7 +416,7 @@ export const SetupPage: React.FC = () => {
                   value={form.email}
                   onChange={setField('email')}
                   error={errors.email}
-                  placeholder={NO_EMAIL_MODE ? '3–50 位字母、数字、下划线或短横线' : t('setup.emailPlaceholder')}
+                  placeholder={NO_EMAIL_MODE ? t('setup.usernamePlaceholder') : t('setup.emailPlaceholder')}
                   leftIcon={<Mail className="w-5 h-5 text-neutral-400" />}
                   autoComplete={NO_EMAIL_MODE ? "username" : "email"}
                   autoFocus
@@ -544,10 +531,6 @@ export const SetupPage: React.FC = () => {
                 </div>
               ))}
 
-              {selectedFeatures.has('bills') && !selectedFeatures.has('taxReport') && (
-                <p className="text-xs text-neutral-500">{t('setup.usageDepsNote')}</p>
-              )}
-
               <Button
                 type="button"
                 variant="primary"
@@ -573,8 +556,6 @@ export const SetupPage: React.FC = () => {
                 {t('setup.back')}
               </Button>
             </div>
-          ) : step === 'eventTypes' ? (
-            <SetupEventTypesStep onDone={continueAfterEventTypes} />
           ) : step === 'config' ? (
             <SetupConfigStep
               selectedFeatures={selectedFeatures}
@@ -655,11 +636,6 @@ export const SetupPage: React.FC = () => {
                 size="lg"
                 className="w-full"
                 onClick={async () => {
-                  // One-way marker: re-locks the seeded system event types
-                  // (#800). Best-effort — a failure must not trap the user on
-                  // the thank-you screen, and the flag re-arms nothing risky
-                  // (the delete window also requires zero usage server-side).
-                  try { await setupService.completeSetup(); } catch { /* best-effort */ }
                   navigate('/admin/dashboard', { replace: true });
                 }}
                 rightIcon={<ArrowRight className="w-4 h-4" />}

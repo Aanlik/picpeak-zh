@@ -13,7 +13,7 @@ beforeAll(async () => {
     process.env.DATABASE_CLIENT = 'pg';
     jest.doMock('../../knexfile', () => ({ client: 'pg', connection: pgUrl, searchPath: [schema] }));
   }
-  ({ db, cleanup } = await require('../integration/helpers/crmDb').bootCrmDb());
+  ({ db, cleanup } = await require('../integration/helpers/sqliteTestDb').bootTestDb());
   security = require('../../src/utils/authSecurity');
 });
 afterAll(async () => {

@@ -19,7 +19,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 const { SHARED_COLOR_LABEL_IDENTITY } = require('../../src/constants/colorLabels');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'shared-tag-secret';
@@ -77,13 +77,13 @@ describe('shared colour tag (#1197)', () => {
     .where({ event_id: eventId }).update({ show_feedback_to_guests: on });
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     feedbackService = require('../../src/services/feedbackService');
 
     const [ev] = await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Shared Colour Tag',
       event_date: '2026-08-01',
       host_email: 'h@example.com',

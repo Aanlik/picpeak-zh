@@ -14,7 +14,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-// bootCrmDb() sets TEST_DATABASE_PATH itself, but only in time for requires
+// bootTestDb() sets TEST_DATABASE_PATH itself, but only in time for requires
 // that happen AFTER it runs (inside beforeAll). userManagementService.js
 // requires database/db.js at module load — i.e. before beforeAll — so that
 // connection has to be pointed at a fresh, unused test DB up front, or it
@@ -30,7 +30,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'reset-pw-test-secret';
 
 const bcrypt = require('bcrypt');
 
-const { bootCrmDb, seedMinimal, assignAdminRole } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole } = require('../integration/helpers/sqliteTestDb');
 const userManagementService = require('../../src/services/userManagementService');
 
 // The wordlist generateReadablePassword() used to produce:
@@ -44,7 +44,7 @@ describe('userManagementService.resetAdminPassword (GHSA-h4w8-57xq-53fx)', () =>
   let targetId;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId: actorId } = await seedMinimal(db));
     await assignAdminRole(db, actorId, 'super_admin');
 

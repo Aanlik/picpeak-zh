@@ -21,31 +21,13 @@ import { customerService, type CustomerProfile } from '../services/customer.serv
 /**
  * Query key names owned by the customer portal (frontend/src/pages/customer/*),
  * cleared on logout / session-loss (#1594) so the next customer to sign in
- * on the same device never briefly sees the previous one's cached dashboard,
- * quotes, contracts or invoices.
- *
- * Not a blanket `queryKey[0].startsWith('customer')` predicate: the app's
- * QueryClient is a single instance shared with the admin dashboard (see
- * App.tsx), and the admin CRM panels (CustomerCrmPanels.tsx, HoursSection.tsx)
- * reuse the exact same first-element strings — 'customer-quotes',
- * 'customer-contracts', 'customer-invoices' — for a *different*, per-account
- * cache shaped `['customer-quotes', customerAccountId]`. Per this file's own
- * header comment, an admin session and a customer session can coexist in the
- * same browser, so that admin cache must survive a customer-portal logout.
- * The three overlapping names are only cleared when the key has no second
- * element (the shape the portal itself uses); every other portal key name is
- * unique and clears regardless of length.
+ * on the same device never briefly sees the previous one's cached gallery
+ * dashboard or profile. The query names are specific to the customer portal,
+ * so they can be removed without touching the admin cache.
  */
 const PORTAL_ONLY_QUERY_KEYS = new Set([
   'customer-events',
   'customer-profile',
-  'customer-quote',
-  'customer-contract',
-]);
-const PORTAL_SHARED_NAME_QUERY_KEYS = new Set([
-  'customer-quotes',
-  'customer-contracts',
-  'customer-invoices',
 ]);
 
 function clearCustomerPortalQueryCache(queryClient: QueryClient) {
@@ -53,9 +35,7 @@ function clearCustomerPortalQueryCache(queryClient: QueryClient) {
     predicate: (query) => {
       const name = query.queryKey[0];
       if (typeof name !== 'string') return false;
-      if (PORTAL_ONLY_QUERY_KEYS.has(name)) return true;
-      if (PORTAL_SHARED_NAME_QUERY_KEYS.has(name)) return query.queryKey.length === 1;
-      return false;
+      return PORTAL_ONLY_QUERY_KEYS.has(name);
     },
   });
 }
@@ -66,19 +46,12 @@ function clearCustomerPortalQueryCache(queryClient: QueryClient) {
  * locale resolution; this closes the third surface so the portal UI
  * actually honours the same setting. Swallows errors because i18n init
  * can race with the auth flow — failing to switch language must never
- * break login. Pattern lifted from QuoteResponsePage.tsx.
+ * break login. The portal language follows the customer's saved preference.
  */
 function applyCustomerLocale(lang?: string | null) {
   if (!lang) return;
   if (lang === i18n.language) return;
   i18n.changeLanguage(lang).catch(() => {});
-}
-
-export interface CustomerFeatureFlags {
-  calendar: boolean;
-  quotes: boolean;
-  bills: boolean;
-  contracts: boolean;
 }
 
 export interface CustomerBrandingFlags {
@@ -89,7 +62,6 @@ export interface CustomerBrandingFlags {
 interface CustomerAuthContextType {
   isAuthenticated: boolean;
   customer: CustomerProfile | null;
-  features: CustomerFeatureFlags;
   branding: CustomerBrandingFlags;
   isLoading: boolean;
   error: string | null;
@@ -102,7 +74,7 @@ interface CustomerAuthContextType {
    * Soon menus would only appear after the next CustomerAuthProvider
    * re-mount, e.g. after navigating to a gallery and back).
    */
-  setSession: (s: { customer: CustomerProfile; features: CustomerFeatureFlags; branding: CustomerBrandingFlags }) => void;
+  setSession: (s: { customer: CustomerProfile; branding: CustomerBrandingFlags }) => void;
   logout: () => Promise<void>;
 }
 
@@ -117,10 +89,8 @@ export const useCustomerAuth = () => {
 };
 
 const STORAGE_KEY = 'customer_profile';
-const FEATURES_KEY = 'customer_features';
 const BRANDING_KEY = 'customer_branding';
 
-const DEFAULT_FEATURES: CustomerFeatureFlags = { calendar: false, quotes: false, bills: false, contracts: false };
 const DEFAULT_BRANDING: CustomerBrandingFlags = { showLogo: true, showCompanyName: true };
 
 interface ProviderProps { children: ReactNode; }
@@ -128,7 +98,6 @@ interface ProviderProps { children: ReactNode; }
 export const CustomerAuthProvider: React.FC<ProviderProps> = ({ children }) => {
   const queryClient = useQueryClient();
   const [customer, setCustomerState] = useState<CustomerProfile | null>(null);
-  const [features, setFeatures] = useState<CustomerFeatureFlags>(DEFAULT_FEATURES);
   const [branding, setBranding] = useState<CustomerBrandingFlags>(DEFAULT_BRANDING);
   const [isLoading, setIsLoading] = useState(true);
   // Reserved for future surface-level errors (login form errors are
@@ -176,7 +145,7 @@ export const CustomerAuthProvider: React.FC<ProviderProps> = ({ children }) => {
       // log in as customer B while this tab stays open. That tab's next
       // refreshSession() gets a plain 200 for customer B — never a 401 —
       // so without this check the else-branch cache clear below never
-      // runs and customer A's cached dashboard/quotes/contracts/invoices
+      // runs and customer A's cached dashboard/profile
       // can render labeled as customer B's session (#1594). Also fires on
       // a fresh login (previous id null); harmless since there's nothing
       // stale to leak yet.
@@ -185,22 +154,19 @@ export const CustomerAuthProvider: React.FC<ProviderProps> = ({ children }) => {
       }
       customerIdRef.current = response.customer.id;
       setCustomerState(response.customer);
-      setFeatures(response.features);
       setBranding(response.branding);
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(response.customer));
-      sessionStorage.setItem(FEATURES_KEY, JSON.stringify(response.features));
       sessionStorage.setItem(BRANDING_KEY, JSON.stringify(response.branding));
       applyCustomerLocale(response.customer.preferredLanguage);
     } else {
       // Explicit 401 — server says no (session revoked, or an
       // erasure-forced logout). The SPA stays mounted here (no hard
-      // navigation), so a cached dashboard/quotes/contracts/invoices query
+      // navigation), so a cached dashboard/profile query
       // from this customer would otherwise sit in the QueryClient and flash
       // on screen the moment the next customer logs in on the same device.
       customerIdRef.current = null;
       setCustomerState(null);
       sessionStorage.removeItem(STORAGE_KEY);
-      sessionStorage.removeItem(FEATURES_KEY);
       sessionStorage.removeItem(BRANDING_KEY);
       clearCustomerPortalQueryCache(queryClient);
     }
@@ -219,13 +185,10 @@ export const CustomerAuthProvider: React.FC<ProviderProps> = ({ children }) => {
         // flash the default language before refreshSession lands.
         applyCustomerLocale(parsed.preferredLanguage);
       }
-      const cachedFeatures = sessionStorage.getItem(FEATURES_KEY);
-      if (cachedFeatures) setFeatures(JSON.parse(cachedFeatures));
       const cachedBranding = sessionStorage.getItem(BRANDING_KEY);
       if (cachedBranding) setBranding(JSON.parse(cachedBranding));
     } catch {
       sessionStorage.removeItem(STORAGE_KEY);
-      sessionStorage.removeItem(FEATURES_KEY);
       sessionStorage.removeItem(BRANDING_KEY);
     }
 
@@ -278,13 +241,11 @@ export const CustomerAuthProvider: React.FC<ProviderProps> = ({ children }) => {
     applyCustomerLocale(c.preferredLanguage);
   };
 
-  const setSession = (s: { customer: CustomerProfile; features: CustomerFeatureFlags; branding: CustomerBrandingFlags }) => {
+  const setSession = (s: { customer: CustomerProfile; branding: CustomerBrandingFlags }) => {
     adoptCustomerId(s.customer.id);
     setCustomerState(s.customer);
-    setFeatures(s.features);
     setBranding(s.branding);
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(s.customer));
-    sessionStorage.setItem(FEATURES_KEY, JSON.stringify(s.features));
     sessionStorage.setItem(BRANDING_KEY, JSON.stringify(s.branding));
     applyCustomerLocale(s.customer.preferredLanguage);
   };
@@ -293,10 +254,8 @@ export const CustomerAuthProvider: React.FC<ProviderProps> = ({ children }) => {
     await customerService.logout();
     customerIdRef.current = null;
     setCustomerState(null);
-    setFeatures(DEFAULT_FEATURES);
     setBranding(DEFAULT_BRANDING);
     sessionStorage.removeItem(STORAGE_KEY);
-    sessionStorage.removeItem(FEATURES_KEY);
     sessionStorage.removeItem(BRANDING_KEY);
     // Defense in depth: the hard navigate below already discards this tab's
     // QueryClient, but clear explicitly in case that ever changes (#1594).
@@ -311,7 +270,6 @@ export const CustomerAuthProvider: React.FC<ProviderProps> = ({ children }) => {
       value={{
         isAuthenticated: !!customer,
         customer,
-        features,
         branding,
         isLoading,
         error,

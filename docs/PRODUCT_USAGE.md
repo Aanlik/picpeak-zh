@@ -1,28 +1,25 @@
 # Optional product usage and feedback (#1110)
 
-Current scope: **usage.v4**. v4 replaces `gallery_downloads` with
-`gallery_downloads_restricted` after explicit `usage-consent.v4` consent.
-All v1/v2/v3 schemas and queued packets remain immutable. Historical views
-keep both questions separate; neither can be inferred by inverting the other.
+Current scope: **usage.v6**. It removes retired business-workflow signals and
+keeps only the active gallery and platform capabilities. Reports include the
+two installation inventory totals only after explicit v3+ consent. See the
+[current v6 coverage](usage-coverage.v6.json) for the active allowlist.
 
-The inventory and other capabilities are unchanged from v3. The expanded catalog contains 86 capabilities
-(including ML face recognition and invoice import) and exactly two inventory
-totals: stored gallery records and non-video photo records, including drafts
-and retained archive records. No content, identifiers, per-gallery breakdowns,
-biometric results, financial values or visitor actions.
+Wire schemas v1–v5 remain immutable for installations that already consented
+to those versions and for queued reports. Historical catalogs are retained so
+the collector can continue to validate and interpret reports under the consent
+that produced them; current v6 reporting does not collect the removed
+WhatsApp, sales, finance, or photography-type capabilities. See
+[historical v5 coverage](FEATURE_COVERAGE.md) for the previous scope.
 
-Existing v1/v2/v3 participants retain their previous scope until explicit signed
-v4 consent is confirmed. The new restriction query does not run before that
-confirmation. Collector must be deployed first. v1/v2/v3 wire schemas and raw
-history remain unchanged. See [current coverage](FEATURE_COVERAGE.md) for all
-definitions and [v4 inventory](usage-coverage.v4.json) for code boundaries.
+## Historical implementation notes (v1–v5)
 
-The sections below also document the historical v1/v2 implementation. Any
-statements excluding all gallery/photo counts describe those earlier versions;
-v3 adds only the two installation totals above.
+The remaining sections preserve the rollout and consent behavior of earlier
+protocol versions. Their feature counts, routes, and examples are historical;
+use the v6 coverage file above for current reporting.
 
 Backward compatibility is required for future changes. The collector continues
-to accept v1/v2/v3/v4 reports, including omitted or null measurements, using their
+to accept v1–v6 reports, including omitted or null measurements, using their
 declared schema and original reporting day. Missing values remain unknown in
 aggregates and histories. PicPeak still emits complete reports through the
 unchanged sender schemas; only reception is more tolerant. Consent, field
@@ -210,7 +207,7 @@ Public voting uses a backend-authorized 15-minute session, never the lookup hash
 
 ## Contract
 
-The closed v1/v2/v3/v4 schemas are in `backend/src/usage/schema.cjs`, with signing in
+The closed v1–v5 schemas and active v6 schema are in `backend/src/usage/schema.cjs`, with signing in
 `protocol.cjs`. Keep these and all versioned `features.v*.json` catalogs byte-identical to the collector's `protocol/` copies.
 The collector serves its schema and complete source archive publicly. Aggregate
 projections and the complete dataset are accessible to participating
@@ -229,7 +226,7 @@ cursor. Deletion removes the source publication; operators must also remove
 any externally copied content and follow the documented backup/log policies.
 
 Used flags represent successful allowlisted admin capability calls since
-consent to the current schema (v1: joining; v2/v3/v4: joining or explicit upgrade),
+consent to the current schema (historical v1–v5: joining or explicit upgrade; v6: explicit consent),
 not visitor behavior or counts. OAuth marks successful admin SSO;
 applied CSS is observed during report generation. Gallery layouts are controlled
 enums extracted from event themes without IDs or counts. Other signals use the

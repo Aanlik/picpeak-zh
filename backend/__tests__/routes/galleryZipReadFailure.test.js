@@ -81,17 +81,17 @@ jest.mock('../../src/services/downloadZipService', () => ({
 
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 describe('gallery ZIP with a failing storage read', () => {
   let db; let cleanup; let app; const photoIds = []; const mixedPhotoIds = [];
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const ev = await db('events').insert({
-      slug: SLUG, event_type: 'wedding', event_name: 'Zip failure', event_date: '2026-08-01',
+      slug: SLUG, event_type: 'project', event_name: 'Zip failure', event_date: '2026-08-01',
       host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
       share_link: `/gallery/${SLUG}/s`, share_token: 'zip-failure-share',
       expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
@@ -112,7 +112,7 @@ describe('gallery ZIP with a failing storage read', () => {
 
     // A mixed-source gallery: a large external file ahead of a failing S3 read.
     const mixed = await db('events').insert({
-      slug: MIXED_SLUG, event_type: 'wedding', event_name: 'Zip mixed', event_date: '2026-08-01',
+      slug: MIXED_SLUG, event_type: 'project', event_name: 'Zip mixed', event_date: '2026-08-01',
       host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
       share_link: `/gallery/${MIXED_SLUG}/s`, share_token: 'zip-mixed-share',
       expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),

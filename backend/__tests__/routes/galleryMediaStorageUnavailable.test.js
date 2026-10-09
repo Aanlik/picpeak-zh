@@ -17,7 +17,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const { Readable } = require('stream');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'media-storage-unavailable-secret';
 
@@ -43,12 +43,12 @@ describe('gallery media routes while storage cannot be reached', () => {
   const get = (url) => request(app).get(`/api/gallery/${SLUG}${url}`).set('Authorization', `Bearer ${token()}`).redirects(0);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     eventId = unwrap(await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Media Storage Unavailable',
       event_date: '2026-08-01',
       host_email: 'host@example.com',

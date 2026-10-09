@@ -55,14 +55,14 @@ jest.mock('../../src/services/faceClient', () => ({
   SidecarUnavailableError: class extends Error {},
 }));
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup; let faceProcessor;
 
 async function seedPhoto(width, height) {
   const [e] = await db('events').insert({
     slug: `scale-${width}-${Math.random().toString(36).slice(2, 8)}`,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'scale',
     event_date: '2026-01-01',
     host_email: 'h@example.com',
@@ -93,7 +93,7 @@ describe('face bbox coordinate space (#1074)', () => {
       create: { width: 1920, height: 1440, channels: 3, background: { r: 20, g: 40, b: 80 } },
     }).jpeg().toBuffer();
 
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     // The faces flag gates everything; turn it on for this suite.
     await db('feature_flags').insert({ key: 'faces', value: true })
       .onConflict('key').merge()

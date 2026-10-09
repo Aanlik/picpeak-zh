@@ -44,7 +44,7 @@ const { getClientIp } = require('../utils/requestIp');
 const customerAccountsService = require('../services/customerAccountsService');
 const { customerAuth } = require('../middleware/customerAuth');
 const { IDENTITY_PRESERVING_NORMALIZE_EMAIL } = require('../utils/emailNormalization');
-const { auditedUpdate } = require('../services/accountingHistory');
+const { auditedUpdate } = require('../services/changeHistory');
 
 const router = express.Router();
 
@@ -151,14 +151,12 @@ router.post('/login', [
     // CustomerAuthProvider mount (e.g. after the user navigates to a
     // gallery and back). Mirroring the /session resolution keeps the
     // frontend on a single source of truth.
-    let features = { calendar: false, quotes: false, bills: false };
     let branding = { showLogo: true, showCompanyName: true };
     try {
-      features = await customerAccountsService.getEffectiveFeaturesForCustomer(customer);
       const globals = await customerAccountsService.getCustomerSurfaceGlobals();
       branding = { showLogo: globals.showLogo, showCompanyName: globals.showCompanyName };
     } catch (e) {
-      logger.warn('Customer login: failed to resolve features/branding, using defaults', { error: e?.message });
+      logger.warn('Customer login: failed to resolve branding, using defaults', { error: e?.message });
     }
 
     res.json({
@@ -170,7 +168,6 @@ router.post('/login', [
         lastName: customer.last_name,
         preferredLanguage: customer.preferred_language || 'en',
       },
-      features,
       branding,
     });
   } catch (error) {
@@ -208,16 +205,14 @@ router.get('/session', customerAuth, async (req, res) => {
   // the correct sidebar without an extra round-trip on every navigation.
   // Failure here is non-fatal — the customer should still be able to see
   // their galleries even if the settings table is briefly unavailable.
-  let features = { calendar: false, quotes: false, bills: false };
   let branding = { showLogo: true, showCompanyName: true };
   try {
-    features = await customerAccountsService.getEffectiveFeaturesForCustomer(req.customer.id);
     const globals = await customerAccountsService.getCustomerSurfaceGlobals();
     branding = { showLogo: globals.showLogo, showCompanyName: globals.showCompanyName };
   } catch (e) {
-    logger.warn('Customer session: failed to resolve features/branding, using defaults', { error: e?.message });
+    logger.warn('Customer session: failed to resolve branding, using defaults', { error: e?.message });
   }
-  res.json({ customer: req.customer, features, branding });
+  res.json({ customer: req.customer, branding });
 });
 
 // ---- invitation lifecycle (public) -------------------------------------
@@ -298,7 +293,6 @@ router.post('/accept-invite', [
   body('profile.display_name').optional({ nullable: true }).isString().isLength({ max: 120 }),
   body('profile.phone').optional({ nullable: true }).isString().isLength({ max: 40 }),
   body('profile.company_name').optional({ nullable: true }).isString().isLength({ max: 120 }),
-  body('profile.vat_id').optional({ nullable: true }).isString().isLength({ max: 40 }),
   body('profile.address_line1').optional({ nullable: true }).isString().isLength({ max: 255 }),
   body('profile.address_line2').optional({ nullable: true }).isString().isLength({ max: 255 }),
   body('profile.postal_code').optional({ nullable: true }).isString().isLength({ max: 20 }),

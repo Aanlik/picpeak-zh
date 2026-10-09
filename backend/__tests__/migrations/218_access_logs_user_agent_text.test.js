@@ -53,10 +53,10 @@ const pgUrl = process.env.PICPEAK_PG_TEST_URL;
     process.env.STORAGE_PATH = path.join(tmpDir, 'storage');
     jest.doMock('../../knexfile', () => ({ client: 'pg', connection: pgUrl, searchPath: [schema] }));
     ({ db } = require('../../src/database/db'));
-    ({ cleanup } = await require('../integration/helpers/crmDb').bootCrmDb());
-    await require('../integration/helpers/crmDb').seedMinimal(db);
+    ({ cleanup } = await require('../integration/helpers/sqliteTestDb').bootTestDb());
+    await require('../integration/helpers/sqliteTestDb').seedMinimal(db);
     await db('events').insert({
-      slug, event_type: 'wedding', event_name: 'In-app browser', event_date: '2026-08-01',
+      slug, event_type: 'project', event_name: 'In-app browser', event_date: '2026-08-01',
       host_email: 'host@example.com', admin_email: 'admin@example.com',
       password_hash: 'unused', require_password: false,
       share_link: `/gallery/${slug}/share`, share_token: `${slug}-share`,

@@ -39,10 +39,6 @@ vi.mock('../../../services/fonts.service', () => ({
   extractFamilyName: (s: string) => s,
 }));
 
-vi.mock('../../../services/businessProfile.service', () => ({
-  businessProfileService: { get: vi.fn(async () => ({ profile: {} })), update: vi.fn() },
-}));
-
 vi.mock('../../../hooks/usePublicSettings', () => ({
   PUBLIC_SETTINGS_QUERY_KEY: ['public-settings'],
   usePublicSettings: () => ({ data: { branding_force_color_mode: null } }),
@@ -56,9 +52,6 @@ vi.mock('../../../contexts/FeatureFlagsContext', () => ({
 // Heavy/unrelated children — stub to keep the test focused on the CSS textarea.
 vi.mock('../../../components/admin/CustomerDashboardBrandingCard', () => ({
   CustomerDashboardBrandingCard: () => null,
-}));
-vi.mock('../../../components/admin/PdfTypographyCard', () => ({
-  PdfTypographyCard: () => null,
 }));
 vi.mock('../../../components/admin', async () => {
   const actual = await vi.importActual<any>('../../../components/admin');

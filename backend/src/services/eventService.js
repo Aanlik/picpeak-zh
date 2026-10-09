@@ -16,7 +16,6 @@ const { hasColumnCached } = require('../utils/schemaCache');
 const { getBcryptRounds } = require('../utils/passwordValidation');
 
 const { parseBooleanInput, parseStringInput } = require('../utils/parsers');
-const eventTypeService = require('./eventTypeService');
 const { AppError } = require('../utils/errors');
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -106,25 +105,15 @@ const mapEventForApi = (event) => {
   };
 };
 
-/**
- * Generate a unique slug for an event
- * @param {string} eventType - Event type identifier (slug_prefix or legacy type)
- * @param {string} eventName
- * @param {string} eventDate
- * @returns {Promise<string>}
- */
-const generateUniqueSlug = async (eventType, eventName, eventDate) => {
-  // Get the slug_prefix from event type (supports both new dynamic types and legacy)
-  const eventTypeInfo = await eventTypeService.getEventTypeForSlug(eventType);
-  const slugPrefix = eventTypeInfo.slug_prefix || eventType;
-
+/** Generate a unique, category-independent gallery slug. */
+const generateUniqueSlug = async (eventName, eventDate) => {
   const processedName = eventName
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
 
-  const baseSlug = `${slugPrefix}-${processedName}-${eventDate}`;
+  const baseSlug = `${processedName}-${eventDate}`;
   let slug = baseSlug;
   let counter = 1;
 

@@ -20,7 +20,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const request = require('supertest');
 const bcrypt = require('bcrypt');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 const vault = require('../../src/utils/galleryPasswordVault');
 
 const PASSWORD = 'Meadow-Lark-77!';
@@ -33,7 +33,7 @@ describe('recoverable gallery passwords', () => {
     setting_key: vault.SETTING_KEY, setting_value: JSON.stringify(value), setting_type: 'security',
   }).onConflict('setting_key').merge({ setting_value: JSON.stringify(value) });
   const createEvent = (over = {}) => auth(request(app).post('/api/admin/events')).send({
-    event_type: 'wedding', event_name: 'Recover Wedding', event_date: '2026-09-07',
+    event_type: 'project', event_name: 'Recover Wedding', event_date: '2026-09-07',
     customer_name: 'Ada', customer_email: 'ada@example.com', admin_email: 'admin@example.com',
     require_password: true, password: PASSWORD, expiration_days: 30,
     client_access_enabled: true, client_password: PIN, ...over,
@@ -41,7 +41,7 @@ describe('recoverable gallery passwords', () => {
   const stored = (id) => db('events').where('id', id).first('password_recoverable', 'client_password_recoverable');
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId } = await seedMinimal(db));
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);

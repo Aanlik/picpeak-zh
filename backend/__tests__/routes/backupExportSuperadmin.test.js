@@ -35,7 +35,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 describe('backup export super_admin gate (GHSA-pv6w)', () => {
   let db;
@@ -63,7 +63,7 @@ describe('backup export super_admin gate (GHSA-pv6w)', () => {
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     adminToken = await mkUser('limited-admin', 'admin');
     superToken = await mkUser('root-admin', 'super_admin');

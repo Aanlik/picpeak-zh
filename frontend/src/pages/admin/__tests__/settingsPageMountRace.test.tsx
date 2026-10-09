@@ -51,22 +51,16 @@ vi.mock('../../../features/settings', () => {
     DownloadsTab: Stub,
     ApiTokensTab: Stub,
     WebhooksTab: Stub,
-    AccountingTab: Stub,
-    WhatsAppTab: Stub,
     SsoTab: Stub,
   };
 });
 
 vi.mock('../EmailConfigPage', () => ({ EmailConfigPage: () => null }));
 vi.mock('../BrandingPage', () => ({ BrandingPage: () => null }));
-vi.mock('../EventTypesPage', () => ({ EventTypesPage: () => null }));
 vi.mock('../SlideshowSettingsPage', () => ({ SlideshowSettingsPage: () => null }));
 vi.mock('../BackupManagement', () => ({ BackupManagement: () => null }));
 vi.mock('../CMSPage', () => ({ CMSPage: () => null }));
-vi.mock('../settings/SettingsBusinessProfilePage', () => ({ SettingsBusinessProfilePage: () => null }));
-vi.mock('../settings/CrmSettingsPage', () => ({ CrmSettingsPage: () => null }));
 vi.mock('../settings/ReminderTemplatesPage', () => ({ ReminderTemplatesPage: () => null }));
-vi.mock('../contracts/BlockLibraryPage', () => ({ BlockLibraryPage: () => null }));
 
 import { SettingsPage } from '../SettingsPage';
 

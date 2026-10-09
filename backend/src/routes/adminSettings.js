@@ -47,7 +47,7 @@ const getStoragePath = () => process.env.STORAGE_PATH || path.join(__dirname, '.
 
 // Reserved first-run bootstrap keys — never writable through the generic
 // settings upserts in this file: setup_wizard_completed is a one-way marker
-// (#800; writing false would reopen system-event-type deletion) and
+// (first-run bootstrap state) and
 // setup_token is the first-run bootstrap secret. Every handler that loops
 // arbitrary request keys into app_settings must strip these first.
 // oidc_client_secret is reserved too: it is AES-encrypted at rest and only
@@ -96,13 +96,11 @@ const stripReservedSettingKeys = (settings) => {
 //                                 the limiter off through /general)
 //   max_image_requests_*          PUT /admin/image-security/settings
 //                                 (image_security.manage)
-//   ledger_*                      PATCH /admin/ledger/mappings/settings
-//                                 (accounting.manage)
 //   restore_*                     PUT /admin/restore/settings (backup.restore;
 //                                 restore_allow_force and
 //                                 restore_require_pre_backup gate restore-start)
 const DEDICATED_ROUTE_KEY_PREFIXES = [
-  'backup_', 'database_backup_', 'rate_limit_', 'max_image_requests_', 'ledger_', 'restore_',
+  'backup_', 'database_backup_', 'rate_limit_', 'max_image_requests_', 'restore_',
 ];
 const isDedicatedRouteOwnedKey = (key) => DEDICATED_ROUTE_KEY_PREFIXES.some((prefix) => key.startsWith(prefix));
 // 400 (naming the keys) when a generic write carries route-owned keys, rather
@@ -122,11 +120,10 @@ const rejectDedicatedRouteOwnedKeys = (settings, res) => {
 // writers. /general, /analytics, /seo and /security all upsert arbitrary
 // setting_keys, so without this a role holding only the broad `settings.edit`
 // (or `settings.security`) could set keys owned by a NARROWER permission —
-// repointing the public site URL, security policy, or VAT/accounting config —
+// repointing the public site URL or security policy —
 // via the wrong endpoint, defeating the settings.edit split. Any protected key
 // the caller isn't permitted to write is stripped before the upsert. The
 // dedicated routes still work because their caller holds the matching perm
-// (e.g. PUT /accounting is gated by settings.banking, so accounting_* survives).
 // analytics_umami_enabled belongs here too: publicSettings gates umami_url and
 // umami_website_id on it and App.tsx ORs it into the provider check, so it is
 // the on/off switch for the whole Umami path, not a selector. The Analytics
@@ -159,7 +156,6 @@ const effectiveMissingSetting = async (key) => {
 const PROTECTED_SETTING_KEY_PERMS = [
   { match: (k) => k === 'general_site_url', perm: 'settings.domains' },
   { match: (k) => k.startsWith('security_'), perm: 'settings.security' },
-  { match: (k) => k.startsWith('accounting_'), perm: 'settings.banking' },
   // The tracker provider/URL and the custom head HTML decide which JavaScript
   // the app serves from its own origin (the tracker proxy re-serves the
   // configured script same-origin) and runs in every visitor's session,
@@ -439,8 +435,7 @@ router.get('/customer-surface', adminAuth, requirePermission('settings.view'), a
 
 router.put('/customer-surface', adminAuth, requirePermission('settings.edit'), async (req, res) => {
   try {
-    // Branding-only whitelist (calendar/quotes/bills feature globals
-    // moved to the Features tab / feature_flags table).
+    // Branding-only whitelist; legacy workflow settings are no longer exposed.
     const allowed = [
       'customer_show_logo',
       'customer_show_company_name',
@@ -464,92 +459,6 @@ router.put('/customer-surface', adminAuth, requirePermission('settings.edit'), a
     res.json({ message: 'Customer surface settings updated', updated: updates.map((u) => u.setting_key) });
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to save customer surface settings');
-  }
-});
-
-// Accounting settings (km rate, per-diem rate, require-proof). Read via the
-// generic GET /:type ('accounting'); this is the typed write. Rates are
-// integer minor units; verify legal/tax guidance with a Treuhaender.
-// Migration 174: VAT/accounting config is money-adjacent → settings.banking.
-router.put('/accounting', adminAuth, requirePermission('settings.banking'), async (req, res) => {
-  try {
-    const updates = [];
-    const setInt = (key) => {
-      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
-        const n = Math.max(0, Math.round(Number(req.body[key]) || 0));
-        updates.push({ setting_key: key, setting_value: JSON.stringify(n), setting_type: 'accounting' });
-      }
-    };
-    setInt('accounting_km_rate_minor');
-    setInt('accounting_per_diem_rate_minor');
-    if (Object.prototype.hasOwnProperty.call(req.body, 'accounting_require_proof')) {
-      updates.push({
-        setting_key: 'accounting_require_proof',
-        setting_value: JSON.stringify(!!req.body.accounting_require_proof),
-        setting_type: 'accounting',
-      });
-    }
-    // Global default for "attach the supplier proof PDF to the client-invoice
-    // email when a re-bill/passthrough is issued" (issue #866). Off by default;
-    // a per-customer override (customer_accounts.rebill_attach_proof) and the
-    // per-file selection in the Send dialog both build on top of this default.
-    if (Object.prototype.hasOwnProperty.call(req.body, 'accounting_rebill_attach_proof')) {
-      updates.push({
-        setting_key: 'accounting_rebill_attach_proof',
-        setting_value: JSON.stringify(!!req.body.accounting_rebill_attach_proof),
-        setting_type: 'accounting',
-      });
-    }
-    // Filename template for the attached supplier proof (like the invoice/quote
-    // number formats). Tokens: {INVOICE} {SUPPLIER} {YEAR} {MONTH} {SEQ}/{SEQ:0Nd}.
-    // Empty falls back to the default at render time.
-    if (Object.prototype.hasOwnProperty.call(req.body, 'crm_rebill_proof_filename_format')) {
-      const fmt = String(req.body.crm_rebill_proof_filename_format || '').trim().slice(0, 120);
-      updates.push({
-        setting_key: 'crm_rebill_proof_filename_format',
-        setting_value: JSON.stringify(fmt),
-        setting_type: 'accounting',
-      });
-    }
-    // VAT registration + reclaim. `registered` drives whether output VAT applies
-    // + whether input VAT is deductible; `reclaim_countries` = the ISO-2 list of
-    // countries whose input VAT can be reclaimed (drives cost tax-treatment +
-    // the report's VAT-payable).
-    if (Object.prototype.hasOwnProperty.call(req.body, 'accounting_vat_registered')) {
-      updates.push({
-        setting_key: 'accounting_vat_registered',
-        setting_value: JSON.stringify(!!req.body.accounting_vat_registered),
-        setting_type: 'accounting',
-      });
-    }
-    // Default OUTPUT VAT code stamped onto NEW invoices/quotes (the editor
-    // seeds its VAT picker from it). Stored as the code string; '' clears it.
-    if (Object.prototype.hasOwnProperty.call(req.body, 'accounting_default_output_vat_code')) {
-      const code = String(req.body.accounting_default_output_vat_code || '').trim().slice(0, 16);
-      updates.push({
-        setting_key: 'accounting_default_output_vat_code',
-        setting_value: JSON.stringify(code),
-        setting_type: 'accounting',
-      });
-    }
-    if (Object.prototype.hasOwnProperty.call(req.body, 'accounting_vat_reclaim_countries')) {
-      const arr = Array.isArray(req.body.accounting_vat_reclaim_countries)
-        ? req.body.accounting_vat_reclaim_countries
-          .map((c) => String(c || '').toUpperCase().trim())
-          .filter((c) => /^[A-Z]{2}$/.test(c))
-        : [];
-      updates.push({
-        setting_key: 'accounting_vat_reclaim_countries',
-        setting_value: JSON.stringify(arr),
-        setting_type: 'accounting',
-      });
-    }
-    for (const u of updates) {
-      await upsertAppSetting(u.setting_key, u.setting_value, u.setting_type);
-    }
-    res.json({ message: 'Accounting settings updated', updated: updates.map((u) => u.setting_key) });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to save accounting settings');
   }
 });
 
@@ -1127,7 +1036,6 @@ router.put('/branding', adminAuth, requirePermission('settings.edit'), async (re
       // marked → DOMPurify on the frontend, no raw HTML accepted).
       facebook_url,
       instagram_url,
-      whatsapp_url,
       twitter_url,
       youtube_url,
       promo_markdown,
@@ -1198,7 +1106,6 @@ router.put('/branding', adminAuth, requirePermission('settings.edit'), async (re
       // when the request actually included the key (partial PUTs).
       ...(facebook_url !== undefined  && { facebook_url:  String(facebook_url  || '').trim() }),
       ...(instagram_url !== undefined && { instagram_url: String(instagram_url || '').trim() }),
-      ...(whatsapp_url !== undefined  && { whatsapp_url:  String(whatsapp_url  || '').trim() }),
       ...(twitter_url !== undefined   && { twitter_url:   String(twitter_url   || '').trim() }),
       ...(youtube_url !== undefined   && { youtube_url:   String(youtube_url   || '').trim() }),
       ...(promo_markdown !== undefined && { promo_markdown: typeof promo_markdown === 'string' ? promo_markdown : '' }),
@@ -1580,7 +1487,7 @@ router.put('/general', adminAuth, requirePermission('settings.edit'), async (req
     if (rejectDedicatedRouteOwnedKeys(settings, res)) return;
     let uploadLimitTouched = false;
 
-    // Migration 174: drop any protected key (site URL / security / accounting)
+    // Migration 174: drop protected site and security keys.
     // the caller isn't permitted to write, so the settings.edit bucket can't be
     // used to repoint the install via this generic writer. See
     // rejectUnauthorizedProtectedKeys (403s when a protected key is denied).
@@ -1775,7 +1682,7 @@ router.put('/security', adminAuth, requirePermission('settings.security'), async
   try {
     const settings = stripReservedSettingKeys({ ...req.body });
     if (rejectDedicatedRouteOwnedKeys(settings, res)) return;
-    // A settings.security holder still can't write domain/accounting keys here.
+    // A settings.security holder still can't write domain keys here.
     if (await rejectUnauthorizedProtectedKeys(settings, req, res)) return;
 
     // The reCAPTCHA secret goes out masked on GET, and the Security tab sends

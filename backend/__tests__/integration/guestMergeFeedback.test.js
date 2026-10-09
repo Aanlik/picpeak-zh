@@ -2,7 +2,7 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('./helpers/sqliteTestDb');
 
 jest.mock('../../src/utils/logger', () => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
 
@@ -37,12 +37,12 @@ describe('guest merge feedback ownership (#1265)', () => {
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId } = await seedMinimal(db));
     await assignAdminRole(db, adminId);
     service = require('../../src/services/feedbackService');
     const [event] = await db('events').insert({
-      slug, event_type: 'wedding', event_name: 'Guest merge feedback',
+      slug, event_type: 'project', event_name: 'Guest merge feedback',
       event_date: '2026-09-15', host_email: 'host@example.com', admin_email: 'admin@example.com',
       password_hash: 'x', share_link: `/gallery/${slug}/share`,
       expires_at: new Date(Date.now() + 86400000).toISOString(),
@@ -235,7 +235,7 @@ describe('guest merge feedback ownership (#1265)', () => {
       let otherEvent = await db('events').where({ slug: `${slug}-other` }).first();
       if (!otherEvent) {
         const [row] = await db('events').insert({
-          slug: `${slug}-other`, event_type: 'wedding', event_name: 'Other event',
+          slug: `${slug}-other`, event_type: 'project', event_name: 'Other event',
           event_date: '2026-09-15', host_email: 'host@example.com', admin_email: 'admin@example.com',
           password_hash: 'x', share_link: `/gallery/${slug}-other/share`,
           expires_at: new Date(Date.now() + 86400000).toISOString(),

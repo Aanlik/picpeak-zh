@@ -19,14 +19,14 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'notif-tz-test-secret';
 
 const request = require('supertest');
 const {
-  bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
-} = require('../integration/helpers/crmDb');
+  bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
+} = require('../integration/helpers/sqliteTestDb');
 
 describe('admin notifications — timestamps carry their zone', () => {
   let db; let cleanup; let app; let token;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);

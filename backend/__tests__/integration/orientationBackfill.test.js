@@ -58,8 +58,8 @@ describe('orientation backfill (#1198)', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    ({ db } = await require('./helpers/crmDb').bootCrmDb());
-    // bootCrmDb owns STORAGE_PATH; fixtures must live where the app resolves.
+    ({ db } = await require('./helpers/sqliteTestDb').bootTestDb());
+    // bootTestDb owns STORAGE_PATH; fixtures must live where the app resolves.
     storageRoot = process.env.STORAGE_PATH;
     await fs.promises.mkdir(path.join(storageRoot, 'events/active/orientbf'), { recursive: true });
 
@@ -82,7 +82,7 @@ describe('orientation backfill (#1198)', () => {
     await db('photos').del();
     await db('events').del();
     const [e] = await db('events').insert({
-      slug: 'orientbf', event_type: 'wedding', event_name: 'orientbf', event_date: '2026-01-01',
+      slug: 'orientbf', event_type: 'project', event_name: 'orientbf', event_date: '2026-01-01',
       host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
       share_link: `orientbf-${Math.random()}`, expires_at: new Date().toISOString(),
       is_archived: archived,

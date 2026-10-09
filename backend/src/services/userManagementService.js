@@ -6,7 +6,7 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { db, logActivity } = require('../database/db');
-const { deleteWithAccountingHistory } = require('./accountingHistory');
+const { deleteWithHistory } = require('./changeHistory');
 const { formatBoolean } = require('../utils/dbCompat');
 const { hasColumnCached } = require('../utils/schemaCache');
 const { generateSecurePassword } = require('../utils/passwordGenerator');
@@ -511,19 +511,16 @@ async function deleteAdminUser(id, deletedById) {
     }
   }
 
-  // Hard delete. FK ON DELETE rules in core migrations handle cascade:
-  //   SET NULL on created_by_admin_id everywhere (events, photos,
-  //     quotes, invoices, contracts, etc.)
-  //   CASCADE on api_tokens.user_id, admin_invitations.invited_by,
-  //     customer_invitations.invited_by (drops pending tokens + invites
-  //     this user issued)
+  // Hard delete. Core FK rules clear creator references and remove tokens
+  // and invitations issued by this user. Legacy child references are also
+  // cleared by deleteWithHistory for upgraded databases.
   // The bell dismissals this admin recorded (migration 239): CASCADE on
   // PostgreSQL, explicit for SQLite, which runs without PRAGMA foreign_keys —
   // in the same transaction as the account, so a refused delete (a NO ACTION
   // FK still pointing at the user) leaves their bell state intact.
   await db.transaction(async (trx) => {
     await trx('notification_dismissals').where('admin_id', id).del();
-    await deleteWithAccountingHistory(trx, 'admin_users', { id },
+    await deleteWithHistory(trx, 'admin_users', { id },
       { actor: deletedById, source: 'admin_user.delete' });
   });
 

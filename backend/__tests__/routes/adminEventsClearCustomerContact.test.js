@@ -15,7 +15,7 @@ process.env.NODE_ENV = 'test';
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 let db, cleanup, app, adminId, token;
 
@@ -31,7 +31,7 @@ const setRequirement = (key, value) => db('app_settings')
 async function insertEvent(over = {}) {
   const inserted = await db('events').insert({
     slug: `clear-contact-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    event_type: 'wedding', event_name: 'Clear Contact', event_date: '2026-09-01',
+    event_type: 'project', event_name: 'Clear Contact', event_date: '2026-09-01',
     customer_name: 'Anna', customer_email: 'anna@example.com', host_name: 'Anna', host_email: 'anna@example.com',
     admin_email: 'admin@example.com', password_hash: 'x',
     share_link: '/gallery/clear-contact/tok', share_token: 'tok-clear-contact',
@@ -44,7 +44,7 @@ async function insertEvent(over = {}) {
 }
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId } = await seedMinimal(db));
   await assignAdminRole(db, adminId, 'super_admin');
   token = mintAdminToken(adminId);

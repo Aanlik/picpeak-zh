@@ -26,6 +26,7 @@ jobs:
         working-directory: frontend
       - run: node scripts/check-locale-usage.mjs
       - run: node --test scripts/check-zh-cn.test.mjs
+      - run: node --test scripts/upstream-filter.test.mjs
       - run: npm run build:check
         working-directory: frontend
         env:

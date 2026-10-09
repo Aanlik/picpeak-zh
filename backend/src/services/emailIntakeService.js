@@ -1,31 +1,19 @@
 /**
- * Incoming-mail intake (migration 128). Polls the configured IMAP mailbox
- * every minute, parses each unseen message, and drops PDF/image attachments
- * into the incoming-invoices inbox (inbound_documents, source='email').
+ * Customer-mail intake (migration 128). Polls configured customer IMAP
+ * mailboxes every minute and stores sanitized messages for the admin inbox.
  *
  * Gated by the `incomingMail` feature flag. Idempotent: each message is logged
- * in received_emails keyed by message-id (skip if seen); duplicate attachments
- * are caught downstream by the inbound_documents SHA-256 dedup. Handles
- * forwarded messages because mailparser flattens nested attachments.
+ * in received_emails keyed by message-id (skip if seen). Handles forwarded
+ * messages because mailparser flattens nested attachments.
  */
-const fsp = require('fs').promises;
-const path = require('path');
 const { ImapFlow } = require('imapflow');
 const { simpleParser } = require('mailparser');
 const { db } = require('../database/db');
 const logger = require('../utils/logger');
-const { getStoragePath } = require('../config/storage');
-const expenseService = require('./expenseService');
 const sanitizeHtml = require('sanitize-html');
 const { isUniqueViolation } = require('../utils/dbErrors');
-const { isMaskedOrBlank, sameImapTarget, PasswordRequiredError } = require('../utils/mailCredentialTarget');
 
-const ALLOWED_MIME = ['application/pdf', 'image/jpeg', 'image/png'];
-
-// Resource caps for inbound mail (GHSA-2qf9). Anyone who can email the
-// operator's mailbox reaches this code path unauthenticated, and nothing here
-// used to bound message size, attachment count or attachment bytes. Defaults
-// are generous for real supplier invoices; all three are env-overridable.
+// Bound inbound message and attachment counts before displaying messages.
 const numFromEnv = (name, fallback) => {
   const n = Number(process.env[name]);
   return Number.isFinite(n) && n > 0 ? n : fallback;
@@ -44,7 +32,6 @@ const boundedMessageId = (raw, fallback) => {
   return `sha256:${require('crypto').createHash('sha256').update(value).digest('hex')}`;
 };
 const MAX_ATTACHMENTS = numFromEnv('EMAIL_INTAKE_MAX_ATTACHMENTS', 25);
-const MAX_ATTACHMENT_BYTES = numFromEnv('EMAIL_INTAKE_MAX_ATTACHMENT_BYTES', 25 * 1024 * 1024);
 
 let polling = false;
 
@@ -82,43 +69,6 @@ async function isEnabled() {
   return !!(flag && (flag.value === true || flag.value === 1 || flag.value === '1'));
 }
 
-async function getImapConfig() {
-  const c = await db('email_configs').first();
-  if (!c || !c.imap_host || !c.imap_user) return null;
-  return {
-    host: c.imap_host,
-    port: c.imap_port || 993,
-    secure: c.imap_secure !== false && c.imap_secure !== 0,
-    auth: { user: c.imap_user, pass: c.imap_pass || '' },
-    folder: c.imap_folder || 'INBOX',
-  };
-}
-
-/**
- * The password for a caller-supplied connection. A masked or blank password
- * falls back to the stored one only when the connection targets the saved
- * server; anything else would send the stored password to a server the
- * caller chose.
- */
-async function resolveOverridePassword(override) {
-  if (!isMaskedOrBlank(override.pass)) return override.pass;
-  const saved = await db('email_configs').first();
-  const target = { imap_host: override.host, imap_port: override.port, imap_user: override.user, imap_secure: override.secure };
-  if (saved && saved.imap_pass && sameImapTarget(saved, target)) return saved.imap_pass;
-  throw new PasswordRequiredError('Enter the IMAP password: the saved password is only used for the server it was saved for.');
-}
-
-async function saveAttachment(att) {
-  const year = new Date().getFullYear();
-  const dir = path.join(getStoragePath(), 'business-docs', 'inbound', String(year));
-  await fsp.mkdir(dir, { recursive: true });
-  const ext = path.extname(att.filename || '')
-    || (att.contentType === 'application/pdf' ? '.pdf' : att.contentType === 'image/png' ? '.png' : '.jpg');
-  const filePath = path.join(dir, `email-${Date.now()}-${Math.floor(Math.random() * 1e6)}${ext}`);
-  await fsp.writeFile(filePath, att.content);
-  return filePath;
-}
-
 /**
  * List the mailbox folders on the IMAP server so the UI can offer a
  * dropdown instead of a free-text path. Uses the saved config; an
@@ -128,18 +78,13 @@ async function saveAttachment(att) {
  * '\\Inbox' lets the caller auto-select the inbox).
  */
 async function listFolders(override) {
-  let cfg;
-  if (override && override.host && override.user) {
-    cfg = {
-      host: override.host,
-      port: override.port || 993,
-      secure: override.secure !== false && override.secure !== 0,
-      auth: { user: override.user, pass: await resolveOverridePassword(override) },
-    };
-  } else {
-    cfg = await getImapConfig();
-  }
-  if (!cfg) return [];
+  if (!override?.host || !override?.user || !override?.pass) return [];
+  const cfg = {
+    host: override.host,
+    port: override.port || 993,
+    secure: override.secure !== false && override.secure !== 0,
+    auth: { user: override.user, pass: override.pass },
+  };
   const client = makeImapClient(cfg);
   await connectWithTimeout(client);
   try {
@@ -159,106 +104,19 @@ async function listFolders(override) {
  * stored one only for the saved server.
  */
 async function testConnection(override) {
-  let cfg; let folder;
-  if (override && override.host && override.user) {
-    cfg = {
-      host: override.host,
-      port: override.port || 993,
-      secure: override.secure !== false && override.secure !== 0,
-      auth: { user: override.user, pass: await resolveOverridePassword(override) },
-    };
-    folder = override.folder || 'INBOX';
-  } else {
-    const c = await getImapConfig();
-    if (!c) return { ok: false, error: 'unconfigured' };
-    cfg = { host: c.host, port: c.port, secure: c.secure, auth: c.auth };
-    folder = c.folder;
-  }
+  if (!override?.host || !override?.user || !override?.pass) return { ok: false, error: 'unconfigured' };
+  const cfg = {
+    host: override.host,
+    port: override.port || 993,
+    secure: override.secure !== false && override.secure !== 0,
+    auth: { user: override.user, pass: override.pass },
+  };
+  const folder = override.folder || 'INBOX';
   const client = makeImapClient(cfg);
   await connectWithTimeout(client);
   try {
     const status = await client.status(folder, { messages: true, unseen: true });
     return { ok: true, folder, messages: status.messages || 0, unseen: status.unseen || 0 };
-  } finally {
-    await client.logout().catch(() => {});
-  }
-}
-
-/**
- * End-to-end round-trip test: send a uniquely-tagged email through the saved
- * SMTP (outgoing) config TO the IMAP mailbox, then poll IMAP until it arrives.
- * Proves the whole pipeline (outgoing delivery → incoming reception) in one
- * click. Uses SAVED config for both sides (real passwords needed to send +
- * read). Cleans up: the test message is deleted once found, so it never
- * reaches the accounting inbox.
- *
- * Returns { ok, seconds, recipient } on success, or { ok:false, sent, reason }.
- */
-async function roundTripTest({ timeoutMs = 30000, intervalMs = 3000 } = {}) {
-  const nodemailer = require('nodemailer');
-  const crypto = require('crypto');
-  const c = await db('email_configs').first();
-  if (!c || !c.smtp_host || !c.smtp_port) return { ok: false, sent: false, reason: 'smtp_unconfigured' };
-  if (!c.imap_host || !c.imap_user) return { ok: false, sent: false, reason: 'imap_unconfigured' };
-
-  // Recipient = the mailbox we poll. imap_user is the mailbox address in the
-  // typical setup (e.g. rechnungen@…). NOT hardcoded — but some hosts use a
-  // non-email IMAP login, in which case we can't auto-address the test.
-  const recipient = c.imap_user;
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient || '')) {
-    return { ok: false, sent: false, reason: 'recipient_not_email', recipient };
-  }
-  const token = `ppk-rt-${Date.now()}-${crypto.randomBytes(5).toString('hex')}`;
-  const subject = `picpeak round-trip test ${token}`;
-
-  // 1) Send via the saved SMTP config (mirror the /test route's transport).
-  const transporter = nodemailer.createTransport({
-    host: c.smtp_host,
-    port: parseInt(c.smtp_port, 10),
-    secure: c.smtp_secure === true || c.smtp_secure === 1,
-    auth: c.smtp_user && c.smtp_pass ? { user: c.smtp_user, pass: c.smtp_pass } : undefined,
-    tls: { rejectUnauthorized: c.tls_reject_unauthorized !== false },
-  });
-  try {
-    await transporter.sendMail({
-      from: `${c.from_name || 'picpeak'} <${c.from_email || c.smtp_user}>`,
-      to: recipient,
-      subject,
-      text: `This is an automated picpeak round-trip test. Token: ${token}. Safe to ignore — it is deleted automatically.`,
-    });
-  } catch (err) {
-    return { ok: false, sent: false, reason: 'send_failed', error: err.message };
-  }
-
-  // 2) Poll IMAP for the tagged message until timeout.
-  const cfg = await getImapConfig();
-  const folder = cfg?.folder || 'INBOX';
-  const client = makeImapClient(cfg);
-  await connectWithTimeout(client);
-  const started = Date.now();
-  // Backoff (PR #622 nit 4): some IMAP servers throttle frequent SELECT/SEARCH.
-  // Grow the gap ×1.5 (cap 8s) so a 30s test does ~5 polls, not ~10.
-  let delay = intervalMs;
-  try {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const lock = await client.getMailboxLock(folder);
-      try {
-        const uids = await client.search({ subject: token }, { uid: true });
-        if (uids && uids.length) {
-          await client.messageDelete(uids, { uid: true }).catch(() => {});
-          return { ok: true, seconds: Math.round((Date.now() - started) / 1000), recipient };
-        }
-      } finally {
-        lock.release();
-      }
-      if (Date.now() - started > timeoutMs) {
-        return { ok: false, sent: true, reason: 'not_received', recipient };
-      }
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise((r) => setTimeout(r, delay));
-      delay = Math.min(Math.round(delay * 1.5), 8000);
-    }
   } finally {
     await client.logout().catch(() => {});
   }
@@ -286,14 +144,10 @@ function sanitizeBody(html) {
 }
 
 /**
- * Poll ONE mailbox once and return the count of newly-processed messages.
- * `opts.accountKey` tags each received_emails row; `opts.routeToExpenses`
- * controls whether PDF/image attachments are dropped into the accounting inbox
- * (true for the primary rechnungen@ mailbox) or only logged with the body
- * (customer mail, e.g. hello@). The claim/dedup/stale-recovery logic is
- * identical for every mailbox.
+ * Poll one customer mailbox and save its sanitized message body. Attachments
+ * are counted for display; this service does not import documents or files.
  */
-async function pollAccountOnce(cfg, { accountKey = 'accounting', routeToExpenses = true } = {}) {
+async function pollAccountOnce(cfg, { accountKey = 'customers' } = {}) {
   const client = makeImapClient(cfg);
   let processed = 0;
   try {
@@ -401,53 +255,11 @@ async function pollAccountOnce(cfg, { accountKey = 'accounting', routeToExpenses
             throw ce;
           }
 
-          // Attachment handling. The accounting mailbox drops PDF/image
-          // attachments into the incoming-invoices inbox (isolated so one bad
-          // file can't prevent the audit row). Customer mailboxes only COUNT
-          // attachments — they aren't supplier invoices.
-          let inboundId = null;
-          let count = 0;
-          const attErrors = [];
-          if (routeToExpenses) {
-            const allowed = (parsed.attachments || []).filter((a) => ALLOWED_MIME.includes(a.contentType));
-            // Cap attachment count AND cumulative bytes (GHSA-2qf9) — a single
-            // in-limit message can still carry hundreds of attachments, each
-            // written to disk by saveAttachment().
-            const atts = [];
-            let attBytes = 0;
-            for (const att of allowed) {
-              if (atts.length >= MAX_ATTACHMENTS) {
-                attErrors.push(`Attachment limit reached (${MAX_ATTACHMENTS}); remaining attachments skipped`);
-                break;
-              }
-              const size = att.content ? att.content.length : 0;
-              if (attBytes + size > MAX_ATTACHMENT_BYTES) {
-                attErrors.push(`Cumulative attachment size limit reached (${MAX_ATTACHMENT_BYTES} bytes); remaining attachments skipped`);
-                break;
-              }
-              attBytes += size;
-              atts.push(att);
-            }
-            for (const att of atts) {
-              try {
-                const filePath = await saveAttachment(att);
-                const doc = await expenseService.recordInboundDocument({ source: 'email', filePath, originalFilename: att.filename || 'attachment', mimeType: att.contentType }, null);
-                inboundId = doc.id; count += 1;
-              } catch (ae) {
-                attErrors.push(ae.message);
-                logger.error?.(`emailIntake: attachment "${att.filename}" failed: ${ae.message}`);
-              }
-            }
-          } else {
-            count = (parsed.attachments || []).length;
-          }
+          const count = Math.min((parsed.attachments || []).length, MAX_ATTACHMENTS);
 
           // A malformed Date: header yields an Invalid Date, which throws on a
           // Postgres timestamp insert — coerce to now.
           const receivedAt = (parsed.date instanceof Date && !Number.isNaN(parsed.date.getTime())) ? parsed.date : new Date();
-          const status = routeToExpenses
-            ? (count > 0 ? 'ingested' : (attErrors.length ? 'error' : 'no_attachment'))
-            : 'received';
           // Finalise the claimed row — every processed message ends up in the
           // Received log with its (sanitized) body, even attachment-less ones.
           await db('received_emails').where({ message_id: claimKey }).update({
@@ -456,11 +268,10 @@ async function pollAccountOnce(cfg, { accountKey = 'accounting', routeToExpenses
             subject: parsed.subject || null,
             received_at: receivedAt,
             attachment_count: count,
-            status,
-            inbound_document_id: inboundId,
+            status: 'received',
             body_html: sanitizeBody(parsed.html || null),
             body_text: parsed.text || null,
-            error: attErrors.length ? attErrors.join('; ').slice(0, 2000) : null,
+            error: null,
           });
           await client.messageFlagsAdd(cand.uid, ['\\Seen'], { uid: true });
           processed += 1;
@@ -494,8 +305,8 @@ async function pollAccountOnce(cfg, { accountKey = 'accounting', routeToExpenses
 }
 
 /**
- * Poll ALL configured inbound mailboxes once: the primary accounting IMAP
- * (email_configs) plus every enabled row in mail_accounts (e.g. hello@).
+ * Poll configured customer mailboxes only; legacy primary mailbox settings are
+ * ignored.
  * Safe to call repeatedly; self-skips when busy/off.
  */
 async function pollOnce() {
@@ -505,14 +316,6 @@ async function pollOnce() {
   let processed = 0;
   let anyConfigured = false;
   try {
-    // 1) Primary accounting mailbox — routes attachments to the invoices inbox.
-    const acctCfg = await getImapConfig();
-    if (acctCfg) {
-      anyConfigured = true;
-      processed += await pollAccountOnce(acctCfg, { accountKey: 'accounting', routeToExpenses: true });
-    }
-    // 2) Additional mailboxes (customers/hello@) — body captured, no expense
-    //    routing. Guarded so a pre-migration DB simply polls the accounting box.
     let extras = [];
     try {
       if (await db.schema.hasTable('mail_accounts')) {
@@ -520,6 +323,7 @@ async function pollOnce() {
       }
     } catch (_) { extras = []; }
     for (const a of extras) {
+      if (a.account_key !== 'customers') continue;
       if (!a.imap_host || !a.imap_user) continue;
       anyConfigured = true;
       const cfg = {
@@ -530,7 +334,7 @@ async function pollOnce() {
         folder: a.imap_folder || 'INBOX',
       };
       // eslint-disable-next-line no-await-in-loop
-      processed += await pollAccountOnce(cfg, { accountKey: a.account_key, routeToExpenses: false });
+      processed += await pollAccountOnce(cfg, { accountKey: 'customers' });
     }
   } finally {
     polling = false;
@@ -544,4 +348,4 @@ const mailPoller = require('./scheduledTask').scheduledTask(pollOnce, { interval
 function startIncomingMailPoller() { if (!require('../utils/communicationProfile').NO_EMAIL_MODE) mailPoller.start(); }
 const stopIncomingMailPoller = () => mailPoller.stop();
 
-module.exports = { stopIncomingMailPoller, pollOnce, startIncomingMailPoller, listFolders, testConnection, roundTripTest, _internal: { getImapConfig, isEnabled, saveAttachment } };
+module.exports = { stopIncomingMailPoller, pollOnce, startIncomingMailPoller, listFolders, testConnection, _internal: { isEnabled } };

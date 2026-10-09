@@ -15,7 +15,7 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'slideshow-media-scope-secret';
 
@@ -36,7 +36,7 @@ describe('slideshow session media scope', () => {
   const get = (url, token) => request(app).get(`/api/gallery/${SLUG}${url}`).set('Authorization', `Bearer ${token}`).redirects(0);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     const { invalidateFeatureFlagCache } = require('../../src/middleware/requireFeatureFlag');
     await db('feature_flags').where({ key: 'slideshow' }).del();
@@ -45,7 +45,7 @@ describe('slideshow session media scope', () => {
 
     eventId = unwrap(await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Slideshow Media Scope',
       event_date: '2026-08-01',
       host_email: 'host@example.com',

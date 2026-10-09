@@ -76,7 +76,7 @@ export const BulkDeleteModal: React.FC<BulkDeleteModalProps> = ({
                 <ul className="p-3 space-y-1">
                   {selectedEvents.map((event) => (
                     <li key={event.id} className="text-sm text-neutral-700 dark:text-neutral-300">
-                      • {event.event_name} ({event.event_type})
+                      • {event.event_name}
                     </li>
                   ))}
                 </ul>

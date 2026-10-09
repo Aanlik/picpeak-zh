@@ -14,7 +14,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'paneredact-test-secret';
 process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-paneredact-storage-'));
 
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
 const { invalidateFeatureFlagCache } = require('../../src/middleware/requireFeatureFlag');
 const { MASK } = require('../../src/utils/emailSecretRedaction');
 
@@ -23,7 +23,7 @@ describe('GET /admin/email/queue/:id redacts secrets from legacy rows', () => {
   const PASSWORD = 'Sunset-42!'; const PIN = 'Tom & Ada\'s 7788';
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);

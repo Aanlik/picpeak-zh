@@ -33,7 +33,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const SLUG = 'upload-size-test-event';
 
@@ -69,12 +69,12 @@ describe('admin upload per-file size limit (general_max_file_size_mb)', () => {
     .send({ filename, fileSize, mimeType: 'video/mp4', totalChunks: 1 });
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const inserted = await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Upload Size Test',
       event_date: '2026-09-01',
       host_email: 'host@example.com',

@@ -31,7 +31,7 @@ const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const SLUG = 'dng-upload-test-event';
 
@@ -56,12 +56,12 @@ describe('iPhone DNG through the upload routes', () => {
   );
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const inserted = await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'DNG Upload Test',
       event_date: '2026-09-01',
       host_email: 'host@example.com',

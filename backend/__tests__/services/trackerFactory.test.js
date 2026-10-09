@@ -20,13 +20,13 @@ process.env.TEST_DATABASE_PATH = path.join(
   fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-tracker-fact-')), 'db.sqlite',
 );
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 const trackers = require('../../src/services/trackers');
 
 let db; let cleanup;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
 }, 120000);
 
 afterAll(async () => { if (cleanup) await cleanup(); });

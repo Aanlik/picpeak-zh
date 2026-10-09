@@ -24,7 +24,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 describe('SSO settings: role targets and client secret', () => {
   let db;
@@ -73,7 +73,7 @@ describe('SSO settings: role targets and client secret', () => {
     .send({ oidc_enabled: false, ...body });
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await createRole('sso-manager', ['settings.security', 'settings.view']);
     await createRole('sso-landing', ['settings.view']);
     superToken = await tokenFor('root-admin', 'super_admin');

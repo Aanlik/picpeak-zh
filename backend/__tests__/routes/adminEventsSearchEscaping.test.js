@@ -24,14 +24,14 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'admin-events-search-secret';
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 const { escapeLikePattern, likeWithEscape } = require('../../src/utils/sqlSecurity');
 
 async function insertEvent(db, adminId, eventName) {
   const rand = Math.random().toString(16).slice(2);
   await db('events').insert({
     slug: `ev-${rand}`,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: eventName,
     event_date: '2026-05-29',
     host_email: 'host@example.com',
@@ -71,7 +71,7 @@ describe('GET /api/admin/events search — LIKE metacharacters and quotes', () =
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);

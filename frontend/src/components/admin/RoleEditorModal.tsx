@@ -36,12 +36,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   users: 'Users & Roles',
   activity: 'Activity Logs',
   customers: 'Customers',
-  quotes: 'Quotes',
-  billing: 'Invoices',
-  contracts: 'Contracts',
-  accounting: 'Accounting',
   workflows: 'Workflows',
-  whatsapp: 'WhatsApp',
   system: 'System',
 };
 

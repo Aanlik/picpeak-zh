@@ -17,7 +17,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'roleguard-test-secret';
 process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-roleguard-storage-'));
 
-const { bootCrmDb, seedMinimal, assignAdminRole } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole } = require('../integration/helpers/sqliteTestDb');
 const svc = require('../../src/services/userManagementService');
 const { clearPermissionCache } = require('../../src/middleware/permissions');
 
@@ -26,7 +26,7 @@ describe('role editor — self-amplification guard', () => {
   let superId; let mgrRoleId; let mgrId;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId: superId } = await seedMinimal(db));
     await assignAdminRole(db, superId, 'super_admin');
 

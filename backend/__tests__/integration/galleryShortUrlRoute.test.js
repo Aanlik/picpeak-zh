@@ -15,14 +15,14 @@
 const express = require('express');
 const request = require('supertest');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
 let db; let cleanup; let service; let app;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
 
   // Persist a business_profile + business_name so buildOgMetadata's
   // settings-based fields populate consistently.
@@ -70,7 +70,7 @@ async function seedEventAndShortUrl({ slug = `evt-${Date.now()}`, shortSlug }) {
   const farFuture = new Date(Date.now() + 365 * 86400000).toISOString();
   const [eventId] = await db('events').insert({
     slug,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Test Event',
     event_date: '2026-06-05',
     password_hash: 'x',
@@ -90,7 +90,7 @@ async function seedEventAndShortUrl({ slug = `evt-${Date.now()}`, shortSlug }) {
 // User-agent strings the production `isSocialCrawler` helper matches.
 // Snapshot known-true samples here so the test stays in sync if the
 // helper's allowlist evolves.
-const BOT_UA_WHATSAPP = 'WhatsApp/2.23.20.0';
+const BOT_UA_SOCIAL = 'Slackbot-LinkExpanding 1.0';
 const BOT_UA_FACEBOOK = 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)';
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15';
 
@@ -120,13 +120,13 @@ describe('GET /s/:shortSlug — browser (302 redirect)', () => {
 });
 
 describe('GET /s/:shortSlug — social crawler (OG metadata)', () => {
-  it('returns 200 with OG HTML for WhatsApp UA', async () => {
+  it('returns 200 with OG HTML for a social crawler', async () => {
     await seedEventAndShortUrl({
-      slug: 'whatsapp-og', shortSlug: 'wa-preview',
+      slug: 'social-og', shortSlug: 'social-preview',
     });
     const res = await request(app)
-      .get('/s/wa-preview')
-      .set('User-Agent', BOT_UA_WHATSAPP);
+      .get('/s/social-preview')
+      .set('User-Agent', BOT_UA_SOCIAL);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/html/);
     expect(res.text).toContain('<meta');
@@ -156,7 +156,7 @@ describe('GET /s/:shortSlug — social crawler (OG metadata)', () => {
     });
     const res = await request(app)
       .get('/s/cache-test')
-      .set('User-Agent', BOT_UA_WHATSAPP);
+      .set('User-Agent', BOT_UA_SOCIAL);
     expect(res.headers['cache-control']).toMatch(/public/);
     expect(res.headers['cache-control']).toMatch(/max-age=300/);
   });
@@ -165,7 +165,7 @@ describe('GET /s/:shortSlug — social crawler (OG metadata)', () => {
     await seedEventAndShortUrl({
       slug: 'hit-bot', shortSlug: 'hit-from-bot',
     });
-    await request(app).get('/s/hit-from-bot').set('User-Agent', BOT_UA_WHATSAPP);
+    await request(app).get('/s/hit-from-bot').set('User-Agent', BOT_UA_SOCIAL);
     await new Promise((r) => setTimeout(r, 50));
     const row = await service.findByShortSlug('hit-from-bot');
     expect(row.hit_count).toBe(1);
@@ -204,7 +204,7 @@ describe('GET /s/:shortSlug — error states', () => {
     await db('events').where({ id: eventId }).delete();
     const res = await request(app)
       .get('/s/orphan-slug')
-      .set('User-Agent', BOT_UA_WHATSAPP);
+      .set('User-Agent', BOT_UA_FACEBOOK);
     expect(res.status).toBe(410);
   });
 

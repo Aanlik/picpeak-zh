@@ -20,7 +20,7 @@ const request = require('supertest');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal, assignAdminRole } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole } = require('../integration/helpers/sqliteTestDb');
 
 describe('database backup test endpoint', () => {
   let db; let cleanup; let app; let token;
@@ -36,8 +36,8 @@ describe('database backup test endpoint', () => {
     .set('Authorization', `Bearer ${token}`);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
-    // bootCrmDb points storage at its own temp dir; keep ours for the derived path.
+    ({ db, cleanup } = await bootTestDb());
+    // bootTestDb points storage at its own temp dir; keep ours for the derived path.
     process.env.STORAGE_PATH = path.join(tmpRoot, 'storage');
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');

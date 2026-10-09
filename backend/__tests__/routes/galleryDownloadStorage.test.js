@@ -52,18 +52,18 @@ jest.mock('../../src/services/storage', () => ({
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 describe('single-photo download through the storage backend (#1048)', () => {
   let db; let cleanup; let app; let eventId; let photoId;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const ev = await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Downloads',
       event_date: '2026-08-01',
       host_email: 'h@example.com',

@@ -7,7 +7,7 @@
  * waiting run, so two concurrent decisions both resumed it: confirm and deny
  * each ran their branch, or one branch ran twice (a document sent twice).
  */
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
@@ -59,7 +59,7 @@ async function pendingGate(trigger) {
 }
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   engine = require('../../src/services/workflows');
   registry = require('../../src/services/workflows/registry');
   registry.registerAction('race_confirm', async () => { calls.confirm += 1; return {}; });

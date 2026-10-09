@@ -26,6 +26,8 @@ jobs:
             echo 'changed=true' >> "$GITHUB_OUTPUT"
             git show upstream/stable:frontend/src/i18n/locales/en.json > /tmp/upstream-en.json
             node scripts/check-zh-cn.mjs /tmp/upstream-en.json frontend/src/i18n/locales/zh-CN.json > /tmp/parity.txt 2>&1 || true
+            bash scripts/sync-upstream-zh.sh --plan --all > /tmp/merge-plan-all.txt
+            bash scripts/sync-upstream-zh.sh --plan --exclude-retired > /tmp/merge-plan-excluded.txt
           fi
       - name: Open one review issue per upstream SHA
         if: steps.check.outputs.changed == 'true'
@@ -39,6 +41,16 @@ jobs:
           if [ "$existing" = 0 ]; then
             {
               echo '发现新的官方 stable 提交。请按 docs/zh-CN-maintenance.md 合并、补翻译、验证真实容器后发布锁定版本。'
+              echo
+              echo '选择一：完整同步官方代码（可能恢复已删除模块）'
+              echo '```'
+              cat /tmp/merge-plan-all.txt
+              echo '```'
+              echo
+              echo '选择二：剔除已删除模块后同步其余官方改动'
+              echo '```'
+              cat /tmp/merge-plan-excluded.txt
+              echo '```'
               echo
               echo '中文键和占位符差异：'
               echo '```'

@@ -80,7 +80,6 @@ const { startTransferCleanup } = require('./src/services/transferCleanupService'
 const { startDownloadJobCleanup } = require('./src/services/downloadJobCleanupService');
 const { startFeedbackRateLimitCleanup } = require('./src/services/feedbackRateLimitCleanupService');
 const { startRevealScheduler } = require('./src/services/revealScheduler');
-const { startInvoiceScheduler } = require('./src/services/invoiceSchedulerService');
 const { initializeTransporter, startEmailQueueProcessor } = require('./src/services/emailProcessor');
 const emailWebhookTransport = require('./src/services/emailWebhookTransport');
 const { startBackupService } = require('./src/services/backupService');
@@ -700,8 +699,8 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-// OG/Twitter-card preview endpoint for gallery share URLs. Crawlers (WhatsApp,
-// Slack, Facebook, etc.) don't execute JS, so the SPA's client-side meta tags
+// OG/Twitter-card preview endpoint for gallery share URLs. Social crawlers
+// don't execute JS, so the SPA's client-side meta tags
 // never reach them. nginx routes UA-detected crawlers from /gallery/:slug to
 // here; humans still get the SPA via try_files.
 const {
@@ -864,7 +863,6 @@ app.use('/api/admin', require('./src/routes/adminShortUrls'));
 app.use('/api/admin/local-users', require('./src/routes/adminLocalUsers'));
 app.use('/api/admin/photography-workflow', require('./src/routes/photographyWorkflow'));
 app.use('/api/admin/feature-flags', require('./src/routes/adminFeatureFlags'));
-app.use('/api/admin/whatsapp', require('./src/routes/adminWhatsapp'));
 app.use('/api/admin/backup', require('./src/routes/adminBackup'));
 app.use('/api/admin/database-backup', require('./src/routes/adminDatabaseBackup'));
 app.use('/api/admin/feedback', require('./src/routes/adminFeedback'));
@@ -897,8 +895,7 @@ app.use('/api/admin/roles', require('./src/routes/adminRoles'));
 //     verifyGalleryAccess re-checks on every customer-minted JWT.
 //   - Lock out a customer entirely → "Deactivate" sets is_active=false
 //     and bumps password_changed_at, killing every outstanding JWT.
-//   - Toggle per-customer feature surfaces (calendar/quotes/bills)
-//     → toggles on the customer detail page.
+//   - Assign or revoke gallery access → use the customer detail page.
 //
 // Putting the global flag in the kill-switch role was a mistake — a
 // stray click in Settings → Features would lock every paying
@@ -920,42 +917,14 @@ app.use('/api/admin/customers', noStoreCache, require('./src/routes/adminCustome
 app.use('/api/customer/auth', noStoreCache, require('./src/routes/customerAuth'));
 app.use('/api/customer', noStoreCache, require('./src/routes/customer'));
 
-// --- CRM (#TBD) -------------------------------------------------------
-// Quotes / Invoices / Contracts / Calendar / Tax report / Deals lineage.
-// Business profile (issuer block for PDFs) lives at
-// /api/admin/business-profile, gated by the existing settings.manage
-// permission rather than a CRM-specific one. The public endpoints
-// host the customer-side accept/decline / sign / payment-check pages.
-app.use('/api/admin/business-profile', require('./src/routes/adminBusinessProfile'));
-app.use('/api/admin/quotes',     require('./src/routes/adminQuotes'));
-app.use('/api/admin/invoices',   require('./src/routes/adminInvoices'));
-app.use('/api/admin/contracts',  require('./src/routes/adminContracts'));
-app.use('/api/admin/projects',   require('./src/routes/adminProjects'));
-app.use('/api/admin/calendar',   require('./src/routes/adminCalendar'));
-app.use('/api/admin/deals',      require('./src/routes/adminDeals'));
+// --- Core customer, workflow, transfer and integration routes ---------
 app.use('/api/admin/workflows',  require('./src/routes/adminWorkflows'));
-app.use('/api/admin/tax-report', require('./src/routes/adminTaxReport'));
-app.use('/api/admin/expenses',   require('./src/routes/adminExpenses'));
-app.use('/api/admin/ledger',     require('./src/routes/adminLedger'));
-// Read-only VAT-code registry for the invoice/quote editors — un-gated by the
-// accounting flag (management stays under /ledger).
-app.use('/api/admin/vat-codes',  require('./src/routes/adminVatCodes'));
 app.use('/api/admin/system-health', require('./src/routes/adminSystemHealth'));
-app.use('/api/admin/dev',        require('./src/routes/adminDev'));
 app.use('/api/admin/transfers',  require('./src/routes/adminTransfers'));
-// Newsletter campaigns (#1264). Flag-gated inside the router.
-app.use('/api/admin/newsletters', require('./src/routes/adminNewsletters'));
-app.use('/api/public/quotes',  require('./src/routes/publicQuotes'));
-app.use('/api/public/contracts', require('./src/routes/publicContracts'));
 // PicTransfer (#997): recipient download + client upload, token-authenticated.
 app.use('/api/public/transfer', require('./src/routes/publicTransfer'));
 app.use('/api/public/transfer-upload', require('./src/routes/publicTransferUpload'));
-app.use('/api/public/payment-check', require('./src/routes/publicPaymentCheck'));
-// Newsletter unsubscribe (#1264). Deliberately NOT flag-gated: turning the
-// feature off must not break the links in mail that already went out.
-app.use('/api/public/newsletter', require('./src/routes/publicNewsletter'));
 app.use('/api/public/workflow-approvals', require('./src/routes/publicWorkflowApprovals'));
-app.use('/api/admin/event-types', require('./src/routes/adminEventTypes'));
 app.use('/api/admin/api-tokens', require('./src/routes/adminApiTokens'));
 app.use('/api/admin/webhooks', require('./src/routes/adminWebhooks'));
 // Public v1 API for n8n / external integrations (#322). Mounted under
@@ -1072,9 +1041,8 @@ try {
     // Everything else the router owns client-side. nginx did `try_files $uri
     // $uri/ /index.html`, so behind compose every client route survived a
     // reload and the short route list above was never exercised. Without
-    // nginx it is the whole contract: /setup, /customer, /impressum,
-    // /datenschutz, /payment-check, /quote/:token, /contract/:token,
-    // /invite/:token, /transfer/:token, /transfer-upload/:token and the
+    // nginx it is the whole contract: /setup, /customer, /invite/:token,
+    // /transfer/:token, /transfer-upload/:token and the
     // branded short URLs all 404'd on a direct hit or a refresh. /setup is
     // the first URL a new install visits.
     spaCatchAll = (req, res) => sendSpa(res);
@@ -1200,10 +1168,6 @@ async function startServer() {
     startFeedbackRateLimitCleanup();
     // Reveal-mode scheduler (#838): minutely stamp for scheduled reveals.
     startRevealScheduler();
-    // CRM invoice scheduler: hourly tick to flush scheduled-send invoices
-    // + run the overdue reminder ladder. No-op when the `bills` feature
-    // flag is OFF (the service short-circuits on empty result sets).
-    startInvoiceScheduler();
     
     // Initialize email transporter and start queue processor.
     // Skipped under the webhook transport (#1225): an install that switched to
@@ -1213,7 +1177,7 @@ async function startServer() {
     if (!emailWebhookTransport.isEnabled()) {
       await initializeTransporter();
     }
-    // Seed CRM / contract / event-reminder email templates and recover
+    // Seed the shared project-reminder email template and recover
     // any queue rows that exhausted retries because their template
     // didn't exist yet. Runs once per boot via module-level caches in
     // each seeder. See _emailTemplateBoot.js for the full rationale.
@@ -1224,24 +1188,6 @@ async function startServer() {
       logger.warn('Email template self-heal failed at boot:', err.message);
     }
     startEmailQueueProcessor();
-
-    // Start WhatsApp queue processor — no-ops each cycle unless the
-    // `whatsapp` flag is on and a config exists (migration 136, #640D).
-    try {
-      const { startWhatsAppQueueProcessor } = require('./src/services/whatsappProcessor');
-      startWhatsAppQueueProcessor();
-    } catch (err) {
-      logger.warn('WhatsApp queue processor start failed:', err.message);
-    }
-
-    // Start incoming-mail (IMAP) poller — no-ops each minute unless the
-    // `incomingMail` flag is on and a mailbox is configured (migration 128).
-    try {
-      const { startIncomingMailPoller } = require('./src/services/emailIntakeService');
-      startIncomingMailPoller();
-    } catch (err) {
-      logger.warn('Incoming-mail poller failed to start:', err.message);
-    }
 
     // Start webhook delivery worker (#327)
     const { startWebhookDeliveryWorker } = require('./src/services/webhookDeliveryWorker');
@@ -1277,7 +1223,7 @@ async function startServer() {
       logger.warn('restore-settings self-heal failed at boot:', err.message);
     }
 
-    // Seed built-in workflows (the editable invoice-dunning flow). Disabled by
+    // Seed built-in gallery and project reminder workflows. Disabled by
     // default — live reminder behaviour is unchanged. See _workflowSeedBoot.js.
     try {
       const { seedBuiltinWorkflowsAtBoot } = require('./src/services/_workflowSeedBoot');

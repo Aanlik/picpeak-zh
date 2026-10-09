@@ -40,7 +40,7 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 const { createArchiveAdmission, streamingArchiveAdmission } = require('../../src/utils/archiveStreamGuard');
 
 describe('createArchiveAdmission', () => {
@@ -108,11 +108,11 @@ describe('gallery ZIP routes under the shared admission', () => {
   }
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const ev = await db('events').insert({
-      slug: SLUG, event_type: 'wedding', event_name: 'Archive admission', event_date: '2026-08-01',
+      slug: SLUG, event_type: 'project', event_name: 'Archive admission', event_date: '2026-08-01',
       host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
       share_link: `/gallery/${SLUG}/s`, share_token: 'archive-admission-share',
       expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),

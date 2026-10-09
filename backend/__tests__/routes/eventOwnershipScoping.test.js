@@ -26,7 +26,7 @@ process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-evscop
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 const LINK_COLUMNS = ['share_token', 'share_link', 'client_share_token', 'show_share_token'];
 
@@ -55,7 +55,7 @@ describe('event visibility and gallery links by role', () => {
   async function mkEvent(slug, createdBy, over = {}) {
     const rows = await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: slug,
       event_date: '2026-08-01',
       host_email: 'h@example.com',
@@ -77,7 +77,7 @@ describe('event visibility and gallery links by role', () => {
   }
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId: superId } = await seedMinimal(db);
     await assignAdminRole(db, superId, 'super_admin');
     tok.super = mintAdminToken(superId);

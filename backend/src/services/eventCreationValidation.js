@@ -1,11 +1,9 @@
 const Joi = require('joi');
-const eventTypes = require('./eventTypeService');
 const { AppError } = require('../utils/errors');
 const { normaliseEventTimeTriple } = require('./eventService');
 const optionalText = Joi.string().allow('', null);
 const schema = Joi.object({
   event_name: Joi.string().trim().min(1).max(255).required(),
-  event_type: Joi.string().trim().min(1).max(255).required(),
   event_date: Joi.string().isoDate().raw().allow('', null),
   expires_at: Joi.string().isoDate().raw().allow('', null),
   expiration_days: Joi.number().integer().min(1).max(365),
@@ -40,7 +38,6 @@ async function validateCreationInput(data) {
     err.responseBody = { errors: error.details.map(item => ({ path: item.path.join('.'), msg: item.message })) };
     throw err;
   }
-  if (!await eventTypes.isValidEventType(value.event_type)) throw new AppError('Invalid event type', 400, 'EVENT_TYPE_INVALID');
   normaliseEventTimeTriple(value); // Reject before password hashing or filesystem writes.
   return value;
 }

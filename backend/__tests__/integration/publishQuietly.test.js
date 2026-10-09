@@ -37,14 +37,14 @@ jest.mock('../../src/middleware/ownership', () => ({
   requireEventOwnership: (_req, _res, next) => next(),
 }));
 
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 
 let db;
 let cleanup;
 let app;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
   app = express();
   app.use(express.json());
@@ -63,7 +63,7 @@ beforeEach(async () => {
 async function seedDraft({ slug, customerEmail = 'client@example.com', isDraft = true } = {}) {
   const [row] = await db('events').insert({
     slug,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: `Event ${slug}`,
     event_date: '2026-09-01',
     host_email: customerEmail,
@@ -141,7 +141,7 @@ describe('publish quietly (#1235)', () => {
   it('refuses to send when there is no recipient', async () => {
     const [row] = await db('events').insert({
       slug: 'no-email',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'No Email',
       event_date: '2026-09-01',
       host_email: '',
@@ -167,7 +167,7 @@ describe('publish quietly (#1235)', () => {
   it('still publishes a gallery that has no recipient at all', async () => {
     const [row] = await db('events').insert({
       slug: 'quiet-no-email',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Quiet No Email',
       event_date: '2026-09-01',
       host_email: '',
@@ -259,7 +259,7 @@ describe('publish quietly (#1235)', () => {
     // password and lock out everyone holding the old one, for nothing.
     const [row] = await db('events').insert({
       slug: 'account-only',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Account Only',
       event_date: '2026-09-01',
       host_email: '',
@@ -296,7 +296,7 @@ describe('publish quietly (#1235)', () => {
     // customer was told.
     const [evRow] = await db('events').insert({
       slug: 'passive-only',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Passive Only',
       event_date: '2026-09-01',
       host_email: '',
@@ -355,7 +355,7 @@ describe('publish quietly (#1235)', () => {
     // gallery published quietly could still be weakened afterwards.
     const [row] = await db('events').insert({
       slug: 'weak-send',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Weak Send',
       event_date: '2026-09-01',
       host_email: '',

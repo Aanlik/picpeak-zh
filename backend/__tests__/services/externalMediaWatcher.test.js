@@ -72,7 +72,7 @@ describe('externalMediaWatcher (issue 1187)', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    ({ db } = await require('../integration/helpers/crmDb').bootCrmDb());
+    ({ db } = await require('../integration/helpers/sqliteTestDb').bootTestDb());
     watcher = require('../../src/services/externalMediaWatcher');
     jobState = require('../../src/services/maintenanceJobState');
   }, 180000);
@@ -94,7 +94,7 @@ describe('externalMediaWatcher (issue 1187)', () => {
   async function seedEvent(overrides = {}) {
     const [e] = await db('events').insert({
       slug: `extwatch-${Math.random().toString(36).slice(2, 8)}`,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'extwatch',
       event_date: '2026-01-01',
       host_email: 'h@example.com',

@@ -25,12 +25,10 @@ import { useMutationWithToast } from '../../hooks';
 // import { useNavigate } from 'react-router-dom';
 
 export const ArchivesPage: React.FC = () => {
-  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const { formatTime: fmtTime } = useLocalizedDate();
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<string>('all');
   const [sortBy, setSortBy] = useState<ArchiveSortBy>('date');
   const [currentPage, setCurrentPage] = useState(1);
   // const navigate = useNavigate();
@@ -44,7 +42,7 @@ export const ArchivesPage: React.FC = () => {
   // page index that no longer exists in the new result set.
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchTerm, filterType, sortBy]);
+  }, [debouncedSearchTerm, sortBy]);
 
   // Helper function to safely format dates
   const formatDate = (dateString: string | null | undefined, formatStr: string): string => {
@@ -57,13 +55,13 @@ export const ArchivesPage: React.FC = () => {
     }
   };
 
-  // Fetch archives from API. Search, type filter and sort are all applied
+  // Fetch archives from API. Search and sort are applied
   // server-side against the whole archive table — doing them in the client
   // silently scoped them to the 20 rows of the current page while the
   // pagination footer kept reporting the unfiltered total.
   const { data: archivesData, isLoading } = useQuery({
-    queryKey: ['admin-archives', currentPage, debouncedSearchTerm, filterType, sortBy],
-    queryFn: () => archiveService.getArchives(currentPage, 20, debouncedSearchTerm || undefined, filterType, sortBy),
+    queryKey: ['admin-archives', currentPage, debouncedSearchTerm, sortBy],
+    queryFn: () => archiveService.getArchives(currentPage, 20, debouncedSearchTerm || undefined, sortBy),
     placeholderData: (prev) => prev,
   });
 
@@ -198,19 +196,6 @@ export const ArchivesPage: React.FC = () => {
           
           <div className="flex gap-2">
             <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-accent-dark"
-            >
-              <option value="all">{t('archives.allTypes')}</option>
-              <option value="wedding">{t('archives.wedding')}</option>
-              <option value="birthday">{t('archives.birthday')}</option>
-              <option value="corporate">{t('archives.corporate')}</option>
-              <option value="party">{tAudit("ui.party")}</option>
-              <option value="other">{t('archives.other')}</option>
-            </select>
-
-            <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
               className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-accent-dark"
@@ -233,9 +218,6 @@ export const ArchivesPage: React.FC = () => {
                   {t('archives.tableHeaders.event')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  {t('archives.tableHeaders.type')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                   {t('archives.tableHeaders.archivedDate')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
@@ -252,7 +234,7 @@ export const ArchivesPage: React.FC = () => {
             <tbody className="bg-white dark:bg-neutral-800 divide-y divide-neutral-200 dark:divide-neutral-700">
               {archives.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-neutral-500 dark:text-neutral-400">
+                  <td colSpan={5} className="px-6 py-12 text-center text-neutral-500 dark:text-neutral-400">
                     {t('archives.noArchivesFound')}
                   </td>
                 </tr>
@@ -266,9 +248,6 @@ export const ArchivesPage: React.FC = () => {
                           {t('archives.eventDateNA').replace('N/A', formatDate(archive.eventDate, 'MMM d, yyyy') || 'N/A')}
                         </p>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-neutral-700 dark:text-neutral-300 capitalize">
-                      {archive.eventType}
                     </td>
                     <td className="px-6 py-4 text-sm text-neutral-700 dark:text-neutral-300">
                       <div>

@@ -9,7 +9,7 @@
  *
  * Scanner finding 31a5714a.
  */
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 const COLOR_KEYS = [
   'email_primary_color', 'email_secondary_color', 'email_body_bg_color',
@@ -21,7 +21,7 @@ describe('wrapEmailHtml — branding settings are text, not markup', () => {
   let db; let cleanup; let wrapEmailHtml; let upsertAppSetting;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ wrapEmailHtml } = require('../../src/services/emailProcessor'));
     ({ upsertAppSetting } = require('../../src/utils/appSettings'));
   }, 120000);

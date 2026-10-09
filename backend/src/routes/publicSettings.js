@@ -101,7 +101,6 @@ router.get('/', async (req, res) => {
       // events in 'inherit' mode.
       branding_facebook_url: settingsObject.branding_facebook_url || '',
       branding_instagram_url: settingsObject.branding_instagram_url || '',
-      branding_whatsapp_url: settingsObject.branding_whatsapp_url || '',
       branding_twitter_url: settingsObject.branding_twitter_url || '',
       branding_youtube_url: settingsObject.branding_youtube_url || '',
       branding_promo_markdown: settingsObject.branding_promo_markdown || '',
@@ -144,14 +143,6 @@ router.get('/', async (req, res) => {
       // storage is always HH:mm (24h); only the displayed form toggles.
       // Default '24h' to match the operator's CH/DE locale.
       general_time_format: settingsObject.general_time_format === '12h' ? '12h' : '24h',
-      // CRM overview tile visibility (admin-only — these are surfaced
-      // via the public-settings endpoint because the dashboard reads
-      // them on mount and the value never depends on auth state. All
-      // four default ON; only explicit false hides the tile.
-      crm_overview_show_revenue: settingsObject.crm_overview_show_revenue !== false,
-      crm_overview_show_outstanding: settingsObject.crm_overview_show_outstanding !== false,
-      crm_overview_show_quotes: settingsObject.crm_overview_show_quotes !== false,
-      crm_overview_show_invoices: settingsObject.crm_overview_show_invoices !== false,
       // OIDC SSO (#798): the admin login page renders the "Sign in with
       // SSO" button from these. Issuer/client/secret are never public.
       oidc_enabled: settingsObject.oidc_enabled === true,

@@ -1,8 +1,6 @@
 /**
- * Customer mailbox (hello@) configuration — a second inbound IMAP box beyond
- * the accounting rechnungen@ one, stored in `mail_accounts` under the fixed
- * account_key 'customers'. Its mail feeds Messages → Customers ▸ Inbox (body
- * captured, attachments NOT routed to accounting). Shown when the `messaging`
+ * Customer mailbox configuration, stored in `mail_accounts` under the fixed
+ * account_key 'customers'. Its mail feeds the customer inbox. Shown when the `messaging`
  * feature flag is on. Styled to match the Incoming Mail card.
  */
 import React, { useEffect, useState } from 'react';
@@ -59,7 +57,7 @@ export const CustomerMailboxCard: React.FC = () => {
         {t('email.customerMailbox.title', 'Customer mailbox (hello@)')}
       </h2>
       <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-        {t('email.customerMailbox.subtitle', 'A second inbound mailbox for customer conversations. Its mail appears under Messages → Customers; attachments are not routed to Accounting.')}
+        {t('email.customerMailbox.subtitle', 'A mailbox for customer conversations. Its messages appear under Messages → Customers.')}
       </p>
 
       <div className="space-y-4">

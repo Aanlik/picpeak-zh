@@ -1,47 +1,9 @@
 'use strict';
 
 /**
- * Paths to files under the storage root, as the database records them.
- *
- * Generated PDFs, signature images, wet-signed uploads and inbound documents
- * used to be recorded as absolute paths. An absolute path names one install's
- * storage directory: after a `.picpeak` restore onto another storage path,
- * after moving the storage directory, or when the same database is used from
- * a container (`/app/storage/...`) and from the host, every one of those rows
- * pointed at a directory that is not there, so sent contracts, signed PDFs and
- * certificates could not be opened and the integrity checks reported them
- * missing although the bytes had been restored.
- *
- * New rows record the path relative to the storage root (`toStoredPath`), and
- * every read goes through `resolveStoredPath`, which accepts both shapes:
- *
- *   - relative (`business-docs/contract/2026/C-1.pdf`): joined onto the
- *     current storage root; when nothing is there, a path relative to the
- *     working directory that lands inside the storage root (written under a
- *     relative STORAGE_PATH before 233) is used when that file exists;
- *   - absolute under the current storage root: used as it is;
- *   - absolute under another storage root: mapped onto the current root by
- *     its storage-relative part, the suffix from a top-level storage folder
- *     (`business-docs/` or `uploads/`) on. When a path has more than one such
- *     segment, the candidate that exists on disk wins, last segment first;
- *   - absolute under `<cwd>/storage`, the root the contract writers used
- *     before they moved onto the shared resolver: used as it is when the file
- *     is there, ahead of any same-named file under the current root.
- *
- * Whatever comes out stays inside the current storage root (or that legacy
- * root): a relative path with `..` segments that climb out, or an absolute
- * path with no storage folder in it, resolves to null and the caller refuses
- * it. The check here is lexical. Readers that open a file use
- * `resolveStoredPathStrict` / `assertStoredPathInside` (safePath.js), which
- * add `assertPathInside` on the realpath against the folder the file belongs
- * in. The lexical form alone is used only where no bytes are read from the
- * row's target: an existence check before a strict read, email attachment
- * paths (checked strictly by emailProcessor when the email is sent), the
- * event-logo unlink (unlink removes a symlink, not its target), and cleanup
- * of files this process just wrote.
- *
- * Nothing here changes a file's bytes or a stored hash: only which path the
- * row names for the same file.
+ * Resolve storage-root-relative file paths for gallery assets and uploads.
+ * Paths written by an older install may be absolute; restore and read helpers
+ * map those paths into the current storage root while refusing traversal.
  */
 
 const fs = require('fs');
@@ -49,23 +11,10 @@ const path = require('path');
 const { getStoragePath } = require('../config/storage');
 
 /** Top-level storage folders the stored paths live under. */
-const STORAGE_FOLDERS = ['business-docs', 'uploads'];
+const STORAGE_FOLDERS = ['events', 'uploads'];
 
-/**
- * Every column that records a file under the storage root. The `.picpeak`
- * import and the migration that converts existing rows walk this list.
- * (This release has no generated_documents or contract_signers table.)
- */
+/** Current project rows only store the gallery hero-logo path. */
 const STORED_PATH_COLUMNS = [
-  { table: 'quotes', column: 'pdf_path' },
-  { table: 'invoices', column: 'pdf_path' },
-  { table: 'invoices', column: 'imported_pdf_path' },
-  { table: 'contracts', column: 'pdf_path' },
-  { table: 'contracts', column: 'signed_pdf_path' },
-  { table: 'contracts', column: 'signed_customer_signature_path' },
-  { table: 'contracts', column: 'signed_admin_signature_path' },
-  { table: 'inbound_documents', column: 'file_path' },
-  { table: 'expenses', column: 'receipt_path' },
   { table: 'events', column: 'hero_logo_path' },
 ];
 
@@ -152,7 +101,7 @@ function resolveStoredPath(value) {
     const inside = isInside(abs, root);
     if (inside && fs.existsSync(abs)) return abs;
     // Recorded relative to the working directory: a relative STORAGE_PATH
-    // (`./storage`) made the writers produce `storage/business-docs/...`.
+    // (`./storage`) made the writers produce `storage/uploads/...`.
     const fromCwd = path.resolve(value);
     if ((isInside(fromCwd, root) || isInside(fromCwd, legacyRoot())) && fs.existsSync(fromCwd)) return fromCwd;
     return inside ? abs : null;

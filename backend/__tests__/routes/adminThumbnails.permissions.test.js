@@ -46,8 +46,8 @@ describe('thumbnail settings and regeneration permissions', () => {
     }));
     logInfo = jest.spyOn(require('../../src/utils/logger'), 'info');
 
-    const helpers = require('../integration/helpers/crmDb');
-    ({ db, cleanup } = await helpers.bootCrmDb());
+    const helpers = require('../integration/helpers/sqliteTestDb');
+    ({ db, cleanup } = await helpers.bootTestDb());
 
     const mkAdmin = async (name, roleName) => {
       const rows = await db('admin_users').insert({
@@ -64,7 +64,7 @@ describe('thumbnail settings and regeneration permissions', () => {
 
     const mkEvent = async (slug, createdBy) => {
       const rows = await db('events').insert({
-        slug, event_type: 'wedding', event_name: slug, event_date: '2026-01-01',
+        slug, event_type: 'project', event_name: slug, event_date: '2026-01-01',
         host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
         share_link: `${slug}-share`, expires_at: new Date(Date.now() + 864e5).toISOString(),
         created_by: createdBy, created_at: new Date().toISOString(),

@@ -22,18 +22,18 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'nullable-dates-test-secret';
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 let db;
 let cleanup;
 let eventId;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
   const inserted = await db('events').insert({
     slug: 'nullable-dates-test',
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Nullable Dates Test',
     event_date: '2026-06-22',
     host_email: 'host@example.com',
@@ -72,7 +72,7 @@ describe('events date columns are nullable on SQLite (#1029)', () => {
   test('a gallery can be created with no expiration at all', async () => {
     const inserted = await db('events').insert({
       slug: 'never-expires-test',
-      event_type: 'other',
+      event_type: 'project',
       event_name: 'Never Expires',
       event_date: null,
       host_email: 'host@example.com',

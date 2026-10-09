@@ -15,9 +15,9 @@
 
 const sharp = require('sharp');
 
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 
-// Both modules under test pull in src/database/db.js transitively. bootCrmDb
+// Both modules under test pull in src/database/db.js transitively. bootTestDb
 // only works when it runs BEFORE the first require of db.js (it sets
 // TEST_DATABASE_PATH, which knexfile reads at module-init time), so these are
 // required lazily in beforeAll rather than at module scope — otherwise knex
@@ -51,7 +51,7 @@ describe('Download resolutions (#858)', () => {
   ];
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     ({

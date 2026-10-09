@@ -33,7 +33,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const SLUG = 'admin-ct-test-event';
 
@@ -64,12 +64,12 @@ describe('admin photo view Content-Type (#908)', () => {
     .set('Authorization', `Bearer ${adminToken}`);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const inserted = await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Admin CT Test',
       event_date: '2026-08-01',
       host_email: 'host@example.com',

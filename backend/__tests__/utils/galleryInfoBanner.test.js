@@ -24,13 +24,13 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'info-banner-test-secret';
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 let db;
 let cleanup;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
 });
 
@@ -44,7 +44,7 @@ describe('migration 176 — schema', () => {
 
     const [id] = await db('events').insert({
       slug: 'info-default-test',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Info Default Test',
       event_date: '2026-06-22',
       host_email: 'host@example.com',
@@ -130,7 +130,7 @@ describe('per-event persistence', () => {
   beforeAll(async () => {
     const [id] = await db('events').insert({
       slug: 'info-persist-test',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Info Persist Test',
       event_date: '2026-06-22',
       host_email: 'host@example.com',

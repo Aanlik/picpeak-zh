@@ -22,7 +22,7 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
-const { bootCrmDb, seedMinimal, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 const { createLargeJsonBody } = require('../../src/middleware/largeJsonBody');
 
 // 3 MB: over the small limit, under the large one.
@@ -36,7 +36,7 @@ describe('largeJsonBody — the 50 MB parser is for authenticated callers only',
   const sha = (t) => crypto.createHash('sha256').update(t).digest('hex');
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId } = await seedMinimal(db));
     await db('api_tokens').insert([
       { name: 'live', hashed_token: sha(apiToken), scopes: 'read', created_by: adminId },

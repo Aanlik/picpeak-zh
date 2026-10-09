@@ -504,7 +504,7 @@ async function walkForManifests(dir, maxDepth, depth = 0) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       // Skip obvious noise: photo trees, node_modules, hidden dirs.
-      if (entry.name === 'events' || entry.name === 'business-docs'
+      if (entry.name === 'events'
           || entry.name === 'thumbnails' || entry.name === 'previews'
           || entry.name === 'heroes' || entry.name === 'uploads'
           || entry.name.startsWith('.')

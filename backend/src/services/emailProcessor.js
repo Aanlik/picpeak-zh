@@ -17,8 +17,8 @@ const { resolveStoredPathStrict } = require('../utils/safePath');
 /**
  * The file a queued attachment names, or a refusal.
  *
- * Every sender queues a file it wrote under the storage root (business-docs
- * or uploads; none attaches from a temp directory), and the row carries the
+ * Every sender queues a file it wrote under the storage root (currently
+ * uploads; none attaches from a temp directory), and the row carries the
  * path the sender saw. email_queue rows travel in a .picpeak archive, so a
  * path is placed on this install's storage root (a row queued before a
  * restore names the old root) and checked with symlinks followed. A path
@@ -197,10 +197,8 @@ async function getRecipientLanguage(email, eventId = null) {
 
   // Second priority: customer_accounts.preferred_language matched by
   // recipient email. Honours the customer's own preference instead of
-  // the app-wide default — fixes the CRM bug where every quote /
-  // invoice / customer email shipped in the app default language
-  // (German on a German-locale install) even when the customer was
-  // explicitly set to English. Falls through silently on miss so admin
+  // the app-wide default, even when the installation uses a different
+  // default language. Falls through silently on miss so admin
   // recipients (no customer_accounts row) still see the app default.
   if (email) {
     try {
@@ -272,16 +270,10 @@ function darkenColor(hex, amount = 0.15) {
 
 // ---- global email footer signature (migration 198, issue #1264) --------
 //
-// Built from the business_profile issuer block — the address, contact rows
-// and legal line the operator already maintains for their invoices — so it
+// Built from the shared business profile contact details so it appears under
 // appears under EVERY mail this install sends without a single template
 // being touched. Returns '' when the admin has not enabled it, which keeps
 // the footer byte-identical to what pre-198 installs render.
-
-// VAT is the one value that needs a label to mean anything. en/de only;
-// every other locale falls back to the English label, same as the rest of
-// the wrapper chrome ("All rights reserved").
-const SIGNATURE_VAT_LABELS = { en: 'VAT ID', de: 'USt-IdNr.' };
 
 // tel: hrefs take digits and a leading +; strip everything else so a pasted
 // "+41 79 123 45 67 (mobile only)" can't smuggle a scheme or a quote into
@@ -306,10 +298,10 @@ function renderSignatureLink(href, text, color) {
 
 /**
  * @param {object|null} signature  businessProfileService.getEmailSignature()
- * @param {object} opts  { mutedTextColor, brandingCompanyName, language }
+ * @param {object} opts  { mutedTextColor, brandingCompanyName }
  * @returns {string} HTML rows for the footer <td>, or '' when disabled.
  */
-function renderEmailSignature(signature, { mutedTextColor, brandingCompanyName, language }) {
+function renderEmailSignature(signature, { mutedTextColor, brandingCompanyName }) {
   if (!signature) return '';
 
   const lineStyle = `color:${mutedTextColor};font-size:12px;line-height:18px;margin:4px 0;`;
@@ -343,11 +335,6 @@ function renderEmailSignature(signature, { mutedTextColor, brandingCompanyName, 
     rows.push(`<p style="${lineStyle}">${contact.join(' \u00b7 ')}</p>`);
   }
 
-  if (signature.vatId) {
-    const label = SIGNATURE_VAT_LABELS[language] || SIGNATURE_VAT_LABELS.en;
-    rows.push(`<p style="${lineStyle}">${escapeHtml(label)}: ${escapeHtml(signature.vatId)}</p>`);
-  }
-
   // Free text (Handelsregister line, disclaimer, …). Plain text, never
   // HTML — escaped, then newlines become <br> so a pasted 3-line legal
   // notice keeps its shape.
@@ -376,7 +363,7 @@ function renderEmailSignature(signature, { mutedTextColor, brandingCompanyName, 
  * Returns '' when the signature is disabled, so callers can append
  * unconditionally.
  */
-function renderEmailSignatureText(signature, { brandingCompanyName, language } = {}) {
+function renderEmailSignatureText(signature, { brandingCompanyName } = {}) {
   if (!signature) return '';
 
   const lines = [];
@@ -390,10 +377,6 @@ function renderEmailSignatureText(signature, { brandingCompanyName, language } =
     .map((v) => (v || '').trim())
     .filter(Boolean);
   if (contact.length) lines.push(contact.join(' \u00b7 '));
-  if (signature.vatId) {
-    const label = SIGNATURE_VAT_LABELS[language] || SIGNATURE_VAT_LABELS.en;
-    lines.push(`${label}: ${signature.vatId}`);
-  }
   if (signature.extra) lines.push(signature.extra);
 
   if (!lines.length) return '';
@@ -488,7 +471,7 @@ async function wrapEmailHtml(htmlBody, subject, language = 'en') {
   // reads the row once. Never throws; returns null when disabled.
   const signatureHtml = renderEmailSignature(
     await businessProfileService.getEmailSignature(),
-    { mutedTextColor, brandingCompanyName: companyName, language }
+    { mutedTextColor, brandingCompanyName: companyName }
   );
 
   const year = new Date().getFullYear();
@@ -944,7 +927,7 @@ async function processTemplate(template, variables, language = 'en') {
  * Resolve the signature and render its plain-text form for `language`.
  * Never throws — a footer must not be able to fail a send.
  */
-async function buildSignatureTextFor(language) {
+async function buildSignatureTextFor() {
   try {
     const signature = await businessProfileService.getEmailSignature();
     if (!signature) return '';
@@ -955,7 +938,7 @@ async function buildSignatureTextFor(language) {
         try { brandingCompanyName = JSON.parse(row.setting_value); } catch (_) { brandingCompanyName = row.setting_value; }
       }
     } catch (_) { /* fall back to the default name */ }
-    return renderEmailSignatureText(signature, { brandingCompanyName, language });
+    return renderEmailSignatureText(signature, { brandingCompanyName });
   } catch (error) {
     logger.warn('Could not render the plain-text email signature', { error: error.message });
     return '';
@@ -997,18 +980,15 @@ async function sendTemplateEmail(to, templateKey, variables, { usageEligible = t
       );
     }
 
-    // Determine recipient language. An explicit `__language` in the email data
-    // wins (CRM/billing emails set it to the customer/invoice language so a
-    // gallery event's language can't override a dunning notice — see #760);
-    // otherwise fall back to the event-first recipient resolution.
+    // Determine recipient language. An explicit `__language` in the email
+    // data wins; otherwise use the event and recipient preferences.
     const language = variables.__language || await getRecipientLanguage(to, variables.eventId || null);
 
     // Process template with variables
     const { subject, htmlBody, textBody } = await processTemplate(template, variables, language);
 
-    // Optional plumbing — quote/invoice emails set these. Attachments
-    // are passed by callers as [{ filename, contentPath }] where the
-    // file is already written to disk; nodemailer streams it.
+    // Optional copy and attachment fields are passed in the template data.
+    // Files are already written to disk; nodemailer streams them.
     const ccList = Array.isArray(variables.cc)
       ? variables.cc.filter(Boolean)
       : (typeof variables.cc === 'string' && variables.cc.trim())
@@ -1036,7 +1016,7 @@ async function sendTemplateEmail(to, templateKey, variables, { usageEligible = t
       // derived from the wrapped HTML, so the signature has to be appended
       // here or the text/plain alternative silently omits it (#1264 review).
       text: textBody
-        ? textBody + await buildSignatureTextFor(language)
+        ? textBody + await buildSignatureTextFor()
         : htmlToText(htmlBody),
       attachments,
     };
@@ -1063,42 +1043,6 @@ async function sendTemplateEmail(to, templateKey, variables, { usageEligible = t
     logger.error('Error sending template email:', error);
     throw error;
   }
-}
-
-/**
- * Send one queued newsletter-campaign row (#1264).
- *
- * Campaigns carry their own body, so there is no `email_templates` row to
- * look up and `sendTemplateEmail` cannot be used. The body is rendered per
- * recipient (variables, the recipient's own unsubscribe link, the campaign
- * CSS) and handed to the same `sendRawEmail` transport the manual composer
- * uses. Returns the `{ html }` shape the queue processor persists into
- * `rendered_html`, so a campaign send is as inspectable afterwards as any
- * transactional mail.
- */
-async function sendCampaignEmail(queueRow, emailData) {
-  if (require('../utils/communicationProfile').NO_EMAIL_MODE) return false;
-  const newsletterService = require('./newsletterService');
-
-  const campaign = await db('email_campaigns').where({ id: queueRow.campaign_id }).first();
-  if (!campaign) {
-    throw new Error(`Newsletter campaign ${queueRow.campaign_id} not found`);
-  }
-
-  // The customer row may be gone (deleted between queue and send). Fall back
-  // to the address on the queue row so the mail still goes out addressed to
-  // someone, with empty personalisation rather than a crash.
-  const customer = emailData.customerId
-    ? await db('customer_accounts').where({ id: emailData.customerId }).first()
-    : null;
-
-  const { subject, html } = await newsletterService.renderForRecipient(
-    campaign,
-    customer || { id: emailData.customerId || null, email: queueRow.recipient_email }
-  );
-
-  const info = await sendRawEmail({ to: queueRow.recipient_email, subject, html });
-  return { success: true, messageId: info.messageId, html };
 }
 
 /**
@@ -1251,9 +1195,7 @@ async function processEmailQueue({ ignoreSchedule = false, limit = 10, onlyId = 
 
     let pendingEmails = [];
     try {
-      // Pick up emails that are pending AND either have no `scheduled_at`
-      // or whose scheduled_at is in the past. Used by CRM invoices to
-      // queue split-payment emails relative to the event date.
+      // Pick up pending emails whose optional delivery window has arrived.
       const now = new Date();
       const query = db('email_queue')
         .where('status', 'pending');
@@ -1335,56 +1277,25 @@ async function processEmailQueue({ ignoreSchedule = false, limit = 10, onlyId = 
           emailData.eventId = email.event_id;
         }
 
-        // Newsletter campaigns (#1264) have no `email_templates` row — the
-        // body lives on the campaign. They also get the send-time opt-out
-        // re-check: a customer who unsubscribed after the campaign was
-        // queued is skipped here, not mailed.
-        let sendResult;
-        if (email.email_type === 'newsletter' && email.campaign_id) {
-          const newsletterService = require('./newsletterService');
-          // The batch above was materialised before this loop started. A
-          // cancel that lands in between deletes the pending rows, but this
-          // worker still holds them in memory — so without re-reading, up to
-          // a full batch goes out after the UI says the campaign is
-          // cancelled. Re-check the row still exists and is still pending.
-          const stillPending = await db('email_queue')
-            .where({ id: email.id, status: 'pending' })
-            .first('id');
-          if (!stillPending) {
-            logger.info(`Email ${email.id} skipped — cancelled after the batch was fetched`);
-            continue;
-          }
-          if (await newsletterService.shouldSkipForOptOut(emailData.customerId, email.recipient_email)) {
-            await newsletterService.markSkippedOptOut(email);
-            logger.info(`Email ${email.id} skipped — recipient opted out after queueing`);
-            continue;
-          }
-          sendResult = await sendCampaignEmail(email, emailData);
-        } else {
-          // Same race as the newsletter branch above: the batch was
-          // materialised before this loop started, so a cancel/redact that
-          // lands in the gap (e.g. a customer erasure, #1593) would
-          // otherwise be silently overwritten below by this send re-writing
-          // the row back to 'sent' with the pre-erasure, unredacted data.
-          // Re-check the row is still pending immediately before sending.
-          const stillPending = await db('email_queue')
-            .where({ id: email.id, status: 'pending' })
-            .first('id');
-          if (!stillPending) {
-            logger.info(`Email ${email.id} skipped — cancelled after the batch was fetched`);
-            continue;
-          }
-          sendResult = await sendTemplateEmail(
-            email.recipient_email,
-            email.email_type,
-            emailData,
-            { usageEligible: emailData.__usageEligible !== false }
-          );
+        // Re-check the row immediately before sending. A customer erasure or
+        // cancellation between batch fetch and send must not restore redacted
+        // data or deliver a cancelled message.
+        const stillPending = await db('email_queue')
+          .where({ id: email.id, status: 'pending' })
+          .first('id');
+        if (!stillPending) {
+          logger.info(`Email ${email.id} skipped — cancelled after the batch was fetched`);
+          continue;
         }
+        const sendResult = await sendTemplateEmail(
+          email.recipient_email,
+          email.email_type,
+          emailData,
+          { usageEligible: emailData.__usageEligible !== false }
+        );
 
-        // Mark as sent, persisting the actual rendered HTML for the Project
-        // Overview email preview (guarded — older installs without migration
-        // 119 just skip it).
+        // Mark as sent, persisting the rendered HTML for the admin email
+        // detail view (guarded — older installs without migration 119 skip it).
         const sentUpdate = { status: 'sent', sent_at: new Date().toISOString() };
         // The mail is out: this is the last moment the variables were needed
         // in the clear. Gallery passwords and client PINs are bcrypt-hashed
@@ -1410,18 +1321,6 @@ async function processEmailQueue({ ignoreSchedule = false, limit = 10, onlyId = 
           logger.info(`Email ${email.id} was sent but cancelled mid-send — leaving the cancelled row as is`);
           result.sent += 1;
           continue;
-        }
-
-        // Campaign bookkeeping (#1264). Best-effort by contract — a failure
-        // in the audit trail must never turn a delivered email into a
-        // failed one, so it is logged and swallowed.
-        if (email.campaign_id) {
-          try {
-            await require('./newsletterService')
-              .recordRecipientResult(email, { status: 'sent' });
-          } catch (hookError) {
-            logger.error(`Campaign bookkeeping failed for email ${email.id}:`, hookError);
-          }
         }
 
         result.sent += 1;
@@ -1462,20 +1361,6 @@ async function processEmailQueue({ ignoreSchedule = false, limit = 10, onlyId = 
           }
         }
           
-        // Campaign bookkeeping (#1264). Only record a FAILURE once the row
-        // has exhausted its retries — the same cap the pending query uses.
-        // Recording it on attempt 1 would mark the recipient failed while
-        // the queue is still going to retry them, and could flip the whole
-        // campaign terminal on a transient SMTP blip.
-        if (email.campaign_id && email.retry_count + 1 >= 3) {
-          try {
-            await require('./newsletterService')
-              .recordRecipientResult(email, { status: 'failed', errorMessage: error.message });
-          } catch (hookError) {
-            logger.error(`Campaign bookkeeping failed for email ${email.id}:`, hookError);
-          }
-        }
-
         logger.error(`Failed to send email ${email.id}:`, error);
       }
     }
@@ -1544,13 +1429,11 @@ async function getScheduledEmailConfig() {
 }
 
 // Queue an email for sending. Optionally takes a 5th `options` arg:
-//   options.scheduledAt — Date | ISO string; row only picks up once
-//                         this moment has passed (used by CRM split-
-//                         payment invoices). NULL = send immediately.
+//   Delivery scheduling is handled by the business-hours preference below.
 //   options.respectBusinessHours — when true, snap the send time to the
 //                         next open business-hours block (from "now").
-//                         Use for automated/relationship mail (dunning
-//                         reminders, gallery-expiry warnings) so we don't
+//                         Use for automated/relationship mail (reminders
+//                         and gallery-expiry warnings) so we don't
 //                         ping customers overnight. No-op when the floor
 //                         is off / business hours unconfigured / already
 //                         inside a block. Leave it off for transactional
@@ -1589,28 +1472,15 @@ async function queueEmail(eventId, recipientEmail, emailType, emailData, options
       scheduled_at: null,
     };
     let snappedFrom = null;
-    // Base time to schedule from:
-    //   - explicit options.scheduledAt (CRM split-payment invoices), OR
-    //   - "now" when the caller opts into the business-hours floor via
-    //     options.respectBusinessHours — automated / relationship mail
-    //     like dunning reminders + gallery-expiry warnings, so we don't
-    //     ping the customer at 02:00.
-    // Both snap to the next open business-hours block. No-op when the
-    // floor is disabled, business hours are unconfigured, or the instant
-    // already lands inside a block. Transactional / admin-initiated mail
-    // (invoice_sent, storno, invitations, password resets) passes neither
-    // option and sends immediately.
-    const baseTime = options.scheduledAt
-      ? (options.scheduledAt instanceof Date ? options.scheduledAt : new Date(options.scheduledAt))
-      : (options.respectBusinessHours ? new Date() : null);
+    // Customer notifications can opt into the business-hours floor. It is a
+    // no-op when disabled, unconfigured, or already within business hours.
+    const baseTime = options.respectBusinessHours ? new Date() : null;
     if (baseTime) {
       const cfg = await getScheduledEmailConfig();
       const snapped = snapToBusinessHours(baseTime, cfg);
       if (snapped.getTime() !== baseTime.getTime()) snappedFrom = baseTime;
-      // Persist a future scheduled_at for an explicit scheduledAt always;
-      // for the respectBusinessHours floor only when it actually moved the
-      // time forward (inside hours → stays null → processor sends at once).
-      if (options.scheduledAt || snappedFrom) row.scheduled_at = snapped;
+      // When the window is already open, the row stays immediate.
+      if (snappedFrom) row.scheduled_at = snapped;
     }
     await db('email_queue').insert(row);
 

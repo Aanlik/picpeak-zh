@@ -8,18 +8,14 @@
  *
  * **Wiring**
  *
- * `runEventReminderPass()` is invoked from the invoice scheduler's
- * hourly cron tick (commit #3 of this feature). Idempotent: every send
+ * `runEventReminderPass()` is invoked from the application's scheduled
+ * task runner. Idempotent: every send
  * stamps `events.event_reminder_sent_at`; subsequent ticks skip rows
  * with a non-null timestamp.
  *
  * **Template resolution**
  *
- *   1. `event_reminder_<events.event_type>` — per-type template, if
- *      seeded. Admin manages these via the existing email-template
- *      editor (no schema rule restricts what they can create here;
- *      whatever slug-prefixed templates exist will match).
- *   2. `event_reminder_default` — catch-all, seeded by migration 143.
+ *   `event_reminder_default` — the shared project reminder template.
  *
  * Falls through silently when the catch-all is missing (logs a warn
  * but doesn't throw — the cron must not crash the whole tick because
@@ -29,7 +25,7 @@
  *
  *   - `events.event_reminder_disabled = true` → skip
  *   - `events.event_reminder_offset_days` (nullable int) → overrides
- *     the global `crm_event_reminders_days_before`
+ *     the global `project_reminders_days_before`
  *   - `events.event_reminder_body_override` (text) → if set,
  *     replaces the template body verbatim. Subject still comes from
  *     the template. Useful for one-off "the venue has no loading zone,
@@ -62,7 +58,6 @@ const logger = require('../utils/logger');
 const { ensureEventReminderTemplatesSeeded } = require('./eventReminderTemplates');
 
 const DEFAULT_DAYS_BEFORE = 2;
-const DEFAULT_TEMPLATE_GROUP = 'event_reminder';
 
 // One-shot guard: the "schema not migrated" warn would otherwise fire
 // once per cron tick (≈ hourly) on installs that haven't applied
@@ -70,24 +65,9 @@ const DEFAULT_TEMPLATE_GROUP = 'event_reminder';
 // ticks no-op silently.
 let schemaWarnLogged = false;
 
-/**
- * Resolve the reminder template within a GROUP (template-key prefix). The group
- * is chosen on the flow block (defaults to `event_reminder`); within it the pick
- * is automatic and per-event-type:
- *   `<group>_<eventType>` if a template exists  →  else  `<group>_default`
- * So an exact wedding/birthday/… template wins; otherwise the group's catch-all.
- * emailProcessor handles a missing template row itself, so we only return a key.
- */
-async function resolveTemplateKey(eventType, group = DEFAULT_TEMPLATE_GROUP) {
-  const g = String(group || DEFAULT_TEMPLATE_GROUP).replace(/_+$/, ''); // tolerate a trailing "_"
-  if (eventType) {
-    const perType = `${g}_${eventType}`;
-    const exists = await db('email_templates')
-      .where({ template_key: perType })
-      .first('id');
-    if (exists) return perType;
-  }
-  return `${g}_default`;
+/** Resolve the shared project reminder template. */
+async function resolveTemplateKey() {
+  return 'event_reminder_default';
 }
 
 /**
@@ -110,7 +90,6 @@ function composePayload({ event, recipientEmail, daysBefore, businessName }) {
     customer_name: customerName,
     event_name: event.event_name || `Event #${event.id}`,
     event_date: event.event_date || '',
-    event_type: event.event_type || '',
     days_before: daysBefore,
     business_name: businessName || '',
   };
@@ -124,7 +103,7 @@ function composePayload({ event, recipientEmail, daysBefore, businessName }) {
  * Returns `{ scanned, sent, skipped }` counters for logging.
  */
 async function runEventReminderPass() {
-  const enabled = await getAppSetting('crm_event_reminders_enabled');
+  const enabled = await getAppSetting('project_reminders_enabled');
   if (enabled !== true && enabled !== 'true' && enabled !== 1 && enabled !== '1') {
     return { scanned: 0, sent: 0, skipped: 0, disabled: true };
   }
@@ -160,7 +139,7 @@ async function runEventReminderPass() {
     logger.error('Event reminder template self-heal failed', { message: err.message });
   }
 
-  const globalDaysBefore = Number(await getAppSetting('crm_event_reminders_days_before'));
+  const globalDaysBefore = Number(await getAppSetting('project_reminders_days_before'));
   const daysBeforeDefault = Number.isFinite(globalDaysBefore) && globalDaysBefore >= 0
     ? globalDaysBefore : DEFAULT_DAYS_BEFORE;
 
@@ -198,7 +177,7 @@ async function runEventReminderPass() {
       const triggerAt = new Date(ed.getTime() - offsetDays * 86_400_000);
       if (now < triggerAt) { skipped += 1; continue; }
 
-      const templateKey = await resolveTemplateKey(row.event_type);
+      const templateKey = await resolveTemplateKey();
       for (const r of recipients) {
         const payload = composePayload({
           event: row, recipientEmail: r.email, daysBefore: offsetDays, businessName,
@@ -256,7 +235,7 @@ async function runEventReminderPass() {
  * disabled, already sent, no template-eligible recipient); only DB/queue errors
  * propagate so the caller can surface them.
  */
-async function sendReminderForEvent(eventId, { templateGroup = null } = {}) {
+async function sendReminderForEvent(eventId) {
   const hasCols = await hasColumnCached('events', 'event_reminder_sent_at');
   if (!hasCols) return { sent: 0, skipped: 1, reason: 'schema_not_migrated' };
 
@@ -288,7 +267,7 @@ async function sendReminderForEvent(eventId, { templateGroup = null } = {}) {
   const recipients = await resolveReminderRecipients(row);
   if (!recipients.length) return { sent: 0, skipped: 1, reason: 'no_recipient' };
 
-  const globalDaysBefore = Number(await getAppSetting('crm_event_reminders_days_before'));
+  const globalDaysBefore = Number(await getAppSetting('project_reminders_days_before'));
   const daysBeforeDefault = Number.isFinite(globalDaysBefore) && globalDaysBefore >= 0
     ? globalDaysBefore : DEFAULT_DAYS_BEFORE;
   const rawOffset = row.event_reminder_offset_days;
@@ -298,9 +277,8 @@ async function sendReminderForEvent(eventId, { templateGroup = null } = {}) {
   const profile = await db('business_profile').where({ id: 1 }).first('company_name');
   const businessName = profile?.company_name || '';
 
-  // The flow block chooses the template GROUP (blank → the default group); the
-  // exact template is still auto-picked by event type within that group.
-  const templateKey = await resolveTemplateKey(row.event_type, templateGroup || DEFAULT_TEMPLATE_GROUP);
+  // Project reminders use one shared template for every event.
+  const templateKey = await resolveTemplateKey();
 
   let sent = 0;
   for (const r of recipients) {

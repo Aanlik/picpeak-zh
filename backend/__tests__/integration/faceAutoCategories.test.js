@@ -17,14 +17,14 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'autocat-test-secret';
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup; let engine;
 
 async function seedEvent(slug) {
   const [row] = await db('events').insert({
     slug,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: slug,
     event_date: '2026-01-01',
     host_email: 'h@example.com',
@@ -85,7 +85,7 @@ async function categoryOf(photoId) {
 
 describe('faceAutoCategories (#1074 phase 3)', () => {
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     engine = require('../../src/services/faceAutoCategories');
     await enable(true);
   }, 120000);

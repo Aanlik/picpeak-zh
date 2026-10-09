@@ -7,12 +7,12 @@
 process.env.JWT_SECRET = 'empty-recipient-secret-at-least-32-characters';
 process.env.NODE_ENV = 'test';
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 let db, cleanup, queueEmail;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ queueEmail } = require('../../src/services/emailProcessor'));
 }, 120000);
 

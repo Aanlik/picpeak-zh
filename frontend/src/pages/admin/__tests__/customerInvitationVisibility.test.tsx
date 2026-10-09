@@ -56,10 +56,6 @@ vi.mock('../../../services/customerAdmin.service', () => ({
   },
 }));
 
-vi.mock('../../../services/businessProfile.service', () => ({
-  businessProfileService: { get: vi.fn().mockResolvedValue({ profile: {} }) },
-}));
-
 import { CustomerManagementPage } from '../CustomerManagementPage';
 import { InlineCustomerCreate } from '../../../components/admin/InlineCustomerCreate';
 

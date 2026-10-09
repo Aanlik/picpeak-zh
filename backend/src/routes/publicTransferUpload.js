@@ -27,7 +27,7 @@ const { sanitizeFilename } = require('../utils/filenameSanitizer');
 const { getAppSetting } = require('../utils/appSettings');
 const { getStorage } = require('../services/storage');
 const transferService = require('../services/transferService');
-const { _internal: tokenLock } = require('../utils/publicTokenGuards');
+const { _internal: tokenLock } = require('../utils/tokenAttemptGuard');
 const logger = require('../utils/logger');
 
 const router = express.Router();

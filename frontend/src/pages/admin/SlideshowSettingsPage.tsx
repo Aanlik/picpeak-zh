@@ -18,7 +18,7 @@ export const SlideshowSettingsPage: React.FC = () => {
           `settings.slideshow.title` key, so repeating it stacked two
           identical H2s on top of each other (QA warning). */}
       <p className="text-sm text-neutral-600 dark:text-neutral-400">
-        {t('settings.slideshow.subtitle', 'Global defaults for the Live Slideshow. Events and event types can override these.')}
+        {t('settings.slideshow.subtitle', 'Global defaults for the Live Slideshow. Individual projects can override these.')}
       </p>
       <SlideshowGlobalDefaultsCard />
     </div>

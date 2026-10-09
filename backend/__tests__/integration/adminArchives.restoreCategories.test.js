@@ -46,8 +46,8 @@ describe('archive restore restores categories (flat archives included)', () => {
       requireEventOwnership: (_req, _res, next) => next(),
     }));
 
-    ({ db, cleanup } = await require('./helpers/crmDb').bootCrmDb());
-    // bootCrmDb points STORAGE_PATH at its own tmp dir; follow it rather than
+    ({ db, cleanup } = await require('./helpers/sqliteTestDb').bootTestDb());
+    // bootTestDb points STORAGE_PATH at its own tmp dir; follow it rather than
     // fighting it, so the archives the tests write are where the route looks.
     storagePath = process.env.STORAGE_PATH;
     await fs.promises.mkdir(path.join(storagePath, 'archives'), { recursive: true });
@@ -99,7 +99,7 @@ describe('archive restore restores categories (flat archives included)', () => {
   async function seedArchivedEvent(archiveRelPath, slug) {
     const [row] = await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: slug,
       event_date: '2026-06-27',
       host_email: 'h@example.com',

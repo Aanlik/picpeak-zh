@@ -28,7 +28,6 @@ import { categoriesService } from '../../services/categories.service';
 import { settingsService } from '../../services/settings.service';
 import { usePublicSettings } from '../../hooks/usePublicSettings';
 import { cssTemplatesService } from '../../services/cssTemplates.service';
-import { eventTypesService } from '../../services/eventTypes.service';
 import { userManagementService } from '../../services/userManagement.service';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useTranslation } from 'react-i18next';
@@ -36,7 +35,6 @@ import { ThemeConfig, GALLERY_THEME_PRESETS } from '../../types/theme.types';
 import { Code } from 'lucide-react';
 
 interface FormData {
-  event_type: string;
   event_name: string;
   event_date: string;
   // Migration 137 — calendar time fields. Defaults to full-day so the
@@ -88,14 +86,6 @@ interface FormData {
   customer_accounts: Array<{ id: number; email: string; displayName: string | null }>;
 }
 
-// Fallback event types (used when API is unavailable)
-const FALLBACK_EVENT_TYPES = [
-  { value: 'wedding', name: 'Wedding', emoji: '💒', theme_preset: 'elegantWedding' },
-  { value: 'birthday', name: 'Birthday', emoji: '🎂', theme_preset: 'birthdayFun' },
-  { value: 'corporate', name: 'Corporate', emoji: '🏢', theme_preset: 'corporateTimeline' },
-  { value: 'other', name: 'Other', emoji: '📸', theme_preset: 'default' },
-];
-
 export const CreateEventPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -117,7 +107,6 @@ export const CreateEventPage: React.FC = () => {
   }, []);
   
   const [formData, setFormData] = useState<FormData>({
-    event_type: NO_EMAIL_MODE ? 'other' : 'wedding',
     event_name: '',
     event_date: new Date().toISOString().split('T')[0], // Initialize with ISO date format
     event_time_start: '',
@@ -131,8 +120,8 @@ export const CreateEventPage: React.FC = () => {
     password: '',
     confirm_password: '',
     welcome_message: '',
-    theme_preset: 'elegantWedding',
-    theme_config: GALLERY_THEME_PRESETS.elegantWedding.config,
+    theme_preset: 'default',
+    theme_config: GALLERY_THEME_PRESETS.default.config,
     expires_in_days: 30,
     allow_user_uploads: false,
     upload_category_id: null,
@@ -172,40 +161,6 @@ export const CreateEventPage: React.FC = () => {
     queryKey: ['css-templates', 'enabled'],
     queryFn: () => cssTemplatesService.getEnabledTemplates()
   });
-
-  // Fetch event types
-  const { data: eventTypes } = useQuery({
-    queryKey: ['event-types', 'active'],
-    queryFn: () => eventTypesService.getActiveEventTypes()
-  });
-
-  // Compute event types to use (API data or fallback). Memoised so its
-  // identity is stable across renders — otherwise the "Update theme when
-  // event type changes" effect below re-runs on every render and silently
-  // overwrites the user's Theme Preset selection (#317).
-  const availableEventTypes = useMemo(
-    () => (eventTypes?.length
-      ? eventTypes.map(et => ({
-          value: et.slug_prefix,
-          name: et.name,
-          emoji: et.emoji,
-          theme_preset: et.theme_preset
-        }))
-      : FALLBACK_EVENT_TYPES),
-    [eventTypes]
-  );
-
-  // The hardcoded initial form value ('wedding') may not exist in the live
-  // catalog — the setup wizard can rename or delete the defaults (#800), and
-  // the backend now rejects unknown slugs. Snap to the first active type; a
-  // user-picked value is always in the list, so this never fights the user.
-  useEffect(() => {
-    if (!availableEventTypes.length) return;
-    if (!availableEventTypes.some(t => t.value === formData.event_type)) {
-      setFormData(prev => ({ ...prev, event_type: availableEventTypes[0].value }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableEventTypes, formData.event_type]);
 
   // Fetch default settings
   const { data: settings } = useQuery({
@@ -351,35 +306,6 @@ export const CreateEventPage: React.FC = () => {
     }));
   }, [settings]);
 
-  // Update theme when the user actively changes the event type — but only
-  // when the new type has an explicit recommended preset. Skips both the
-  // generic 'default' (so types like "Other" don't clobber the global
-  // Branding theme with Classic Grid) and the very first render (so the
-  // wedding default doesn't out-race the Branding-default effect above
-  // when eventTypes resolves AFTER settings — #323-B / smoke spec 07).
-  const prevEventTypeRef = useRef<string | null>(null);
-  useEffect(() => {
-    const prev = prevEventTypeRef.current;
-    prevEventTypeRef.current = formData.event_type;
-    // First render: just record the initial value and let the
-    // Branding-default effect own the theme. Without this guard the
-    // initial-mount fire of this effect (and any later eventTypes
-    // refetch that swaps `availableEventTypes` identity) would
-    // overwrite the Branding theme with the wedding preset.
-    if (prev === null || prev === formData.event_type) return;
-
-    const selectedType = availableEventTypes.find(t => t.value === formData.event_type);
-    const recommendedPreset = selectedType?.theme_preset;
-
-    if (recommendedPreset && recommendedPreset !== 'default' && GALLERY_THEME_PRESETS[recommendedPreset]) {
-      setFormData(prev => ({
-        ...prev,
-        theme_preset: recommendedPreset,
-        theme_config: GALLERY_THEME_PRESETS[recommendedPreset].config
-      }));
-    }
-  }, [formData.event_type, availableEventTypes]);
-
   const [nasFolder, setNasFolder] = useState('');
   const [nasWatch, setNasWatch] = useState(true);
 
@@ -388,7 +314,7 @@ export const CreateEventPage: React.FC = () => {
     onSuccess: async (data) => {
       if (NO_EMAIL_MODE && nasFolder) {
         try { await externalMediaService.linkEvent(data.id, nasFolder, nasWatch); }
-        catch (error: any) { toast.error(`项目已创建，请在“照片”页继续关联文件夹：${error.message || '关联失败'}`); }
+        catch { toast.error(t('nasFolder.linkFailedAfterCreate')); }
       }
       if (isMountedRef.current) {
         toast.success(t('toast.eventCreated'));
@@ -396,7 +322,7 @@ export const CreateEventPage: React.FC = () => {
       }
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.error || error.message || t('errors.eventCreationFailed');
+      const errorMessage = t('errors.eventCreationFailed');
       
       // If validation errors exist, show them
       if (error.response?.data?.errors) {
@@ -488,7 +414,6 @@ export const CreateEventPage: React.FC = () => {
     const feedbackSettings = formData.feedback_settings;
 
     const payload = {
-      event_type: formData.event_type,
       event_name: formData.event_name,
       event_date: formData.event_date || undefined,
       // Migration 137 — calendar time fields. Backend normalises the
@@ -605,34 +530,9 @@ export const CreateEventPage: React.FC = () => {
           <div className="p-6 space-y-6">
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
               <Calendar className="w-5 h-5" />
-              {NO_EMAIL_MODE ? '项目基本信息' : t('events.eventDetails')}
+              {t('events.projectInfo', { defaultValue: t('events.eventDetails') })}
             </h2>
 
-            {!NO_EMAIL_MODE && (<>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                {t('events.eventType')}
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {availableEventTypes.map((type) => (
-                  <button
-                    key={type.value}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, event_type: type.value })}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      formData.event_type === type.value
-                        ? 'tile-selected'
-                        : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600'
-                    }`}
-                  >
-                    <div className="text-2xl mb-1">{type.emoji}</div>
-                    <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{type.name}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            </>)}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label={t('events.eventName')}
@@ -700,7 +600,7 @@ export const CreateEventPage: React.FC = () => {
         </Card>
 
         {NO_EMAIL_MODE && <Card><div className="p-6 space-y-3">
-          <h2 className="text-lg font-semibold">关联 NAS 照片文件夹（可选）</h2>
+          <h2 className="text-lg font-semibold">{t('nasFolder.titleOptional')}</h2>
           <NasFolderSelection value={nasFolder} onChange={setNasFolder} watch={nasWatch} onWatchChange={setNasWatch} />
         </div></Card>}
 
@@ -728,7 +628,7 @@ export const CreateEventPage: React.FC = () => {
               <div className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-neutral-900 dark:text-neutral-100" style={{ fontFamily: formData.theme_config.fontFamily }}>
-                    {NO_EMAIL_MODE ? ({ default: '经典网格', elegantWedding: '典雅风格', modernMasonry: '错落排版', birthdayFun: '欢庆风格', corporateTimeline: '时间线', artisticMosaic: '艺术拼贴' } as Record<string, string>)[formData.theme_preset] || '自定义主题' : GALLERY_THEME_PRESETS[formData.theme_preset]?.name || 'Custom Theme'}
+                    {t(`events.themePresets.${formData.theme_preset}`, { defaultValue: GALLERY_THEME_PRESETS[formData.theme_preset]?.name || t('events.themePresets.custom') })}
                   </h3>
                   <div className="flex gap-2">
                     <div 
@@ -742,7 +642,7 @@ export const CreateEventPage: React.FC = () => {
                   </div>
                 </div>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  {NO_EMAIL_MODE ? '照片布局：' : 'Gallery Layout:'} <span className="font-medium capitalize">{NO_EMAIL_MODE ? ({ grid: '网格', masonry: '瀑布流', carousel: '轮播', timeline: '时间线', mosaic: '拼贴', hero: '大图封面' } as Record<string, string>)[formData.theme_config.galleryLayout || 'grid'] || '自定义' : formData.theme_config.galleryLayout || 'grid'}</span>
+                  {t('events.galleryLayoutLabel')} <span className="font-medium capitalize">{t(`events.galleryLayouts.${formData.theme_config.galleryLayout || 'grid'}`, { defaultValue: formData.theme_config.galleryLayout || 'grid' })}</span>
                 </p>
               </div>
             )}
@@ -1003,7 +903,6 @@ export const CreateEventPage: React.FC = () => {
                     <PasswordGenerator
                       eventName={formData.event_name}
                       eventDate={formData.event_date}
-                      eventType={formData.event_type}
                       onPasswordGenerated={handlePasswordGenerated}
                       passwordComplexity="moderate"
                       className="w-full"

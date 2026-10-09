@@ -11,7 +11,7 @@
 
 const request = require('supertest');
 const express = require('express');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 // galleryOgService destructures ensureThumbnail at load, so the stub has to be
 // in place before the service is required.
@@ -29,7 +29,7 @@ describe('OG metadata and cover follow the gallery lifecycle', () => {
 
   const addEvent = async (slug, extra = {}) => unwrap(await db('events').insert({
     slug,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: `Name of ${slug}`,
     event_date: '2026-08-01',
     host_email: 'host@example.com',
@@ -49,7 +49,7 @@ describe('OG metadata and cover follow the gallery lifecycle', () => {
   }).returning('id'));
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     og = require('../../src/services/galleryOgService');
 

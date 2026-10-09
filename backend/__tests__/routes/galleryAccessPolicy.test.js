@@ -1,5 +1,5 @@
 /** Real routes + migrated SQLite: the same session policy protects lists and media. */
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
@@ -33,13 +33,13 @@ const expectDirect = async (bearer, status, suffix = '') => {
 };
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId, customerId } = await seedMinimal(db));
   await assignAdminRole(db, adminId);
   const [row] = await db('admin_users').insert({ username: 'foreign', email: 'foreign@example.test', password_hash: 'unused', is_active: 1 }).returning('id');
   foreignId = row.id ?? row;
   await assignAdminRole(db, foreignId, 'viewer');
-  await db('events').insert({ id: eventId, slug, event_type: 'wedding', event_name: 'Policy test',
+  await db('events').insert({ id: eventId, slug, event_type: 'project', event_name: 'Policy test',
     event_date: '2026-01-01', host_email: 'h@example.test', admin_email: 'a@example.test', password_hash: 'unused',
     share_link: '/gallery/policy-test', created_by: adminId });
   const file = path.join(process.env.STORAGE_PATH, `events/active/${slug}/individual/fixture.jpg`);

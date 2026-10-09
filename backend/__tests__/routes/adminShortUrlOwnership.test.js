@@ -21,7 +21,7 @@ process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-suown-
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { bootCrmDb, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 describe('short URL delete ownership scoping', () => {
   let db; let cleanup; let app; let service;
@@ -35,7 +35,7 @@ describe('short URL delete ownership scoping', () => {
     const farFuture = new Date(Date.now() + 365 * 86400000).toISOString();
     const [id] = await db('events').insert({
       slug: `suown-${slugSuffix}`,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Test Event',
       event_date: '2026-08-01',
       host_email: 'h@e.com',
@@ -53,7 +53,7 @@ describe('short URL delete ownership scoping', () => {
   }
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     service = require('../../src/services/galleryShortUrlService');
 
     const superIns = await db('admin_users').insert({

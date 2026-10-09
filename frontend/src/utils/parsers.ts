@@ -164,10 +164,8 @@ export const toArray = <T>(value: unknown, defaultValue: T[] = []): T[] => {
  * Locale-tolerant decimal parser. Accepts strings using either '.' or
  * ',' as the decimal separator and either thousand-separator
  * convention (German "1.234,50" or English "1,234.50"). Crucially, this
- * is what we use to read CRM money/quantity fields whose <input> is
- * typed by humans in either an EN or DE locale — `Number('12,50')`
- * silently returns NaN, which the call-sites then coerce to 0, eating
- * real money.
+ * accepts values typed by humans in either an EN or DE locale. `Number('12,50')`
+ * silently returns NaN, so this parser handles the locale-specific separator.
  *
  * Heuristic when both separators appear: the LAST one is the decimal
  * separator; all earlier instances of either symbol are thousands and

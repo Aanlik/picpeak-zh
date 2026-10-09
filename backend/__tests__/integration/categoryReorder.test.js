@@ -12,8 +12,8 @@
  */
 const request = require('supertest');
 const {
-  bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
-} = require('./helpers/crmDb');
+  bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
+} = require('./helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
@@ -24,7 +24,7 @@ describe('category ordering (#782)', () => {
   let app;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);
@@ -37,7 +37,7 @@ describe('category ordering (#782)', () => {
 
   async function insertEvent(slug) {
     await db('events').insert({
-      event_type: 'wedding', password_hash: 'x',
+      event_type: 'project', password_hash: 'x',
       expires_at: new Date(Date.now() + 9e9).toISOString(),
       is_active: true, is_archived: false, slug, share_link: slug,
       event_name: slug, event_date: '2026-01-01',
@@ -177,7 +177,7 @@ describe('category ordering (#782)', () => {
       // An event owned by a DIFFERENT admin (the seeded super_admin).
       const owner = (await db('admin_users').where({ username: 'tester' }).first()).id;
       await db('events').insert({
-        event_type: 'wedding', password_hash: 'x',
+        event_type: 'project', password_hash: 'x',
         expires_at: new Date(Date.now() + 9e9).toISOString(),
         is_active: true, is_archived: false, slug: 'owned-ev', share_link: 'owned-ev',
         event_name: 'Owned', event_date: '2026-01-01', created_by: owner,

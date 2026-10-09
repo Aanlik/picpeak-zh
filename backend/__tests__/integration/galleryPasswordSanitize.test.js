@@ -23,7 +23,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'sanitize-test-secret';
 
@@ -41,7 +41,7 @@ describe('gallery/verify invisible-Unicode fallback (#654)', () => {
   const makeEvent = async (slug, password) => {
     const inserted = await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: `Sanitize ${slug}`,
       event_date: '2026-08-01',
       host_email: 'host@example.com',
@@ -60,7 +60,7 @@ describe('gallery/verify invisible-Unicode fallback (#654)', () => {
   let plainEventId;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     plainEventId = await makeEvent(PLAIN_SLUG, PLAIN_PASSWORD);
     await makeEvent(ZWJ_SLUG, ZWJ_PASSWORD);

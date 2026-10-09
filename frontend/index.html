@@ -19,11 +19,8 @@
       User-Agents hitting /gallery/<slug> get a per-event rich preview
       served by backend's galleryOgService instead of this static shell.
 
-      But the third path — link previews fetched by WhatsApp Business
-      API, Twilio, LinkPreview, or any service that caches metadata
-      with a non-crawler UA — gets *this* HTML as-is. Defaulting the
-      title to "PicPeak - Photo Sharing Platform" left every such
-      preview looking unbranded for self-hosted installs.
+      The static shell also supplies branded defaults to preview services
+      that fetch metadata without running JavaScript.
 
       ${BRAND_TITLE} / ${BRAND_DESCRIPTION} are replaced at *container
       start* by the frontend image's docker-entrypoint.sh (envsubst on

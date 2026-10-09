@@ -22,7 +22,6 @@ const { errorResponse, safeValidationErrors } = require('../../utils/routeHelper
 const { isUniqueViolation } = require('../../utils/dbErrors');
 const { buildShareLinkVariants, resolveShareLinkUrl } = require('../../services/shareLinkService');
 const { parseBooleanInput } = require('../../utils/parsers');
-const eventTypeService = require('../../services/eventTypeService');
 const { normaliseEventTimeTriple } = require('../../services/eventService');
 const { hasColumnCached } = require('../../utils/schemaCache');
 const { requireEventOwnership, scopeEventsListQuery, withoutForeignEventSecrets } = require('../../middleware/ownership');
@@ -180,13 +179,6 @@ module.exports = (router) => {
 
   // Create new event
   router.post('/', adminAuth, requirePermission('events.create'), [
-    body('event_type').notEmpty().trim().custom(async (value) => {
-      const isValid = await eventTypeService.isValidEventType(value);
-      if (!isValid) {
-        throw new Error('Invalid event type');
-      }
-      return true;
-    }),
     body('event_name').notEmpty().trim(),
     body('event_date').optional({ values: 'falsy' }).isDate(),
     // Migration 137 — calendar time fields.
@@ -759,40 +751,6 @@ module.exports = (router) => {
         }
       }
 
-      // WhatsApp gallery_ready on publish-from-draft (#640D). The PublishGallery
-      // dialog (#627) hands us the password back so we can deliver it via
-      // WhatsApp as well. Uses customer_phone from the persisted event row.
-      if (notifyCustomer && event.customer_phone) {
-        try {
-          const { queueWhatsapp, getWhatsAppConfig } = require('../../services/whatsappProcessor');
-          const waConfig = await getWhatsAppConfig();
-          if (waConfig && waConfig.enabled) {
-            const { shareUrl: shareUrlForWa } = await buildShareLinkVariants({
-              slug: event.slug, shareToken: event.share_token,
-            });
-            await queueWhatsapp(parseInt(id, 10), event.customer_phone, 'gallery_created', {
-              customer_name: event.customer_name || event.host_name || '',
-              event_name: event.event_name,
-              gallery_link: shareUrlForWa || `${await getFrontendBaseUrl()}/gallery/${event.slug}`,
-              // Plaintext only when the admin re-typed at publish; otherwise
-              // omit so the buildComponents() helper renders an empty {{4}}
-              // line instead of leaking the "(set at creation)" sentinel.
-              gallery_password: requirePassword && password ? password : '',
-              expiry_date: event.expires_at ? new Date(event.expires_at).toISOString() : null,
-              language: null, // resolved by processor via general_default_language
-            });
-          }
-        } catch (waError) {
-          logger.warn('Failed to queue WhatsApp notification on publish', { error: waError.message });
-        }
-      }
-
-      await logActivity('event_published',
-        { event_name: event.event_name, notified_customer: notifyCustomer },
-        id,
-        { type: 'admin', id: req.admin.id, name: req.admin.username }
-      );
-
       // Fire event.published webhook (#327) — draft → live transition.
       // Canonical payload (#341): includes customer contact + share_token.
       try {
@@ -803,7 +761,6 @@ module.exports = (router) => {
             id: parseInt(id, 10),
             slug: event.slug,
             event_name: event.event_name,
-            event_type: event.event_type,
             event_date: event.event_date,
             share_url: shareUrl,
             share_token: event.share_token,
@@ -854,7 +811,7 @@ module.exports = (router) => {
       const slugify = require('../../utils/slug').slugify;
       const processedEventName = slugify(event_name);
       const slugSuffix = event_date || crypto.randomBytes(3).toString('hex');
-      const baseSlug = `${source.event_type}-${processedEventName}-${slugSuffix}`;
+      const baseSlug = `${processedEventName}-${slugSuffix}`;
       let slug = baseSlug;
       let counter = 1;
       // eslint-disable-next-line no-await-in-loop
@@ -904,7 +861,7 @@ module.exports = (router) => {
       // leave per-gallery secrets / state / photos blank.
       const insertResult = await db('events').insert({
         slug,
-        event_type: source.event_type,
+        event_type: 'project',
         event_name,
         event_date: event_date || null,
         ...(calendarColumnsExist ? {
@@ -1266,8 +1223,7 @@ module.exports = (router) => {
         // Lifecycle — governed by dedicated permission-gated routes
         // (events.archive/restore, publish, activate/deactivate), not events.edit.
         'is_archived', 'is_draft', 'is_active',
-        // Relationships — managed by projectService.assignEvent + its
-        // customer-consistency checks, and events.edit ≠ quotes/contracts perms.
+        // Legacy relationship fields remain blocked from writes here.
         'project_id', 'quote_id',
         // Legacy mirrors — rejected explicitly below in favour of customer_*.
         'host_name', 'host_email',

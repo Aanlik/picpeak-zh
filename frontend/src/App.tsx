@@ -1,7 +1,7 @@
 import { NO_EMAIL_MODE } from './config/communication';
 import { LocalUsersPage } from './pages/admin/LocalUsersPage';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -29,39 +29,11 @@ import {
   CustomerManagementPage,
   CustomerDetailPage,
   WebhookDeliveriesPage,
-  // CRM routes (#TBD) — feature-flagged at the route layer via RequireFeature.
-  QuotesListPage,
-  QuoteEditorPage,
-  QuoteDetailPage,
-  BillsListPage,
-  BillEditorPage,
-  BillDetailPage,
 } from './pages/admin';
-import { CrmDevelopmentPage } from './pages/admin/clients/CrmDevelopmentPage';
-// Newsletter campaigns (#1264). Gated by the `newsletters` flag inside the
-// Clients block; the API refuses these routes independently when it is off.
-import { NewsletterListPage } from './pages/admin/newsletters/NewsletterListPage';
-import { NewsletterComposerPage } from './pages/admin/newsletters/NewsletterComposerPage';
-import { NewsletterDetailPage } from './pages/admin/newsletters/NewsletterDetailPage';
-import { TaxReportPage } from './pages/admin/clients/TaxReportPage';
-import { HoursLoggingPage } from './pages/admin/clients/HoursLoggingPage';
-// E.6 — Calendar page lazy-loaded so the ~200 KB FullCalendar bundle
-// (carved into its own chunk in vite.config.ts) doesn't ship with the
-// main app. Only pages that visit /admin/clients/calendar fetch it.
-const CalendarPage = lazy(() => import('./pages/admin/clients/CalendarPage').then((m) => ({ default: m.CalendarPage })));
 const MessagesPage = lazy(() => import('./pages/admin/messages/MessagesPage').then((m) => ({ default: m.MessagesPage })));
-import { QuoteResponsePage } from './pages/public/QuoteResponsePage';
-import { ContractResponsePage } from './pages/public/ContractResponsePage';
-import { ProjectsListPage } from './pages/admin/projects/ProjectsListPage';
-import { ProjectCockpitPage } from './pages/admin/projects/ProjectCockpitPage';
 import { WorkflowsListPage } from './pages/admin/workflows/WorkflowsListPage';
 import { WorkflowApprovalsPage } from './pages/admin/workflows/WorkflowApprovalsPage';
 import { WorkflowEditorPage } from './pages/admin/workflows/WorkflowEditorPage';
-import { ContractsListPage } from './pages/admin/contracts/ContractsListPage';
-import { ContractEditorPage } from './pages/admin/contracts/ContractEditorPage';
-import { ContractDetailPage } from './pages/admin/contracts/ContractDetailPage';
-import { BlockLibraryPage } from './pages/admin/contracts/BlockLibraryPage';
-import { PaymentCheckPage } from './pages/public/PaymentCheckPage';
 import { AcceptInvitePage } from './pages/public/AcceptInvitePage';
 import { TransfersPage } from './pages/admin/transfers/TransfersPage';
 import { TransferDownloadPage } from './pages/public/TransferDownloadPage';
@@ -72,20 +44,10 @@ import {
   CustomerAcceptInvitePage,
   CustomerLayout,
   CustomerProfilePage,
-  CustomerCalendarPage,
-  CustomerQuotesPage,
-  CustomerBillsPage,
-  CustomerContractsPage,
-  CustomerContractSignPage,
-  CustomerQuoteRespondPage,
   CustomerResetPasswordPage,
 } from './pages/customer';
 import { CustomerAuthProvider } from './contexts/CustomerAuthContext';
 import { AdminLayout, AdminAuthWrapper } from './components/admin';
-import { ClientsLayout } from './components/admin/ClientsLayout';
-import { AccountingLayout, AccountingIndex } from './components/admin/AccountingLayout';
-import { AccountingInboxPage } from './pages/admin/accounting/AccountingInboxPage';
-import { ExpensesLedgerPage } from './pages/admin/accounting/ExpensesLedgerPage';
 import { RequireFeature } from './components/admin/RequireFeature';
 import { PageErrorBoundary, OfflineIndicator, SkipLink, DynamicFavicon, RobotsMetaTags, CMSContentBlock, Loading } from './components/common';
 import { MaintenanceWrapper } from './components/MaintenanceWrapper';
@@ -135,7 +97,7 @@ function AnalyticsBootstrap() {
         // so a page view recorded before a client-side navigation away from
         // them cannot carry the token either.
         maskPatterns: [
-          '/gallery/**', '/s/**', '/invite/**', '/quote/**', '/contract/**', '/payment-check/**',
+          '/gallery/**', '/s/**', '/invite/**',
           '/transfer/**', '/transfer-upload/**', '/customer/**',
         ],
       });
@@ -181,17 +143,6 @@ function AnalyticsBootstrap() {
   }, [settings, isError]);
 
   return null;
-}
-
-/**
- * Backward-compat redirect for /admin/customers/:id → /admin/clients/accounts/:id.
- * Needed because <Navigate to="..."> can't interpolate route params and we
- * want stale bookmarks / email links to keep working after the Clients
- * section reorg.
- */
-function RedirectCustomerDetail() {
-  const { id } = useParams();
-  return <Navigate to={`/admin/clients/accounts/${id}`} replace />;
 }
 
 function App() {
@@ -278,137 +229,10 @@ function App() {
                           </Suspense>
                         } />
                       </Route>
-                      {/* Clients section (#354 follow-up). Parent route
-                          gated by the top-level `clients` flag — when off
-                          the sidebar entry is hidden and every /admin/clients/*
-                          URL redirects to /admin/dashboard. Inside, the
-                          ClientsLayout renders a Settings-style sub-nav
-                          and the active sub-feature's page through an
-                          Outlet. Each sub-route is feature-flagged
-                          independently. */}
-                      <Route element={<RequireFeature flag="clients" />}>
-                        <Route path="clients" element={<ClientsLayout />}>
-                          {/* Newsletters also lives here: the customer detail
-                              page hosts the newsletter consent control, so a
-                              newsletter-only install (portal off) must still
-                              be able to open a customer to record a phone
-                              opt-out (#1264). */}
-                          <Route element={<RequireFeature anyOf={['customerPortal', 'newsletters']} />}>
-                            <Route path="accounts" element={<CustomerManagementPage />} />
-                            <Route path="accounts/:id" element={<CustomerDetailPage />} />
-                          </Route>
-                          {/* Quotes (CRM) — gated by `quotes`. */}
-                          <Route element={<RequireFeature flag="quotes" />}>
-                            <Route path="quotes" element={<QuotesListPage />} />
-                            <Route path="quotes/new" element={<QuoteEditorPage />} />
-                            <Route path="quotes/:id" element={<QuoteDetailPage />} />
-                            <Route path="quotes/:id/edit" element={<QuoteEditorPage />} />
-                          </Route>
-                          {/* Project Overview (CRM) — admin-only grouping
-                              layer above events, gated by `projects`. */}
-                          <Route element={<RequireFeature flag="projects" />}>
-                            <Route path="projects" element={<ProjectsListPage />} />
-                            <Route path="projects/:id" element={<ProjectCockpitPage />} />
-                          </Route>
-                          {/* Bills / invoices (CRM) — gated by `bills`. */}
-                          <Route element={<RequireFeature flag="bills" />}>
-                            <Route path="bills" element={<BillsListPage />} />
-                            <Route path="bills/new" element={<BillEditorPage />} />
-                            <Route path="bills/:id" element={<BillDetailPage />} />
-                            <Route path="bills/:id/edit" element={<BillEditorPage />} />
-                          </Route>
 
-                          {/* Contracts (CRM) — gated by `contracts`. Independent
-                              of quotes/bills; a free-standing legal document
-                              type composed from a library of reusable blocks. */}
-                          <Route element={<RequireFeature flag="contracts" />}>
-                            <Route path="contracts" element={<ContractsListPage />} />
-                            <Route path="contracts/new" element={<ContractEditorPage />} />
-                            <Route path="contracts/blocks" element={<BlockLibraryPage />} />
-                            <Route path="contracts/:id" element={<ContractDetailPage />} />
-                            <Route path="contracts/:id/edit" element={<ContractEditorPage />} />
-                          </Route>
-
-                          {/* Hour logging (standalone surface) — gated by
-                              `hoursLogging`. Independent of `bills` so admin
-                              can log hours before the full billing surface
-                              is enabled. */}
-                          <Route element={<RequireFeature flag="hoursLogging" />}>
-                            <Route path="hours" element={<HoursLoggingPage />} />
-                          </Route>
-
-                          {/* Admin calendar (migration 137) — gated by
-                              `calendar`. Lazy-loaded so the FullCalendar
-                              bundle stays out of the main chunk. */}
-                          <Route element={<RequireFeature flag="calendar" />}>
-                            <Route
-                              path="calendar"
-                              element={
-                                <Suspense fallback={<Loading />}>
-                                  <CalendarPage />
-                                </Suspense>
-                              }
-                            />
-                          </Route>
-
-                          {/* Tax export moved permanently to the Accounting
-                              section. Keep this path as a redirect so old
-                              bookmarks / links don't 404. */}
-                          <Route path="tax-report" element={<Navigate to="/admin/accounting/tax-report" replace />} />
-                          {/* Newsletter campaigns (#1264) — gated by
-                              `newsletters`. Mass marketing mail to customer
-                              accounts, with per-customer opt-out. */}
-                          <Route element={<RequireFeature flag="newsletters" />}>
-                            <Route path="newsletters" element={<NewsletterListPage />} />
-                            <Route path="newsletters/:id" element={<NewsletterDetailPage />} />
-                            <Route path="newsletters/:id/edit" element={<NewsletterComposerPage />} />
-                          </Route>
-                          {/* Developer tools — gated by `crmDevelopment`. */}
-                          <Route element={<RequireFeature flag="crmDevelopment" />}>
-                            <Route path="development" element={<CrmDevelopmentPage />} />
-                          </Route>
-                          {/* No index redirect here: ClientsLayout picks the
-                              first sub-feature this user can actually reach,
-                              which a fixed /accounts target could not — a
-                              newsletters-only role has no customers.view and
-                              would bounce straight back out (#1264). It also
-                              owns the "parent on, all children off" empty
-                              state. */}
-                        </Route>
-                      </Route>
-
-                      {/* Accounting section (migration 122). Parent gated by
-                          the `accounting` flag. Hosts the Tax report — which
-                          relocates here from the CRM sub-nav when accounting
-                          is on — plus the future inbound-invoice / expenses
-                          pages. Each sub-route is independently flagged. */}
-                      <Route element={<RequireFeature flag="accounting" />}>
-                        <Route path="accounting" element={<AccountingLayout />}>
-                          <Route element={<RequireFeature flag="incomingInvoices" />}>
-                            <Route path="inbox" element={<AccountingInboxPage />} />
-                          </Route>
-                          <Route element={<RequireFeature flag="expenses" />}>
-                            <Route path="expenses" element={<ExpensesLedgerPage />} />
-                          </Route>
-                          <Route element={<RequireFeature flag="taxReport" />}>
-                            <Route path="tax-report" element={<TaxReportPage />} />
-                            {/* Treuhänder export moved onto the Tax page; keep
-                                the old path working for bookmarks. */}
-                            <Route path="export" element={<Navigate to="/admin/accounting/tax-report" replace />} />
-                          </Route>
-                          {/* Chart of accounts (Layer A) moved into Settings →
-                              Accounting; keep the old path working for bookmarks. */}
-                          <Route path="ledger" element={<Navigate to="/admin/settings?tab=accounting" replace />} />
-                          <Route index element={<AccountingIndex />} />
-                        </Route>
-                      </Route>
-
-                      {/* Old /admin/customers paths now live under
-                          /admin/clients/accounts. Kept indefinitely as
-                          redirects so existing bookmarks and email links
-                          don't 404. */}
-                      <Route path="customers"     element={<Navigate to="/admin/clients/accounts" replace />} />
-                      <Route path="customers/:id" element={<RedirectCustomerDetail />} />
+                      <Route path="customers" element={<CustomerManagementPage />} />
+                      <Route path="customers/:id" element={<CustomerDetailPage />} />
+                      <Route path="clients/*" element={<Navigate to="/admin/customers" replace />} />
 
                       {/* Workflows (automation engine) — top-level area gated
                           by the `workflows` flag. */}
@@ -428,7 +252,6 @@ function App() {
                           and external links don't 404. */}
                       <Route path="email"        element={<Navigate to="/admin/settings?tab=email"      replace />} />
                       <Route path="branding"     element={<Navigate to="/admin/settings?tab=branding"   replace />} />
-                      <Route path="event-types"  element={<Navigate to="/admin/settings?tab=eventTypes" replace />} />
                       <Route path="backup"       element={<Navigate to="/admin/settings?tab=backup"     replace />} />
                       <Route path="cms"          element={<Navigate to="/admin/settings?tab=cms"        replace />} />
 
@@ -438,17 +261,6 @@ function App() {
 
                   {/* Public invitation acceptance page */}
                   <Route path="/invite/:token" element={<AcceptInvitePage />} />
-
-                  {/* Public quote accept/decline page (CRM). Token-only,
-                      no auth required. */}
-                  <Route path="/quote/:token" element={<QuoteResponsePage />} />
-                  <Route path="/contract/:token" element={<ContractResponsePage />} />
-
-                  {/* Admin payment-check page (CRM) — token only,
-                      no auth. Reached from the "Paid in full /
-                      Partial / Not paid" buttons in the payment-
-                      check email. */}
-                  <Route path="/payment-check/:token" element={<PaymentCheckPage />} />
 
                   {/* PicTransfer (#997) — recipient download + client upload,
                       token-only, no auth. */}
@@ -481,14 +293,6 @@ function App() {
                             unauthenticated visitors to /customer/login. */}
                         <Route element={<CustomerLayout />}>
                           <Route path="dashboard" element={<CustomerDashboardPage />} />
-                          <Route path="calendar" element={<CustomerCalendarPage />} />
-                          <Route path="quotes" element={<CustomerQuotesPage />} />
-                          {/* Respond / sign inside the portal session, so the
-                              portal never hands out the emailed link tokens. */}
-                          <Route path="quotes/:id/respond" element={<CustomerQuoteRespondPage />} />
-                          <Route path="contracts" element={<CustomerContractsPage />} />
-                          <Route path="contracts/:id/sign" element={<CustomerContractSignPage />} />
-                          <Route path="bills" element={<CustomerBillsPage />} />
                           <Route path="profile" element={<CustomerProfilePage />} />
                         </Route>
 

@@ -84,7 +84,7 @@ const customerB: CustomerProfile = {
 
 function eventsWith(eventName: string): CustomerEvent[] {
   return [{
-    id: 1, slug: 'evt', eventName, eventType: 'wedding', eventDate: '2026-01-01',
+    id: 1, slug: 'evt', eventName, eventType: 'project', eventDate: '2026-01-01',
     expiresAt: null, isActive: true, assignedAt: '2026-01-01',
   }];
 }

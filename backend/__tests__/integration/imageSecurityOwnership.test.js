@@ -1,7 +1,7 @@
 const request = require('supertest');
 const knex = require('knex');
 const { randomUUID } = require('crypto');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup; let app; let superId; let actorId; let owner; let schema;
 const events = {};
@@ -14,7 +14,7 @@ beforeAll(async () => {
     process.env.DATABASE_CLIENT = 'pg';
     jest.doMock('../../knexfile', () => ({ client: 'pg', connection: pgUrl, searchPath: [schema] }));
   }
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId: superId } = await seedMinimal(db));
   await assignAdminRole(db, superId);
   const role = await require('../../src/services/userManagementService').createRole({
@@ -24,7 +24,7 @@ beforeAll(async () => {
     password_hash: 'unused', role_id: role.id, is_active: true, must_change_password: false }).returning('id');
   actorId = actor.id ?? actor;
   for (const [name, createdBy] of [['own', actorId], ['foreign', superId], ['legacy', null]]) {
-    const [event] = await db('events').insert({ slug: name, event_type: 'wedding', event_name: name,
+    const [event] = await db('events').insert({ slug: name, event_type: 'project', event_name: name,
       event_date: '2026-09-16', host_email: 'h@example.test', admin_email: 'a@example.test',
       password_hash: 'unused', share_link: `/gallery/${name}/share`, created_by: createdBy }).returning('id');
     const eventId = event.id ?? event; events[name] = eventId;

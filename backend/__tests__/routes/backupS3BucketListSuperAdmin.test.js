@@ -21,7 +21,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { S3Client } = require('@aws-sdk/client-s3');
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 describe('GET /api/admin/backup/s3/buckets', () => {
   let db; let cleanup; let app; let superToken; let adminToken; let viewerToken;
@@ -47,7 +47,7 @@ describe('GET /api/admin/backup/s3/buckets', () => {
   const get = (token) => request(app).get('/api/admin/backup/s3/buckets').set('Authorization', `Bearer ${token}`);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
 
     const viewerRoleId = await insertId('roles', {
       name: 'backup-viewer', display_name: 'Backup viewer', description: 'test role', is_system: false, priority: 10,

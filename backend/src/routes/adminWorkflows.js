@@ -239,9 +239,7 @@ router.patch('/:id/enabled', requirePermission('workflows.manage'), async (req, 
     const enabled = !!(req.body && req.body.enabled);
     const wf = await db('workflows').where({ id }).first();
     if (!wf) return res.status(404).json({ error: 'Workflow not found' });
-    // Refuse to enable a flow that would silently no-op — i.e. one whose graph
-    // references actions that aren't implemented yet (the booking built-ins'
-    // prepare_*/send_document stubs). Concern #5 from review.
+    // Refuse to enable a flow whose graph references an action that is not implemented.
     if (enabled) {
       const rows = await db('workflow_nodes').where({ workflow_id: id, version: wf.version });
       const stubs = unimplementedActionsIn(rows.map((n) => ({ type: n.type, config: parseJson(n.config, {}) })));
@@ -254,19 +252,6 @@ router.patch('/:id/enabled', requirePermission('workflows.manage'), async (req, 
     // enabled state on the next SEED_VERSION bump (review nit #1).
     if (await hasColumnCached('workflows', 'admin_toggled_at')) patch.admin_toggled_at = db.fn.now();
     await db('workflows').where({ id }).update(patch);
-    // Turning dunning ON enrolls existing open/unpaid invoices (anchored to
-    // their due date) so it starts chasing current debtors, not only invoices
-    // sent after enabling (#750). Scoped to this flow's id so the backfill only
-    // enrolls dunning, not any custom invoice.sent flow. Best-effort — never
-    // fail the toggle over it.
-    if (enabled && wf.builtin_key === 'invoice_dunning') {
-      try {
-        const n = await require('../services/workflows').backfillDunningRuns(id);
-        require('../utils/logger').info('[workflow] dunning enabled — enrolled existing invoices', { enrolled: n });
-      } catch (e) {
-        require('../utils/logger').warn('[workflow] dunning backfill failed', { error: e.message });
-      }
-    }
     res.json({ id, enabled });
   } catch (e) { next(e); }
 });

@@ -1,6 +1,6 @@
 /**
  * Pages whose URL carries a bearer secret — invitation, password reset,
- * quote, contract, payment-check and transfer tokens — must never load the
+ * and transfer tokens — must never load the
  * tracker: an auto-tracked page view would ship the token to the analytics
  * host, where anyone with access to the events could redeem it first
  * (Codex security audit 2026-09-30). Same treatment as the admin UI. stable
@@ -31,16 +31,12 @@ describe('tracker and token-bearing pages', () => {
 
   it.each([
     '/invite/9f3a1c',
-    '/quote/9f3a1c',
-    '/contract/9f3a1c',
-    '/payment-check/9f3a1c',
     '/transfer/9f3a1c',
     '/transfer-upload/9f3a1c',
     '/customer/invite/9f3a1c',
     '/customer/reset-password/9f3a1c',
     '/customer/login',
     '/customer/dashboard',
-    '/customer/bills',
     '/customer',
     '/CUSTOMER/dashboard',
     '/s/ab12cd',

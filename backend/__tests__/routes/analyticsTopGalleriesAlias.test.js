@@ -23,20 +23,20 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'analytics-alias-test-secret'
 const request = require('supertest');
 const express = require('express');
 
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 describe('GET /api/admin/dashboard/analytics — topGalleries uniqueVisitors alias', () => {
   let db; let cleanup; let app; let token;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);
 
     const inserted = await db('events').insert({
       slug: 'alias-gallery',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Alias Gallery',
       event_date: '2026-08-01',
       host_email: 'h@example.com',

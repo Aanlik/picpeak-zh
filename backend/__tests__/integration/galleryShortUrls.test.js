@@ -17,14 +17,14 @@
  * Boots one DB for the whole file (cheap on SQLite); each test seeds
  * its own event row to keep scope clean.
  */
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
 let db; let cleanup; let service; let adminId;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
 
   // Minimal admin for created_by audit.
   const adminInsert = await db('admin_users').insert({
@@ -47,7 +47,7 @@ async function seedEvent(overrides = {}) {
   const farFuture = new Date(Date.now() + 365 * 86400000).toISOString();
   const [id] = await db('events').insert({
     slug,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: overrides.event_name || 'Test Wedding',
     event_date: overrides.event_date || '2026-06-05',
     password_hash: 'x',

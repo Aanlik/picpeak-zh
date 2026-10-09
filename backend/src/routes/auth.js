@@ -55,17 +55,6 @@ const router = express.Router();
 async function establishAdminSession(res, admin, ipAddress, userAgent, lockoutKey, { rememberMe = false } = {}) {
   await trackSuccessfulLogin(lockoutKey, ipAddress, userAgent);
 
-  // A normal login means the first-run wizard is over — the wizard never hits
-  // this route (setup sets its cookie directly). Close the system-event-type
-  // deletion window durably even when the wizard was abandoned mid-way (#800).
-  // Best-effort: a failure here must never block a login.
-  try {
-    const setupService = require('../services/setupService');
-    if (!(await setupService.isSetupWizardCompleted())) {
-      await setupService.markSetupWizardCompleted();
-    }
-  } catch (_) { /* best-effort */ }
-
   await db('admin_users').where('id', admin.id).update({
     last_login: new Date(),
     last_login_ip: ipAddress
@@ -558,7 +547,6 @@ router.post('/gallery/verify', [
       event: {
         id: event.id,
         event_name: event.event_name,
-        event_type: event.event_type,
         event_date: event.event_date,
         welcome_message: event.welcome_message,
         color_theme: event.color_theme,
@@ -636,7 +624,6 @@ router.post('/gallery/:slug/client-login', [
       event: {
         id: event.id,
         event_name: event.event_name,
-        event_type: event.event_type,
         event_date: event.event_date,
         welcome_message: event.welcome_message,
         color_theme: event.color_theme,
@@ -735,7 +722,6 @@ router.post('/gallery/share-login', [
       event: {
         id: event.id,
         event_name: event.event_name,
-        event_type: event.event_type,
         event_date: event.event_date,
         welcome_message: event.welcome_message,
         color_theme: event.color_theme,

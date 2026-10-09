@@ -28,12 +28,12 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'legacy-acl-test-secret';
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 async function insertEvent(db, ownerId, over = {}) {
   const base = {
     slug: `ev-${Math.random().toString(16).slice(2)}`,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Owner Gallery',
     event_date: '2026-05-29',
     host_email: 'host@example.com',
@@ -62,7 +62,7 @@ describe('GHSA-4j34: legacy /api/events router removed + extend guarded', () => 
     let editorId; let editorToken;
 
     beforeAll(async () => {
-      ({ db, cleanup } = await bootCrmDb());
+      ({ db, cleanup } = await bootTestDb());
       ({ adminId: ownerId } = await seedMinimal(db));
       await assignAdminRole(db, ownerId, 'super_admin');
       ownerToken = mintAdminToken(ownerId);

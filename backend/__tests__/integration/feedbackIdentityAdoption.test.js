@@ -18,7 +18,7 @@ const jwt = require('jsonwebtoken');
 const knex = require('knex');
 const crypto = require('crypto');
 const { randomUUID } = require('crypto');
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 
 const pgUrl = process.env.PICPEAK_PG_TEST_URL;
 let db; let cleanup; let app; let eventId; let photoId; let token; let owner; let schema;
@@ -36,9 +36,9 @@ beforeAll(async () => {
     process.env.DATABASE_CLIENT = 'pg';
     jest.doMock('../../knexfile', () => ({ client: 'pg', connection: pgUrl, searchPath: [schema] }));
   }
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
-  const [event] = await db('events').insert({ slug: 'legacy-identity', event_type: 'wedding', event_name: 'Legacy Identity',
+  const [event] = await db('events').insert({ slug: 'legacy-identity', event_type: 'project', event_name: 'Legacy Identity',
     event_date: '2026-09-16', host_email: 'h@example.test', admin_email: 'a@example.test',
     password_hash: 'unused', share_link: '/gallery/legacy-identity/share', is_active: true, is_archived: false, is_draft: false }).returning('id');
   eventId = event.id ?? event;
@@ -285,7 +285,7 @@ test('adopts per event: one cookie subject visiting two galleries adopts the leg
   // The cookie is scoped to /api/gallery, so one subject spans every event,
   // and the legacy sha256(ip:userAgent) hash names none. A claim keyed on the
   // subject alone would adopt the first gallery and skip the second forever.
-  const [eventB] = await db('events').insert({ slug: 'legacy-identity-b', event_type: 'wedding', event_name: 'Legacy Identity B',
+  const [eventB] = await db('events').insert({ slug: 'legacy-identity-b', event_type: 'project', event_name: 'Legacy Identity B',
     event_date: '2026-09-16', host_email: 'h@example.test', admin_email: 'a@example.test',
     password_hash: 'unused', share_link: '/gallery/legacy-identity-b/share', is_active: true, is_archived: false, is_draft: false }).returning('id');
   const eventIdB = eventB.id ?? eventB;

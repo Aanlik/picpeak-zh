@@ -4,7 +4,7 @@
  * Shared, controlled editor for a slideshow's visual style — transition,
  * timing, watermark and color filter. Used in two places:
  *   - SlideshowSettingsCard (per-event live settings)
- *   - EventTypeModal (per-event-type preset that new events inherit)
+ *   - Project-specific slideshow settings
  *
  * Purely presentational: it owns no persistence, just renders the controls
  * for a SlideshowStyle value and calls onChange with the next value.

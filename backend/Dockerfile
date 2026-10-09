@@ -67,22 +67,13 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 # run on Alpine and (b) only includes ffmpeg, not ffprobe (which the video
 # pipeline calls via fluent-ffmpeg.ffprobe()).
 # fontconfig is required so `sharp` (librsvg) can rasterise SVG logos that
-# contain live <text> for the CRM PDFs. Without any font installed, librsvg
-# renders text as tofu boxes (□) while the vector artwork still draws — i.e.
-# a "corrupted" logo on invoices/quotes. DejaVu/Liberation provide a broad
-# Unicode fallback; picpeak's own brand fonts (assets/fonts/, the same files
-# PDFKit + the web UI use) are registered with fontconfig further down so the
-# logo's text renders in its actual typeface, not a fallback.
-# poppler-utils provides `pdftoppm`, used to rasterise inbound supplier-invoice
-# PDFs to flat PNGs server-side so the admin UI NEVER renders a raw (possibly
-# malicious) PDF. pdftoppm does not execute embedded JS or fetch remote
-# resources, so it doubles as the SSRF/phone-home guard for untrusted inbound
-# documents (see https://docs.picpeak.app/features/accounting/incoming-invoices).
+# contain live <text>. DejaVu/Liberation provide a broad Unicode fallback;
+# PicPeak's own brand fonts are registered below for SVG assets.
 # exiftool extracts the embedded full-res JPEG preview from RAW/DNG uploads
 # (Apple ProRAW etc.) — sharp's libvips has no raw loader, so the pipeline
 # thumbnails/displays that preview while keeping the original for download.
 RUN apk add --no-cache dumb-init postgresql-client ffmpeg su-exec \
-    fontconfig ttf-dejavu ttf-liberation poppler-utils exiftool && \
+    fontconfig ttf-dejavu ttf-liberation exiftool && \
     fc-cache -f
 
 # Create non-root user

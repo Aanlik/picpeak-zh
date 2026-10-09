@@ -22,13 +22,13 @@ const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-defer-'));
 process.env.TEST_DATABASE_PATH = path.join(tmpRoot, 'db.sqlite');
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'defer-test-secret';
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup; let faceQueue; let faceProcessor;
 
 describe('deferred photos do not block the queue', () => {
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     faceQueue = require('../../src/services/faceQueue');
     faceProcessor = require('../../src/services/faceProcessor');
   }, 120000);
@@ -98,7 +98,7 @@ describe('deferred photos do not block the queue', () => {
     // past it instead of spinning on it.
     const [e] = await db('events').insert({
       slug: `defer-${Math.random().toString(36).slice(2, 8)}`,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'defer',
       event_date: '2026-01-01',
       host_email: 'h@example.com',
@@ -152,7 +152,7 @@ describe('deferred photos do not block the queue', () => {
     const mk = async (name) => {
       const [e] = await db('events').insert({
         slug: `cd-${name}-${Math.random().toString(36).slice(2, 8)}`,
-        event_type: 'wedding',
+        event_type: 'project',
         event_name: name,
         event_date: '2026-01-01',
         host_email: 'h@example.com',
@@ -197,7 +197,7 @@ describe('deferred photos do not block the queue', () => {
     await db('photos').del();
     const [e] = await db('events').insert({
       slug: `mix-${Math.random().toString(36).slice(2, 8)}`,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'mix',
       event_date: '2026-01-01',
       host_email: 'h@example.com',

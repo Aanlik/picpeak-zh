@@ -35,7 +35,6 @@ describe('SidebarPreview feature gates (QA J.14)', () => {
     ['workflows', 'navigation.workflows'],
     ['transfers', 'navigation.transfers'],
     ['messaging', 'navigation.messages'],
-    ['accounting', 'navigation.accounting'],
     ['analytics', 'admin.analytics'],
     ['userManagement', 'navigation.users'],
   ] as const)('reflects the %s toggle', (flag, label) => {
@@ -47,14 +46,4 @@ describe('SidebarPreview feature gates (QA J.14)', () => {
     expect(screen.getByText(label)).toBeInTheDocument();
   });
 
-  it('shows the CRM entry only when one of its sub-features is on', () => {
-    // `clients` is derived, so the entry needs a real sub-feature — mirrors
-    // AdminSidebar's featureFlagsAny check.
-    const { unmount } = render(<SidebarPreview staged={staged({ clients: true })} />);
-    expect(screen.queryByText('navigation.clients')).not.toBeInTheDocument();
-    unmount();
-
-    render(<SidebarPreview staged={staged({ clients: true, contracts: true })} />);
-    expect(screen.getByText('navigation.clients')).toBeInTheDocument();
-  });
 });

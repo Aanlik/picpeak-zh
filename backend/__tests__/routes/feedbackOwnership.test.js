@@ -19,7 +19,7 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 describe('feedback ownership scoping', () => {
   let db; let cleanup; let app;
@@ -29,7 +29,7 @@ describe('feedback ownership scoping', () => {
   const auth = (req, tok) => req.set('Authorization', `Bearer ${tok}`);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId: superId } = await seedMinimal(db);
     await assignAdminRole(db, superId, 'super_admin');
     superTok = mintAdminToken(superId);
@@ -44,7 +44,7 @@ describe('feedback ownership scoping', () => {
 
     // Event owned by super_admin (NOT the editor).
     const ev = await db('events').insert({
-      slug: 'fbown-foreign', event_type: 'wedding', event_name: 'Foreign',
+      slug: 'fbown-foreign', event_type: 'project', event_name: 'Foreign',
       event_date: '2026-08-01', host_email: 'h@e.com', admin_email: 'a@e.com',
       password_hash: 'x', share_link: '/g/fbown/s', share_token: 'fbown-share',
       expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),

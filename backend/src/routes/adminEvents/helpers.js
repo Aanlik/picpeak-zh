@@ -3,7 +3,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../../utils/logger');
 const settings = require('../../services/eventSettings');
-const { deleteWithAccountingHistory } = require('../../services/accountingHistory');
+const { deleteWithHistory } = require('../../services/changeHistory');
 
 async function deleteEventCascade(eventId, adminContext) {
   const event = await db('events').where('id', eventId).first();
@@ -184,7 +184,7 @@ async function deleteEventCascade(eventId, adminContext) {
 
     await trx('photos').where('event_id', eventId).del();
     // 5. Finally delete the event row
-    await deleteWithAccountingHistory(trx, 'events', { id: eventId },
+    await deleteWithHistory(trx, 'events', { id: eventId },
       { actor: adminContext?.id ?? null, source: 'event.delete' });
 
     // Best-effort filesystem cleanup. Failures are logged but don't unwind

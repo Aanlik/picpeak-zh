@@ -38,7 +38,6 @@ const baseDoc = {
           id: { type: 'integer' },
           slug: { type: 'string' },
           event_name: { type: 'string' },
-          event_type: { type: 'string' },
           event_date: { type: 'string', format: 'date', nullable: true },
           expires_at: { type: 'string', format: 'date-time', nullable: true },
           is_active: { type: 'boolean' },

@@ -7,7 +7,6 @@ import { Button } from './Button';
 interface PasswordGeneratorProps {
   eventName?: string;
   eventDate?: string;
-  eventType?: string;
   onPasswordGenerated: (password: string) => void;
   className?: string;
   disabled?: boolean;
@@ -17,7 +16,6 @@ interface PasswordGeneratorProps {
 export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({
   eventName = '',
   eventDate = '',
-  eventType = 'wedding',
   onPasswordGenerated,
   className = '',
   disabled = false,
@@ -43,24 +41,22 @@ export const PasswordGenerator: React.FC<PasswordGeneratorProps> = ({
       const password = generateEventPassword({
         eventName,
         eventDate,
-        eventType,
         config
       });
       
       onPasswordGenerated(password);
       setIsGenerating(false);
     }, 300);
-  }, [eventName, eventDate, eventType, passwordComplexity, onPasswordGenerated]);
+  }, [eventName, eventDate, passwordComplexity, onPasswordGenerated]);
 
   const generateSuggestions = useCallback(() => {
     const newSuggestions = generatePasswordSuggestions({
       eventName,
       eventDate,
-      eventType
     });
     setSuggestions(newSuggestions);
     setShowSuggestions(true);
-  }, [eventName, eventDate, eventType]);
+  }, [eventName, eventDate]);
 
   const copyToClipboard = async (password: string, index: number) => {
     try {

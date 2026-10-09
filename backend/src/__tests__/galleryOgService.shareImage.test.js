@@ -163,7 +163,7 @@ describe('buildOgMetadata — share-image opt-in', () => {
     // Defensive: hero_photo_id points to a photo that no longer
     // exists (e.g. deleted after admin enabled the toggle). The OG
     // page must still render with the logo, never a broken image
-    // src in WhatsApp previews.
+    // src in social link previews.
     mockResolveSlug({
       id: 4,
       slug: 'orphan',
@@ -348,22 +348,15 @@ describe('handleGalleryOgCover — 404 unless explicitly opted in', () => {
   });
 });
 
-// Regression for #521 — WhatsApp Business API + 3rd-party preview
-// services use UAs that aren't "WhatsApp/X.Y.Z". If isSocialCrawler
-// misses them, those requests fall through to the static SPA shell
-// and the link preview ends up unbranded.
-describe('isSocialCrawler — extended bot coverage (#521)', () => {
+// Social crawlers must receive the server-rendered gallery preview rather
+// than the client-side SPA shell.
+describe('isSocialCrawler — social preview coverage', () => {
   it('matches every UA the README/changelog claims to support', () => {
     // Pin the contract: each listed UA must hit the crawler path so the
     // nginx rewrite + backend OG handler stay in sync. Adding a new UA
     // here without also adding it to nginx.conf would silently regress.
     const knownBots = [
-      // Main WhatsApp app
-      'WhatsApp/2.23.20.0',
-      // WhatsApp Business / Cloud API variants
-      'WhatsAppBot/1.0',
-      'wa-bot/2.0',
-      // Other messaging app crawlers
+      // Social platform crawlers
       'facebookexternalhit/1.1',
       'Twitterbot/1.0',
       'Slackbot-LinkExpanding 1.0',

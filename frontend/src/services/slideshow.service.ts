@@ -119,7 +119,6 @@ export interface SlideshowSession {
   token: string;
   event: {
     event_name: string;
-    event_type?: string;
     color_theme?: string | null;
   };
   settings: SlideshowSettings;

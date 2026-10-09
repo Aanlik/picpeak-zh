@@ -28,7 +28,7 @@ const path = require('path');
 const express = require('express');
 const request = require('supertest');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 jest.mock('../../src/middleware/auth', () => ({
   adminAuth: (req, _res, next) => { req.admin = { id: 1 }; next(); },
@@ -49,7 +49,7 @@ describe('GET /api/admin/system-health/backup-coverage', () => {
   let app;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     storagePath = process.env.STORAGE_PATH;
 
     const route = require('../../src/routes/adminSystemHealth');
@@ -73,7 +73,7 @@ describe('GET /api/admin/system-health/backup-coverage', () => {
   async function restoreDefaultPaths() {
     await db('backup_paths').del();
     const { DEFAULT_PATHS } = require('../../migrations/core/109_add_backup_paths');
-    await db('backup_paths').insert(DEFAULT_PATHS.map((row) => ({
+    await db('backup_paths').insert(DEFAULT_PATHS.filter((row) => row.path !== 'business-docs').map((row) => ({
       ...row,
       created_at: new Date(),
       updated_at: new Date(),
@@ -86,7 +86,7 @@ describe('GET /api/admin/system-health/backup-coverage', () => {
     await db('app_settings').where('setting_type', 'backup').del().catch(() => {});
   });
 
-  it('returns the canonical 7 paths + database block on a fresh install', async () => {
+  it('returns the canonical 6 paths + database block on a fresh install', async () => {
     const res = await request(app).get('/api/admin/system-health/backup-coverage');
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('report');
@@ -99,7 +99,6 @@ describe('GET /api/admin/system-health/backup-coverage', () => {
       'previews',
       'heroes',
       'uploads',
-      'business-docs',
     ]);
 
     // Default mode is inline — no inline_dump setting present means
@@ -108,7 +107,7 @@ describe('GET /api/admin/system-health/backup-coverage', () => {
     expect(report.database.ok).toBe(true);
 
     expect(report.summary).toMatchObject({
-      configuredCount: 7,
+      configuredCount: 6,
       tableMissingFallbackInUse: false,
     });
   });

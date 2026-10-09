@@ -36,7 +36,7 @@ process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-video-
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const SLUG = 'protected-video-gallery';
 const VIDEO_BYTES = Buffer.from('not really an mp4, but the route only streams bytes');
@@ -57,12 +57,12 @@ describe('videos stay playable under enhanced/maximum protection (#1370)', () =>
   }
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const ev = await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Protected Video',
       event_date: '2026-09-01',
       host_email: 'h@example.com',

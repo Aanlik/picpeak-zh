@@ -1,54 +1,4 @@
-/**
- * safePath — path-containment helpers for the contract / quote / invoice
- * PDF surfaces.
- *
- * **Why this exists**
- *
- * The audit (#25, #31) flagged that several routes pipe `fs.createReadStream`
- * on a path read directly from the DB (`contracts.pdf_path`,
- * `contracts.signed_pdf_path`) and that `attachSignedPdfUpload` accepts
- * a route-supplied filePath with no containment assertion. The
- * defence-in-depth concern: if a path ever got into the DB pointing
- * outside the legitimate storage roots (via a future migration bug,
- * a hand-edited row, or a SQL-injection regression elsewhere), the
- * stream would happily read /etc/passwd or any other readable file
- * for the requesting admin.
- *
- * Today the DB paths are written by the service layer and never
- * accept caller input directly, so the practical exposure is low —
- * but a 4-line containment check at the read boundary makes the
- * invariant explicit and protects against future drift.
- *
- * **Approach**
- *
- * `assertPathInside(absoluteFilePath, allowedRoots)` resolves both
- * sides to canonical absolute paths via `fs.realpathSync` and
- * verifies the file path starts with one of the allowed root strings
- * followed by a path separator (so /storage-evil/ doesn't pass when
- * /storage/ is allowed). Throws `AppError 403` on violation.
- *
- * `realpathSync` resolves symlinks, defeating the obvious attack
- * (symlink in storage root → /etc/passwd). It throws on missing
- * files, which is fine — callers already exists-check before stream
- * via `fs.existsSync`. We re-throw missing-file errors as
- * AppError 404 to keep the response shape consistent.
- *
- * **What the contract surface uses**
- *
- * Three roots:
- *   1. `<storage root>/business-docs/contract/` — system-stamped PDFs
- *      (immutable as-sent + signed copies) and the signature images
- *      below them. This is where the writers persist.
- *   2. `<cwd>/storage/business-docs/contract/` — the same tree as written
- *      before the writers moved onto the shared storage resolver. Kept so
- *      pre-existing rows, whose absolute paths are in the database, still
- *      resolve; identical to (1) on a stock compose install.
- *   3. `<storage root>/uploads/contracts/signed/` —
- *      wet-upload PDFs (admin or customer-supplied).
- *
- * Both roots are constants from the operator's perspective; legitimate
- * paths always live under one of them.
- */
+/** Storage-path containment helpers for uploads and archived files. */
 
 const fs = require('fs');
 const path = require('path');
@@ -79,8 +29,7 @@ function realpathOr404(absPath) {
  * Both inputs are resolved through realpath so symlinks in either
  * direction are followed before comparison. `allowedRoots` that
  * don't themselves exist are silently dropped from the check (a
- * deployment with both quote and contract roots may have the
- * contract root missing on first boot, for example) — at least one
+ * a newly configured storage root may be missing on first boot, for example) — at least one
  * root MUST exist for the check to allow the path.
  */
 function assertPathInside(filePath, allowedRoots) {
@@ -128,8 +77,7 @@ function assertStoredPathInside(storedPath, allowedRoots) {
 
 /**
  * The directories a stored path may name at all: the storage root, and
- * <cwd>/storage, where the contract writers put files before they moved onto
- * the shared resolver (the same directory on a stock install).
+ * <cwd>/storage, the legacy root used by earlier versions.
  */
 function storageRoots() {
   return [getStoragePath(), path.join(process.cwd(), 'storage')];
@@ -150,40 +98,6 @@ function resolveStoredPathStrict(storedPath, allowedRoots = storageRoots()) {
     if (err && err.statusCode === 404) return null;
     throw err;
   }
-}
-
-/** Where contract PDFs and signature images live (see assertContractPdfPath). */
-function contractPdfRoots() {
-  const cwd = process.cwd();
-  // getStoragePath() rather than a second `STORAGE_PATH || cwd` expression:
-  // the two disagree whenever STORAGE_PATH is unset, because the shared
-  // resolver falls back module-relative (<repo>/storage) while this file used
-  // to fall back to <cwd>/storage — and the backend is normally started from
-  // backend/, so those are different directories. The writers use the shared
-  // resolver, so a guard with its own idea of the root refuses exactly the
-  // files it is meant to serve.
-  const storageRoot = getStoragePath();
-  return [
-    // The configured storage root is where the contract writers persist, so it
-    // has to be allowed here or every generated PDF is refused with
-    // PATH_OUTSIDE_STORAGE the moment STORAGE_PATH is not <cwd>/storage. The
-    // cwd root stays alongside it: contracts written before the writers moved
-    // still live there, and their absolute paths are recorded in the database.
-    // Both collapse to the same directory on a stock compose install.
-    path.join(storageRoot, 'business-docs', 'contract'),
-    path.join(cwd, 'storage', 'business-docs', 'contract'),
-    path.join(storageRoot, 'uploads', 'contracts', 'signed'),
-  ];
-}
-
-/**
- * Convenience helper that builds the standard contract PDF roots
- * (system-stamped + wet-upload) and delegates to assertPathInside.
- * Use from contract PDF stream / read sites.
- */
-function assertContractPdfPath(filePath) {
-  // The stored value may be storage-relative or recorded by another install.
-  return assertStoredPathInside(filePath, contractPdfRoots());
 }
 
 /**
@@ -243,31 +157,6 @@ function uploadedAssetPath(url, kind, storageRoot) {
 }
 
 /**
- * Resolve business_profile.logo_path to the file the PDF-logo upload route
- * wrote, or null. logo_path is a free-text field on the profile PUT (an
- * admin may point it at a file managed elsewhere), so it must never be
- * unlinked as given: a `/pdf-logo-\d+\./` marker test plus path.join let
- * `pdf-logo-1./../../../<anything>` -- or any absolute path containing the
- * marker -- delete arbitrary files. Only a flat `pdf-logo-<n>.<ext>` leaf
- * inside uploads/logos is ever named.
- *
- * With `imageOnly`, only the image extensions the upload route writes are
- * accepted: that is the check for a logo_path an admin sets. Cleanup keeps
- * the default, so a non-image `pdf-logo-*` file written before the upload
- * derived its extension from the MIME type is still removed on replace.
- */
-const PDF_LOGO_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg'];
-
-function uploadedPdfLogoPath(logoPath, storageRoot, { imageOnly = false } = {}) {
-  if (!logoPath || typeof logoPath !== 'string') return null;
-  const normalized = logoPath.replace(/^\/+/, '');
-  const match = /^uploads\/logos\/(pdf-logo-\d+\.[A-Za-z0-9]+)$/.exec(normalized);
-  if (!match) return null;
-  if (imageOnly && !PDF_LOGO_IMAGE_EXTENSIONS.includes(path.extname(match[1]).toLowerCase())) return null;
-  return path.join(storageRoot, 'uploads', 'logos', match[1]);
-}
-
-/**
  * Extensions the public /uploads/logos and /uploads/favicons trees serve.
  * Every upload route that writes there accepts only these image types, but
  * older versions kept the client's extension, so a file named .html or .js
@@ -284,11 +173,8 @@ module.exports = {
   assertStoredPathInside,
   resolveStoredPathStrict,
   storageRoots,
-  contractPdfRoots,
-  assertContractPdfPath,
   assertZipEntriesWithin,
   uploadedAssetPath,
-  uploadedPdfLogoPath,
   isPublicUploadImage,
   PUBLIC_UPLOAD_IMAGE_EXTENSIONS,
 };

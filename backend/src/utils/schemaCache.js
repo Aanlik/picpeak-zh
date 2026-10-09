@@ -3,14 +3,11 @@
  *
  * **Why this exists**
  *
- * The CRM services on `feat/crm` are riddled with `hasColumn` guards
- * because the schema has been drifting fast (every doc-feature
- * migration adds a column that older installs may not yet have).
+ * Shared services use `hasColumn` guards because older installations may
+ * not yet have columns introduced by later migrations.
  * Each call hits information_schema (Postgres) or sqlite_master
- * (SQLite). On hot paths — `recordCustomerSignature`,
- * `recordAdminCountersignature`, `getContractById`, the monthly
- * billing pass — we issue 4–8 hasColumn checks per request, all
- * for columns whose presence cannot change at runtime.
+ * (SQLite). On hot paths we issue several hasColumn checks per request,
+ * all for columns whose presence cannot change at runtime.
  *
  * The audit flagged this as a perf medium. Caching is safe because:
  *
@@ -44,7 +41,7 @@
  * **API**
  *
  *   const { hasColumnCached, invalidateSchemaCache } = require('../utils/schemaCache');
- *   if (await hasColumnCached('contracts', 'signed_pdf_render_failed_at')) {
+ *   if (await hasColumnCached('events', 'event_reminder_sent_at')) {
  *     ...
  *   }
  *

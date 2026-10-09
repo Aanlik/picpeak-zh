@@ -11,7 +11,7 @@
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
@@ -19,7 +19,7 @@ let db;
 let cleanup;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
 }, 120000);
 
 afterAll(async () => {

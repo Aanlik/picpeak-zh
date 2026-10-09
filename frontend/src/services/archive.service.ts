@@ -5,7 +5,6 @@ export interface Archive {
   slug: string;
   eventName: string;
   eventDate: string;
-  eventType: string;
   hostEmail: string;
   archivedAt: string;
   expiresAt: string;
@@ -53,17 +52,16 @@ export interface ArchivesResponse {
 }
 
 export const archiveService = {
-  // Get all archives — pagination, search, type filter and sort are all
+  // Get all archives — pagination, search and sort are all
   // resolved server-side so they apply to the whole archive table.
   async getArchives(
     page: number = 1,
     limit: number = 20,
     search?: string,
-    type?: string,
     sortBy?: ArchiveSortBy
   ): Promise<ArchivesResponse> {
     const response = await api.get<ArchivesResponse>('/admin/archives', {
-      params: { page, limit, search: search || undefined, type: type || undefined, sortBy }
+      params: { page, limit, search: search || undefined, sortBy }
     });
     return response.data;
   },

@@ -17,7 +17,6 @@ import type { GalleryAccessLevel } from '../types';
 interface GalleryEvent {
   id: number;
   event_name: string;
-  event_type: string;
   event_date: string | null;
   welcome_message?: string;
   color_theme?: string;

@@ -23,7 +23,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'slideshow-test-secret';
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const request = require('supertest');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 const { invalidateFeatureFlagCache } = require('../../src/middleware/requireFeatureFlag');
 const { invalidateSlideshowGlobals } = require('../../src/utils/slideshowGlobals');
 
@@ -44,7 +44,7 @@ async function setSetting(db, key, value, type = 'slideshow') {
 async function insertEvent(db, over = {}) {
   const base = {
     slug: SLUG,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Test Wedding',
     event_date: '2026-05-29',
     host_email: 'host@example.com',
@@ -67,13 +67,13 @@ async function insertEvent(db, over = {}) {
 describe('public Live Slideshow routes', () => {
   let db; let cleanup; let app;
 
-  // bootCrmDb runs the full migration set against a fresh SQLite file. The
+  // bootTestDb runs the full migration set against a fresh SQLite file. The
   // chain keeps growing, and a 30s pin here blocked the 3.97.0-beta.0
   // release PR on a slow runner. Hook-argument timeouts OVERRIDE the 120s
   // jest.config default (same trap as the jest.setTimeout pins raised in
   // #860) — keep this at 120000, matching the config.
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     app = express();
     app.use(express.json());

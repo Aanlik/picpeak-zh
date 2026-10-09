@@ -302,7 +302,7 @@ export const EventDetailsPage: React.FC = () => {
       // would leave the admin unsure whether anything went out (#1235).
       toast.success(
         result?.notified_customer === false
-          ? (NO_EMAIL_MODE ? '画廊已发布，请复制分享链接发送给客户' : t('events.publishQuietSuccess', 'Gallery published. No email was sent.'))
+          ? (NO_EMAIL_MODE ? t('events.publishShareLinkSuccess') : t('events.publishQuietSuccess', 'Gallery published. No email was sent.'))
           : t('events.publishSuccess'),
       );
       setShowPublishDialog(false);
@@ -783,7 +783,6 @@ export const EventDetailsPage: React.FC = () => {
         <PasswordResetModal
           eventName={event.event_name}
           eventDate={event.event_date ?? undefined}
-          eventType={event.event_type}
           onConfirm={async (sendEmail, password) => {
             const result = await eventsService.resetPassword(event.id, sendEmail, password);
             // refetch so the share card drops a revealed password (#1271)
@@ -820,7 +819,6 @@ export const EventDetailsPage: React.FC = () => {
           eventName={event.event_name}
           requirePassword={!isGalleryPublic(event.require_password)}
           customerEmail={event.customer_email}
-          customerPhone={event.customer_phone}
           assignedCustomerCount={((event as { customer_accounts?: Array<{ id: number }> }).customer_accounts || []).length}
           isPublishing={publishMutation.isPending}
           onConfirm={(password, notifyCustomer) => publishMutation.mutate({ password, notifyCustomer })}

@@ -26,7 +26,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'watcher-dedupe-test-secret';
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 const { findExistingPhoto } = require('../../src/services/fileWatcher');
 
 const EVENT_SLUG = 'watcher-dedupe-event';
@@ -38,11 +38,11 @@ let cleanup;
 let eventId;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
   const inserted = await db('events').insert({
     slug: EVENT_SLUG,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Watcher Dedupe',
     event_date: '2026-08-29',
     host_email: 'host@example.com',
@@ -138,7 +138,7 @@ describe('fileWatcher existence check (#1226)', () => {
   it('is scoped to the event — the same basename elsewhere is not a match', async () => {
     const other = await db('events').insert({
       slug: 'other-watcher-event',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Other',
       event_date: '2026-08-29',
       host_email: 'h@example.com',

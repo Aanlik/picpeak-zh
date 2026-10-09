@@ -16,7 +16,7 @@ import { workflowsService, type WorkflowSummary, type WorkflowSavePayload, type 
 
 const NEW_WORKFLOW: WorkflowSavePayload = {
   name: 'New workflow',
-  trigger_type: 'invoice.sent',
+  trigger_type: 'event.date_approaching',
   enabled: false,
   nodes: [
     { node_key: 'trigger', type: 'trigger', pos_x: 240, pos_y: 40 },
@@ -167,11 +167,11 @@ export const WorkflowsListPage: React.FC = () => {
               <button type="button" onClick={() => setTestTarget(null)} aria-label={t('common.close', 'Close') as string} className="text-neutral-500 dark:text-neutral-400">✕</button>
             </div>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              {t('workflows.test.hint', 'Dry run: walks the whole flow now (waits skipped, gates auto-confirmed) with side effects mocked — no real emails. Optionally give an entity id (e.g. an invoice) so conditions can read it.')}
+              {t('workflows.test.hint', 'Dry run: walks the whole flow now (waits skipped, gates auto-confirmed) with side effects mocked. Optionally give a project or gallery id so conditions can read it.')}
             </p>
             <input
               value={testEntityId} onChange={(e) => setTestEntityId(e.target.value)}
-              placeholder={t('workflows.test.entityId', 'Entity id (optional, e.g. invoice id)') as string}
+              placeholder={t('workflows.test.entityId', 'Project or gallery id (optional)') as string}
               className="w-full px-2 py-1.5 rounded border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 text-sm"
             />
             <Button variant="primary" isLoading={testMutation.isPending} onClick={() => testMutation.mutate()}>

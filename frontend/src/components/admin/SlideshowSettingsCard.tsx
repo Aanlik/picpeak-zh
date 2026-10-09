@@ -10,8 +10,8 @@
  *     via the shared <SlideshowStyleFields>; a running projector picks the
  *     changes up within a few seconds via the show page's settings poll.
  *
- * New events inherit their initial style from the event TYPE preset; this
- * card edits the per-event override. Settings save through
+ * New projects inherit their initial style from the selected theme preset;
+ * this card edits the per-project override. Settings save through
  * PATCH /api/admin/events/:id/slideshow; link actions through
  * POST .../slideshow/{generate,disable}.
  */

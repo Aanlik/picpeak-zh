@@ -17,15 +17,7 @@ const parse = (value) => {
 async function expandSnapshot(db, { features, flags, used, now, version = 'usage.v2' }) {
   const result = { ...emptyFeatures(version), ...features };
   const effective = { analytics: true, userManagement: true, ...flags };
-  if (!effective.quotes) effective.bills = false;
-  if (effective.bills) effective.accounting = true;
-  if (!effective.accounting) {
-    effective.incomingInvoices = false;
-    effective.expenses = false;
-    effective.taxReport = false;
-  }
-  effective.clients = ['customerPortal', 'quotes', 'bills', 'contracts', 'projects', 'calendar', 'hoursLogging', 'newsletters']
-    .some((flag) => effective[flag]);
+  effective.clients = Boolean(effective.customerPortal);
   if (['1', 'true', 'yes'].includes(String(process.env.PICPEAK_SINGLE_CONTAINER || '').toLowerCase())) effective.faces = false;
   for (const [key, definition] of Object.entries(CATALOGS[version].features)) {
     if (definition.configuration === 'builtin') result[key].configured = true;
@@ -69,8 +61,6 @@ async function expandSnapshot(db, { features, flags, used, now, version = 'usage
   result.s3_photo_storage.configured = process.env.STORAGE_BACKEND === 's3' &&
     Boolean(process.env.STORAGE_S3_BUCKET && process.env.STORAGE_S3_ACCESS_KEY && process.env.STORAGE_S3_SECRET_KEY);
   result.s3_backups.configured = settings.backup_destination_type === 's3' && Boolean(settings.backup_s3_bucket);
-  result.crm_installments.configured = Boolean(effective.quotes || effective.bills);
-  result.document_templates.configured = Boolean(effective.quotes || effective.contracts);
   const imapColumns = ['imap_host', 'imap_user', 'imap_pass'];
   const imapPresent = (query) => { for (const column of imapColumns) query.whereNotNull(column).whereNot(column, ''); };
   result.incoming_mail.configured = Boolean(effective.incomingMail) && (
@@ -85,7 +75,7 @@ async function expandSnapshot(db, { features, flags, used, now, version = 'usage
     gallery_guest_uploads: 'allow_user_uploads',
     gallery_client_access: 'client_access_enabled', gallery_watermarks: 'watermark_downloads'
   })) result[key].configured = await enabled('events', column);
-  if (['usage.v4', 'usage.v5'].includes(version)) {
+  if (['usage.v4', 'usage.v5', 'usage.v6'].includes(version)) {
     result.gallery_downloads_restricted.configured = await exists('events', ['allow_downloads'], (query) =>
       query.where('allow_downloads', formatBoolean(false)));
   } else {
@@ -122,7 +112,7 @@ async function expandSnapshot(db, { features, flags, used, now, version = 'usage
     query.where({ feedback_enabled: formatBoolean(true), [column]: formatBoolean(true) }));
   result.gallery_guest_accounts.configured = await exists('event_feedback_settings', ['feedback_enabled', 'identity_mode'], (query) =>
     query.where('feedback_enabled', formatBoolean(true)).whereIn('identity_mode', ['guest', 'shared']));
-  if (['usage.v3', 'usage.v4', 'usage.v5'].includes(version)) {
+  if (['usage.v3', 'usage.v4', 'usage.v5', 'usage.v6'].includes(version)) {
     result.gallery_folders.configured = await exists('photo_categories', ['is_folder', 'event_id'], (query) =>
       query.where('is_folder', formatBoolean(true)).where((q) => q.whereNull('event_id').orWhereIn('event_id', db('events').select('id'))));
     result.transfer_upload_links.configured = Boolean(effective.transfers) && await exists('transfers',
@@ -133,8 +123,6 @@ async function expandSnapshot(db, { features, flags, used, now, version = 'usage
               expiry.whereNull('expires_at').orWhere('expires_at', '>', new Date(now).toISOString())))));
     result.workflow_automation_enabled.configured = Boolean(effective.workflows) && await enabled('workflows', 'enabled');
     result.s3_auto_import.configured = result.s3_photo_storage.configured && process.env.STORAGE_AUTO_IMPORT === 'true';
-    result.crm_combined_billing.configured = Boolean(effective.bills && effective.incomingInvoices);
-    result.crm_document_conversion.configured = Boolean(effective.quotes || effective.contracts);
     result.gallery_capture_date_sort.configured = await exists('events', ['default_photo_sort'], (query) =>
       query.whereIn('default_photo_sort', ['capture_date_asc', 'capture_date_desc']));
     const originalNames = await db('app_settings').where({ setting_key: 'general_use_original_filenames_for_downloads' }).first('setting_value');

@@ -37,19 +37,9 @@ const {
 const DEFAULT_COLLECTOR_URL = 'https://usage.picpeak.app';
 
 const FLAG_MAP = {
-  crm: 'clients',
-  crm_quotes: 'quotes',
-  crm_invoices: 'bills',
-  crm_contracts: 'contracts',
-  crm_projects: 'projects',
-  crm_calendar: 'calendar',
-  crm_hours: 'hoursLogging',
   customer_portal: 'customerPortal',
-  accounting: 'accounting',
   workflows: 'workflows',
-  newsletters: 'newsletters',
   face_recognition: 'faces',
-  whatsapp: 'whatsapp'
 };
 const SETTING_KEYS = [
   'oidc_enabled',
@@ -66,7 +56,6 @@ const SETTING_KEYS = [
 const truth = (value) => value === true || value === 1 || value === '1';
 
 // `events.color_theme` holds either a theme object or the NAME of a preset —
-// the admin theme picker stores names, and eventTypeService seeds them too
 // (`theme_preset: 'corporateTimeline'`). Reading only `value.galleryLayout`
 // therefore reported `grid` for every preset-themed install.
 //
@@ -915,16 +904,6 @@ class UsageService {
           .select('id')
           .first()
       );
-    features.whatsapp.configured =
-      features.whatsapp.configured &&
-      Boolean(
-        await this.db('whatsapp_configs')
-          .where({ enabled: formatBoolean(true) })
-          .whereNot('phone_number_id', '')
-          .whereNot('access_token', '')
-          .select('id')
-          .first()
-      );
     const theme = settings.theme_config || {};
     // An enabled template applied to an event is gallery styling by the same
     // definition as the settings fields — the Custom CSS tab is where both are
@@ -974,7 +953,7 @@ class UsageService {
       generated_at: now,
       features: expanded,
       gallery_layouts: [...layouts].sort(),
-      ...(['usage.v3', 'usage.v4', 'usage.v5'].includes(version) ? { inventory: await require('./inventorySnapshot').inventorySnapshot(this.db) } : {})
+      ...(['usage.v3', 'usage.v4', 'usage.v5', 'usage.v6'].includes(version) ? { inventory: await require('./inventorySnapshot').inventorySnapshot(this.db) } : {})
     };
   }
 

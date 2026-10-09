@@ -19,8 +19,8 @@
  *   - target_path is captured AT CREATE TIME from the event's current
  *     state (slug + share_token + the global "Use short gallery URLs"
  *     toggle). A later flip of that toggle doesn't silently change
- *     where existing short URLs resolve. Same principle as quote PDFs
- *     snapshotting at issuance time.
+ *     where existing short URLs resolve, including links already shared
+ *     with customers.
  */
 const { db } = require('../database/db');
 const logger = require('../utils/logger');

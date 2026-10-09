@@ -55,7 +55,6 @@ interface GalleryViewProps {
   event: {
     id: number;
     event_name: string;
-    event_type: string;
     event_date: string | null;
     welcome_message?: string;
     color_theme?: string;
@@ -457,7 +456,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
         // global default; per-event override happens in GalleryLayout.
         facebook_url: settingsData.branding_facebook_url || '',
         instagram_url: settingsData.branding_instagram_url || '',
-        whatsapp_url: settingsData.branding_whatsapp_url || '',
         twitter_url: settingsData.branding_twitter_url || '',
         youtube_url: settingsData.branding_youtube_url || '',
         promo_markdown: settingsData.branding_promo_markdown || '',

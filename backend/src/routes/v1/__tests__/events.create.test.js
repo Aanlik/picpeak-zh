@@ -1,13 +1,13 @@
 /** Persisted contracts, not a mock tied to the number/order of Knex calls. */
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../../../../__tests__/integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../../../../__tests__/integration/helpers/sqliteTestDb');
 const request = require('supertest');
 const express = require('express');
 let db, cleanup, app, adminId, adminToken, apiToken;
-const base = { event_type: 'wedding', event_name: 'Creation parity', event_date: '2030-06-15',
+const base = { event_name: 'Creation parity', event_date: '2030-06-15',
   customer_name: 'Ada', customer_email: 'ada@example.test', admin_email: 'admin@example.test',
   require_password: false, is_draft: false, expires_at: '2030-07-15T00:00:00.000Z' };
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb()); ({ adminId } = await seedMinimal(db)); await assignAdminRole(db, adminId);
+  ({ db, cleanup } = await bootTestDb()); ({ adminId } = await seedMinimal(db)); await assignAdminRole(db, adminId);
   adminToken = mintAdminToken(adminId);
   const generated = require('../../../middleware/apiTokenAuth').generateApiToken(); apiToken = generated.plaintext;
   await db('api_tokens').insert({ name: 'parity', hashed_token: generated.hashed, scopes: 'admin', created_by: adminId });
@@ -65,10 +65,16 @@ it('keeps accepting "0"/"1" string booleans on the v1 surface', async () => {
   expect([false, 0]).toContain(row.require_password);
   expect(await db('event_feedback_settings').where({ event_id: row.id }).first()).toBeTruthy();
 });
-it.each([{ feedback_enabled: 'maybe' }, { event_type: 'unknown' }])('rejects invalid creation data before persistence: %j', async extra => {
+it.each([{ feedback_enabled: 'maybe' }])('rejects invalid creation data before persistence: %j', async extra => {
   for (const source of ['admin', 'v1']) {
     const response = await request(app).post(source === 'admin' ? '/admin' : '/v1/events')
       .set('Authorization', `Bearer ${source === 'admin' ? adminToken : apiToken}`).send({ ...base, ...extra });
     expect(response.status).toBe(400);
   }
+});
+
+it('ignores legacy photography-type input and stores a generic project value', async () => {
+  const created = await create('v1', { event_type: 'project' });
+  const row = await db('events').where({ id: created.id }).first();
+  expect(row.event_type).toBe('project');
 });

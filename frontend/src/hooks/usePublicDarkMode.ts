@@ -11,8 +11,8 @@
  * `.dark` class being present, and ThemeContext only writes CSS
  * variables — it doesn't toggle the class.
  *
- * Shared by QuoteResponsePage + PaymentCheckPage. Adding a third
- * public-page consumer? Reuse this hook.
+ * Shared by public pages outside the customer/admin layouts. Reuse this
+ * hook when adding another public-page consumer.
  */
 import { useEffect, useState } from 'react';
 import { usePublicSettings } from './usePublicSettings';

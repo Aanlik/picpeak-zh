@@ -32,7 +32,7 @@ describe('DELETE /admin/archives/:id', () => {
       requireEventOwnership: (_req, _res, next) => next(),
     }));
 
-    ({ db, cleanup } = await require('./helpers/crmDb').bootCrmDb());
+    ({ db, cleanup } = await require('./helpers/sqliteTestDb').bootTestDb());
     await fs.promises.mkdir(path.join(process.env.STORAGE_PATH, 'archives'), { recursive: true });
 
     app = express();
@@ -47,7 +47,7 @@ describe('DELETE /admin/archives/:id', () => {
 
   it('removes the event and every child row that references it', async () => {
     const [ev] = await db('events').insert({
-      slug: 'perm-delete', event_type: 'other', event_name: 'Perm Delete', event_date: '2026-01-01',
+      slug: 'perm-delete', event_type: 'project', event_name: 'Perm Delete', event_date: '2026-01-01',
       host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
       share_link: '/gallery/perm-delete/tok', share_token: 'perm-delete-tok',
       is_active: 0, is_archived: 1, is_draft: 0, archive_path: 'archives/perm-delete.zip',

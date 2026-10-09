@@ -19,7 +19,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'dbdest-test-secret';
 process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-dbdest-storage-'));
 
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
 const { clearPermissionCache } = require('../../src/middleware/permissions');
 
 const KEY = 'database_backup_destination_path';
@@ -34,7 +34,7 @@ describe('PUT /api/admin/database-backup/config — destination is super-admin o
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');
     tok.super = mintAdminToken(adminId);

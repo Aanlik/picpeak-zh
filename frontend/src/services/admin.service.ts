@@ -10,22 +10,17 @@ import i18n from '../i18n/config';
 const FEATURE_FLAG_LABEL_KEY: Record<string, string> = {
   galleries: 'settings.features.galleries.title',
   reminderEmails: 'settings.features.reminderEmails.title',
-  calendar: 'settings.features.calendar.title',
-  calendarBooking: 'settings.features.calendarBooking.title',
-  quotes: 'settings.features.quotes.title',
-  bills: 'settings.features.bills.title',
   messaging: 'settings.features.messaging.title',
   analytics: 'settings.features.analytics.title',
   userManagement: 'settings.features.userManagement.title',
-  clients: 'settings.features.clients.title',
   customerPortal: 'settings.features.customerPortal.title',
 };
 
 /**
  * Renders the `feature_flags_updated` activity row using the
  * `metadata.changed = { [flagKey]: { from, to } }` payload the
- * backend writes. One change → "Calendar enabled". Multiple →
- * "3 features updated: Calendar enabled, Quotes disabled, …".
+ * backend writes. One change → "Analytics enabled". Multiple →
+ * "3 features updated: Analytics enabled, Messaging disabled, …".
  *
  * Used by both the Dashboard recent-activity widget (via
  * formatActivityMessage below) and the header notification
@@ -80,7 +75,6 @@ export interface DashboardStats {
     heroes: number;
     watermarks: number;
     uploads: number;
-    businessDocs: number;
     downloadCache: number;
     externalMedia: number;
     temp: number;
@@ -202,16 +196,12 @@ export type ActivityType =
   | "admin_user_deactivated"
   | "admin_password_reset"
   | "admin_profile_updated"
-  // Webhooks (#327) + API tokens (#322) + event types.
+  // Webhooks (#327) + API tokens (#322).
   | "webhook_created"
   | "webhook_updated"
   | "webhook_deleted"
   | "api_token_created"
   | "api_token_revoked"
-  | "event_type_created"
-  | "event_type_updated"
-  | "event_type_deleted"
-  | "event_types_reordered"
   // Other recent surfaces missing from the message map.
   | "event_published"
   | "event_logo_uploaded"
@@ -231,50 +221,6 @@ export interface Activity {
   eventName?: string;
   metadata: Record<string, any>;
   createdAt: string;
-}
-
-// Backup-integrity verifier — diagnostic endpoint that walks every
-// CRM document-artefact path column and confirms files exist on disk
-// (plus SHA-256 match where the schema stores one). Mirrors the
-// shape returned by backupIntegrityService.verifyDocumentArtefacts.
-export type BackupIntegrityScope =
-  | 'quote'
-  | 'contract'
-  | 'contract-signature'
-  | 'invoice';
-
-export interface BackupIntegrityMissingRow {
-  table: string;
-  rowId: number;
-  column: string;
-  expectedPath: string;
-}
-
-export interface BackupIntegrityHashMismatchRow extends BackupIntegrityMissingRow {
-  expectedSha: string;
-  actualSha: string;
-}
-
-export interface BackupIntegrityExistsButNoHashRow {
-  table: string;
-  rowId: number;
-  column: string;
-  path: string;
-}
-
-export interface BackupIntegrityReport {
-  scannedAt: string;
-  scopes: BackupIntegrityScope[];
-  summary: {
-    totalRows: number;
-    verifiedOk: number;
-    missingFiles: number;
-    hashMismatches: number;
-    existsButNoHash: number;
-  };
-  missing: BackupIntegrityMissingRow[];
-  hashMismatches: BackupIntegrityHashMismatchRow[];
-  existsButNoHash: BackupIntegrityExistsButNoHashRow[];
 }
 
 // ---- Backup-coverage (Stage C of backup-hardening plan) -----------------
@@ -430,19 +376,6 @@ export const adminService = {
     await api.post('/admin/system/updates/whatsnew/seen');
   },
 
-  // Backup-integrity verifier (read-only diagnostic). `scope` filters
-  // which document classes to walk; omit for a full scan.
-  async getBackupIntegrity(
-    scope?: BackupIntegrityScope[],
-  ): Promise<BackupIntegrityReport> {
-    const params = scope && scope.length > 0 ? { scope: scope.join(',') } : undefined;
-    const response = await api.get<{ report: BackupIntegrityReport }>(
-      '/admin/system-health/backup-integrity',
-      { params },
-    );
-    return response.data.report;
-  },
-
   // Backup-coverage diagnostic (Stage C). Answers "what will the
   // next backup actually include / skip / silently miss?" — read-only,
   // no parameters. See backupCoverageService.js for the full report shape.
@@ -507,73 +440,12 @@ export const adminService = {
       'admin_user_deactivated': `Admin user deactivated: ${md.username || md.email || ''}`,
       'admin_password_reset': `Admin password reset by another admin: ${md.username || md.email || ''}`,
       'admin_profile_updated': `Admin ${activity.actorName || ''} updated their profile`,
-      // Webhooks (#327) + API tokens (#322) + event types.
+      // Webhooks (#327) + API tokens (#322).
       'webhook_created': `Webhook created: ${md.name || ''}`,
       'webhook_updated': `Webhook updated: ${md.name || ''}`,
       'webhook_deleted': `Webhook deleted: ${md.name || ''}`,
       'api_token_created': `API token created: ${md.name || ''}`,
       'api_token_revoked': `API token revoked: ${md.name || ''}`,
-      'event_type_created': `Event type created: ${md.name || ''}`,
-      'event_type_updated': `Event type updated: ${md.name || ''}`,
-      'event_type_deleted': `Event type deleted: ${md.name || ''}`,
-      'event_types_reordered': 'Event types reordered',
-      // CRM — Contracts.
-      'contract_created': `Contract created: ${md.contractNumber || ''}`,
-      'contract_created_from_quote': `Contract created from quote: ${md.contractNumber || ''}`,
-      'contract_updated': `Contract updated: ${md.contractNumber || ''}`,
-      'contract_sent': `Contract sent: ${md.contractNumber || ''}`,
-      'contract_resent_signed': `Signed contract resent: ${md.contractNumber || ''}`,
-      'contract_signed_by_customer': `Contract signed by customer: ${md.contractNumber || ''}`,
-      'contract_signed_pdf_uploaded': `Signed contract PDF uploaded: ${md.contractNumber || ''}`,
-      'contract_signatures_restamped': `Contract signatures re-stamped: ${md.contractNumber || ''}`,
-      'contract_cancelled': `Contract cancelled: ${md.contractNumber || ''}`,
-      'contract_converted_to_event': `Contract converted to event: ${md.contractNumber || ''}`,
-      'contract_converted_to_empty_event': `Contract converted to empty event: ${md.contractNumber || ''}`,
-      'contract_converted_to_invoices': `Contract converted to invoices: ${md.contractNumber || ''}`,
-      'contract_converted_to_empty_invoice': `Contract converted to empty invoice: ${md.contractNumber || ''}`,
-      // CRM — Quotes.
-      'quote_created': `Quote created: ${md.quoteNumber || ''}`,
-      'quote_sent': `Quote sent: ${md.quoteNumber || ''}`,
-      'quote_updated': `Quote updated: ${md.quoteNumber || ''}`,
-      'quote_accepted_by_admin': `Quote accepted: ${md.quoteNumber || ''}`,
-      'quote_declined_by_admin': `Quote declined: ${md.quoteNumber || ''}`,
-      'quote_converted': `Quote converted: ${md.quoteNumber || ''}`,
-      'quote_converted_invoices_only': `Quote converted to invoices: ${md.quoteNumber || ''}`,
-      // CRM — Invoices / Storno.
-      'invoice_created': `Invoice created: ${md.invoiceNumber || ''}`,
-      'invoice_sent': `Invoice sent: ${md.invoiceNumber || ''}`,
-      'invoice_scheduled': `Invoice scheduled: ${md.invoiceNumber || ''}`,
-      'invoice_cancelled': `Invoice cancelled: ${md.invoiceNumber || ''}`,
-      'invoice_cancelled_via_storno': `Invoice cancelled via Storno: ${md.invoiceNumber || ''}`,
-      'invoice_reissued': `Invoice reissued: ${md.invoiceNumber || ''}`,
-      'invoice_paid_admin_notified': `Invoice marked paid: ${md.invoiceNumber || ''}`,
-      'invoice_payment_check_recorded': `Payment-check recorded for invoice: ${md.invoiceNumber || ''}`,
-      'invoice_payment_check_sent': `Payment-check sent for invoice: ${md.invoiceNumber || ''}`,
-      'invoice_released_for_delivery': `Invoice released for delivery: ${md.invoiceNumber || ''}`,
-      'invoice_reminder_sent': `Invoice reminder sent: ${md.invoiceNumber || ''}`,
-      'storno_sent': `Storno sent: ${md.invoiceNumber || ''}`,
-      // CRM — Monthly billing.
-      'monthly_bill_issued': 'Monthly bill issued for customer',
-      'monthly_bill_skipped_empty': 'Monthly bill skipped (no entries)',
-      'monthly_bill_triggered_manually': 'Monthly bill triggered manually',
-      'monthly_billing_items_queued': 'Monthly billing items queued',
-      'installment_plan_updated': 'Installment plan updated',
-      // Accounting — Expenses + Hours + Incoming invoices.
-      'expense_created': 'Expense created',
-      'expense_updated': 'Expense updated',
-      'expense_paid': 'Expense marked paid',
-      'expense_invoiced': 'Expense invoiced',
-      'hour_entry_logged': 'Hour entry logged',
-      'hour_entry_updated': 'Hour entry updated',
-      'hour_entry_deleted': 'Hour entry deleted',
-      'hour_entry_logged_to_monthly_draft': 'Hour entry logged to monthly draft',
-      'hour_entries_billed': 'Hour entries billed to customer',
-      'incoming_invoice_captured': 'Incoming invoice captured',
-      'incoming_invoice_categorized': 'Incoming invoice categorised',
-      'incoming_invoice_updated': 'Incoming invoice updated',
-      'incoming_invoice_rebilled': 'Incoming invoice re-billed to customer',
-      'incoming_invoice_supplier_payment': 'Supplier payment recorded',
-      'incoming_mail_config_updated': 'Incoming mail configuration updated',
       // Customers + Admin user mgmt.
       'customer_created_passive': `Passive customer created: ${md.email || ''}`,
       'admin_user_activated': `Admin user activated: ${md.username || ''}`,

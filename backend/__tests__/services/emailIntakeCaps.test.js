@@ -60,7 +60,7 @@ jest.mock('mailparser', () => ({
   }),
 }));
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 describe('email intake caps (GHSA-2qf9)', () => {
   let db; let cleanup; let intake;
@@ -68,34 +68,26 @@ describe('email intake caps (GHSA-2qf9)', () => {
   let pollResult;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
-    // pollOnce short-circuits unless the feature flag is on AND an IMAP
-    // account is configured — without both, this suite would pass vacuously.
+    // pollOnce short-circuits unless the feature flag is on AND the customer
+    // mailbox is configured — without both, this suite would pass vacuously.
     await db('feature_flags')
       .insert({ key: 'incomingMail', value: 1 })
       .onConflict('key').merge({ value: 1 });
-    // getImapConfig() reads email_configs.first() — seedMinimal may already
-    // have inserted a row, so update that one rather than adding a second
-    // (the first row would win and report "unconfigured").
-    const imapFields = {
+    const customerMailbox = {
+      account_key: 'customers',
+      label: 'Customers',
       imap_host: 'imap.example.com',
+      imap_port: 993,
+      imap_secure: true,
       imap_user: 'intake@example.com',
       imap_pass: 'x',
       imap_folder: 'INBOX',
+      enabled: true,
     };
-    const existingCfg = await db('email_configs').first();
-    if (existingCfg) {
-      await db('email_configs').where({ id: existingCfg.id }).update(imapFields);
-    } else {
-      await db('email_configs').insert({
-        smtp_host: 'smtp.example.com',
-        smtp_port: 587,
-        from_email: 'intake@example.com',
-        ...imapFields,
-      });
-    }
+    await db('mail_accounts').insert(customerMailbox);
 
     intake = require('../../src/services/emailIntakeService');
     pollResult = await intake.pollOnce().catch((e) => ({ thrown: e.message }));

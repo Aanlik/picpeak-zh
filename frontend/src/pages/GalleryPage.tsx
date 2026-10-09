@@ -426,7 +426,6 @@ export const GalleryPage: React.FC = () => {
         event={{
           id: 0,
           event_name: galleryInfo.event_name,
-          event_type: galleryInfo.event_type,
           event_date: galleryInfo.event_date,
           color_theme: galleryInfo.color_theme,
           expires_at: galleryInfo.expires_at,

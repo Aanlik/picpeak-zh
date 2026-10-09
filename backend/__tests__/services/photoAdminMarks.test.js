@@ -23,7 +23,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'admin-marks-test-secret';
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const marks = require('../../src/services/photoAdminMarksService');
 const feedbackService = require('../../src/services/feedbackService');
@@ -37,11 +37,11 @@ let eventId;
 let photoIds;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
   const inserted = await db('events').insert({
     slug: 'admin-marks-test-event',
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Admin Marks Test',
     event_date: '2026-07-20',
     host_email: 'host@example.com',

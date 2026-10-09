@@ -21,7 +21,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 const APPROVAL = 'backup_s3_private_endpoint_approval';
 
@@ -83,7 +83,7 @@ describe('private S3 backup endpoints (issue 1641)', () => {
   });
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     superToken = await tokenFor('root-admin', 'super_admin');
     adminToken = await tokenFor('limited-admin', 'admin');
 

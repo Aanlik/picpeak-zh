@@ -273,7 +273,7 @@ async function hasDatabaseChanged(sinceTime) {
  * Why this lives here and not inline in `runBackupInternal`:
  *   - Encapsulates the "Run Backup Now must include DB" guarantee
  *     introduced when the silent files-only bug was discovered
- *     (2026-05-29 — admin lost CRM after `docker compose down -v`)
+ *     (2026-05-29 — admin lost project data after `docker compose down -v`)
  *   - Lets the manifest path share the same `databaseInfo` object
  *     instead of doing a second `getDatabaseBackupInfo()` round-trip
  *   - Thrown errors bubble up to `runBackupInternal`'s catch, which
@@ -553,7 +553,6 @@ const LEGACY_BACKUP_PATHS = [
   { path: 'previews',         feature_flag: null },
   { path: 'heroes',           feature_flag: null },
   { path: 'uploads',          feature_flag: null },
-  { path: 'business-docs',    feature_flag: null },
 ];
 
 // "What to Backup" opt-OUT toggles written by BackupConfiguration.tsx.
@@ -775,20 +774,6 @@ async function getFilesToBackupInternal(configOrIncludeArchived = true) {
   const ownOutput = await ownOutputDirs(config, storagePath);
 
   for (const target of targets) {
-    // CRM document estate is special-cased in the comment block below
-    // because it's the most expensive omission to recover from:
-    //   - business-docs/quote/<year>/*.pdf
-    //   - business-docs/contract/<year>/*.pdf  (system-rendered + wet uploads)
-    //   - business-docs/contract/signatures/<contract_id>/*.{png,jpg}
-    //     (drawn signatures, forensic-preserved per Date.now() filename)
-    //   - business-docs/invoice/<year>/*.pdf  (issued invoices + Storno)
-    //   - business-docs/invoice-imports/<year>/*.pdf  (admin-imported
-    //     historical invoices — irrecoverable if not backed up)
-    // Without this scan, the audit trail (signed_pdf_sha256, signed_*
-    // _ip, accepted_at, etc.) survives the restore but the documents
-    // those values refer to do not, leaving every CRM *_path column a
-    // broken FK. scanDirectory short-circuits on ENOENT so installs
-    // that never used CRM features won't error.
     await scanDirectory(path.join(storagePath, target.path), files, storagePath, excludePatterns, ownOutput);
   }
 
@@ -1399,7 +1384,6 @@ async function runBackupInternal(isManual = false) {
     // into their owning backup_paths row by longest-prefix match. Lets
     // the Backup History detail pane render a true breakdown
     //   events/active: 142 files (3.2 GB)
-    //   business-docs: 17 files (4.5 MB)
     //   thumbnails: 142 files (12.4 MB)
     // instead of the legacy "Photos + Archives + Other" categorization
     // that didn't reflect Stage B's data-driven walker. Falls back to

@@ -7,13 +7,13 @@
  * `</title><a href=…>` in there is HTML injection into the admin's inbox
  * (security review 2026-09-29).
  */
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 describe('wrapEmailHtml — the subject is escaped inside <title>', () => {
   let cleanup; let wrapEmailHtml;
 
   beforeAll(async () => {
-    ({ cleanup } = await bootCrmDb());
+    ({ cleanup } = await bootTestDb());
     ({ wrapEmailHtml } = require('../../src/services/emailProcessor'));
   }, 120000);
   afterAll(async () => { if (cleanup) await cleanup(); });

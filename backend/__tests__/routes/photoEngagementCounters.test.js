@@ -31,7 +31,7 @@ const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const SLUG = 'engagement-test-event';
 
@@ -55,12 +55,12 @@ describe('photo engagement counters (#895)', () => {
   const settle = () => new Promise((r) => setTimeout(r, 400));
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const inserted = await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Engagement Test',
       event_date: '2026-08-01',
       host_email: 'host@example.com',
@@ -211,7 +211,7 @@ describe('photo engagement counters (#895)', () => {
       const slug2 = `${SLUG}-skip`;
       const ev = await db('events').insert({
         slug: slug2,
-        event_type: 'wedding',
+        event_type: 'project',
         event_name: 'Engagement Skip Test',
         event_date: '2026-08-01',
         host_email: 'host@example.com',

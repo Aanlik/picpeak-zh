@@ -23,7 +23,6 @@ import {
   Calendar,
   Clock,
   AlertCircle,
-  ShieldCheck
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -31,7 +30,7 @@ import { Button, Card, Input, Loading } from '../common';
 import { api } from '../../config/api';
 import { useLocalizedDate } from '../../hooks/useLocalizedDate';
 
-export const RestoreWizard = ({ onVerifyIntegrity } = {}) => {
+export const RestoreWizard = () => {
   const { t } = useTranslation();
   const { format: fmtDate, formatTime: fmtTime, formatDateTime: fmtDateTime } = useLocalizedDate();
   const [currentStep, setCurrentStep] = useState(0);
@@ -382,12 +381,12 @@ export const RestoreWizard = ({ onVerifyIntegrity } = {}) => {
                       where this is false is exactly the data-loss
                       scenario the Stage A guard prevents going forward:
                       a manifest written without an inline DB dump.
-                      Restoring it would NOT bring CRM data back. */}
+                      Restoring it would not bring back the database. */}
                   {backup.database_included === false && (
                     <span
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700"
                       title={t('backup.restore.backup.filesOnlyHint',
-                        'This backup has no database dump — restoring it will NOT recover the database (CRM data, customers, quotes, invoices, contracts will be empty after restore).')}
+                        'This backup has no database dump — restoring it will NOT recover database records, user accounts, or settings.')}
                     >
                       <AlertCircle className="h-3 w-3" />
                       {t('backup.restore.backup.filesOnlyBadge', 'No DB')}
@@ -430,7 +429,7 @@ export const RestoreWizard = ({ onVerifyIntegrity } = {}) => {
               </p>
               <p className="mt-1 text-sm text-red-700 dark:text-red-300">
                 {t('backup.restore.backup.filesOnlyWarning.message',
-                  'Restoring this backup will recover files (photos, PDFs) but the database — including admin users, customers, quotes, invoices, contracts, and settings — will NOT come back. Pick a different backup if you have one with a database dump, or proceed only if files-only is what you want.')}
+                  'Restoring this backup will recover files but not the database, including admin accounts, customers, galleries, and settings. Pick a backup that includes the database, or proceed only if you want to restore files alone.')}
               </p>
             </div>
           </div>
@@ -798,26 +797,6 @@ export const RestoreWizard = ({ onVerifyIntegrity } = {}) => {
                 <p className="mt-1 text-sm text-green-700 dark:text-green-300">
                   {t('backup.restore.progress.success.message')}
                 </p>
-                {/* Post-restore CTA: jump to the integrity check (D2). The
-                    audit trail captured at sign / issue time is worth
-                    nothing if the documents it refers to are missing
-                    from the restored copy — verifier surfaces that
-                    drift in one click before the admin trusts the
-                    restored state. */}
-                {onVerifyIntegrity && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3"
-                    onClick={onVerifyIntegrity}
-                    leftIcon={<ShieldCheck className="w-4 h-4" />}
-                  >
-                    {t(
-                      'backup.restore.progress.success.verifyIntegrity',
-                      'Verify document integrity now',
-                    )}
-                  </Button>
-                )}
               </div>
             </div>
           </div>

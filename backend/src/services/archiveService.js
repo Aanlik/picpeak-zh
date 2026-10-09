@@ -204,7 +204,6 @@ async function archiveEvent(event) {
             id: event.id,
             slug: event.slug,
             event_name: event.event_name,
-            event_type: event.event_type,
             event_date: event.event_date,
             share_token: event.share_token,
             customer_name: event.customer_name || event.host_name,

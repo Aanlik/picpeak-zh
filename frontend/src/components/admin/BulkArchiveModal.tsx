@@ -67,7 +67,7 @@ export const BulkArchiveModal: React.FC<BulkArchiveModalProps> = ({
                 <ul className="space-y-1">
                   {selectedEvents.map((event) => (
                     <li key={event.id} className="text-sm text-neutral-600">
-                      • {event.event_name} ({event.event_type})
+                      • {event.event_name}
                     </li>
                   ))}
                 </ul>

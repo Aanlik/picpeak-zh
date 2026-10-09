@@ -11,7 +11,6 @@ import {
   Clock,
   Loader2,
   Shield,
-  ShieldCheck,
   FolderTree,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -26,12 +25,11 @@ import { BackupConfiguration } from '../../components/admin/BackupConfiguration'
 import { BackupHistory } from '../../components/admin/BackupHistory';
 import { RestoreWizard } from '../../components/admin/RestoreWizard';
 import { PicpeakExportCard } from '../../components/admin/PicpeakBackupCard';
-import { BackupIntegrityCard } from '../../components/admin/BackupIntegrityCard';
 import { BackupCoverageCard } from '../../components/admin/BackupCoverageCard';
 import { api } from '../../config/api';
 import { backupErrorCode, backupErrorText } from '../../utils/backupErrors';
 
-type TabId = 'dashboard' | 'configuration' | 'history' | 'restore' | 'integrity' | 'coverage';
+type TabId = 'dashboard' | 'configuration' | 'history' | 'restore' | 'coverage';
 
 export const BackupManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -52,7 +50,6 @@ export const BackupManagement: React.FC = () => {
     { id: 'configuration' as const, label: t('backup.tabs.configuration'), icon: Settings },
     { id: 'history' as const, label: t('backup.tabs.history'), icon: History },
     { id: 'restore' as const, label: t('backup.tabs.restore'), icon: RefreshCw },
-    { id: 'integrity' as const, label: t('backup.tabs.integrity', 'Integrity'), icon: ShieldCheck },
     { id: 'coverage' as const, label: t('backup.tabs.coverage', 'Coverage'), icon: FolderTree },
   ];
 
@@ -275,7 +272,7 @@ export const BackupManagement: React.FC = () => {
         )}
 
         {activeTab === 'restore' && (isSuperAdmin ? (
-          <RestoreWizard onVerifyIntegrity={() => setActiveTab('integrity')} />
+          <RestoreWizard />
         ) : (
           <Card className="p-6">
             <p className="text-sm text-neutral-700 dark:text-neutral-300">
@@ -283,10 +280,6 @@ export const BackupManagement: React.FC = () => {
             </p>
           </Card>
         ))}
-
-        {activeTab === 'integrity' && (
-          <BackupIntegrityCard />
-        )}
 
         {activeTab === 'coverage' && (
           <BackupCoverageCard />

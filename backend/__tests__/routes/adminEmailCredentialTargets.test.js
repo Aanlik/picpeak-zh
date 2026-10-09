@@ -39,7 +39,7 @@ jest.mock('imapflow', () => ({
 }));
 
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
 const { invalidateFeatureFlagCache } = require('../../src/middleware/requireFeatureFlag');
 const { clearPermissionCache } = require('../../src/middleware/permissions');
 
@@ -62,7 +62,7 @@ describe('mail passwords stay with their saved server', () => {
   });
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);

@@ -23,7 +23,7 @@ const request = require('supertest');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal, buildRouteApp } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
 
 /**
  * Stand up a transport without touching a socket.
@@ -96,7 +96,7 @@ describe('GET /admin/system-health/failures — waiting emails (#1262)', () => {
   const typesOf = (rows) => rows.map((r) => r.emailType).sort();
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const role = await db('roles').where({ name: 'super_admin' }).first();

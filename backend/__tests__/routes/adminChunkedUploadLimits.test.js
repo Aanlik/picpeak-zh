@@ -23,7 +23,7 @@ jest.mock('../../src/services/photoProcessor', () => ({
 
 const request = require('supertest');
 const express = require('express');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 describe('admin chunked upload /complete limits', () => {
   let db; let cleanup; let app; let token;
@@ -36,7 +36,7 @@ describe('admin chunked upload /complete limits', () => {
     const slug = `chunked-limits-${seq}`;
     return unwrap(await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: `Chunked ${seq}`,
       event_date: '2026-08-01',
       host_email: 'host@example.com',
@@ -58,7 +58,7 @@ describe('admin chunked upload /complete limits', () => {
     .send(body);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);

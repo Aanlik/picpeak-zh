@@ -109,12 +109,14 @@ for (const engine of ['sqlite3', ...(process.env.PICPEAK_PG_TEST_URL ? ['pg'] : 
       process.env.STORAGE_BACKEND = 's3'; process.env.STORAGE_AUTO_IMPORT = 'true';
       process.env.STORAGE_S3_BUCKET = 'PRIVATE'; process.env.STORAGE_S3_ACCESS_KEY = 'PRIVATE'; process.env.STORAGE_S3_SECRET_KEY = 'PRIVATE';
       const snap = flags => expandSnapshot(db, { features: p.emptyFeatures('usage.v1'), flags, used: new Set(), now, version: 'usage.v3' });
-      const enabled = await snap({ transfers: true, workflows: true, quotes: true, bills: true, incomingInvoices: true });
-      for (const key of ['gallery_folders', 'transfer_upload_links', 'workflow_automation_enabled', 's3_auto_import', 'gallery_capture_date_sort', 'download_original_filenames', 'crm_invoice_import', 'crm_combined_billing'])
+      const enabled = await snap({ transfers: true, workflows: true });
+      for (const key of ['gallery_folders', 'transfer_upload_links', 'workflow_automation_enabled', 's3_auto_import', 'gallery_capture_date_sort', 'download_original_filenames'])
         expect(enabled[key].configured).toBe(true);
+      expect(enabled.crm_invoice_import.configured).toBe(false);
+      expect(enabled.crm_combined_billing.configured).toBe(false);
       expect(JSON.stringify(enabled)).not.toContain('PRIVATE');
-      const disabled = await snap({ transfers: false, workflows: false, quotes: false, bills: true });
-      for (const key of ['transfer_upload_links', 'workflow_automation_enabled', 'crm_invoice_import', 'crm_combined_billing'])
+      const disabled = await snap({ transfers: false, workflows: false });
+      for (const key of ['transfer_upload_links', 'workflow_automation_enabled'])
         expect(disabled[key].configured).toBe(false);
       await db('transfers').update({ upload_expires_at: '2026-09-06T12:00:00.000Z' });
       expect((await snap({ transfers: true })).transfer_upload_links.configured).toBe(false);

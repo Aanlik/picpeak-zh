@@ -4,76 +4,23 @@
     "intro": "您可自愿提供产品使用报告。请先了解报告内容、查看权限和发送地址，再决定是否参加。"
   },
   "productUsage": {
-    "fields": "usage.v5 报告包含安装指纹、PicPeak 版本、UTC 报告日期和生成时间、格式及签名信息、相册布局、87 项固定功能信号（64 项配置/使用组合及 23 项仅配置布尔值），以及相册数和非视频照片记录数。包含草稿、已归档相册及其保留的照片记录；下方列出全部字段，不记录操作次数或访客行为。",
-    "catalogTitle": "全目录:87个能力信号和2个库存总数(usage.v5)",
-    "catalogExplanation": "“已配置”表示功能当前可用或已设置，不代表已使用。“已使用”仅记录同意此报告格式后是否发生过相关操作，不记录次数；已接受的任务表示已启动，不保证已完成。仅配置类功能不收集使用情况。数量信息只包含相册和照片总数，不细分项目，也不记录操作人、对象编号、操作时间或频率。",
     "catalogSearch": "搜索功能名称或字段名",
     "catalogEmpty": "没有匹配能力。",
     "configuredLabel": "可用性/配置",
     "usedLabel": "已使用",
     "configurationOnly": "只配置——实际使用不收集.",
-    "versionDisclosure": "本次同意范围为 usage.v5 / usage-consent.v5：87 项功能及相同的两项数量统计。新增布尔值区分实际内容、模板、品牌、SEO、分类和拍摄类型修改，以及真实模板邮件被发送服务接受的情况（含后台发送），排除默认配置、未改变的保存、预览和测试。不会收集内容、收件人、模板字段名、操作时间或频率。同意后才开始记录；false 不代表仍在使用默认设置。升级前保留旧版本含义和范围，排队报告不变，确认后重新开始记录。",
     "currentSchema": "当前报告格式：{{schema}}",
-    "reviewUpgrade": "查看 usage.v5 升级说明",
-    "upgrade": "明确同意升级至 usage.v5",
-    "upgradeExplanation": "现有参与范围保持不变。请先了解扩展的字段和两项数量统计，再决定是否升级；拒绝升级不会退出当前参与。",
     "upgradePending": "升级同意正在等待确认，仅收集原先同意范围内的数据。接收服务恢复后可重试，或关闭参与并请求删除。",
-    "pendingBlocksActions": "待发送报告重试或发送成功前，无法升级至 v5 或打开报告中心；请使用上方“重试／到期时发送”。",
     "pendingBlocksPortal": "待发送报告重试或发送成功前，无法打开报告中心；请使用上方“重试／到期时发送”。",
     "catalog": {
-      "crm": {
-        "name": "客户管理",
-        "configured": "客户管理功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
-      "crm_quotes": {
-        "name": "报价单",
-        "configured": "报价单功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
-      "crm_invoices": {
-        "name": "发票",
-        "configured": "发票功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
-      "crm_contracts": {
-        "name": "合同",
-        "configured": "合同功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
-      "crm_projects": {
-        "name": "项目分组",
-        "configured": "项目分组功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
-      "crm_calendar": {
-        "name": "摄影师日历",
-        "configured": "摄影师日历功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
-      "crm_hours": {
-        "name": "工时记录",
-        "configured": "工时记录功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
       "customer_portal": {
         "name": "客户中心",
         "configured": "客户中心功能已实际开启，仅记录是或否。",
         "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
       },
-      "accounting": {
-        "name": "账务管理",
-        "configured": "账务管理功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
       "workflows": {
         "name": "自动化流程",
         "configured": "自动化流程功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
-      "newsletters": {
-        "name": "邮件通讯",
-        "configured": "邮件通讯功能已实际开启，仅记录是或否。",
         "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
       },
       "face_recognition": {
@@ -83,23 +30,18 @@
       },
       "custom_css": {
         "name": "自定义 CSS",
-        "configured": "自定义 CSS 在全球配置，或者通过相册/主题/模板应用; CSS 文本没有发送.",
+        "configured": "全局配置了自定义 CSS，或已将其应用于相册、主题或模板；不会发送 CSS 内容。",
         "used": "应用式CSS在征得同意后观察，不观察访客."
       },
       "oauth": {
         "name": "管理员单点登录",
         "configured": "管理者 OIDC 启用，并存在发行者/客户端配置; 没有提供者或证书值。",
-        "used": "成功管理员 SSO 登录; 没有账户、 身份提供者或会话细节。"
+        "used": "管理员通过单点登录（SSO）成功登录；不记录账号、身份提供商或会话详情。"
       },
       "smtp": {
         "name": "SMTP 邮件发送",
         "configured": "已配置了一个正在发送的 SMTP 主机; 没有主机、账户、地址或证书。",
         "used": "成功启动管理员 SMTP 测试/ 发送; 没有收件人或消息。"
-      },
-      "whatsapp": {
-        "name": "WhatsApp 集成",
-        "configured": "启用了WhatsApp能力，并有可用的配置;没有电话号码、令牌或模板。",
-        "used": "成功管理集成测试;没有收件人、消息或发送历史。"
       },
       "backup": {
         "name": "备份",
@@ -156,11 +98,6 @@
         "configured": "内置功能可用，不代表已使用。",
         "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
       },
-      "event_types": {
-        "name": "拍摄类型与预设",
-        "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
       "slideshow": {
         "name": "现场幻灯片放映",
         "configured": "现场幻灯片放映功能已实际开启，仅记录是或否。",
@@ -173,12 +110,12 @@
       },
       "video_uploads": {
         "name": "摄影师上传视频",
-        "configured": "在全球上传设置中允许视频扩展;没有上传的文件元数据.",
+        "configured": "全局上传设置允许上传视频格式；不记录已上传文件的元数据。",
         "used": "至少一个管理员视频文件被成功存储/接受;没有名称，格式，长度，大小或处理/访问历史."
       },
       "camera_raw_uploads": {
         "name": "摄影师上传 RAW",
-        "configured": "在全球上传设置中允许摄像头RAW(DNG);没有摄像头模型或EXIF.",
+        "configured": "全局上传设置允许上传 DNG 格式的相机 RAW 文件；不记录相机型号或 EXIF 信息。",
         "used": "至少一个管理员相机RAW上传被存储/接受;只有容量位，没有文件名或元数据."
       },
       "messaging": {
@@ -204,36 +141,6 @@
         "name": "邮件 Webhook 发送",
         "configured": "两个邮件webhook设置都存在;没有URL或秘密.",
         "used": "成功通过webhook传输系统明确启动管理员发送/测试;没有接收者、消息或自动发送。"
-      },
-      "accounting_incoming_invoices": {
-        "name": "供应商发票",
-        "configured": "供应商发票功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
-      "accounting_expenses": {
-        "name": "支出",
-        "configured": "支出功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
-      "accounting_tax_report": {
-        "name": "税务报表",
-        "configured": "税务报表功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
-      "accounting_ledger": {
-        "name": "账簿及账务导出",
-        "configured": "账簿及账务导出功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
-      },
-      "crm_installments": {
-        "name": "分期付款计划",
-        "configured": "允许引用或开具发票;没有检查实际付款计划、数额或状况。",
-        "used": "一个管理员保存了分期付款计划;没有日期、金额、货币、付款状况或证件身份证。"
-      },
-      "document_templates": {
-        "name": "文档预设与条款",
-        "configured": "引用或合同被启用，使文档预设/块可用;没有模板内容.",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
       },
       "cms": {
         "name": "内容页面",
@@ -291,7 +198,7 @@
       },
       "s3_backups": {
         "name": "S3 备份存储",
-        "configured": "配置的备份目的地是 S3 , 并带有一个桶; 没有桶或证书。",
+        "configured": "已配置 S3 备份目标并指定存储桶；不记录存储桶名称或凭据。",
         "used": "一个管理员开始备份到所配置的 S3 目的地或成功的 S3 测试上传; 本地输出绝不意味着 S3 使用。"
       },
       "analytics_dashboard": {
@@ -359,10 +266,10 @@
       },
       "gallery_image_protection": {
         "name": "图片保护",
-        "configured": "超过已发运默认值的启用 — 一个更强的保护级别，画布渲染，或右键点击已禁用 — 全球或至少在一个相册上; 仅存在于整个安装处，从未显示相册的ID或计数。"
+        "configured": "全局设置或至少一个相册启用了高于默认值的图片保护（例如更严格的保护级别、画布渲染或禁用右键）；仅记录是否启用，不记录相册 ID 或数量。"
       },
       "gallery_reveal": {
-        "name": "照片预约开放",
+        "name": "相册定时开放",
         "configured": "在适用的相册或全局设置中已开启；仅记录是否存在此配置，不包含相册编号或数量。"
       },
       "gallery_expiration": {
@@ -398,27 +305,7 @@
       },
       "s3_auto_import": {
         "name": "S3 自动导入",
-        "configured": "S3媒体存储配置，并启用 STORAGE_AUTO_IMPORT;没有桶，前缀，证书，投票或导入对象."
-      },
-      "crm_invoice_import": {
-        "name": "发票导入",
-        "configured": "有效启用了所需的产品能力;只有布尔。",
-        "used": "管理员成功导入了现有的发票;没有PDF、发票号码、金额、货币、客户或付款状况。"
-      },
-      "crm_combined_billing": {
-        "name": "合并计费",
-        "configured": "有效启用了所需的产品能力;只有布尔。",
-        "used": "行政主管成功地创建了综合账单;没有时间、支出、客户、文件或财务价值。"
-      },
-      "crm_monthly_billing_manual": {
-        "name": "手动月度计费",
-        "configured": "有效启用了所需的产品能力;只有布尔。",
-        "used": "一个管理员成功地发布了每月送出草稿; 实际的邮件送出没有测量。 没有调度活动、 客户、 粗略或发票值。"
-      },
-      "crm_document_conversion": {
-        "name": "文档转换",
-        "configured": "有效启用了所需的产品能力;只有布尔。",
-        "used": "管理员成功地将报价单或合同转换成文件或相册;没有内容、链接、接受状态或自动工作流程。"
+        "configured": "已配置 S3 媒体存储并启用 STORAGE_AUTO_IMPORT；不记录存储桶、路径前缀、凭据、轮询行为或导入对象。"
       },
       "gallery_capture_date_sort": {
         "name": "按拍摄时间排序",
@@ -430,7 +317,7 @@
       },
       "gallery_downloads_restricted": {
         "name": "相册下载限制",
-        "configured": "至少有一个相册的下载关闭;只有整个安装处存在，从没有相册的ID或计数."
+        "configured": "至少一个相册已关闭下载；仅记录此设置是否存在，不记录相册 ID 或数量。"
       },
       "cms_content_editing": {
         "name": "内容页面编辑",
@@ -440,7 +327,7 @@
       "email_template_editing": {
         "name": "邮件模板编辑",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "管理员创建了非空模板，或自同意后保存了真实的主题/ 机构更改。 默认、 不变保存、 预览和发送被排除。 这并不能建立当前对在同意前编辑的模板的定制。"
+        "used": "管理员在同意后创建了非空模板，或实际修改并保存了主题或正文。默认内容、未更改的保存、预览和发送均不计入。此项不表示同意前编辑的模板当前是否已自定义。"
       },
       "branding_editing": {
         "name": "品牌外观编辑",
@@ -451,11 +338,6 @@
         "name": "搜索引擎配置编辑",
         "configured": "内置功能可用，不代表已使用。",
         "used": "一个管理员保存了自同意以来对允许的 SEO 设置的真正修改。默认、读取和未更改的保存不计数;没有收集规则、路径或搜索引擎活动。"
-      },
-      "event_type_editing": {
-        "name": "拍摄类型编辑",
-        "configured": "内置功能可用，不代表已使用。",
-        "used": "自同意后创建、更改或删除项目类型的管理员。种子预设、读取和未修改的保存不计数。不保留名称、预设或标识符。"
       },
       "category_editing": {
         "name": "照片分类编辑",
@@ -561,11 +443,19 @@
       },
       "photos": {
         "name": "存储的照片记录",
-        "description": "当前非视频照片记录的数量，包括RAW, 客户上传和存档相册的记录。 安装总计一个; 文件、 缩略图、 处理成功或照片内容不独有。 已删除的记录除外。"
+        "description": "当前非视频照片记录数，包括 RAW、客户上传的照片和已归档相册中的记录。仅统计全站总数；不代表唯一文件数，也不统计缩略图、处理结果或照片内容。已删除记录不计入。"
       }
     },
     "builtinLabel": "内置可用，不代表已使用",
-    "enabledLabel": "已开启，可能为默认设置"
+    "enabledLabel": "已开启，可能为默认设置",
+    "fields": "usage.v6 报告包含安装指纹、PicPeak 版本、报告日期和生成时间、格式与签名信息、相册布局、66 项固定功能信号（43 项配置/使用组合及 23 项仅配置布尔值），以及相册数和非视频照片记录数。草稿、已归档相册及保留的照片记录也计入。下方目录列出全部字段，不收集操作次数或访客行为。",
+    "catalogTitle": "完整目录：66 项功能信号和 2 项数量统计（usage.v6）",
+    "catalogExplanation": "“已配置”表示当前技术可用或已完成配置；内置功能仅表示可用，不代表已使用。“已使用”是在同意后记录的安装级是/否标记；任务被接受表示已发起，不代表已完成。仅配置项不记录使用情况。数量统计只有相册数和照片记录数，不按相册拆分，也不记录操作人、对象、时间或频率。",
+    "versionDisclosure": "本次同意范围为 usage.v6 / usage-consent.v6 及其当前功能目录，不包含已移除的销售、财务、消息集成或拍摄类型功能。旧版本报告继续保留原有含义，已排队的数据包不会改变；只有明确同意此版本后才开始记录新范围。",
+    "reviewUpgrade": "查看 usage.v6 升级说明",
+    "upgrade": "明确同意升级至 usage.v6",
+    "upgradeExplanation": "现有参与范围保持不变。请先查看当前目录和两项数量统计，再决定是否升级。拒绝升级不会结束现有参与。",
+    "pendingBlocksActions": "待处理的报告重试或送达前，不能升级 v6 同意范围或打开使用情况页面；请先点上方“重试 / 到期发送”。"
   },
   "userManagement": {
     "title": "用户管理",
@@ -639,7 +529,7 @@
     },
     "confirmCancelInvitation": {
       "title": "取消邀请",
-      "message": "您确定要取消邀请吗 ? {{email}}?"
+      "message": "确认取消发送给 {{email}} 的邀请吗？"
     },
     "userActivated": "用户已成功重新启动",
     "activateUserError": "重新启动用户失败",
@@ -652,7 +542,7 @@
       "message": "重新启用 {{name}} 后，该用户可再次登录。"
     },
     "confirmDelete": {
-      "title": "永久删除用户吗 ?",
+      "title": "永久删除此用户？",
       "message": "永久删除 {{name}}，此操作不可撤销。待处理邀请和 API 令牌将删除；其在其他模块创建的记录会保留，但解除账号关联。"
     },
     "activate": "重新激活",
@@ -683,7 +573,7 @@
       "empty": "没有什么等待——排队正在起作用。",
       "description": "10多分钟前，即现在，而且仍未得到同意，这些都没有失败——没有任何东西试图发送它们。",
       "neverAttempted": "从未尝试",
-      "attempted": "{{count}}  尝试，最后一个错误: {{error}}",
+      "attempted": "已尝试 {{count}} 次；最后一次错误：{{error}}",
       "unknownError": "不详",
       "col": {
         "attempts": "尝试"
@@ -700,7 +590,7 @@
       "degraded": "运行中，但最后的通道无法发送 : {{error}}",
       "lastRun": "最后传球 {{when}}",
       "neverRan": "自此项目开始后就没运行过。",
-      "lastResult": "{{sent}}  派来了 {{failed}}  失败"
+      "lastResult": "已发送 {{sent}} 封，失败 {{failed}} 封"
     }
   },
   "common": {
@@ -819,8 +709,8 @@
     "limitInfo": "已选择 {{selected}} 个，上限 {{limit}} 个，还可添加 {{remaining}} 个。",
     "limitReached": "已达到每批 {{limit}} 个文件的上限",
     "photoCapReached": "此相册已达到 {{limit}} 张照片的上限，无法继续上传。",
-    "replacedFiles_one": "{{count}}  照片已替换",
-    "replacedFiles_other": "{{count}}  照片已替换",
+    "replacedFiles_one": "已替换 {{count}} 张照片",
+    "replacedFiles_other": "已替换 {{count}} 张照片",
     "uploadingChunks_one": "已上传 {{count}} 个分块",
     "uploadingChunks_other": "已上传 {{count}} 个分块",
     "fileTooLarge": "文件 {{name}} 超过 {{limit}} MB 上限。",
@@ -834,15 +724,12 @@
     "messages": "消息",
     "settings": "设置",
     "systemHealth": "系统状态",
-    "eventTypes": "拍摄类型",
     "branding": "品牌设置",
     "emailSettings": "邮件设置",
     "backup": "备份与恢复",
     "cmsPages": "内容页面",
     "users": "用户",
-    "calendar": "日历",
-    "clients": "客户管理",
-    "accounting": "账务",
+    "clients": "客户",
     "workflows": "工作流程",
     "betaTag": "测试版"
   },
@@ -866,7 +753,7 @@
     "disabled": "链接已禁用",
     "filesAdded": "已添加文件",
     "deleted": "转移已删除",
-    "deleteConfirmTitle": "删除转移吗 ?",
+    "deleteConfirmTitle": "删除此文件传输？",
     "deleteConfirmBody": "这将删除链接和任何客户端的上传。 源项目照片不会受到影响。",
     "addImages": "添加图像",
     "clientUpload": "客户端上传",
@@ -913,10 +800,10 @@
       "delivery": "交付",
       "recipients": "收件人邮件地址",
       "recipientsPlaceholder": "anna@example.com, ben@example.com 互联网档案馆的存檔，存档日期2014-12-21.",
-      "recipientsCount": "{{count}}  收件人——每个都获得下载链接",
+      "recipientsCount": "{{count}} 位收件人，每位都会收到下载链接",
       "recipientsHint": "用逗号分隔多个地址，每个收件人都会得到下载链接.",
-      "recipientsCount_one": "{{count}}  收件人——每个都获得下载链接",
-      "recipientsCount_other": "{{count}}  收件人——每个都获得下载链接"
+      "recipientsCount_one": "{{count}} 位收件人，每位都会收到下载链接",
+      "recipientsCount_other": "{{count}} 位收件人，每位都会收到下载链接"
     },
     "picker": {
       "title": "从其他项目选择图像",
@@ -926,11 +813,11 @@
       "select": "选择",
       "deselect": "取消选择",
       "alreadyAdded": "已添加",
-      "selectedCount": "{{count}}  选中",
+      "selectedCount": "已选择 {{count}} 项",
       "addSelected": "添加选中",
       "lightbox": "图片查看器",
-      "selectedCount_one": "{{count}}  选中",
-      "selectedCount_other": "{{count}}  选中"
+      "selectedCount_one": "已选择 {{count}} 项",
+      "selectedCount_other": "已选择 {{count}} 项"
     },
     "public": {
       "notFoundTitle": "链接未找到",
@@ -940,10 +827,10 @@
       "limitTitle": "已达到下载限制",
       "limitBody": "此传输已达到下载的最大次数.",
       "availableUntil": "可用至 {{date}}",
-      "fileSummary": "{{count}}  文件",
+      "fileSummary": "{{count}} 个文件",
       "downloadFile": "下载",
-      "fileSummary_one": "{{count}}  文件",
-      "fileSummary_other": "{{count}}  文件"
+      "fileSummary_one": "{{count}} 个文件",
+      "fileSummary_other": "{{count}} 个文件"
     },
     "upload": {
       "unavailableTitle": "无法上传链接",
@@ -952,32 +839,32 @@
       "doneBody": "您的文件已成功上传。",
       "uploadMore": "上传更多",
       "dropzone": "点击可选择文件或拖动文件到这里",
-      "limits": "最高额 {{files}}  文档, {{mb}}  每个 MB",
-      "tooBig": "每个文件必须是 {{mb}}  甲基溴或小于",
-      "send": "上传 {{count}}  文件",
+      "limits": "最多 {{files}} 个文件，每个不超过 {{mb}} MB",
+      "tooBig": "单个文件不能超过 {{mb}} MB",
+      "send": "上传 {{count}} 个文件",
       "failed": "上传失败。 请再试一次。",
-      "send_one": "上传 {{count}}  文件",
-      "send_other": "上传 {{count}}  文件"
+      "send_one": "上传 {{count}} 个文件",
+      "send_other": "上传 {{count}} 个文件"
     }
   },
   "workflows": {
     "title": "工作流程",
     "subtitle": "视觉自动化——触发器，条件，门和动作.",
     "new": "新工作流程",
-    "empty": "没有工作流程。 创建一个工作流程，自动实现您的发票和订票步骤。",
+    "empty": "尚无工作流。新建工作流，即可自动处理项目中的重复性任务。",
     "builtin": "内置",
     "triggerLabel": "触发",
     "enabled": "已启用",
     "disabled": "已禁用",
-    "confirmDelete": "删除此工作流程吗 ?",
+    "confirmDelete": "确定删除此工作流吗？",
     "toggle": {
-      "confirmDisableBuiltin": "阻止这种内置行为又回到了先前的内置行为——它不会关闭自动化。 继续吗 ?"
+      "confirmDisableBuiltin": "停用此内置流程会恢复为之前的默认行为，但不会关闭自动化。是否继续？"
     },
     "test": {
       "title": "测试运行",
-      "hint": "干运行: 将整个流量( 等待跳过，自动确认) , 副作用被嘲笑 — — 没有真正的邮件。 选择性地给一个实体ID( 如发票) , 这样条件就可以读取它。",
-      "entityId": "实体id(可选，例如发票id)",
-      "run": "运行干测试",
+      "hint": "试运行会立即执行完整流程，跳过等待并自动通过审批；所有会产生实际影响的操作都会被模拟。可选填项目或相册 ID，供流程条件判断使用。",
+      "entityId": "项目或相册 ID（可选）",
+      "run": "开始试运行",
       "result": "结果",
       "failed": "测试运行失败"
     },
@@ -1015,7 +902,6 @@
       "badJson": "配置无效 JSON",
       "daysBefore": "项目发生前几天",
       "templateGroup": "提醒模板组",
-      "templateGroupHint": "组内根据拍摄类型自动选择模板：优先使用 «group»_«eventType»，否则使用 «group»_default；留空则使用 event_reminder。",
       "showAdvanced": "高级( JSON)",
       "hideAdvanced": "隐藏高级( JSON)",
       "triggerHint": "触发器设于上方的工具栏( When...)。",
@@ -1057,17 +943,11 @@
     "totalPhotos": "照片总数",
     "avgArchiveSize": "平均归档大小",
     "searchPlaceholder": "搜索档案...",
-    "allTypes": "全部类型",
-    "wedding": "婚礼",
-    "birthday": "生日",
-    "corporate": "企业活动",
-    "other": "其他",
     "sortByDate": "按日期排序",
     "sortByName": "按名称排序",
     "sortBySize": "按大小排序",
     "tableHeaders": {
       "event": "通知类型",
-      "type": "类型",
       "archivedDate": "存档日期",
       "size": "大小",
       "photos": "照片",
@@ -1083,8 +963,8 @@
     "page": "第 {{current}} 页，共 {{total}} 页",
     "storageManagement": "储存管理",
     "storageInfo": "除非手动删除，否则档案会被永久存储。考虑执行保留政策，以管理存储费用。",
-    "confirmRestore": "您确定要恢复此归档吗 ? 此项目将再次激活。",
-    "confirmDelete": "您确定要永久删除此归档吗 ? 此动作无法撤销。",
+    "confirmRestore": "确定恢复此归档吗？恢复后，该项目将重新启用。",
+    "confirmDelete": "确定永久删除此归档吗？此操作不可撤销。",
     "restoreSuccess": "归档已成功恢复",
     "deleteSuccess": "归档已永久删除"
   },
@@ -1234,7 +1114,7 @@
     "downloadPrepTimeout": "处理超时，请稍后重试",
     "people": {
       "title": "相册中的人物",
-      "showAll": "显示全部 {{count}} 人",
+      "showAll": "显示全部 {{count}} 位人物",
       "show": "显示",
       "dismiss": "收起人物栏",
       "collapsedSummary": "识别到 {{count}} 人",
@@ -1244,21 +1124,21 @@
       "scanning": "人物识别中… {{scanned}}/{{total}} 张",
       "matchAll": "包含两人",
       "matchAny": "包含任一人",
-      "matchCount": "{{count}} 张，共 {{total}} 张",
+      "matchCount": "{{count}} / {{total}} 张照片",
       "clear": "清除",
       "searchPlaceholder": "搜索人物",
       "noMatches": "未找到匹配的人物",
       "privacyNote": "人物识别仅在当前服务器进行，不向外部服务发送照片",
       "inThisPhoto": "照片中的人物：",
-      "downloadThese": "下载这 {{count}} 张",
+      "downloadThese": "下载这 {{count}} 张照片",
       "unnamedCount_one": "{{count}} 张照片",
       "unnamedCount_other": "{{count}} 张照片",
       "collapsedSummary_one": "识别到 {{count}} 人",
       "collapsedSummary_other": "识别到 {{count}} 人",
-      "showAll_one": "显示全部 {{count}} 人",
-      "showAll_other": "显示全部 {{count}} 人",
-      "matchCount_one": "{{count}} 张，共 {{total}} 张",
-      "matchCount_other": "{{count}} 张，共 {{total}} 张",
+      "showAll_one": "显示全部 {{count}} 位人物",
+      "showAll_other": "显示全部 {{count}} 位人物",
+      "matchCount_one": "{{count}} / {{total}} 张照片",
+      "matchCount_other": "{{count}} / {{total}} 张照片",
       "downloadThese_one": "下载这 {{count}} 张照片",
       "downloadThese_other": "下载这 {{count}} 张照片"
     },
@@ -1268,11 +1148,11 @@
     "openFolder": "打开文件夹 {{name}}",
     "folderPhotoCount": "{{count}} 张照片",
     "backToGallery": "全部照片",
-    "downloadFolder": "下载文件夹（{{count}} 张）",
+    "downloadFolder": "下载文件夹（{{count}} 张照片）",
     "downloadFolderCapped": "下载前 {{limit}} 张，共 {{total}} 张",
     "downloadEverything": "下载全部照片",
-    "downloadFolder_one": "下载文件夹（{{count}} 张）",
-    "downloadFolder_other": "下载文件夹（{{count}} 张）",
+    "downloadFolder_one": "下载文件夹（{{count}} 张照片）",
+    "downloadFolder_other": "下载文件夹（{{count}} 张照片）",
     "folderPhotoCount_one": "{{count}} 张照片",
     "folderPhotoCount_other": "{{count}} 张照片",
     "preparingProgress_one": "已打包 {{count}} 张照片",
@@ -1333,7 +1213,7 @@
     "revealNow": "立即开放照片",
     "revealedToast": "相册已开放，客户现在可以查看照片",
     "revealError": "开放相册失败",
-    "title": "通知类型",
+    "title": "项目",
     "create": "创建",
     "createEvent": "创建项目",
     "totalViews": "访问总次数",
@@ -1351,7 +1231,6 @@
     "confirmPasswordPlaceholder": "确认密码",
     "eventDetails": "项目详情",
     "eventName": "项目名称",
-    "eventType": "项目类型",
     "eventDate": "拍摄日期",
     "fullDay": "全天",
     "eventTimeStart": "开始时间",
@@ -1372,7 +1251,6 @@
     "copyLink": "复制链接",
     "linkCopied": "链接已复制",
     "viewGallery": "查看相册",
-    "createInvoice": "创建发票",
     "uploadPhotos": "上传照片",
     "archiveEvent": "归档项目",
     "archiveConfirm": "确认归档此项目？归档后客户将无法继续访问。",
@@ -1405,7 +1283,7 @@
     "shareWithGuestsPublic": "将此链接发送给客户，打开即可查看照片，无需密码",
     "shortUrls": {
       "title": "品牌短 URL",
-      "description": "创建易记的 /s/sofia-graduation 等短链接。分享时，支持链接预览的应用可显示相册名称及预览照片。",
+      "description": "创建易记链接，客户打开后即可查看当前项目。分享链接时可显示项目封面预览。",
       "slugPlaceholder": "例如 sofia-graduation（可选）",
       "slugHelp": "留空则根据相册名称自动生成，仅支持小写英文字母、数字和连字符。",
       "create": "创建",
@@ -1570,9 +1448,9 @@
       "notifyLabel": "立即发送相册通知邮件",
       "notifyHelp": "取消勾选可直接发布而不发送邮件，之后仍可在此页面发送通知。",
       "descriptionQuiet": "发布“{{eventName}}”后客户可访问相册；此次不发送邮件，您可稍后发送。",
-      "descriptionWhatsapp": "发布“{{eventName}}”后客户可访问相册；已配置 WhatsApp 时将通过 WhatsApp 通知客户。",
       "descriptionAssignedAccount_one": "发布“{{eventName}}”后客户可访问相册，已关联的客户账号将收到对应语言的通知邮件。",
-      "descriptionAssignedAccount_other": "发布“{{eventName}}”后客户可访问相册，已关联的客户账号将收到对应语言的通知邮件。"
+      "descriptionAssignedAccount_other": "发布“{{eventName}}”后客户可访问相册，已关联的客户账号将收到对应语言的通知邮件。",
+      "descriptionShareLink": "发布“{{eventName}}”后，相册即可访问。请复制分享链接发送给客户。"
     },
     "duplicateEvent": "复制项目",
     "duplicateDialog": {
@@ -1619,7 +1497,7 @@
     "publicAccess": "链接公开访问",
     "passwordProtected": "密码保护",
     "newPasswordRequired": "请在启用保护前设置密码。",
-    "event": "通知类型",
+    "event": "项目",
     "type": "类型",
     "date": "日期",
     "status": "状态",
@@ -1634,7 +1512,7 @@
     "archiveEventAction": "归档项目",
     "downloadArchiveAction": "下载归档",
     "deleteEvent": "删除项目",
-    "deleteEventConfirm": "您确定要删除此项目吗 ?",
+    "deleteEventConfirm": "确定删除此项目吗？",
     "downloadArchiveSoon": "归档文件即将开始下载",
     "eventExpiredMessage": "此项目已过期",
     "guestsCannotAccessGallery": "客户已无法访问相册，可按需将项目归档。",
@@ -1645,7 +1523,7 @@
     "copy": "复制",
     "copied": "已复制",
     "archiveStatusTitle": "归档状态",
-    "downloadingArchive": "下载 {{name}}  归档...",
+    "downloadingArchive": "正在下载归档：{{name}}…",
     "downloadStarted": "下载已开始",
     "failedToDownloadArchive": "下载归档失败",
     "galleryTheme": "相册主题",
@@ -1686,7 +1564,7 @@
     "daysLeft_other": "（剩余 {{count}} 天）",
     "eventsSelected_one": "已选择 {{count}} 个项目",
     "eventsSelected_other": "已选择 {{count}} 个项目",
-    "paginationLabel": "{{from}}–{{to}}  共 {{total}}",
+    "paginationLabel": "显示 {{from}}–{{to}} 项，共 {{total}} 项",
     "filtered": "已筛选",
     "pageOf": "第 {{page}} 页，共 {{totalPages}} 页",
     "notFound": "未找到项目",
@@ -1721,8 +1599,8 @@
     },
     "ogShare": {
       "title": "使用封面照片作为分享预览图",
-      "help": "在支持链接预览的应用中分享相册链接时，会显示封面照片。预览服务无需登录即可读取此图片，因此持有链接的人也能查看。此功能默认关闭，开启前请选择适合公开预览的封面。",
-      "heroRequired": "请先选择封面照片，分享预览将使用该照片。"
+      "help": "将项目链接分享到社交平台时，预览可能会显示上方封面图。链接预览服务无需登录即可读取图片，任何获得链接的人都可能看到这张图片。此功能默认关闭；启用前请确认封面适合公开展示。",
+      "heroRequired": "请先在上方选择项目封面，这张图片将用于链接预览。"
     },
     "publishQuietSuccess": "相册已发布，未发送邮件。",
     "sendGalleryEmail": {
@@ -1754,6 +1632,32 @@
       "searching": "搜索中…",
       "noResultsCanCreate": "未找到匹配的客户，可点击“创建新客户”添加。",
       "noResultsNoPermission": "未找到匹配的客户，当前账号没有创建权限，请联系管理员添加。"
+    },
+    "projectInfo": "项目信息",
+    "publishShareLinkSuccess": "项目已发布，请复制分享链接发给客户。",
+    "publishButton": "发布相册",
+    "customerCannotAccessYet": "客户暂时无法访问此相册。",
+    "welcomeMessageLineBreakHint": "按回车换行；每一行会在客户相册中显示为一个独立段落。",
+    "galleryLayoutLabel": "照片布局：",
+    "themePresets": {
+      "default": "经典网格",
+      "elegantWedding": "典雅风格",
+      "modernMasonry": "现代瀑布流",
+      "birthdayFun": "欢庆风格",
+      "corporateTimeline": "时间线",
+      "artisticMosaic": "艺术拼贴",
+      "custom": "自定义主题"
+    },
+    "galleryLayouts": {
+      "grid": "网格",
+      "masonry": "瀑布流",
+      "carousel": "轮播",
+      "timeline": "时间线",
+      "mosaic": "拼贴",
+      "gallery-premium": "典雅大图",
+      "gallery-story": "故事叙事",
+      "hero": "大图封面",
+      "custom": "自定义"
     }
   },
   "settings": {
@@ -1801,7 +1705,7 @@
       "accountEmailInvalid": "请输入有效邮箱",
       "accountSaveButton": "保存账号资料",
       "accountSaveSuccess": "账号资料已更新",
-      "siteUrlInvalid": "输入包括 http:// 或 https://,  举例来说, https://gallery.example.com",
+      "siteUrlInvalid": "请输入完整网址，例如 https://gallery.example.com",
       "timeFormat": "时间格式",
       "timeFormat24h": "24 小时制（14:30）",
       "timeFormat12h": "12 小时制（下午 2:30）",
@@ -1877,14 +1781,14 @@
       "complexityModerate": "中度( 8+字符，混合大小写/ 数字)",
       "complexityStrong": "强( 12+字符，大写/ 小写/ 数字)",
       "complexityVeryStrong": "非常强( 12+字符，所有字符类型)",
-      "sessionAuth": "会话认证",
-      "sessionTimeout": "会话超时( 分钟)",
+      "sessionAuth": "会话与身份验证",
+      "sessionTimeout": "会话有效期（分钟）",
       "maxLoginAttempts": "最大登录尝试",
       "maxLoginAttemptsHelp": "锁定前每个IP的最大登录尝试失败",
       "attemptWindowMinutes": "尝试窗口( 分钟)",
       "attemptWindowMinutesHelp": "计数失败的登录尝试时要回顾多久",
       "lockoutDurationMinutes": "锁定时长（分钟）",
-      "lockoutDurationMinutesHelp": "失败太多后，相册或账户要锁多久 ?",
+      "lockoutDurationMinutesHelp": "失败次数过多后，账号会被锁定多久？",
       "recaptchaSettings": "reCAPTCHA 设置",
       "enableRecaptcha": "启用登录表单的 reCAPTCHA",
       "siteKey": "站点密钥",
@@ -1901,7 +1805,7 @@
       "rateLimitAuthMaxRequests": "每个时间窗口内允许的登录失败次数",
       "rateLimitAuthMaxRequestsHelp": "管理员登录和相册密码验证单独限流，仅计入失败尝试。默认 5 次，允许范围为 1–100。",
       "rateLimitSkipAuthenticated": "不计算已认证的请求",
-      "rateLimitSkipAuthenticatedHelp": "管理员会话，以及已登录相册客户对该相册图片的请求，可豁免此限制。",
+      "rateLimitSkipAuthenticatedHelp": "管理员会话以及已登录客户对其相册图片的请求（缩略图、预览图和照片）不受此限制。",
       "rateLimitPublicOnly": "仅限制公开接口",
       "rateLimitPublicOnlyHelp": "开启后，仅对 /api/public 和 /api/gallery 下的请求计数。",
       "rateLimitNatNote": "限制按客户端 IP 计算；同一办公室、家庭或场地 Wi-Fi 可能共用额度。反向代理部署须正确配置 TRUST_PROXY，否则所有访客可能共用代理 IP 的额度。被拒绝的请求会在日志中记录为“Rate limit exceeded”。",
@@ -2006,7 +1910,7 @@
       "showGalleryFilterBar": "显示相册搜索和排序栏",
       "showGalleryFilterBarHelp": "在网格相册上方显示文件名搜索和排序控件。",
       "enablePhoneField": "启用电话号码字段",
-      "enablePhoneFieldHelp": "在项目表单中添加一个可选的电话号码输入。对于下游自动化如WhatsApp通过 n8n 发送，非常有用。 即使启用，也总是可选的。",
+      "enablePhoneFieldHelp": "为项目添加可选联系电话，供后续沟通或自动化流程使用。启用后仍可留空。",
       "defaultFeedbackEnabled": "默认启用客户反馈",
       "defaultFeedbackEnabledHelp": "新建项目时默认开启客户反馈；点赞、评分和评论等选项仍可分别调整。",
       "feedbackTypeDefaultsHelp": "哪些反馈类型从新相册开始。 现有的相册没有受到影响 — 每个相册仍然可以单独改变。",
@@ -2062,7 +1966,7 @@
       "filterDeleted": "成功删除单词过滤器",
       "deleteError": "删除单词过滤器失败",
       "wordRequired": "请输入要过滤的单词",
-      "confirmDelete": "您确定要删除此单词过滤器吗 ?",
+      "confirmDelete": "确定删除此屏蔽词吗？",
       "loading": "正在加载单词过滤器...",
       "noMatchingFilters": "未找到匹配的过滤器",
       "noFilters": "尚未配置单词过滤器",
@@ -2082,13 +1986,13 @@
     "thumbnails": {
       "title": "缩略图",
       "dimensionsTitle": "缩略图尺寸和质量",
-      "dimensionsHelp": "配置自动生成的缩略图的大小和质量。 更高的数值会产生更好看的预览，但会增加存储和负载时间。",
+      "dimensionsHelp": "设置自动生成的缩略图尺寸和质量。数值越高，预览效果越清晰，但会增加存储占用和加载时间。",
       "width": "宽度( px)",
       "widthHelp": "50-1000 像素",
       "height": "高度（像素）",
       "heightHelp": "50-1000 像素",
       "quality": "质量",
-      "qualityHelp": "1-100, 更高 = 质量更好但文件更大",
+      "qualityHelp": "范围为 1–100；数值越高，画质越好，文件也越大。",
       "format": "格式",
       "fit": "缩放方式",
       "fitHelp": "设置如何调整图片以适配缩略图尺寸；“裁剪铺满”填满区域，“完整显示”保留整张图片。",
@@ -2162,7 +2066,7 @@
       "proxiedNoticeText": "PicPeak 加载跟踪器脚本并通过自己的域名转发其项目，因此不需要Content-Security-Policy或反向代理更改——广告屏蔽器会看到第一当事方请求。您的跟踪器仍然会得到每个访客的IP和用户代理(被转发为X-Forward-For),因此设备和位置报告会持续工作。 URL必须可以从 PicPeak 服务器上访问，并解析到一个公共地址。",
       "customOnlyCspWarningText": "PicPeak 默认采用严格 CSP（`script-src 'self'; connect-src 'self'`）。自定义代码不会经过代理，请在反向代理或 nginx CSP 配置的 `script-src` 与 `connect-src` 中均添加统计服务域名，否则浏览器会拦截。",
       "rybbitUrl": "Rybbit 访问地址",
-      "rybbitUrlHelp": "您的 Rybbit 实例 URL —— `https://app.rybbit.io`  用于SaaS,或 `https://rybbit.yourdomain.com`  给自己主持。",
+      "rybbitUrlHelp": "Rybbit 实例的网址：SaaS 版使用 https://app.rybbit.io，自托管版使用 https://rybbit.yourdomain.com。",
       "rybbitWebsiteId": "站点标识",
       "rybbitWebsiteIdHelp": "在Rybbit 找到的 追踪脚本",
       "rybbitApiKey": "API 密钥",
@@ -2201,11 +2105,7 @@
       "integrations": "集成服务",
       "system": "系统",
       "appearance": "内容外观",
-      "communication": "通讯",
-      "crm": "CRM 设置"
-    },
-    "contracts": {
-      "title": "合同"
+      "communication": "通讯"
     },
     "reminderTemplates": {
       "title": "提醒邮件"
@@ -2248,7 +2148,7 @@
       "create": "创建 Webhook",
       "existing": "已有 Webhook",
       "empty": "尚未配置 Webhook，可在上方创建。",
-      "namePlaceholder": "例如：n8n 自动化",
+      "namePlaceholder": "例如：自动化流程",
       "urlPlaceholder": "https://n8n.example.com/webhook/picpeak",
       "showAdvanced": "+ 高级( 过滤器，模板)",
       "hideAdvanced": "- 隐藏高级(过滤器、模板)",
@@ -2262,12 +2162,12 @@
       "copyFailed": "复制失败",
       "colName": "名称",
       "colUrl": "接收地址",
-      "colEvents": "通知类型",
+      "colEvents": "订阅事件",
       "colLastDelivery": "最后发送时间",
       "colStatus": "状态",
       "colActions": "操作",
-      "eventsSubscribed_one": "{{count}}  已订阅",
-      "eventsSubscribed_other": "{{count}}  已订阅",
+      "eventsSubscribed_one": "已订阅 {{count}} 个事件",
+      "eventsSubscribed_other": "已订阅 {{count}} 个事件",
       "statusActive": "启用",
       "statusDisabled": "已禁用",
       "toggleToDisable": "单击以禁用",
@@ -2286,12 +2186,12 @@
         "sendTestHelp": "发送合成测试数据到接收地址，不创建真实项目或照片。",
         "refresh": "刷新",
         "send": "发送",
-        "eventType": "项目类型",
-        "total_one": "{{count}}  共计",
-        "total_other": "{{count}}  共计",
+        "eventType": "事件类型",
+        "total_one": "共 {{count}} 次",
+        "total_other": "共 {{count}} 次",
         "empty": "尚无发送记录，可创建项目或发送测试通知。",
         "colTime": "时间",
-        "colEvent": "通知类型",
+        "colEvent": "事件",
         "colStatus": "状态",
         "colAttempts": "尝试",
         "colHttp": "HTTP 状态",
@@ -2316,9 +2216,6 @@
     },
     "sectionLabel": "设置区域",
     "navAriaLabel": "设置导航",
-    "eventTypes": {
-      "title": "拍摄类型"
-    },
     "cms": {
       "title": "内容页面"
     },
@@ -2345,13 +2242,7 @@
       "sections": {
         "core": "核心",
         "communication": "通讯",
-        "scheduling": "时间安排",
-        "sales": "销售",
-        "accounting": "账务",
-        "insights": "统计分析",
-        "customers": "客户",
-        "clients": "客户管理",
-        "automation": "自动化"
+        "insights": "统计分析"
       },
       "status": {
         "stable": "稳定",
@@ -2367,61 +2258,16 @@
       },
       "incomingMail": {
         "title": "来信",
-        "description": "每分钟投出一个专用邮箱(IMAP),然后将发票附件投放到会计 – 进帐发票中。在设置 – 邮件下配置邮箱。"
+        "description": "在消息页面接收和整理客户邮件。"
       },
       "reminderEmails": {
         "title": "提醒邮件",
-        "description": "活动前自动向客户进行预告，时间是活动日期的N天。每个类别模板(音乐、公司、婚礼、.)可在Sets → 提醒模板中编辑;项目细节页面上每个项目覆盖。"
+        "description": "在项目日期前发送通用提醒，可在提醒模板中自定义内容。"
       },
       "messaging": {
         "title": "通讯",
         "description": "与客户一起使用线条，附在相册上。邮件对大多数团队来说是真正好的——这是对想要所有东西都放在一个地方的录音室来说。",
         "sidebar": "消息"
-      },
-      "calendar": {
-        "title": "日历",
-        "description": "仅管理日历显示项目、记录的时数和一个视图中的待引用/合同。在日历上直接拖动创建时数。",
-        "sidebar": "日历"
-      },
-      "calendarBooking": {
-        "title": "客户预订",
-        "description": "客户可查看空闲时段并直接预约，此功能即将推出。",
-        "sidebar": "预订"
-      },
-      "quotes": {
-        "title": "报价单",
-        "description": "向客户发送报价单，客户可通过链接接受或拒绝；付款状态由您手动登记。",
-        "sidebar": "报价单"
-      },
-      "bills": {
-        "title": "发票",
-        "description": "从任何接受的报价中生成一张发票。 标记是手动支付的 — 没有付款处理器集成。",
-        "sidebar": "发票"
-      },
-      "taxReport": {
-        "title": "税务报表导出",
-        "description": "按增值税率分类的净+增值税细目的期间范围收入清单。导出为您的会计师的PDF(景区、公司信笺头)或CSV。注销的发票在无缺口的审计线索中保持可见，但不包括在总数中。",
-        "sidebar": "税收",
-        "requiresBills": "先启用帐单 —— 税单是从您的发票上读到的。",
-        "requiresAccounting": "启用会计先行——会计部分的税收出口寿命."
-      },
-      "accounting": {
-        "title": "账务",
-        "description": "从客户关系管理中分离出一个专门的会计领域。打开这个区域后，下面的子域(税输出、进货发票)就可以使用。增值税/税收待遇只是指导性——先与您的Treuhänder进行核实，然后再依赖它。",
-        "sidebar": "账务",
-        "requiredByBills": "由于发票被启用，自动开出——发票增值税设置在会计科内。"
-      },
-      "incomingInvoices": {
-        "title": "供应商发票",
-        "description": "已收到供应商发票(上载或电话/平板相机),对费用进行分类，并在相关项目中向客户重新开单，加注合同驱动的标价。",
-        "sidebar": "供应商发票",
-        "requiresAccounting": "启用会计先行——入帐发票在会计科内直播."
-      },
-      "expenses": {
-        "title": "支出",
-        "description": "内部开支(英里、每餐、现金),订入一项活动或公司，有可选的证明，与收到的供应商发票分开。",
-        "sidebar": "支出",
-        "requiresAccounting": "启用会计第一——支出在会计部分中直播。"
       },
       "analytics": {
         "title": "统计",
@@ -2429,154 +2275,47 @@
       },
       "userManagement": {
         "title": "用户管理",
-        "description": "多管理员支持以角色为主权限，若为单机操作工作室则关闭.",
-        "warning": "现有用户账户仍然有效;管理账户的管理员 UI 将被隐藏，直到您重新启用为止。"
+        "description": "支持多位管理员，并可按角色分配权限。单人工作室可关闭此功能。",
+        "warning": "现有用户账号仍可使用；关闭后将隐藏用户管理页面，重新启用后即可恢复。"
       },
       "customerPortal": {
         "title": "客户账户",
-        "description": "持续的客户登录。 经常客户从一个地方看到所有指定相册，没有每次活动的密码。 客户登录/ 客户/ 登录，并在客户关系管理系统( CRM) 账户下管理它们。"
-      },
-      "clients": {
-        "title": "客户管理",
-        "description": "CRM 侧边栏部分的主切换器。 关闭时隐藏该部分和下面的每一个子域，不论它们的个人切换情况如何 —— 重新启用，以恢复它们为您最后设置的。"
-      },
-      "contracts": {
-        "title": "合同",
-        "description": "从可重复使用的块(图像权限, NDA, 模型发布，取消，管辖权... ) 库中起草合同，并让客户在浏览器上签名或上传一个湿签的 PDF. 种子块体是 EXAMPLES 唯一的—— 在发送前与您的律师审查。",
-        "sidebar": "合同"
-      },
-      "crmDevelopment": {
-        "title": "CRM 开发工具",
-        "description": "用于验证CRM流量的内部助手(例如立即点火管理员支付检查邮件，绕过节流). Surfaces as a \"development\" subtab under Clients. 严格选择使用 – 点火真正的副作用，只使用测试数据.",
-        "sidebar": "开发工具"
-      },
-      "hoursLogging": {
-        "title": "工时记录",
-        "description": "按客户记录工时。管理员可填写日期、开始和结束时间，并可选填费率覆盖值和备注。按月计费的客户，其工时会自动计入当月草稿账单；按项目计费的客户可为每条记录创建独立的发票草稿。即使尚未启用完整账单功能，也可以单独记录工时。",
-        "sidebar": "工时"
-      },
-      "projects": {
-        "title": "项目",
-        "description": "只管理分组层在项目上方。在一个项目下设置多个项目，并打开360°项目概览驾驶舱 — 里程碑时间表外加每个邮件的日期种子(实际发送的预览+重发/取消/重发动作)、报价单、合同、发票、相册和记录小时。在日志时添加“投影图书”控制。客户从不看到项目。",
-        "sidebar": "概览"
-      },
-      "whatsapp": {
-        "title": "WhatsApp",
-        "description": "除了邮件外，还要通过WhatsApp Business API 发送相册准备的通知。 需要一个 Meta 商业账户、 已核准的消息模板，以及项目的客户电话号码。 在 Setting → WhatsApp 下配置证书。"
+        "description": "客户登录后可集中查看已分配的照片项目。"
       },
       "slideshow": {
         "title": "现场幻灯片放映",
-        "description": "生成投影仪使用的全屏播放链接，自动加载新增照片；默认效果及水印可在“设置 → 幻灯片放映”中调整。"
+        "description": "为现场投影提供独立的全屏播放链接，新上传照片会自动加入；全局水印默认设置位于“设置 → 幻灯片”。"
       },
       "transfers": {
-        "title": "Pic 传输器",
-        "description": "从任何项目发送原始文件作为安全，有符号保护的下载链接，带有可选的客户端上载代码，客户端可以将您的标志和文件发回. 严格选入.",
-        "sidebar": "Pic 传输器"
+        "title": "PicTransfer 文件传输",
+        "description": "可将原始文件通过受访问令牌保护的链接安全交付给客户，也可生成上传码，方便客户回传标志文件和其他资料。需主动开启。",
+        "sidebar": "PicTransfer 文件传输"
       },
       "workflows": {
         "title": "工作流程",
-        "description": "在画布上建立视觉自动化——触发、条件、分支、环路和管理员批准闸门。您的提醒阶梯和预订步骤成为可编辑的流程。 严格选择输入。",
+        "description": "通过触发条件、分支、循环和审批节点搭建可视化流程，自动处理项目中的重复性任务。需主动开启。",
         "sidebar": "工作流程"
       },
       "faces": {
         "title": "相册里的人",
         "description": "按人物整理相册，方便客户找到并下载包含自己的照片。此功能使用单独的本地识别容器，不向外部服务发送照片；需在每个相册中单独开启。",
         "lockedSingleContainer": "AIO 单容器部署不提供此功能。人脸识别需要独立的机器学习容器，会占用额外 CPU 和内存。"
-      },
-      "newsletters": {
-        "title": "邮件通讯",
-        "sidebar": "邮件通讯",
-        "description": "创建并发送邮件通讯。"
       }
     },
     "customerSurface": {
-      "brandingTitle": "客户仪表板头",
-      "brandingHint": "控制/ 客户/ dashboard 标题中显示的内容。 公共相册和管理员表面不受影响。",
-      "showLogo": "在客户头中显示标识",
-      "showLogoHint": "使用上面配置的相同品牌标志.",
-      "showCompanyName": "在客户头中显示公司名称",
-      "showCompanyNameHint": "隐藏您的标志是否已经包含公司名称。",
+      "brandingTitle": "客户中心页眉",
+      "brandingHint": "设置客户中心首页页眉的显示内容；不会影响公开相册或管理后台。",
+      "showLogo": "显示品牌标志",
+      "showLogoHint": "使用上方设置的品牌标志。",
+      "showCompanyName": "显示公司名称",
+      "showCompanyNameHint": "如果品牌标志中已包含公司名称，可关闭此项。",
       "save": "保存更改",
-      "saved": "保存客户仪表板品牌",
+      "saved": "客户中心页眉设置已保存",
       "error": "无法保存设置"
-    },
-    "businessProfile": {
-      "title": "企业概况."
-    },
-    "crm": {
-      "title": "客户关系管理行为"
-    },
-    "accounting": {
-      "title": "账务",
-      "subtitle": "默认费率、增值税设置和证明要求。",
-      "kmRate": "里程率(千米/千米)",
-      "kmRateHint": "里程费用为默认费用;每个条目均不可超过。",
-      "perDiemRate": "每日津贴(瑞士法郎/天)",
-      "perDiemRateHint": "每日固定津贴作为支出(不是客户计费标准);每个入帐额不得超过。",
-      "requireProof": "需要每笔开支的证明文件",
-      "vat": {
-        "title": "增值税",
-        "registered": "增值税登记(增值税计费产出+回收投入增值税).",
-        "registeredHint": "off = 小企业 / 门槛值:不收取增值税，输入增值税为成本(不可回收)。",
-        "reclaimCountries": "增值税可收回的国家",
-        "reclaimCountriesHint": "通常，国内( CH / LI )。 其他国家的费用按不可收回的外国增值税处理。 点击 Cmd/ Ctrl 以多选取。",
-        "defaultOutputCode": "新发票的默认增值税代码",
-        "defaultOutputCodeNone": "无(从0%开始)",
-        "defaultOutputCodeHint": "新的发票和报价从所选的增值税代码开始。现有文件不受影响。"
-      },
-      "disclaimer": "税率和增值税/税费待遇只是指导性—— 与您所在的州核实。",
-      "savedToast": "已保存会计设置。",
-      "profileFields": {
-        "vatLabel": "增值税标签(如MwSt.,增值税)",
-        "vatLabelHint": "打印为发票/ 引用 PDF 上的增值税行标签。 请留空白以使用文档语言默认值。",
-        "hourlyRate": "默认小时费率",
-        "hourlyRatePlaceholder": "例如,120.00美元",
-        "hourlyRateHint": "当客户没有自己的收费率(小时记录)时使用退票。 {{currency}} ,主要单位。留空以要求每个客户或每个入境的费率。"
-      },
-      "rebillAttachProof": "默认情况下将供应商证明附在重新开具的发票上",
-      "rebillAttachProofHint": "当被捕获的供应商发票被重新开具或通过时，将其存储的PDF附加到客户端-发票邮件上作为单独的证据。这是默认的，即每个客户的覆盖，以及Send 对话框中每个文件的选择，每次都可以更改。",
-      "rebillProofNameFormat": "证明文件名格式",
-      "rebillProofNameFormatHint": "附件凭证 PDF 的文件名。变量：{INVOICE}、{SUPPLIER}、{YEAR}、{MONTH}、{SEQ}（或 {SEQ:03d}）。留空使用默认“Beleg-{INVOICE}”。同一发票有多个凭证时自动追加序号；保留“Beleg-”等前缀，避免与发票 PDF 同名。"
     },
     "slideshow": {
       "title": "幻灯片放映",
-      "subtitle": "Live 幻灯片放映的全局默认值。 项目和项目类型可以覆盖它们。"
-    },
-    "whatsapp": {
-      "title": "WhatsApp",
-      "subtitle": "配置 Meta 商业证书，以便通过 WhatsApp 和邮件一起发送已准备好的相册通知。",
-      "phoneNumberId": "电话号码编号",
-      "phoneNumberIdHint": "来自Meta Business → WhatsApp → API 设置。 数字 ID Meta 指定给您注册的电话。",
-      "wabaId": "WABA 识别码",
-      "wabaIdHint": "WhatsApp Business Account ID. 只引用(API呼叫使用电话号码ID); 有助于审计.",
-      "accessToken": "访问令牌",
-      "accessTokenPlaceholder": "EAAB... (系统用户代号推荐)",
-      "accessTokenHint": "读取时显示为“********”。保留此值沿用现有令牌，输入新值则替换。",
-      "templateName": "模板名称",
-      "templateNameHint": "Meta 批准的消息模板名称。 默认值 `gallery_ready`  期望有5个机构参数:客户名，项目名，相册链接，密码行，过期日. 启用前在Meta Business Manager中批准模板.",
-      "templateLanguage": "模板语言",
-      "templateLanguagePlaceholder": "例如en_US, de_DE, ar, pt_BR",
-      "templateLanguageHint": "Meta模板语言代码，与您在Meta Business Manager中注册的代码完全相同(`ar`, `en_US`, `de_DE`, `pt_BR` 等),留空以返回系统默认语言. Meta 返回“未在语言中找到的模板”如果这不符合注册模板的话。",
-      "templateParams": "模板参数",
-      "templateParamsHint": "选择哪些内置值作为位置模板参数发送( 位置 1, 插槽 2,...) , 并把它们安排好，以便匹配您 Meta 注册的模板正文中的顺序。 未选中的插槽根本不发送。 默认匹配内置。 `gallery_ready`  5参数形状.",
-      "templateParamsEmpty": "没有选择槽——保存会回到默认的5参数形状.",
-      "templateParamsPreview": "您的模板将接收 : {{preview}}",
-      "paramMoveUp": "向上移动",
-      "paramMoveDown": "向下移动",
-      "params": {
-        "customer_name": "客户姓名",
-        "event_name": "项目名称",
-        "gallery_link": "相册链接",
-        "password_line": "密码提示行（以 🔒 开头，无密码时为空）",
-        "expiry_date": "过期日期"
-      },
-      "enabled": "发送 WhatsApp 通知",
-      "savedToast": "WhatsApp 设置已保存",
-      "testHeading": "发送测试消息",
-      "testHelp": "向下面的电话号码发送静态模板消息，以验证Meta credities +模板批准. 包括国家代码(如+49...).",
-      "testSend": "发送测试",
-      "testSending": "正在发送...",
-      "testSentToast": "发送的测试信件( ID : {{id}})."
+      "subtitle": "设置现场幻灯片的全局默认值；每个项目可单独调整。"
     },
     "mfa": {
       "title": "双重认证",
@@ -2590,14 +2329,14 @@
       "codePlaceholder": "123456",
       "enable": "启用",
       "enabledBadge": "双重认证已开启",
-      "recoveryCodesRemaining": "{{count}}  恢复码尚存。",
-      "recoveryCodesRemaining_other": "{{count}}  恢复码尚存。",
+      "recoveryCodesRemaining": "还剩 {{count}} 个恢复码。",
+      "recoveryCodesRemaining_other": "还剩 {{count}} 个恢复码。",
       "regenerate": "重新生成恢复码",
       "regenerateHelp": "输入当前认证代码以生成一组新的恢复码。 您的旧代码将停止工作。",
       "regenerateConfirm": "重新生成",
       "disable": "禁用",
       "disablePrompt": "输入当前认证或恢复码以禁用双重认证 :",
-      "disableConfirmTitle": "禁用双重认证 ?",
+      "disableConfirmTitle": "关闭双重验证？",
       "disableConfirmMessage": "您的账户不再需要第二步的登录。 您可以随时重新登录。",
       "disableConfirmButton": "禁用",
       "disabledToast": "双重认证已禁用。",
@@ -2613,7 +2352,7 @@
       "enableFailed": "无法启用双重认证。 请检查代码并再次尝试。",
       "disableFailed": "无法禁用双重认证。 请检查代码并再次尝试。",
       "regenerateFailed": "无法再生成恢复码。 请检查代码并再次尝试。",
-      "recoveryCodesRemaining_one": "{{count}}  恢复码尚存。"
+      "recoveryCodesRemaining_one": "还剩 {{count}} 个恢复码。"
     },
     "sso": {
       "title": "单点登录（OIDC）",
@@ -2661,7 +2400,7 @@
         "disableLocalLoginHint": "登录页面只显示 SSO 按钮, API 拒绝密码登录。 只有启用 SSO 时才可能; 关闭 SSO 将密码自动恢复。",
         "breakGlassHint": "身份提供商不可用或配置错误导致无法登录时，可在服务器设置 OIDC_BREAK_GLASS=true 并重启，恢复密码登录。",
         "logoutFromIdp": "同时退出身份服务",
-        "logoutFromIdpHint": "退出 PicPeak 时也结束身份服务会话。仅对 SSO 登录有效；关闭后，下一次 SSO 登录可能无需重新验证。",
+        "logoutFromIdpHint": "退出 PicPeak 时也会结束身份提供商（IdP）会话。此设置仅适用于通过 SSO 登录的会话；关闭后，退出 PicPeak 不会退出 IdP，下次点击 SSO 时可能直接重新登录。",
         "postLogoutRedirectUri": "退出后跳转地址（须在身份服务中登记允许的跳转地址）"
       }
     },
@@ -2906,7 +2645,6 @@
     "previewLayout": "预览布局",
     "livePreview": "实时预览",
     "pdfTypography": "PDF 字体与排版",
-    "pdfTypographyHelp": "用于发票和报价单，选择内置字体或使用默认 Helvetica。",
     "pdfFontFamily": "正文字体",
     "pdfFontFamilyDefault": "使用 Helvetica( 默认)",
     "pdfFontFamilyMissing": "缺少",
@@ -3056,8 +2794,7 @@
     },
     "socialMedia": {
       "title": "社交媒体",
-      "help": "填写链接后，在相册页脚显示相应图标；留空则隐藏。",
-      "whatsappHelp": "wa.me URL或带国家代码的电话号码(将转换)."
+      "help": "填写链接后，在相册页脚显示相应图标；留空则隐藏。"
     }
   },
   "admin": {
@@ -3086,7 +2823,7 @@
     },
     "updates": {
       "available": "更新可用",
-      "newVersion": "版本 {{version}}  可用",
+      "newVersion": "发现新版本 {{version}}",
       "currentVersion": "当前 : {{version}}",
       "newFeatures": "新增功能：",
       "channel": "更新渠道：{{channel}}",
@@ -3194,10 +2931,6 @@
       "webhookDeleted": "Webhook 已删除：{{name}}",
       "apiTokenCreated": "API 令牌已创建：{{name}}",
       "apiTokenRevoked": "API 令牌已撤销：{{name}}",
-      "eventTypeCreated": "项目类型已创建：{{name}}",
-      "eventTypeUpdated": "项目类型已更新：{{name}}",
-      "eventTypeDeleted": "项目类型已删除：{{name}}",
-      "eventTypesReordered": "项目类型顺序已更新",
       "eventPublished": "项目已发布：{{eventName}}",
       "eventLogoUploaded": "项目标志已上传：{{eventName}}",
       "eventLogoRemoved": "项目标志已移除：{{eventName}}",
@@ -3208,57 +2941,6 @@
       "publicSiteResetToDefault": "公开首页已恢复默认设置",
       "cmsPageLogoUploaded": "内容页面标志已上传：{{slug}}",
       "adminPasswordResetByAdmin": "管理员密码已由另一位管理员重置：{{username}}",
-      "contractCreated": "合同已创建：{{contractNumber}}",
-      "contractCreatedFromQuote": "已根据报价单创建合同：{{contractNumber}}",
-      "contractUpdated": "合同已更新：{{contractNumber}}",
-      "contractSent": "合同已发送：{{contractNumber}}",
-      "contractResentSigned": "已签署合同已重新发送：{{contractNumber}}",
-      "contractSignedByCustomer": "客户已签署合同：{{contractNumber}}",
-      "contractSignedPdfUploaded": "已上传签署后的合同 PDF：{{contractNumber}}",
-      "contractSignaturesRestamped": "合同签名已重新盖印：{{contractNumber}}",
-      "contractCancelled": "合同已取消：{{contractNumber}}",
-      "contractConvertedToEvent": "合同已转为摄影项目：{{contractNumber}}",
-      "contractConvertedToEmptyEvent": "合同已转为空白摄影项目：{{contractNumber}}",
-      "contractConvertedToInvoices": "合同已转为发票：{{contractNumber}}",
-      "contractConvertedToEmptyInvoice": "合同已转为空白发票：{{contractNumber}}",
-      "quoteCreated": "报价单已创建：{{quoteNumber}}",
-      "quoteSent": "报价单已发送：{{quoteNumber}}",
-      "quoteUpdated": "报价单已更新：{{quoteNumber}}",
-      "quoteAcceptedByAdmin": "报价单已接受：{{quoteNumber}}",
-      "quoteDeclinedByAdmin": "报价单已拒绝：{{quoteNumber}}",
-      "quoteConverted": "报价单已转换：{{quoteNumber}}",
-      "quoteConvertedInvoicesOnly": "报价单已转为发票：{{quoteNumber}}",
-      "invoiceCreated": "发票已创建：{{invoiceNumber}}",
-      "invoiceSent": "发票已发送：{{invoiceNumber}}",
-      "invoiceScheduled": "发票已安排发送：{{invoiceNumber}}",
-      "invoiceCancelled": "发票已取消：{{invoiceNumber}}",
-      "invoiceCancelledViaStorno": "发票已通过冲销单取消：{{invoiceNumber}}",
-      "invoiceReissued": "发票已重新开具：{{invoiceNumber}}",
-      "invoicePaidAdminNotified": "发票已付款：{{invoiceNumber}}",
-      "invoicePaymentCheckRecorded": "发票付款核对已记录：{{invoiceNumber}}",
-      "invoicePaymentCheckSent": "付款核对提醒已发送：{{invoiceNumber}}",
-      "invoiceReleasedForDelivery": "发票已确认可发送：{{invoiceNumber}}",
-      "invoiceReminderSent": "发票付款提醒已发送：{{invoiceNumber}}",
-      "stornoSent": "冲销单已发送：{{invoiceNumber}}",
-      "monthlyBillIssued": "月度账单已开具",
-      "monthlyBillSkippedEmpty": "本月无计费条目，已跳过月度账单",
-      "monthlyBillTriggeredManually": "已手动生成月度账单",
-      "monthlyBillingItemsQueued": "月度计费条目已加入队列",
-      "installmentPlanUpdated": "分期付款计划已更新",
-      "expenseCreated": "支出已创建",
-      "expenseUpdated": "支出已更新",
-      "expensePaid": "支出已支付",
-      "expenseInvoiced": "支出已计入发票",
-      "hourEntryLogged": "工时已记录",
-      "hourEntryUpdated": "工时记录已更新",
-      "hourEntryDeleted": "工时记录已删除",
-      "hourEntryLoggedToMonthlyDraft": "工时已计入月度账单草稿",
-      "hourEntriesBilled": "工时已向客户计费",
-      "incomingInvoiceCaptured": "供应商发票已录入",
-      "incomingInvoiceCategorized": "供应商发票已分类",
-      "incomingInvoiceUpdated": "供应商发票已更新",
-      "incomingInvoiceRebilled": "供应商费用已转向客户计费",
-      "incomingInvoiceSupplierPayment": "供应商付款已记录",
       "incomingMailConfigUpdated": "收件邮箱配置已更新",
       "customerCreatedPassive": "客户资料已创建：{{email}}",
       "adminUserActivated": "管理员账号已启用：{{username}}",
@@ -3273,7 +2955,6 @@
       "feedbackModerated": "反馈已审核",
       "feedbackSettingsUpdated": "客户反馈设置已更新：{{eventName}}",
       "wordFilterAdded": "评论屏蔽词已添加：{{word}}",
-      "whatsappConfigUpdated": "WhatsApp 配置已更新",
       "bulkDeleteCompleted_one": "批量删除已完成：{{count}}",
       "bulkDeleteCompleted_other": "批量删除已完成：{{count}}",
       "bulkArchiveCompleted_one": "批量归档已完成：{{count}}",
@@ -3282,8 +2963,8 @@
     },
     "notificationToasts": {
       "markedAllRead": "所有通知均标为已读",
-      "clearedAll_one": "已清除 {{count}}  通知",
-      "clearedAll_other": "已清除 {{count}}  通知"
+      "clearedAll_one": "已清除 {{count}} 条通知",
+      "clearedAll_other": "已清除 {{count}} 条通知"
     },
     "changePassword": "更改密码",
     "darkMode": "切换到深色模式",
@@ -3344,8 +3025,8 @@
     },
     "daysLeft_one": "剩余 {{count}} 天",
     "daysLeft_other": "剩余 {{count}} 天",
-    "viewAllExpiringEvents_one": "全部查看 {{count}}  到期项目",
-    "viewAllExpiringEvents_other": "全部查看 {{count}}  到期项目",
+    "viewAllExpiringEvents_one": "查看全部 {{count}} 个即将到期的项目",
+    "viewAllExpiringEvents_other": "查看全部 {{count}} 个即将到期的项目",
     "guests": {
       "loading": "加载中…",
       "aggregate": {
@@ -3376,8 +3057,8 @@
       "mergeConfirm_other": "将 {{count}} 位客户的记录合并至 {{name}}，此操作不可撤销。",
       "backToList": "返回到列表",
       "title": "客户",
-      "mergeSelected_one": "{{count}}  选中",
-      "mergeSelected_other": "{{count}}  选中",
+      "mergeSelected_one": "已选择 {{count}} 位客户",
+      "mergeSelected_other": "已选择 {{count}} 位客户",
       "mergeNow": "合并选中的",
       "aggregateView": "按照片受欢迎程度查看",
       "mergeMode": "合并",
@@ -3460,7 +3141,7 @@
       "event_activated": "项目已激活 : {{eventName}}",
       "event_deactivated": "项目已失效 : {{eventName}}",
       "photo_deleted": "照片从此删除 {{eventName}}",
-      "photos_bulk_deleted": "{{count}}  删除的照片从 {{eventName}}",
+      "photos_bulk_deleted": "已从项目 {{eventName}} 中删除 {{count}} 张照片",
       "settings_updated": "更新设置",
       "event_updated": "项目更新 : {{eventName}}",
       "event_renamed": "重命名为项目 : {{eventName}}",
@@ -3479,8 +3160,8 @@
       "admin_logout": "管理员已退出：{{actorName}}",
       "system_activity": "系统操作：{{type}}",
       "unknown": "未知活动",
-      "feature_enabled": "{{label}}  启用",
-      "feature_disabled": "{{label}}  已禁用",
+      "feature_enabled": "已启用：{{label}}",
+      "feature_disabled": "已停用：{{label}}",
       "feature_flags_summary": "已更新 {{count}} 个功能：{{summary}}",
       "feature_flags_noop": "已检查功能开关，未作更改",
       "customer_login": "客户已登录：{{email}}",
@@ -3502,16 +3183,12 @@
       "admin_user_updated": "管理员账号已更新：{{username}}",
       "admin_user_deactivated": "管理员账号已停用：{{username}}",
       "admin_password_reset": "管理员密码已由另一位管理员重置：{{username}}",
-      "admin_profile_updated": "管理员 {{actorName}}  更新他们的简介",
+      "admin_profile_updated": "管理员 {{actorName}} 更新了个人资料",
       "webhook_created": "Webhook 已创建：{{name}}",
       "webhook_updated": "Webhook 已更新：{{name}}",
       "webhook_deleted": "Webhook 已删除：{{name}}",
       "api_token_created": "API 令牌已创建：{{name}}",
       "api_token_revoked": "API 令牌已撤销：{{name}}",
-      "event_type_created": "项目类型已创建：{{name}}",
-      "event_type_updated": "项目类型已更新：{{name}}",
-      "event_type_deleted": "项目类型已删除：{{name}}",
-      "event_types_reordered": "项目类型顺序已更新",
       "event_published": "项目已发布：{{eventName}}",
       "event_logo_uploaded": "项目标志已上传：{{eventName}}",
       "event_logo_removed": "项目标志已移除：{{eventName}}",
@@ -3521,57 +3198,10 @@
       "category_hero_updated": "分类封面已更新",
       "public_site_reset_to_default": "公开首页已恢复默认设置",
       "cms_page_logo_uploaded": "内容页面标志已上传：{{slug}}",
-      "contract_created": "合同已创建：{{contractNumber}}",
-      "contract_created_from_quote": "已根据报价单创建合同：{{contractNumber}}",
-      "contract_updated": "合同已更新：{{contractNumber}}",
-      "contract_sent": "合同已发送：{{contractNumber}}",
-      "contract_resent_signed": "已签署合同已重新发送：{{contractNumber}}",
-      "contract_signed_by_customer": "客户已签署合同：{{contractNumber}}",
-      "contract_signed_pdf_uploaded": "已上传签署后的合同 PDF：{{contractNumber}}",
-      "contract_signatures_restamped": "合同签名已重新盖印：{{contractNumber}}",
-      "contract_cancelled": "合同已取消：{{contractNumber}}",
-      "contract_converted_to_event": "合同已转为摄影项目：{{contractNumber}}",
-      "contract_converted_to_empty_event": "合同已转为空白摄影项目：{{contractNumber}}",
-      "contract_converted_to_invoices": "合同已转为发票：{{contractNumber}}",
-      "contract_converted_to_empty_invoice": "合同已转为空白发票：{{contractNumber}}",
-      "quote_created": "报价单已创建：{{quoteNumber}}",
-      "quote_sent": "报价单已发送：{{quoteNumber}}",
-      "quote_updated": "报价单已更新：{{quoteNumber}}",
-      "quote_accepted_by_admin": "报价单已接受：{{quoteNumber}}",
-      "quote_declined_by_admin": "报价单已拒绝：{{quoteNumber}}",
-      "quote_converted": "报价单已转换：{{quoteNumber}}",
-      "quote_converted_invoices_only": "报价单已转为发票：{{quoteNumber}}",
-      "invoice_created": "发票已创建：{{invoiceNumber}}",
-      "invoice_sent": "发票已发送：{{invoiceNumber}}",
-      "invoice_scheduled": "发票已安排发送：{{invoiceNumber}}",
-      "invoice_cancelled": "发票已取消：{{invoiceNumber}}",
-      "invoice_cancelled_via_storno": "发票已通过冲销单取消：{{invoiceNumber}}",
-      "invoice_reissued": "发票已重新开具：{{invoiceNumber}}",
-      "invoice_paid_admin_notified": "发票已付款：{{invoiceNumber}}",
-      "invoice_payment_check_recorded": "发票付款核对已记录：{{invoiceNumber}}",
-      "invoice_payment_check_sent": "付款核对提醒已发送：{{invoiceNumber}}",
-      "invoice_released_for_delivery": "发票已确认可发送：{{invoiceNumber}}",
-      "invoice_reminder_sent": "发票付款提醒已发送：{{invoiceNumber}}",
-      "storno_sent": "冲销单已发送：{{invoiceNumber}}",
-      "monthly_bill_issued": "月度账单已开具",
-      "monthly_bill_skipped_empty": "本月无计费条目，已跳过月度账单",
-      "monthly_bill_triggered_manually": "已手动生成月度账单",
-      "monthly_billing_items_queued": "月度计费条目已加入队列",
-      "installment_plan_updated": "分期付款计划已更新",
-      "expense_created": "支出已创建",
-      "expense_updated": "支出已更新",
-      "expense_paid": "支出已支付",
-      "expense_invoiced": "支出已计入发票",
       "hour_entry_logged": "工时已记录",
       "hour_entry_updated": "工时记录已更新",
       "hour_entry_deleted": "工时记录已删除",
       "hour_entry_logged_to_monthly_draft": "工时已计入月度账单草稿",
-      "hour_entries_billed": "工时已向客户计费",
-      "incoming_invoice_captured": "供应商发票已录入",
-      "incoming_invoice_categorized": "供应商发票已分类",
-      "incoming_invoice_updated": "供应商发票已更新",
-      "incoming_invoice_rebilled": "供应商费用已转向客户计费",
-      "incoming_invoice_supplier_payment": "供应商付款已记录",
       "incoming_mail_config_updated": "收件邮箱配置已更新",
       "customer_created_passive": "客户资料已创建：{{email}}",
       "admin_user_activated": "管理员账号已启用：{{username}}",
@@ -3579,17 +3209,9 @@
       "email_queue_flushed": "邮件队列已清理",
       "email_template_created": "邮件模板已创建：{{template_key}}",
       "event_duplicated": "项目副本已创建：{{source_event_name}}",
-      "whatsapp_config_updated": "WhatsApp 配置已更新",
       "feature_flags_summary_one": "已更新 {{count}} 个功能：{{summary}}",
       "feature_flags_summary_other": "已更新 {{count}} 个功能：{{summary}}",
       "feature_flags_updated": "更新特性设置",
-      "newsletter_created": "创建通讯运动",
-      "newsletter_updated": "更新通讯活动",
-      "newsletter_test_sent": "发送通讯测试邮件",
-      "newsletter_queued": "通讯排队到 {{recipients}}  接收者",
-      "newsletter_cancelled": "取消通讯活动",
-      "newsletter_completed": "通讯完成—— {{sent}}  派来了 {{failed}}  失败",
-      "newsletter_deleted": "通讯运动被删除",
       "customer_marketing_opt_out": "客户通讯同意变更",
       "css_template_remote_urls_removed": "CSS 模板中的外部链接已移除，请查看更新说明：{{count}}"
     },
@@ -3599,7 +3221,7 @@
       "select": "选择合并",
       "unnamed": "添加名称",
       "namePlaceholder": "添加名称",
-      "photoCount": "{{count}}  图片",
+      "photoCount": "{{count}} 张照片",
       "hidden": "已对客户隐藏",
       "ignored": "忽略",
       "renamed": "名称已保存",
@@ -3608,7 +3230,7 @@
       "updated": "更新",
       "merge": "合并",
       "mergeHint": "选择两位或以上人物，将其合并为同一人。",
-      "selectedCount": "{{count}}  选中",
+      "selectedCount": "已选择 {{count}} 项",
       "coverTruncated": "显示置信度最高的 {{limit}} 张人脸照片",
       "contextTruncated": "显示此人的前 {{limit}} 次出现",
       "contextUnavailable": "无法为这个人加载任何照片。",
@@ -3625,11 +3247,11 @@
       "hideAction": "对客户隐藏",
       "ignoreAction": "不是真实人物，忽略",
       "splitHelp": "选择被错误归入此人的照片，将其拆分为新人物，其余照片保持不变。",
-      "splitSelected": "{{count}}  选中",
+      "splitSelected": "已选择 {{count}} 人",
       "doSplit": "分开",
       "empty": "还没有人被发现。",
-      "photoCount_one": "{{count}}  图片",
-      "photoCount_other": "{{count}}  图片",
+      "photoCount_one": "{{count}} 张照片",
+      "photoCount_other": "{{count}} 张照片",
       "suggestionsHeading": "以下人物可能是同一人，请人工确认是否合并。",
       "suggestionScore": "相似度 {{percent}}%",
       "suggestionAccept": "同一个人",
@@ -3637,16 +3259,16 @@
       "suggestionDismissed": "分开",
       "merged_one": "合并的人",
       "merged_other": "合并的人",
-      "splitSelected_one": "{{count}}  选中",
-      "splitSelected_other": "{{count}}  选中",
+      "splitSelected_one": "已选择 {{count}} 人",
+      "splitSelected_other": "已选择 {{count}} 人",
       "suggestionsHeading_one": "以下人物可能是同一人，请人工确认是否合并。",
       "suggestionsHeading_other": "以下人物可能是同一人，请人工确认是否合并。",
-      "selectedCount_one": "{{count}}  选中",
-      "selectedCount_other": "{{count}}  选中"
+      "selectedCount_one": "已选择 {{count}} 项",
+      "selectedCount_other": "已选择 {{count}} 项"
     },
     "faces": {
       "manage": "管理人物",
-      "visibleToGuests": "({{count}}  向客户展示).",
+      "visibleToGuests": "（{{count}} 位客户可见）",
       "title": "相册中的人物",
       "subtitle": "按人物整理相册，方便客户找到并下载包含自己的照片。",
       "consentNotice": "被检测的面孔是个人数据，在欧盟，它们算作一个特殊类别。您是这个相册的控制者:在切换照片前，请确保您有合法依据。 没有任何东西离开您的服务器 — 检测运行在您自己的容器中。",
@@ -3656,17 +3278,17 @@
       "visible": "向客户显示人物分类",
       "visibleHint": "关闭时仅摄影师可使用人物分组，客户相册保持原有显示。",
       "previewNotice": "扫描每张照片的预览大小副本。 尚未生成预览的盖勒斯将在第一次扫描时创建它们，该扫描使用额外的CPU和磁盘空间。",
-      "scanning": "正在扫描... {{scanned}}  共 {{total}}  图片",
-      "status": "{{scanned}} / {{total}}  扫描照片 ! {{people}}  人员",
-      "failed": "{{count}}  失败",
-      "queued": "扫描 {{count}}  给人们的照片...",
+      "scanning": "正在扫描 {{scanned}} / {{total}} 张照片…",
+      "status": "已扫描 {{scanned}} / {{total}} 张照片，识别到 {{people}} 人",
+      "failed": "{{count}} 项失败",
+      "queued": "已排队扫描 {{count}} 张照片中的人物…",
       "rescan": "重新扫描",
       "rescanQueued": "重新扫描已加入队列",
       "recluster": "重新整理人物分组",
       "reclustered": "人物分组已更新",
       "delete": "删除所有面部数据",
       "deleted": "面部数据已删除",
-      "confirmDelete": "删除所有检测到的人，并面对此相册的数据 ? 无法撤销。 照片不会受到影响。",
+      "confirmDelete": "确定删除此相册中所有已识别人物及其数据吗？此操作不可撤销，照片本身不会被删除。",
       "autoCategories": "按人物数量自动分类",
       "autoCategoriesHint": "根据人脸数量将照片归入细节、肖像、多人或合影分类；仅填写尚未分类的照片，不更改手动设置的分类。",
       "sidecarUnreachable": "无法连接人物识别服务 {{url}}，{{pending}} 张照片等待处理；服务恢复后将继续扫描。请使用 `docker compose --profile faces up -d` 启动，并确保识别容器与服务器的 FACE_ML_TOKEN 一致。",
@@ -3675,12 +3297,12 @@
       "sidecarStateNow": "现在的服务状态——上面的一些失败可能有不同的原因，但重扫描要到这个固定为止才会成功:",
       "consolidated_one": "上次扫描后自动合并了 {{count}} 对相似人物。可在人物管理中检查，误合并可再次拆分。",
       "consolidated_other": "上次扫描后自动合并了 {{count}} 对相似人物。可在人物管理中检查，误合并可再次拆分。",
-      "queued_one": "扫描 {{count}}  为人们拍照...",
-      "queued_other": "扫描 {{count}}  给人们的照片...",
-      "visibleToGuests_one": "({{count}}  向客户展示).",
-      "visibleToGuests_other": "({{count}}  向客户展示).",
-      "failed_one": "{{count}}  失败",
-      "failed_other": "{{count}}  失败"
+      "queued_one": "已排队扫描 {{count}} 张照片中的人物…",
+      "queued_other": "已排队扫描 {{count}} 张照片中的人物…",
+      "visibleToGuests_one": "（{{count}} 位客户可见）",
+      "visibleToGuests_other": "（{{count}} 位客户可见）",
+      "failed_one": "{{count}} 项失败",
+      "failed_other": "{{count}} 项失败"
     },
     "catalogedMedia": "已索引 {{size}}",
     "storageUnavailable": "无",
@@ -3812,30 +3434,28 @@
     "beforeTesting": "测试前 :",
     "saveSmtpFirst": "首先保存您的 SMTP 设置",
     "ensureFirewall": "确保您的防火墙允许外出 SMTP",
-    "gmailAppPassword": "对于 Gmail , 使用特定应用程序的密码",
+    "gmailAppPassword": "使用 Gmail 时，请填写专用应用密码。",
     "testEmailAddressLabel": "测试邮件地址",
     "sendTestEmailButton": "发送测试邮件",
     "flushQueue": {
       "title": "现在发送队列中的邮件",
       "help": "立即发送每封待办邮件，忽略公务时表。 用于在维护或更新前排出队列。",
       "button": "现在发送队列中的邮件",
-      "success": "邮件队列已冲出... {{sent}}  派来了 {{failed}}  失败",
+      "success": "邮件队列已处理：发送成功 {{sent}} 封，失败 {{failed}} 封。",
       "empty": "没有要发送的邮件"
     },
     "incoming": {
       "title": "来信( IMAP)",
-      "subtitle": "每分钟都有一个专用邮箱进行投票;附件在Account-Incoming 发票中占有土地。",
       "host": "IMAP 主机",
       "test": "测试连接",
-      "testOk": "已连接到 {{folder}} — {{messages}}  留言, {{unseen}}  未读.",
+      "testOk": "已连接到 {{folder}}：共 {{messages}} 封邮件，其中 {{unseen}} 封未读。",
       "testFailed": "连接失败。",
       "roundTrip": "往返测试",
       "roundTripHint": "通过您的 SMTP 设置发送测试邮件到此邮箱，并证实它已经到达。 请先保存两个邮件。",
-      "roundTripOk": "往返旅行OK——交付给 {{recipient}}  输入 {{seconds}} s. (中文(简体) ).",
+      "roundTripOk": "往返测试成功：邮件已发送至 {{recipient}}，耗时 {{seconds}} 秒。",
       "roundTripFailed": "往返测试失败。",
       "poll": "检查一下",
-      "pollHint": "现在检查邮箱，而不是等待60秒的民意调查,Ingest没有读到寄来的发票的附件.",
-      "pollOk": "检查过的信箱 - {{count}}  已摄入新邮件。",
+      "pollOk": "邮箱已检查：发现 {{count}} 封新邮件。",
       "pollDisabled": "收发邮件被关闭——在设置下启用 —— 特性。",
       "pollUnconfigured": "先保存到来的邮件设置。",
       "pollBusy": "民意调查已经展开——马上再试一次。",
@@ -3850,20 +3470,20 @@
       "save": "保存来信邮件设置",
       "detectFolders": "检测",
       "folderHint": "输入主机、 用户名和密码，然后检测以列出邮箱文件夹。",
-      "foldersDetected": "{{count}}  找到文件夹。",
+      "foldersDetected": "找到 {{count}} 个文件夹。",
       "noFolders": "服务器没有返回文件夹。",
       "detectFailed": "无法检测文件夹。",
       "requiredFields": "需要主机、端口和用户名。",
       "savedToast": "已保存的来信设置。",
-      "pollOk_one": "检查过的信箱 - {{count}}  已摄入新邮件。",
-      "pollOk_other": "检查过的信箱 - {{count}}  已摄入新邮件。",
-      "foldersDetected_one": "{{count}}  找到文件夹。",
-      "foldersDetected_other": "{{count}}  找到文件夹。"
+      "pollOk_one": "邮箱已检查：发现 {{count}} 封新邮件。",
+      "pollOk_other": "邮箱已检查：发现 {{count}} 封新邮件。",
+      "foldersDetected_one": "找到 {{count}} 个文件夹。",
+      "foldersDetected_other": "找到 {{count}} 个文件夹。"
     },
     "received": {
       "tab": "收到邮件",
       "from": "从",
-      "subject": "议题",
+      "subject": "主题",
       "received": "实收",
       "status": "状态",
       "empty": "尚未收到邮件。 启用收到的邮件并配置邮箱。",
@@ -3883,8 +3503,8 @@
       "from": "从",
       "to": "改为:",
       "empty": "没有匹配这些过滤器的邮件。",
-      "retries": "{{count}}  复试",
-      "pagination": "页次 {{page}}  共 {{total}} · {{count}}  邮件",
+      "retries": "已重试 {{count}} 次",
+      "pagination": "第 {{page}} 页，共 {{total}} 页 · {{count}} 封邮件",
       "status": {
         "pending": "待处理",
         "sent": "发送",
@@ -3896,12 +3516,12 @@
         "status": "状态",
         "created": "队列",
         "sent": "发送",
-        "event": "通知类型"
+        "event": "项目"
       },
-      "retries_one": "{{count}}  复试",
-      "retries_other": "{{count}}  复试",
-      "pagination_one": "页次 {{page}}  共 {{total}} · {{count}}  邮件",
-      "pagination_other": "页次 {{page}}  共 {{total}} · {{count}}  邮件"
+      "retries_one": "已重试 {{count}} 次",
+      "retries_other": "已重试 {{count}} 次",
+      "pagination_one": "第 {{page}} 页，共 {{total}} 页 · {{count}} 封邮件",
+      "pagination_other": "第 {{page}} 页，共 {{total}} 页 · {{count}} 封邮件"
     },
     "commonSmtpSettings": "常见 SMTP 设置 :",
     "editTemplate": "编辑模板",
@@ -3967,10 +3587,7 @@
     "categories": {
       "core": "核心",
       "customers": "客户",
-      "calendar": "日历",
-      "quotes": "报价单",
-      "contracts": "合同",
-      "billing": "计费"
+      "calendar": "日历"
     },
     "featureOff": "特长取消",
     "featureOffTooltip": "此模板属于的特性目前已禁用。 您仍然可以编辑模板—— 一旦该特性重新启用，将使用它。",
@@ -3983,10 +3600,10 @@
     },
     "customerMailbox": {
       "title": "客户邮箱(你好)",
-      "subtitle": "用于客户对话的第二个入境邮箱。其邮件出现在 Messages – Clients;附件不通向会计系统。",
+      "subtitle": "用于接收客户沟通邮件，邮件会显示在“消息 → 客户”中。",
       "enabled": "每分钟都卖这个邮箱",
       "outgoing": "正在发送( SMTP)",
-      "outgoingHint": "信箱里发来的答复 留空白，回到全球地址。",
+      "outgoingHint": "通过此邮箱回复时，会从该地址发送。留空则使用全局发件地址。",
       "fromEmail": "发件邮箱",
       "smtpHost": "SMTP 主机",
       "smtpUser": "SMTP 用户名",
@@ -3996,7 +3613,7 @@
       "save": "保存客户邮箱",
       "savedToast": "客户邮箱已保存。",
       "requiredFields": "需要主机、端口和用户名。",
-      "testOk": "已连接到 {{folder}} — {{messages}}  留言, {{unseen}}  未读.",
+      "testOk": "已连接到 {{folder}}：共 {{messages}} 封邮件，其中 {{unseen}} 封未读。",
       "testFailed": "连接失败。"
     },
     "signatureOn": "页脚签名开始——您的业务地址会附在自动邮件中。您在信件中写的答复会按字体排版方式发送。",
@@ -4026,7 +3643,7 @@
     "logoUploaded": "上传标志",
     "logoCleared": "标记已清除",
     "pageLogo": "页面标志",
-    "pageLogoHelp": "可选。 如果设置，将使用此页面的全球品牌标志。",
+    "pageLogoHelp": "可选。设置后，此页面会使用这里的标志，而不是全局品牌标志。",
     "noLogo": "无覆盖",
     "replaceLogo": "替换标志",
     "uploadLogo": "上传标志",
@@ -4042,10 +3659,10 @@
       "exitFullscreen": "退出全屏",
       "linkUrlPlaceholder": "输入 URL...",
       "addLink": "添加链接",
-      "wordCount_one": "{{count}}  单词",
-      "wordCount_other": "{{count}}  单词",
-      "charCount_one": "{{count}}  字符",
-      "charCount_other": "{{count}}  字符",
+      "wordCount_one": "{{count}} 个词",
+      "wordCount_other": "{{count}} 个词",
+      "charCount_one": "{{count}} 个字符",
+      "charCount_other": "{{count}} 个字符",
       "lineBreakHint": "按 Shift+Enter 按下换行符，输入新段落",
       "helpTitle": "编辑器帮助键盘快捷键",
       "helpFormatting": "文本格式",
@@ -4101,61 +3718,20 @@
     },
     "showInFooter": "在相册页脚中显示",
     "showInFooterHelp": "关闭时，此页面会隐藏在公共相册页脚上。 页面本身仍可访问其直接 URL。",
-    "unsavedChangesConfirm": "有尚未保存的更改，要保存吗？"
-  },
-  "eventTypes": {
-    "title": "拍摄类型",
-    "subtitle": "自定义项目类型及其默认主题",
-    "loading": "正在加载项目类型...",
-    "loadError": "加载项目类型失败",
-    "createNew": "新建项目类型",
-    "edit": "编辑项目类型",
-    "created": "成功创建项目类型",
-    "updated": "成功更新项目类型",
-    "deleted": "成功删除项目类型",
-    "createError": "创建项目类型失败",
-    "updateError": "更新项目类型失败",
-    "deleteError": "删除项目类型失败",
-    "searchPlaceholder": "搜索项目类型...",
-    "showInactive": "显示不活动",
-    "noResults": "未找到项目类型",
-    "empty": "尚未有项目类型",
-    "system": "系统",
-    "table": {
-      "type": "类型",
-      "slugPrefix": "URL 前缀",
-      "theme": "默认主题",
-      "status": "状态",
-      "actions": "操作"
-    },
-    "form": {
-      "name": "显示名称",
-      "namePlaceholder": "例如：家庭写真",
-      "slugPrefix": "URL 前缀",
-      "slugPrefixPlaceholder": "例如，家庭",
-      "slugPreview": "示例 URL :",
-      "emoji": "图标",
-      "themePreset": "默认主题",
-      "slideshowPreset": "幻灯片放映预设",
-      "slideshowPresetHint": "此类型新项目的默认幻灯片放映样式。",
-      "isActive": "活动( 在项目创建中可见)"
-    },
-    "validation": {
-      "slugFormat": "只允许字母、数字和连字符"
-    },
-    "slugInfo": {
-      "title": "URL 前缀信息 :",
-      "description": "URL 前缀用于生成相册 URL。 例如，带有前缀“ family” 的项目类型将创建 URL 如: family-smith- family 2025-01-22"
-    },
-    "deleteConfirm": {
-      "title": "删除项目类型",
-      "message": "您确定要删除",
-      "warning": "此动作无法被撤销。 请确定没有项目使用此类型。"
+    "unsavedChangesConfirm": "有尚未保存的更改，要保存吗？",
+    "preview": {
+      "brandLogo": "品牌标志",
+      "navigation": {
+        "collections": "作品集",
+        "features": "功能介绍",
+        "stories": "客户案例",
+        "contact": "联系我们"
+      }
     }
   },
   "backup": {
     "picpeak": {
-      "restoreIntro": "上传从此或另一个实例中提取的 .picpeak。 支持将 SQLite 备份恢复到 PostgreSQL 实例中( 升级路径); 其他引擎组合必须匹配。",
+      "restoreIntro": "上传此实例或其他实例导出的 .picpeak 文件。支持将 SQLite 备份恢复到 PostgreSQL（用于升级）；其他数据库类型必须与当前实例一致。",
       "crossEngineNote": "跨引擎恢复: SQLite 备份被转换到 PostgreSQL 实例上。",
       "downloadFailed": "无法创建备份文件。",
       "title": "便携式备份(.picpeak)",
@@ -4168,7 +3744,7 @@
       "reloginRequired": "恢复完成，请重新登录。",
       "restoreFailed": "恢复失败。",
       "restoreTitle": "从 .picpeak 备份恢复",
-      "chooseFile": "选择 .picpeak 文件...",
+      "chooseFile": "选择 .picpeak 文件…",
       "restoreSummary": "已恢复 {{tables}} 张数据库表和 {{files}} 个文件。",
       "externalPathsFailedDetail": "外部图片路径没有转换，因此每个引用的原始文本目前无法访问。 一旦原因解决，重新运行恢复或待处理的迁移。",
       "externalMediaNote": "此备份引用一个外部媒体库。 请确定在此实例上配置了外部媒体路由。",
@@ -4187,37 +3763,6 @@
       "restore": "恢复",
       "integrity": "完整性检查",
       "coverage": "覆盖范围"
-    },
-    "integrity": {
-      "title": "文档完整性",
-      "description": "验证数据库中引用的每个客户关系管理文件(报价单 / 合同 / 发票 / 签名 ) , 磁盘上实际存在，并且—— 在存储散列的地方—— 其字节仍然匹配。 只读，点播。",
-      "runNow": "现在检查一下",
-      "running": "检查中...",
-      "error": "检查失败 : {{message}}",
-      "scannedAt": "上次选中 : {{when}}",
-      "emptyState": "此会话中还没有运行检查。 点击“ 现在就检查运行” 扫描文档园区。",
-      "summary": {
-        "total": "共计",
-        "verifiedOk": "已验证",
-        "existsButNoHash": "仅已存在",
-        "existsButNoHashHint": "找到文件，但是没有为它存储 SHA-256 (报价单/ 发票 PDF 、 签名图纸)。 只有存在才是争议中较弱的证据。",
-        "missingFiles": "失踪",
-        "hashMismatches": "散乱错配"
-      },
-      "missing": {
-        "heading": "缺少文件",
-        "caption": "这些行引用磁盘上不存在的路径。 恢复后，这意味着从备份链中丢失了动脉; 对于新安装，通常意味着文件被手动删除。"
-      },
-      "hashMismatches": {
-        "heading": "散乱错配",
-        "caption": "文件存在，但是其当前字节并不匹配在批注 / 签名时间 中捕获的 SHA-256。 表示篡改、 位rot , 或比对原副本的还原。"
-      },
-      "results": {
-        "table": "图表",
-        "rowId": "行编号",
-        "column": "栏",
-        "detail": "细节"
-      }
     },
     "coverage": {
       "title": "备份覆盖",
@@ -4327,7 +3872,7 @@
         "excluded": "不包括"
       },
       "storageDestination": "存储目标",
-      "backupType": "{{type}}  备份",
+      "backupType": "{{type}} 备份",
       "noDestinationSet": "未设定目标",
       "healthStatus": {
         "excellent": "良好",
@@ -4464,6 +4009,33 @@
         "showing": "显示 {{from}}-{{to}}  共 {{total}}  备份",
         "previous": "上一步",
         "next": "下一步"
+      },
+      "filters": {
+        "all": "全部状态",
+        "completed": "已完成",
+        "failed": "失败",
+        "running": "进行中",
+        "partial": "部分完成"
+      },
+      "empty": {
+        "title": "暂无备份",
+        "description": "创建备份后会显示在这里。"
+      },
+      "deleteSuccess": "备份已删除",
+      "deleteError": "删除备份失败",
+      "deleteConfirm": "确认删除 {{date}} 的备份吗？",
+      "status": {
+        "completed": "已完成",
+        "failed": "失败",
+        "running": "进行中",
+        "partial": "部分完成"
+      },
+      "types": {
+        "manual": "手动",
+        "scheduled": "定时",
+        "automatic": "自动",
+        "full": "完整备份",
+        "incremental": "增量备份"
       }
     },
     "restore": {
@@ -4516,13 +4088,13 @@
         "encryptedMessage": "您需要提供加密密码句来恢复备份。",
         "enterPassphrase": "输入加密密码句",
         "at": "时间",
-        "filesOnlyHint": "这种备份没有数据库堆放——恢复它不会恢复数据库(客户管理系统数据、客户、报价单、发票、合同在恢复后将空置)。",
+        "filesOnlyHint": "此备份不含数据库。恢复后，数据库记录、用户账号和设置都无法恢复。",
         "filesOnlyBadge": "无 DB",
         "corruptHint": "显示文件是不可读的——备份可能不完整或损坏.",
         "corruptBadge": "腐败",
         "filesOnlyWarning": {
           "title": "选中的备份没有数据库堆放",
-          "message": "恢复此备份将回收文件( 图片、 PDF) , 但是数据库 — — 包括管理员用户、客户、报价单、发票、合同和设置 — — 将不会回来。 如果您有数据库垃圾堆，请选择不同的备份，或者仅在文件是你想要的情况下进行。"
+          "message": "恢复此备份会恢复照片等文件，但不会恢复数据库记录、用户账号或设置。如果有包含数据库的备份，请改选该备份；只有确认只需恢复文件时才继续。"
         }
       },
       "restoreTypes": {
@@ -4720,7 +4292,7 @@
     "copyPassword": "复制密码",
     "use": "使用",
     "pattern": "模式 :",
-    "patternDescription": "密码是使用您的项目名称和日期生成的。 例如 : “ Venue2024 $ August ” , 用于更好的安全和纪念性。"
+    "patternDescription": "密码根据项目名称和日期生成。例如“Venue2024$August”，兼顾安全性与易记性。"
   },
   "feedback": {
     "reaction": "表情",
@@ -4822,7 +4394,7 @@
     "approve": "通过审核",
     "hide": "隐藏",
     "unhide": "取消隐藏",
-    "confirmDelete": "您确定要删除此反馈吗 ?",
+    "confirmDelete": "确定删除此反馈吗？",
     "avgRating": "平均评分",
     "totalRatings_one": "{{count}} 次评分",
     "totalRatings_other": "{{count}} 次评分",
@@ -4918,10 +4490,8 @@
     "accountStepSubtitle": "创建摄影师管理员账号",
     "usageSubtitle": "您准备如何使用 PicPeak？",
     "usageAlwaysOn": "相册、统计和用户管理始终可用。您可以选择额外功能，稍后可在设置中更改",
-    "usageGroupCrm": "客户管理",
-    "usageGroupAccounting": "账务管理",
+    "usageGroupGalleries": "相册",
     "usageGroupAutomation": "自动化",
-    "usageDepsNote": "开启发票将自动启用账务功能",
     "usageSkip": "仅使用相册功能",
     "finish": "完成设置",
     "featuresSaveFailed": "功能配置保存失败，可稍后在设置中调整",
@@ -4932,19 +4502,8 @@
     "config": {
       "subtitle": "配置已开启的功能",
       "intro": "补充以下设置即可完成初始化；跳过的设置将使用默认值，之后可在后台修改。",
-      "invoicing": "开具发票的细节",
-      "invoicingDisclaimer": "银行、IBAN 和税务信息请与银行或税务顾问核实。",
-      "companyName": "公司/法定名称",
-      "addressLine1": "街道和编号",
-      "postalCode": "邮政编码",
-      "city": "城市",
-      "countryCode": "国家代码(如CH)",
-      "currency": "货币(如瑞士法郎)",
-      "vatId": "增值税识别码(或留空)",
-      "taxId": "税号(或增值税ID)",
-      "iban": "IBAN(发票付款)",
       "email": "邮件发送(SMTP)",
-      "emailHint": "用于发送相册链接、客户邀请、到期提醒及发票；留空可稍后在“设置 → 邮件”中配置。",
+      "emailHint": "用于发送图库链接、客户邀请、到期通知和项目提醒；留空可稍后在“设置 → 邮件”中配置。",
       "smtpHost": "SMTP 主机",
       "smtpPort": "端口",
       "smtpUser": "用户名",
@@ -4963,23 +4522,6 @@
       "fromEmailInvalid": "输入有效的邮件地址。",
       "smtpPortInvalid": "输入介于 1 到 65535 之间的端口。"
     },
-    "eventTypes": {
-      "subtitle": "设置拍摄类型",
-      "intro": "项目类型用于整理相册，每种类型有独立的链接前缀和默认主题。可修改建议名称、删除不需要的类型或添加新类型。内置类型仅能在初始化时删除，之后只能重命名或停用。",
-      "nameLabel": "显示名称",
-      "namePlaceholder": "例如：家庭写真",
-      "slugLabel": "URL 前缀",
-      "slugPlaceholder": "例如 family",
-      "add": "添加项目类型",
-      "hint": "URL 前缀用于生成相册链接，例如 family-smith-2025-06-01。图标、主题和顺序可稍后在“设置 → 项目类型”中调整。",
-      "atLeastOne": "请至少填写一个拍摄类型名称。",
-      "loadFailed": "无法加载项目类型 – 您可以稍后在设置 – 项目类型中调整它们。",
-      "saveFailed": "无法保存某些项目类型更改 —— 您可以在设置 – 项目类型中完成。",
-      "deleteFailed": "删除失败 —— 列表已重新加载。 内建类型只能在这里删除，所以要重试或继续保存。",
-      "photoIntro": "输入拍摄类型名称，支持中文。分享链接由系统自动生成；这些设置也可以稍后调整。",
-      "photoHint": "例如：人像写真、婚礼跟拍、商业摄影。可稍后在“设置 → 拍摄类型”中修改。",
-      "keepExisting": "稍后设置，使用现有类型继续"
-    },
     "usageReporting": {
       "subtitle": "还有一件事",
       "intro": "您可自愿提供产品使用报告，帮助改进 PicPeak。报告使用化名安装标识，请先了解将共享的数据再决定是否参加。",
@@ -4988,7 +4530,7 @@
       "mutualTitle": "看看别人用什么",
       "mutualDesc": "参与者可查看汇总的功能使用情况和相册、照片总数；完整范围见数据共享说明。",
       "feedbackTitle": "直接分享反馈",
-      "feedbackDesc": "从设置中直接向维护者发送快速反馈或特性请求。",
+      "feedbackDesc": "可直接在“设置”中向维护者发送反馈或功能建议。",
       "consentCheck": "我同意参加，并了解可随时在“设置 → 产品使用报告”中关闭。",
       "enable": "是的，我会参加",
       "skip": "以后再说吧",
@@ -5035,7 +4577,10 @@
     "submit": "创建管理账户",
     "success": "管理员账号已创建，欢迎使用",
     "genericError": "初始化失败，请重试",
-    "tooManyAttempts": "尝试过多，请稍后重试"
+    "tooManyAttempts": "尝试过多，请稍后重试",
+    "usernameLabel": "管理员用户名",
+    "usernameRequired": "请输入用户名",
+    "usernamePlaceholder": "请输入 3–50 位字母、数字、下划线或短横线"
   },
   "adminLogin": {
     "title": "摄影师登录",
@@ -5087,7 +4632,10 @@
       "not_provisioned": "没有匹配的管理员账号，请联系管理员邀请您",
       "no_email": "身份提供商未提供邮箱，无法创建账号",
       "no_role": "身份提供商未分配角色，请联系管理员"
-    }
+    },
+    "usernameLabel": "用户名",
+    "usernameRequired": "请输入用户名",
+    "usernamePlaceholder": "请输入管理员用户名"
   },
   "slideshow": {
     "adminTitle": "现场幻灯片放映",
@@ -5181,14 +4729,14 @@
   },
   "clientAccess": {
     "title": "客户访问",
-    "description": "在展馆与客户分享之前，审查照片并管理知名度.",
+    "description": "在相册分享给客户前，检查照片并设置哪些照片对客户可见。",
     "pinLabel": "客户专用访问码",
     "pinPlaceholder": "输入客户端 PIN",
     "enterPin": "请输入客户端 PIN",
     "invalidPin": "无效的 PIN。 请再试一次。",
     "loginFailed": "认证失败。 请再试一次。",
     "loginButton": "访问相册",
-    "guestHint": "找客串相册?",
+    "guestHint": "正在找客户相册吗？",
     "guestLink": "转到宾客视图",
     "banner": "客户端模式",
     "visibleCount": "{{visible}}  共 {{total}}  客户可见的照片",
@@ -5238,17 +4786,17 @@
     "dateTaken": "拍摄日期"
   },
   "photos": {
-    "moveToCategory_one": "移动 {{count}}  照片到类别",
-    "moveToCategory_other": "移动 {{count}}  照片到类别",
+    "moveToCategory_one": "将 {{count}} 张照片移至分类",
+    "moveToCategory_other": "将 {{count}} 张照片移至分类",
     "selectCategory": "选择分类",
     "uncategorized": "未分类",
     "movePhotos": "移动照片",
-    "selectedCategory": "选定类别",
-    "movedToCategory_one": "{{count}}  照片移动到 {{category}}",
-    "movedToCategory_other": "{{count}}  照片移动到 {{category}}",
-    "moveToCategoryFailed": "移动照片到分类失败",
-    "moveToCategory": "移动到类别",
-    "folderOption": "{{name}}  (文件夹——隐藏在主网格之外).",
+    "selectedCategory": "已选分类",
+    "movedToCategory_one": "已将 {{count}} 张照片移至 {{category}}",
+    "movedToCategory_other": "已将 {{count}} 张照片移至 {{category}}",
+    "moveToCategoryFailed": "无法将照片移动到该分类。",
+    "moveToCategory": "移至分类",
+    "folderOption": "{{name}}（文件夹，不在主网格中显示）",
     "confirmDeleteOne": "确定删除“{{name}}”吗？",
     "confirmDeleteMany_one": "确定删除选中的 {{count}} 张照片吗？",
     "confirmDeleteMany_other": "确定删除选中的 {{count}} 张照片吗？",
@@ -5258,183 +4806,143 @@
   "customer": {
     "login": {
       "title": "客户登录",
-      "subtitle": "在一个地方进入你所有的相册",
-      "email": "邮箱",
+      "subtitle": "在此集中查看摄影师与您分享的所有相册。",
+      "email": "邮箱地址",
       "password": "密码",
-      "emailRequired": "请输入邮箱",
-      "invalidEmail": "请输入有效的邮件",
-      "passwordRequired": "请输入密码",
+      "emailRequired": "请输入邮箱地址。",
+      "invalidEmail": "请输入有效的邮箱地址。",
+      "passwordRequired": "请输入密码。",
       "showPassword": "显示密码",
       "hidePassword": "隐藏密码",
       "signIn": "登录",
-      "loginSuccess": "欢迎回来!",
-      "invalidCredentials": "邮箱或密码错误",
-      "tooManyAttempts": "太多的尝试——请稍后再尝试。",
-      "networkError": "无法到达服务器。 请再试一次。",
-      "generalError": "登录失败。 请再试一次。",
-      "acceptedToast": "帐号准备好了，请登录",
-      "adminHint": "寻找管理员面板? 访问/admin/login.",
+      "loginSuccess": "欢迎回来！",
+      "invalidCredentials": "邮箱或密码错误。",
+      "tooManyAttempts": "尝试次数过多，请稍后再试。",
+      "networkError": "无法连接服务器，请重试。",
+      "generalError": "登录失败，请重试。",
+      "acceptedToast": "账号已准备就绪，请登录。",
+      "adminHint": "需要进入管理后台？请访问 /admin/login。",
       "emailPlaceholder": "you@example.com",
-      "passwordPlaceholder": "您的密码",
+      "passwordPlaceholder": "请输入密码",
       "needHelp": "需要帮助？"
     },
     "acceptInvite": {
-      "title": "开个账户",
-      "invalidToken": "此邀请链接无效或过期。 请联系您的摄影师获取新的邀请。",
-      "emailWillBe": "您的账户邮件将",
-      "invitedBy": ",邀请",
-      "name": "您的姓名",
-      "nameRequired": "请输入你的名字",
-      "password": "选择密码",
+      "title": "创建账号",
+      "invalidToken": "邀请链接无效或已过期，请联系摄影师重新发送邀请。",
+      "emailWillBe": "您的账号邮箱：",
+      "invitedBy": "；邀请人：",
+      "name": "姓名",
+      "nameRequired": "请输入姓名。",
+      "password": "设置密码",
       "confirm": "确认密码",
-      "passwordTooShort": "密码至少需要 8 个字符",
-      "passwordsMismatch": "两次密码不一致",
-      "passwordHint": "至少8个字符，有一个大写字母和一个数字.",
-      "submit": "创建账户",
-      "successToast": "已创建的账户—— 请登录。",
-      "alreadyExists": "已存在此邮件的账户。 请登录。",
-      "invalidSubmission": "无法创建您的账户。",
-      "generalError": "无法创建您的账户。 请再试一次。",
-      "subtitle": "确认或填写您的细节。 您可以在稍后的配置页面中编辑任何内容。",
+      "passwordTooShort": "密码至少需要 8 个字符。",
+      "passwordsMismatch": "两次输入的密码不一致。",
+      "passwordHint": "密码至少 8 个字符，并包含一个大写字母和一个数字。",
+      "submit": "创建账号",
+      "successToast": "账号已创建，请登录。",
+      "alreadyExists": "此邮箱已注册账号，请直接登录。",
+      "invalidSubmission": "无法创建账号。",
+      "generalError": "创建账号失败，请重试。",
+      "subtitle": "请确认或补充以下信息。之后可在个人资料页修改。",
       "displayName": "显示名称",
       "section": {
-        "personal": "个人资料",
-        "contact": "联系人和业务( 可选)",
-        "address": "账单地址( 可选)",
-        "password": "选择密码"
+        "personal": "个人信息",
+        "contact": "联系与公司信息（可选）",
+        "address": "地址信息（可选）",
+        "password": "设置密码"
       }
     },
     "dashboard": {
-      "title": "你的相册",
-      "subtitle": "单击一个相册打开它。 下载按钮将每张照片捆绑为拉链。",
-      "loadError": "无法加载您的相册。 请再试一次。",
-      "emptyTitle": "还没有相册",
-      "emptyBody": "一旦你的摄影师派你去相册，它就会出现在这里。",
+      "title": "我的相册",
+      "subtitle": "点击相册即可查看照片。点击“下载”可将全部照片打包下载。",
+      "loadError": "无法加载相册，请重试。",
+      "emptyTitle": "暂无相册",
+      "emptyBody": "摄影师为您分配相册后，相册会显示在这里。",
       "openAria": "打开相册 {{name}}",
-      "opening": "打开...",
-      "expiresOn": "过期 {{date}}",
-      "expiredOn": "过期 {{date}}",
-      "eventExpired": "这个相册已经过期了",
-      "eventForbidden": "你不能再进入这个相册了",
-      "openError": "无法打开此相册。 请再试一次。",
+      "opening": "正在打开…",
+      "expiresOn": "到期时间：{{date}}",
+      "expiredOn": "已于 {{date}} 到期",
+      "eventExpired": "此相册已过期。",
+      "eventForbidden": "您已无法访问此相册。",
+      "openError": "无法打开此相册，请重试。",
       "download": "下载",
-      "preparingDownload": "准备...",
-      "quickDownloadAria": "下载全部照片 {{name}}",
-      "downloadStarted": "开始下载 {{name}}",
-      "downloadError": "无法启动下载。 请再试一次。",
+      "preparingDownload": "正在准备…",
+      "quickDownloadAria": "下载 {{name}} 中的全部照片",
+      "downloadStarted": "已开始下载 {{name}}",
+      "downloadError": "无法开始下载，请重试。",
       "sortLabel": "排序方式",
-      "sortNewest": "最新的第一",
-      "sortOldest": "先老一点",
-      "sortName": "按名称",
+      "sortNewest": "最新优先",
+      "sortOldest": "最早优先",
+      "sortName": "按名称排序",
       "open": "打开"
     },
     "layout": {
-      "greeting": "顿 {{name}}"
+      "greeting": "你好，{{name}}"
     },
     "nav": {
-      "galleries": "客户相册",
+      "galleries": "我的相册",
       "calendar": "日历",
-      "quotes": "报价单",
-      "bills": "发票",
-      "profile": "简介",
-      "soon": "很快 很快的 很快的 很快的 很快的",
-      "new": "新设",
-      "contracts": "合同"
+      "profile": "个人资料",
+      "soon": "即将推出",
+      "new": "新内容"
     },
     "comingSoon": {
-      "tag": "马上就来"
+      "tag": "即将推出"
     },
     "calendar": {
       "title": "日历",
-      "body": "即将到来的会话，展馆的送货日期，以及其他与拍摄相关的活动都会在这里落地，准备就绪后我们会通知你."
-    },
-    "quotes": {
-      "title": "报价单",
-      "subtitle": "您的摄影师发送的每一个引用。 请点击一个打开的引用来接受或拒绝。",
-      "empty": "还没有报价单。",
-      "disabled": "此功能目前已被禁用。 如果您想要在这里看到引用，请联系您的摄影师。",
-      "loadError": "无法加载引用。",
-      "noEventName": "—",
-      "openToRespond": "打开可响应",
-      "viewPdf": "查看 PDF",
-      "popupBlocked": "允许弹出此站点查看报价单 PDF。",
-      "backToList": "回到报价单"
-    },
-    "bills": {
-      "title": "发票",
-      "subtitle": "您的摄影师发送的每张发票。 请点击“ View PDF ” 下载。",
-      "empty": "还没有发票",
-      "disabled": "此功能目前已禁用，如果您想在这里看到发票，请联系您的摄影师。",
-      "loadError": "无法加载发票。",
-      "viewPdf": "查看 PDF",
-      "popupBlocked": "允许弹出本站点查看发票 PDF。",
-      "field": {
-        "issueDate": "已印发",
-        "dueDate": "到期",
-        "paidAt": "已支付",
-        "outstanding": "未执行",
-        "lateFee": "迟付费用"
-      },
-      "filter": {
-        "outstanding": "未清(已发 出 + 逾期)"
-      },
-      "kind": {
-        "storno": "注销发票"
-      },
-      "cancelsLabel": "注销发票",
-      "cancelledByLabel": "被注销发票注销"
+      "body": "拍摄安排和相册交付时间会显示在这里。此功能开放后，我们会通知您。"
     },
     "sort": {
       "label": "排序",
-      "newest": "最新的第一",
-      "oldest": "先老一点",
-      "priceDesc": "价格(从高到低)",
-      "priceAsc": "价格(从低到高)"
+      "newest": "最新优先",
+      "oldest": "最早优先",
+      "priceDesc": "价格从高到低",
+      "priceAsc": "价格从低到高"
     },
     "filter": {
-      "label": "过滤器",
+      "label": "筛选",
       "all": "全部",
-      "countAll": "{{count}}  共计",
-      "countFiltered": "{{visible}}  共 {{total}}",
-      "countAll_one": "{{count}}  共计",
-      "countAll_other": "{{count}}  共计"
+      "countAll": "共 {{count}} 项",
+      "countFiltered": "显示 {{visible}} / {{total}} 项",
+      "countAll_one": "共 {{count}} 项",
+      "countAll_other": "共 {{count}} 项"
     },
     "profile": {
-      "title": "客户简介",
-      "subtitle": "保持联络和开具账单的详情——一旦这些特征启用，它们就会在报价单和发票上显示.",
-      "savedToast": "配置文件已保存",
-      "saveError": "无法保存配置文件。",
-      "loadError": "无法加载您的配置文件。",
+      "title": "个人资料",
+      "subtitle": "请保持联系方式准确，方便摄影工作室与您联系。",
+      "savedToast": "个人资料已保存。",
+      "saveError": "无法保存个人资料。",
+      "loadError": "无法加载个人资料。",
       "save": "保存更改",
       "salutation": {
-        "none": "——未具体说明.",
-        "herr": "先生，请说",
-        "frau": "老师",
-        "mx": "Mx 调用",
-        "dr": "医生"
+        "none": "— 未选择 —",
+        "herr": "先生",
+        "frau": "女士",
+        "mx": "中性称谓",
+        "dr": "博士"
       },
       "section": {
-        "personal": "个人资料",
-        "contact": "联系人和业务",
-        "address": "账单地址",
-        "password": "更改密码"
+        "personal": "个人信息",
+        "contact": "联系方式与公司信息",
+        "address": "地址信息",
+        "password": "修改密码"
       },
       "field": {
-        "email": "邮件( 登录)",
-        "emailHint": "如果您需要更改登录邮件，请联系您的摄影师。",
-        "salutation": "敬礼",
-        "firstName": "名称",
+        "email": "登录邮箱",
+        "emailHint": "如需修改登录邮箱，请联系摄影师。",
+        "salutation": "称谓",
+        "firstName": "名",
         "lastName": "姓",
         "displayName": "显示名称",
-        "displayNameHint": "我们在仪表盘上怎么欢迎你",
+        "displayNameHint": "用于客户中心中的称呼。",
         "phone": "电话",
         "companyName": "公司名称",
-        "vatId": "增值税标识",
-        "addressLine1": "地址1",
-        "addressLine2": "地址: 2",
+        "addressLine1": "地址（第一行）",
+        "addressLine2": "地址（第二行）",
         "postalCode": "邮政编码",
         "city": "城市",
-        "state": "州/地区",
+        "state": "省/州",
         "countryCode": "国家/地区"
       },
       "password": {
@@ -5442,162 +4950,85 @@
         "next": "新密码",
         "confirm": "确认新密码",
         "submit": "更新密码",
-        "hint": "至少有8个字符有一个大写字母和一个数字.",
-        "currentRequired": "输入您的当前密码",
-        "tooShort": "至少8个字符",
-        "mismatch": "两次密码不一致",
-        "wrong": "当前密码不正确",
-        "savedToast": "密码已更新",
-        "error": "无法更改密码"
+        "hint": "密码至少 8 个字符，并包含一个大写字母和一个数字。",
+        "currentRequired": "请输入当前密码。",
+        "tooShort": "密码至少需要 8 个字符。",
+        "mismatch": "两次输入的密码不一致。",
+        "wrong": "当前密码不正确。",
+        "savedToast": "密码已更新。",
+        "error": "无法修改密码。"
       }
     },
     "resetPassword": {
       "title": "重置密码",
-      "invalidToken": "此重设链接无效或已过期。 请要求您的摄影师发送新链接。",
-      "forEmail": "设置新密码",
+      "invalidToken": "重置链接无效或已过期，请联系摄影师重新发送。",
+      "forEmail": "正在为此邮箱设置新密码：",
       "password": "新密码",
       "confirm": "确认新密码",
       "submit": "更新密码",
-      "hint": "至少有8个字符有一个大写字母和一个数字.",
-      "tooShort": "密码至少需要 8 个字符",
-      "mismatch": "两次密码不一致",
+      "hint": "密码至少 8 个字符，并包含一个大写字母和一个数字。",
+      "tooShort": "密码至少需要 8 个字符。",
+      "mismatch": "两次输入的密码不一致。",
       "successToast": "密码已更新，请登录。",
-      "invalidSubmission": "无法更新您的密码。",
-      "generalError": "无法更新密码。 请再试一次。"
-    },
-    "contracts": {
-      "title": "合同",
-      "disabled": "此功能目前为您的账户禁用。",
-      "loadError": "无法加载合同。",
-      "subtitle": "您的摄影师已经寄给你的每份合同。 打开合同上的签名链接，或者在双方签署后下载签名的 PDF。",
-      "empty": "还没有合同。",
-      "popupBlocked": "允许弹出本站点下载合同PDF.",
-      "issued": "已印发",
-      "signedByYou": "由你签署",
-      "counterSigned": "反签",
-      "openSign": "打开签名",
-      "downloadSigned": "下载签名的 PDF",
-      "download": "下载 PDF",
-      "backToList": "回到合同领域"
+      "invalidSubmission": "无法更新密码。",
+      "generalError": "更新密码失败，请重试。"
     }
   },
   "customers": {
     "field": {
       "featureHoursLogging": "工时记录",
-      "hourlyRate": "默认小时费率",
-      "hourlyRateHint": "主要单位(例如:150.00 {{currency}}  150. 留空白，要求每个区块都有每进一次的超载。",
-      "marketingOptOut": "未订阅于通讯",
-      "marketingOptOutHelp": "任何通讯活动都忽略了这个客户。 有关其相册、报价单和发票的邮件不受影响。",
-      "marketingOptOutSince": "自此以来 {{date}}"
-    },
-    "hours": {
-      "section": "工时",
-      "monthlyHint": "在当前每月草稿中自动附加。 编辑/ 删除仍然是可能的，直到调度员将草稿加载寄出时为止。",
-      "perEventHint": "登录的条目在点击\"创建草稿发票\"前保持不开票——每条条目生成一张预定的发票，并在编辑器中打开，这样就可以在登船前添加其他项目.",
-      "form": {
-        "title": "日志新条目",
-        "date": "日期",
-        "start": "开始",
-        "end": "结束",
-        "duration": "会期",
-        "durationPlaceholder": "1小时 1.5小时 1点30分",
-        "durationHint": "输入自动填充的长度结束:1小时、1.5小时、1 500小时或1:30小时",
-        "rateOverride": "费率超标",
-        "note": "说明/说明",
-        "notePlaceholder": "刚才在做些什么?",
-        "bookToProject": "书到项目",
-        "save": "添加条目",
-        "needRate": "设定一个速率或输入一个覆盖以记录时间。"
-      },
-      "col": {
-        "date": "日期",
-        "range": "时间",
-        "hours": "工时",
-        "rate": "费率",
-        "total": "共计",
-        "note": "说明",
-        "status": "状态"
-      },
-      "status": {
-        "unbilled": "未开票",
-        "billed": "计费",
-        "billedOn": "计费: {{number}}"
-      },
-      "billButton": "创建发票草稿",
-      "unbilledCount": "{{count}}  未开票的条目共计 {{total}}",
-      "empty": "尚未登录条目。",
-      "confirmDelete": "删除此条目吗? 如果已记入草稿，匹配的发票行也将被删除。",
-      "locked": "已锁定: 已加载发件器的发票",
-      "toast": {
-        "created": "已登录条目",
-        "deleted": "删除的条目",
-        "billed": "计费小时",
-        "billedCombined": "发票从小时和重新开出。"
-      },
-      "noRate": {
-        "title": "未配置小时费率",
-        "body": "日志需要一个速率。 为该客户端设置一个速率，在下方键入每次输入的覆盘，或者配置一个安装全局默认值。",
-        "setForCustomer": "为这名客户设定一个费率",
-        "setInstallDefault": "设置全安装默认值"
-      },
-      "rateSource": {
-        "customer": "从这个客户",
-        "installDefault": "安装全局默认值"
-      },
-      "error": {
-        "noRate": "没有为这个客户设定小时费率。 请输入费率覆写，设定客户费率，或在设置中配置全安装默认值。",
-        "createFailed": "登录条目失败"
-      },
-      "unbilledCount_one": "{{count}}  未开票的条目共计 {{total}}",
-      "unbilledCount_other": "{{count}}  未开票的条目共计 {{total}}"
+      "hourlyRate": "默认时薪",
+      "hourlyRateHint": "金额按主要货币单位填写（例如，{{currency}} 150.00 表示 150）。留空则每条工时记录都必须单独填写费率。",
+      "marketingOptOut": "已取消订阅工作室资讯",
+      "marketingOptOutSince": "取消订阅时间：{{date}}"
     },
     "create": {
-      "openButton": "创建被动客户端",
-      "openLink": "+ 创建新客户端",
-      "title": "创建新客户端",
-      "subtitle": "填写下面的细节。 选择“ 保存为被动客户端 ” 来创建只管理的记录，或者“ 保存并发送门户邀请 ” 来同时向客户发送一个注册链接。",
-      "passiveSubtitle": "添加只管理客户记录。 客户不会被通知，除非您稍后向客户发送邀请，否则无法登录。",
-      "saveAsPassive": "另存为被动客户",
-      "saveAndInvite": "保存并发送门户邀请",
-      "savedPassiveToast": "被动的客户创造了。",
-      "savedActiveToast": "客户创建和门户邀请队列。 它是由邮件队列发送的 —— 如果系统未到达，请检查系统是否健康。",
-      "inviteFailedToast": "客户保存为PASVE——没有邀请出局，从客户细节页面重试\"发送门户邀请\".",
-      "emailRequired": "需要有效的邮件。",
-      "nameRequired": "输入至少一个公司名称或联系人名称。",
-      "inviteAlreadyPendingToast": "客户已保存。 此地址的邀请函已经打开。 在发送新地址前，请在邀请函标签上取消。",
-      "inviteAlreadyActiveToast": "客户已保存。 此地址已可访问门户，因此不需要邀请。",
-      "inviteUnconfirmedToast": "客户已保存，但邀请无法确认 —— 请在发送另一个邀请前先检查邀请标签。"
+      "openButton": "新建客户记录",
+      "openLink": "+ 新建客户",
+      "title": "新建客户",
+      "subtitle": "填写以下信息。选择“仅保存客户资料”可创建仅供管理员查看的记录；选择“保存并邀请客户”则会向客户发送账号注册链接。",
+      "passiveSubtitle": "仅创建管理员可见的客户记录。客户不会收到通知，也无法登录；之后可再发送邀请。",
+      "saveAsPassive": "仅保存客户资料",
+      "saveAndInvite": "保存并邀请客户",
+      "savedPassiveToast": "客户资料已创建。",
+      "savedActiveToast": "客户已创建，客户中心邀请已加入邮件发送队列。若客户未收到邀请，请检查系统状态。",
+      "inviteFailedToast": "客户资料已保存，但邀请发送失败。可稍后在客户详情页重新发送邀请。",
+      "emailRequired": "请填写有效的邮箱地址。",
+      "nameRequired": "请至少填写公司名称或联系人姓名。",
+      "inviteAlreadyPendingToast": "客户资料已保存。该邮箱已有待处理邀请；请先在“邀请”页取消旧邀请，再重新发送。",
+      "inviteAlreadyActiveToast": "客户资料已保存。该邮箱已有客户中心访问权限，无需再次邀请。",
+      "inviteUnconfirmedToast": "客户资料已保存，但暂时无法确认邀请状态。请先检查“邀请”页，再决定是否重新发送。"
     },
     "passive": {
-      "badge": "被动——仅管理",
-      "activeLabel": "有门户访问",
-      "sendInvite": "发送门户邀请",
-      "sendInviteToast": "门户网站邀请函发出.",
-      "alreadyActive": "客户已经可以进入门户——不需要邀请。",
-      "detailHint": "此客户没有门户访问权限( 只有admin记录)。 请点击下面的用户发送一个门户注册链接。 当客户要求邀请时，客户现有的发票、 报价单和相册任务会保留。",
-      "deactivatedHint": "发送邀请前重新激活客户."
+      "badge": "仅后台管理",
+      "activeLabel": "可访问客户中心",
+      "sendInvite": "发送客户中心邀请",
+      "sendInviteToast": "客户中心邀请已发送。",
+      "alreadyActive": "该客户已可访问客户中心，无需再次邀请。",
+      "deactivatedHint": "请先重新启用该客户，再发送邀请。",
+      "detailHint": "此客户尚未开通客户中心访问权限。您可以邀请客户查看已分配的项目。"
     },
     "hoursLoggingDisabled": {
-      "badge": "小时记录已禁用"
+      "badge": "工时记录已停用"
     },
     "pageTitle": "客户",
-    "pageSubtitle": "可登录/客户/登录的经常性客户账户。",
+    "pageSubtitle": "可登录客户中心并查看已分配相册的客户账号。",
     "unnamed": "未命名",
-    "empty": "还没有客户。 点击“ 邀请客户” 添加一个。",
-    "loadError": "无法加载客户端",
-    "loadInvitationsError": "无法加载邀请",
+    "empty": "暂无客户。点击“邀请客户”添加客户记录。",
+    "loadError": "无法加载客户列表。",
+    "loadInvitationsError": "无法加载邀请列表。",
     "tabs": {
       "customers": "客户",
       "invitations": "邀请"
     },
     "search": {
-      "placeholder": "按姓名、公司或邮箱搜索"
+      "placeholder": "按邮箱、姓名或公司名称搜索"
     },
     "table": {
-      "name": "名称",
+      "name": "姓名",
       "email": "邮箱",
       "company": "公司",
-      "eventCount": "通知类型",
+      "eventCount": "项目数",
       "lastLogin": "上次登录",
       "status": "状态"
     },
@@ -5607,1793 +5038,235 @@
     },
     "invite": {
       "button": "邀请客户",
-      "title": "请客",
-      "description": "他们会收到一封邮件，上面有建立账户的链接。 一旦他们接受了，你可以指定他们参加活动。",
-      "email": "邮箱",
+      "title": "邀请客户",
+      "description": "客户会收到创建账号的邮件链接。接受邀请后，您可以将其分配到相应项目。",
+      "email": "邮箱地址",
       "submit": "发送邀请",
-      "success": "发出的邀请",
+      "success": "邀请已发送。",
       "error": "无法发送邀请。",
-      "conflict": "使用此邮件的客户已经存在或有待决邀请。",
-      "invalidEmail": "请输入有效的邮件",
-      "showPrefill": "+ 添加联系人细节( 可选)",
-      "hidePrefill": "- 隐藏联系方式",
-      "prefillHint": "任何你填写的东西都会在顾客的注册页面上预先流行——他们仍然可以编辑."
+      "conflict": "该邮箱已对应客户记录，或已有待处理邀请。",
+      "invalidEmail": "请输入有效的邮箱地址。",
+      "showPrefill": "+ 添加联系信息（可选）",
+      "hidePrefill": "− 收起联系信息",
+      "prefillHint": "填写的信息会预先填入客户注册页面，客户仍可自行修改。"
     },
     "invitations": {
-      "empty": "无待处理邀请。",
-      "email": "邮箱",
-      "invitedBy": "受邀者",
-      "expiresAt": "到期时间",
-      "createdAt": "已创建",
-      "cancel": "取消"
+      "empty": "暂无待处理的邀请。",
+      "email": "邮箱地址",
+      "invitedBy": "邀请人",
+      "expiresAt": "过期时间",
+      "createdAt": "创建时间",
+      "cancel": "取消邀请"
     },
     "deactivate": {
-      "button": "停用",
-      "title": "取消客户资格?",
-      "body": "他们不能再登录了 你可以晚点再请他们进来",
-      "success": "客户停用",
-      "error": "无法关闭客户端"
+      "button": "停用客户",
+      "title": "停用此客户？",
+      "body": "停用后，客户将无法登录。您可以稍后重新启用。",
+      "success": "客户已停用。",
+      "error": "无法停用客户。"
     },
     "cancelInvitation": {
-      "title": "取消邀请?",
-      "body": "请柬链接将立即停止工作.",
-      "success": "已取消邀请",
-      "error": "无法取消邀请"
+      "title": "取消邀请？",
+      "body": "取消后，邀请链接将立即失效。",
+      "success": "邀请已取消。",
+      "error": "无法取消邀请。"
     },
     "detail": {
-      "loadError": "无法加载客户端",
-      "saved": "客户已保存",
+      "loadError": "无法加载客户信息。",
+      "saved": "客户信息已保存。",
       "saveError": "无法保存更改。",
-      "emailConflict": "那封邮件已经被另一个客户使用",
+      "emailConflict": "该邮箱已被其他客户使用。",
       "save": "保存更改",
-      "expires": "过期",
-      "accountSection": "账户",
-      "personalSection": "个人资料",
-      "billingSection": "地址计费",
-      "notesSection": "内部说明",
-      "eventsSection": "指定活动",
-      "noEvents": "尚未指定任何项目。 将此客户端添加到项目表单中的项目。",
-      "email": "邮箱",
+      "expires": "到期时间",
+      "accountSection": "账号信息",
+      "personalSection": "个人信息",
+      "notesSection": "内部备注",
+      "eventsSection": "已分配项目",
+      "noEvents": "尚未分配项目。可在项目表单中将此客户添加到项目。",
+      "email": "邮箱地址",
       "preferredLanguage": "首选语言",
-      "preferredLanguageHint": "驱动门户UI,报价单/发票PDF,以及收账邮件(reminders/dunning). 新客户默认为商业形象语言({{lang}} ); 运行这里每个客户。",
-      "salutation": "敬礼",
+      "salutation": "称谓",
       "salutationNone": "—",
-      "firstName": "名称",
+      "firstName": "名",
       "lastName": "姓",
       "displayName": "显示名称",
       "phone": "电话",
       "company": "公司",
-      "billingEmail": "计费邮件",
-      "vatId": "增值税/税证",
-      "addressLine1": "地址1",
-      "addressLine2": "地址: 2",
+      "addressLine1": "地址（第一行）",
+      "addressLine2": "地址（第二行）",
       "postalCode": "邮政编码",
       "city": "城市",
-      "state": "州/地区",
-      "countryCode": "国家(ISO 2)",
+      "state": "省/州",
+      "countryCode": "国家/地区代码（ISO 3166-1 alpha-2）",
       "country": "国家/地区",
-      "countryName": "国家(全名)",
-      "notesHint": "只有管理员才能看出来 从未向顾客展示过",
-      "featuresSection": "客户特征",
-      "featuresHint": "客户表面标签的客户端覆盖。 设置中的全局切换 — Customer Surface 是主切换器 — 当全局关闭时，无论您在这里设置什么，都无人看到标签。 默认打开，所以翻转一个切换器以隐藏该特定客户的标签。",
-      "passwordSection": "账户行动",
-      "passwordHint": "发送客户邮件的7天单用途重置链接，客户当前密码持续工作，直到点击链接并设定新密码.",
+      "countryName": "国家/地区全称",
+      "notesHint": "仅管理员可见，不会显示给客户。",
+      "featuresSection": "客户中心功能",
+      "featuresHint": "这里可以为此客户单独设置客户中心页面的功能。设置中的全局开关优先级更高：全局关闭时，所有客户都看不到对应页面。默认全部开启；关闭开关即可对该客户隐藏相应页面。",
+      "passwordSection": "账号操作",
+      "passwordHint": "系统会向客户邮箱发送有效期为 7 天、只能使用一次的密码重置链接。客户点击链接并设置新密码前，原密码仍可使用。",
       "passwordReset": {
-        "button": "发送密码重设邮件",
-        "success": "密码重置已发送的邮件",
-        "error": "无法发送密码重置",
-        "inactive": "在发送重置前重新激活客户."
+        "button": "发送密码重置邮件",
+        "success": "密码重置邮件已发送。",
+        "error": "无法发送密码重置邮件。",
+        "inactive": "请先重新启用客户，再发送密码重置邮件。"
       },
-      "quotesSection": "报价单",
-      "noQuotes": "还没有给这位顾客报价",
-      "contractsSection": "合同",
-      "noContracts": "还没有这个客户的合同。",
-      "billsSection": "发票",
-      "noBills": "还没有这客户的发票",
-      "manageEvents": "管理相册",
-      "rebillsSection": "重新填单通过",
-      "noRebills": "目前还没有重新开具或通过供应商发票。",
+      "manageEvents": "管理客户相册",
       "companyName": "公司名称",
-      "marketingSection": "通讯同意"
-    },
-    "billing": {
-      "section": "计费费",
-      "hint": "项目(默认):每张发票都是按自己的时间表寄出的。月度:期间所有开出的发票都累积成一张账单，在指定的当天发火。手动:物品的积累方式相同，但账单只有在触发时才发货。",
-      "cadence": "计费费",
-      "perEvent": "每个项目",
-      "monthly": "每月",
-      "quarterly": "季度数",
-      "manual": "手动( 只触发)",
-      "cycleDay": "周期日",
-      "cycleDayHint": "1.28 = 月日，对\"月末前N天\"使用负-1.-15(因此31天月28日3点起火).",
-      "skontoDisabled": "这个客户没有Skonto",
-      "skontoDisabledHint": "禁用所有客户发票的提前支付折扣，无论模板或全球违约。",
-      "triggerNow": "现在触发发票",
-      "triggerConfirm": "现在给这客户每月开张账单?",
-      "triggerConfirmManual": "现在发这客户累积的账单?",
-      "triggerHint": "绕过节日并立即发布运行的草稿。 当当前期间没有排队时，拒绝。",
-      "triggerHintManual": "立即发出运行的草稿。 手动调试草稿从不自动发货—— 这是发送草稿的唯一方法。 当没有排队时，就会拒绝。",
-      "triggered": "每月开具的账单: {{number}}",
-      "triggerError": "无法触发月账单。",
-      "draftPreview": {
-        "title": "本月的账单待付",
-        "titleManual": "待定——手动触发的船舶",
-        "periodRange": "{{number}} · {{from}} – {{to}}"
-      },
-      "rebillAttachProof": "在重新开具账单时附上供应商证明",
-      "rebillAttachProofInherit": "使用租户默认值",
-      "rebillAttachProofOn": "总是附加",
-      "rebillAttachProofOff": "从不附加",
-      "rebillAttachProofHint": "覆盖该客户的全局默认值。 发送对话框仍然允许您每次发票出票时选择单个证明。"
+      "marketingSection": "资讯订阅设置",
+      "preferredLanguageHint": "此语言将用于客户中心和项目沟通。新客户默认使用工作室语言，也可以在这里单独调整。",
+      "addressSection": "地址"
     },
     "reactivate": {
-      "button": "重新激活",
-      "success": "客户重新启动",
-      "error": "无法重新启动客户端"
+      "button": "重新启用客户",
+      "success": "客户已重新启用。",
+      "error": "无法重新启用客户。"
     },
     "erase": {
-      "button": "擦除客户数据",
-      "title": "抹去客户数据?",
-      "body": "删除客户的姓名、邮件、电话、地址、公司和证书。账户行保留了如此历史项目访问记录，审计日志仍然引用它。这是不可逆的 — 之后无法恢复数据。",
-      "confirm": "永久擦除",
-      "confirmInFlight": "擦除时...",
-      "success": "客户被删除",
-      "error": "无法擦除客户端"
+      "button": "清除客户个人信息",
+      "title": "清除客户个人信息？",
+      "body": "将删除客户的姓名、邮箱、电话、地址、公司信息和账号凭据。为保留历史项目访问记录和审计日志，账号记录会继续保留。此操作不可撤销。",
+      "confirm": "确认清除",
+      "confirmInFlight": "正在清除…",
+      "success": "客户个人信息已清除。",
+      "error": "无法清除客户个人信息。"
     },
     "assignedEvents": {
-      "title": "管理指定相册",
-      "subtitle": "选择每个相册，这个客户应该能够从他们的仪表板上访问。 移走这里的相册，在客户下次请求时，立即取消访问。",
-      "currentLabel": "指定相册",
-      "empty": "尚未指定相册。 请在下面搜索以添加一个。",
-      "searchLabel": "添加一个相册",
+      "title": "管理客户可访问的相册",
+      "subtitle": "选择客户可从客户中心访问的相册。移除相册后，客户下次请求时将立即失去访问权限。",
+      "currentLabel": "已分配相册",
+      "empty": "尚未分配相册。可在下方搜索并添加。",
+      "searchLabel": "添加相册",
       "searchPlaceholder": "按项目名称搜索",
-      "searchHint": "开始字体排版寻找相册.",
-      "noResults": "没有匹配的相册。",
-      "removeAria": "删除 {{name}}",
-      "save": "保存任务",
-      "saved": "任务更新",
-      "savedDiff": "任务更新 : {{parts}}",
-      "addedN": "{{count}}  已添加",
-      "removedN": "{{count}}  删除",
-      "error": "无法更新任务",
+      "searchHint": "输入关键词查找相册。",
+      "noResults": "没有符合条件的相册。",
+      "removeAria": "移除 {{name}}",
+      "save": "保存分配",
+      "saved": "相册分配已更新。",
+      "savedDiff": "相册分配已更新：{{parts}}",
+      "addedN": "已添加 {{count}} 项",
+      "removedN": "已移除 {{count}} 项",
+      "error": "无法更新相册分配。",
       "clearSearchAria": "清除搜索",
-      "addedN_one": "{{count}}  已添加",
-      "addedN_other": "{{count}}  已添加",
-      "removedN_one": "{{count}}  删除",
-      "removedN_other": "{{count}}  删除"
+      "addedN_one": "已添加 {{count}} 项",
+      "addedN_other": "已添加 {{count}} 项",
+      "removedN_one": "已移除 {{count}} 项",
+      "removedN_other": "已移除 {{count}} 项"
     },
     "invitePending": {
-      "badge": "待请邀请",
-      "hint": "这个地址的邀请链接是开放的，并且未被接受。 这不是他们收到的邮件的证明。 如果他们说它从未到达，请检查系统是否健康。"
+      "badge": "邀请待处理",
+      "hint": "此邮箱的邀请尚未接受。邮件送达情况无法由此确认；如果客户表示没有收到，请检查系统状态。"
     }
-  },
-  "clients": {
-    "title": "客户管理",
-    "subtitle": "客户账户，日程安排，报价和账单——一个地方的经常性客户的一切.",
-    "navAriaLabel": "CRM 导航",
-    "empty": {
-      "title": "没有启用 CRM 特性",
-      "body": "启用设置 ~ 特性下的账户( 或另一个 CMM 子特性) 开始。"
-    },
-    "subnav": {
-      "overview": "概览",
-      "accounts": "账户",
-      "quotes": "报价单",
-      "contracts": "合同",
-      "hours": "工时",
-      "calendar": "日历",
-      "bills": "发票",
-      "taxReport": "税收",
-      "development": "开发工具",
-      "newsletters": "通讯"
-    }
-  },
-  "accounting": {
-    "title": "账务",
-    "subtitle": "进货供应商发票，开销和报告.",
-    "navAriaLabel": "会计导航",
-    "empty": {
-      "title": "没有启用会计功能",
-      "body": "启用设置 ~ 特性下的税务报告( 或另一个会计子特性) 开始。"
-    },
-    "subnav": {
-      "incomingInvoices": "供应商发票",
-      "expenses": "支出",
-      "taxReport": "税收",
-      "export": "Treuhänder 输出",
-      "chartOfAccounts": "会计科目表"
-    },
-    "taxTreatment": {
-      "domestic": "国内(含增值税)",
-      "reverse_charge_service": "反向充电(服务)",
-      "foreign_vat_non_reclaimable": "外国增值税(不可追索)",
-      "import_goods": "进口货物"
-    },
-    "disposition": {
-      "rebill": "向客户端重新开单",
-      "durchlaufend": "过关",
-      "eigener_aufwand": "公司费用",
-      "duplikat": "创建副本",
-      "abgelehnt": "已减少",
-      "help": {
-        "rebill": "您自己的供应商花费了向客户开具发票的费用，通常是加价。既记为成本，又记为重新开具账单的收入。",
-        "durchlaufend": "您只代表客户面额，并按准确的数字通过 —— 不加价，增值税中性( durchlaufender Posten)。 附加客户，请按成本重新填单。",
-        "eigener_aufwand": "自己开销，不要重新向任何人开票。 选择一个类别，以便它降落在您的 P&L 的正确位置。",
-        "duplikat": "一张你已经缴获的发票的复制件 不包括在帐簿里",
-        "abgelehnt": "拒绝这一文件——被排除在帐簿之外。"
-      }
-    },
-    "markup": {
-      "none": "无/合同",
-      "percent": "百分比",
-      "flat": "平面"
-    },
-    "inbox": {
-      "captureTitle": "扣押供应商发票",
-      "captureBody": "用您的设备相机拍摄一张纸质发票，或者上传一个 PDF / 图像。",
-      "scanCamera": "用相机扫描",
-      "uploadFile": "上传文件",
-      "capturedToast": "记录被俘",
-      "categorizedToast": "文件分类。",
-      "triageTitle": "文档分类",
-      "saveCategorize": "保存",
-      "saveCategorizePay": "保存已支付的标记",
-      "categorize": "分类",
-      "recategorize": "重新分类",
-      "view": "视图",
-      "empty": "尚未有文件——请在上方捕捉到一份文件。",
-      "untitled": "无标题的文档",
-      "noAmount": "未输入的金额",
-      "rebillHint": "在客户端上创建可编辑的预定发票。 增值税/税费处理为v1 – 与您的 Truehänder 核对。",
-      "previewLoading": "正在加载预览...",
-      "previewError": "无法预览 – 手动输入字段。",
-      "qrHint": "显示最后一页——瑞士QR-bill通常坐到底部.",
-      "prevPage": "上一页",
-      "nextPage": "下一步",
-      "pageOf": "页次 {{n}} / {{total}}",
-      "status": {
-        "label": "状态",
-        "unsorted": "新设",
-        "categorized": "分类",
-        "declined": "已减少",
-        "duplicate": "创建副本"
-      },
-      "field": {
-        "supplier": "供应商",
-        "total": "共计",
-        "currency": "货币",
-        "invoiceDate": "发票日期",
-        "disposition": "处置",
-        "category": "分类",
-        "categoryNone": "没有。",
-        "declineReason": "原因",
-        "customer": "客户",
-        "eventId": "项目编号( 可选)",
-        "markup": "标记",
-        "reference": "付款参考",
-        "referenceHint": "QR / ESR 引用或信件",
-        "note": "说明",
-        "noteHint": "本发票的内部说明(可选)",
-        "passthroughCustomerHint": "可选 —— 附加客户端以重新填报此传阅; 留空只预订到项目.",
-        "supplierCountry": "供应国",
-        "supplierCountryNone": "——不详.",
-        "supplierCountryHint": "自动设定税收待遇:在您的增值税追偿国以外 = 国外增值税(不可回收)."
-      }
-    },
-    "expenseStatus": {
-      "open": "打开",
-      "parked": "已停放。",
-      "billed": "计费",
-      "declined": "已减少"
-    },
-    "paymentMethod": {
-      "bank_transfer": "银行转账",
-      "cash": "现金",
-      "twint": "双关",
-      "paypal": "付费页",
-      "card": "纸牌",
-      "other": "其他"
-    },
-    "booking": {
-      "label": "书到",
-      "company": "公司",
-      "event": "通知类型",
-      "eventId": "项目编号",
-      "inboundHint": "您的报告和税务出口( Company = 一般间接费用) 中包含这一成本的哪个项目。 与您向谁重新开单是分开的。"
-    },
-    "incoming": {
-      "triageTitle": "对收到的发票进行分类",
-      "payTitle": "向Mark供应商付款",
-      "outstanding": "未执行",
-      "markPaid": "马克已支付",
-      "markUnpaid": "马克未支付",
-      "confirmPaid": "马克已支付",
-      "paid": "已支付",
-      "paidToast": "标记为付薪。",
-      "categorizedToast": "分类.",
-      "categorizedPaidToast": "分类和标记支付。",
-      "pendingRebill": "待重新填单",
-      "pendingTitle": "待重新填单",
-      "pendingBody": "将等待重新开票的发票分类，将客户的物品加载一张发票。",
-      "pendingCount": "{{count}}  项目",
-      "pendingCount_other": "{{count}}  项 目",
-      "billPending": "开标这些",
-      "bundledToast": "捆绑 {{count}}  重新开出一张发票。",
-      "bundledToast_other": "捆绑 {{count}}  重新开出一张发票",
-      "amountRequired": "在重新开票前输入发票金额( 允许0)。",
-      "bundledToast_one": "捆绑 {{count}}  重新开具发票。",
-      "pendingCount_one": "{{count}}  项 目"
-    },
-    "expense": {
-      "kind": "类型",
-      "km": "公里数",
-      "days": "天数",
-      "rate": "费率",
-      "rateDefault": "默认 {{rate}}  - 留空用它吧 - 留空用它 - Leave bare to use it",
-      "computed": "数额",
-      "who": "由/供应商支付",
-      "whoHint": "例如，同事姓名或商店",
-      "proof": "证据",
-      "proofRequired": "需要一个证明文件。",
-      "proofExisting": "一个证明文件已经附上——上传一个新的文件来替换它.",
-      "viewProof": "证据"
-    },
-    "expenseKind": {
-      "amount": "数额",
-      "mileage": "里程( 公里)",
-      "per_diem": "每日津贴"
-    },
-    "category": {
-      "infrastructure": "基础设施和租金",
-      "equipment": "设备和硬件",
-      "software": "软件和许可证",
-      "material": "材料和用品",
-      "travel": "旅费和开支",
-      "marketing": "广告和营销",
-      "services": "服务/分包",
-      "insurance": "保险和收费",
-      "training": "培训",
-      "other": "其他"
-    },
-    "ledger": {
-      "allStatuses": "所有状态",
-      "allDispositions": "所有处置",
-      "allKinds": "各类",
-      "empty": "尚未支出——上文增加一项。",
-      "untitled": "支出",
-      "invoiceLink": "发票",
-      "paid": "已支付",
-      "markPaid": "马克已支付",
-      "markPaidTitle": "向Mark供应商付款",
-      "paidDate": "缴款日期",
-      "method": "方法",
-      "reference": "参考文献( 可选)",
-      "confirmPaid": "马克已支付",
-      "paidToast": "标记为付薪。",
-      "unpaidToast": "标为未付.",
-      "addExpense": "增加费用",
-      "addTitle": "增加费用",
-      "editTitle": "编辑支出",
-      "updatedToast": "最新支出情况。",
-      "payTitle": "已支付的费用",
-      "invoiced": "发票",
-      "invoicedToast": "添加到客户发票中.",
-      "invoiceTitle": "添加到客户发票",
-      "invoiceHint": "这在客户的下一张预定发票上创造了一条可计费的线路，并将费用锁定在进一步编辑时。",
-      "addToInvoice": "添加到发票中",
-      "locked": "已锁定",
-      "lockedHint": "已锁定——这笔费用在客户发票上。",
-      "description": "说明",
-      "descriptionHint": "例如里程、每餐、现金收据",
-      "createdToast": "费用增加。"
-    }
-  },
-  "projects": {
-    "title": "项目概况",
-    "subtitle": "将活动分成多个项目，并在一个驾驶舱内看到每封邮件、文件、相册和一小时。",
-    "search": "以姓名或客户身份搜索...",
-    "empty": "还没有工程。 在上面创建一个，或者您已经自动分组的项目。",
-    "notFound": "未找到工程",
-    "backToList": "所有项目",
-    "noCustomer": "没有单一客户",
-    "rename": "重命名",
-    "timeline": "里程碑",
-    "eventCount": "{{count}}  项目",
-    "totalHours": "{{hours}}  已登录",
-    "create": {
-      "label": "新建工程名称",
-      "placeholder": "例如，米勒2026年婚礼",
-      "button": "创建工程"
-    },
-    "col": {
-      "name": "项目",
-      "customer": "客户",
-      "events": "通知类型",
-      "value": "数值",
-      "status": "状态",
-      "updated": "更新"
-    },
-    "picker": {
-      "label": "项目",
-      "none": "无项目"
-    },
-    "value": {
-      "label": "项目价值",
-      "paid": "已支付"
-    },
-    "events": {
-      "title": "通知类型",
-      "none": "这个项目下尚未安排任何活动。",
-      "searchPlaceholder": "附加一个项目——按名称搜索...",
-      "attached": "所附活动",
-      "attachFailed": "无法附加项目"
-    },
-    "feed": {
-      "title": "活动",
-      "empty": "还没有任何进展到这个项目上。",
-      "email": "邮箱",
-      "quote": "引语",
-      "contract": "合同",
-      "invoice": "发票",
-      "gallery": "相册",
-      "hours": "工时"
-    },
-    "email": {
-      "preview": "预览",
-      "resend": "重新发送",
-      "sendNow": "马上发送",
-      "cancel": "取消",
-      "retry": "重试",
-      "previewTitle": "邮件预览",
-      "noPreview": "此邮件没有存储的预览—— 它在预览被捕获之前发送。",
-      "reRendered": "从当前模板中重新发回——这封邮件是在预览被捕获之前发送的，因此可能与接收者得到的稍有不同.",
-      "reRenderedTag": "≈ 已重新渲染"
-    },
-    "toast": {
-      "created": "创建项目",
-      "createFailed": "无法创建工程",
-      "saved": "已保存的工程",
-      "saveFailed": "保存失败",
-      "emailAction": "完成",
-      "emailActionFailed": "动作失败",
-      "previewFailed": "无法加载预览"
-    },
-    "error": {
-      "customerMismatch": "这属于一个不同的客户 与这个项目。"
-    },
-    "status": {
-      "active": "启用",
-      "archived": "已存档"
-    },
-    "eventCount_one": "{{count}}  项目",
-    "eventCount_other": "{{count}}  项目"
-  },
-  "calendar": {
-    "pageTitle": "日历",
-    "subtitle": "一种观点认为，项目、记录的时间和待引用/合同。",
-    "viewMonth": "按月",
-    "viewWeek": "按周",
-    "loading": "正在加载项目...",
-    "legend": {
-      "events": "通知类型",
-      "hours": "工时",
-      "pendingQuotes": "待报价单",
-      "pendingContracts": "待决合同",
-      "hoursLocked": "已锁定( 已开机)"
-    },
-    "hourEntry": {
-      "createTitle": "记录小时",
-      "customerLabel": "客户",
-      "customerSearch": "通过邮件或公司搜索...",
-      "descriptionLabel": "说明( 可选)",
-      "descriptionPlaceholder": "编辑 / 拍摄 / 旅行...",
-      "startLabel": "开始",
-      "endLabel": "结束",
-      "submit": "节省时间",
-      "saving": "保存中…",
-      "cancel": "取消",
-      "close": "关闭",
-      "delete": "删除",
-      "confirmDelete": "删除这些已记录的时数吗 ? 这不能被撤销。",
-      "created": "记录了几小时。",
-      "createFailed": "无法保存 : {{message}}",
-      "saved": "小时更新。",
-      "saveFailed": "无法保存 : {{message}}",
-      "movedToast": "小时更新。",
-      "moveFailed": "动不动: {{message}}",
-      "resizedToast": "小时更新。",
-      "resizeFailed": "无法调整大小 : {{message}}",
-      "deleted": "小时被删除。",
-      "deleteFailed": "无法删除 : {{message}}",
-      "lockedBadge": "已锁定",
-      "featureOffToast": "小时记录被禁用。",
-      "lockedTooltip": "已经开出帐单了 —— Storno 要编辑的发票。",
-      "noDescription": "无描述.",
-      "untitledCustomer": "工时",
-      "customerLoggingDisabled": "此客户已禁用小时记录。 请在客户的详细页面上登录小时。"
-    }
-  },
-  "hoursLogging": {
-    "title": "工时记录",
-    "subtitle": "选择一个客户并登录可计费时间块。 条目会流入下一个月账单，或是按每件项目客户的要求计费。",
-    "pickCustomer": "客户",
-    "pickPlaceholder": "——选择客户.",
-    "emptyList": "还没有客户启用小时记录。 请在客户的详细页面上翻转“ 小时记录 ”。",
-    "searchPlaceholder": "通过邮件或公司搜索...",
-    "customerLoggingDisabled": "此客户已禁用小时记录。 请在客户的详细页面上登录小时。",
-    "openHours": {
-      "title": "所有客户开放时间",
-      "subtitle": "未开票的时间块等待计费。 选择上面的客户，或者点击一行来钻入。",
-      "empty": "现在没有未开票的时数——一切都是开票的，或者还没有记录时间。",
-      "entryLine_one": "{{count}}  条目 · {{hours}} 共",
-      "entryLine_other": "{{count}}  条目 · {{hours}} 共",
-      "passive": "被动",
-      "needsRate": "未设定比率"
-    }
-  },
-  "crmDev": {
-    "title": "CRM 开发",
-    "subtitle": "用于验证客户关系管理流量的内部工具。 默认隐藏。 通过设置。 启用。",
-    "warning": "这些工具会点燃真正的副作用(邮件，状态变化)。 对照测试数据使用。",
-    "envDisabled": {
-      "title": "被嵌入门屏蔽的 Dev 工具",
-      "body": "将 PICPEAK_ENABLE_DEV_TOOLS = 1 设置在您的后端封装文件中并重新启动服务器。 仅此功能旗还不够 — 这是有意的生产- 安全保护。",
-      "cardHint": "在dev-tools env门打开之前，邮件模板无法列出."
-    },
-    "paymentCheck": {
-      "title": "测试付款核对邮件(实收发票)",
-      "help": "启动发送/过期发票的管理员支付支票邮件，绕过24h节节流阀。 邮件中的3个按钮是真正的签名符号 — 点击它们将影响发票状态。",
-      "selectInvoice": "已发或逾期的发票",
-      "selectPlaceholder": "- 挑一张发票 --",
-      "noneAvailable": "数据库中没有寄出或过期的发票。",
-      "send": "发送测试邮件",
-      "sending": "排队...",
-      "sentToast": "测试邮件队列。 请检查收件人的收件箱。"
-    },
-    "templates": {
-      "title": "发送任何 CRM 邮件给我( 模拟数据)",
-      "help": "将选中的模板排入您自己的有占位符值的邮件。 当安装在文件中有真实的报价单/ 发票时，将附上相应的 PDF , 以便您能够验证完整的输出。",
-      "notSeeded": "未播种",
-      "send": "寄给我",
-      "sending": "排队...",
-      "sentToast": "排队到 {{to}}.",
-      "empty": "找不到 CRM 邮件模板 —— 运行迁移来种子它们。",
-      "label": {
-        "quote_sent": {
-          "title": "报价单发送( 给客户)",
-          "description": "发送报价单时点火——包括PDF附件+接受/下行链接."
-        },
-        "quote_accepted_customer": {
-          "title": "报价单接受——客户确认.",
-          "description": "在客户(或代表客户的管理人员)接受报价单后发给客户。包括PDF。"
-        },
-        "quote_accepted_admin": {
-          "title": "报价单已接受——管理通知",
-          "description": "通知管理员，客户接受了报价。"
-        },
-        "quote_declined_admin": {
-          "title": "报价单已拒绝 —— 管理员通知",
-          "description": "通知管理员，客户拒绝报价。"
-        },
-        "invoice_sent": {
-          "title": "发票(给客户)",
-          "description": "发出发票时发生火灾——包括PDF附件。"
-        },
-        "invoice_reminder_first": {
-          "title": "发票提醒——第一",
-          "description": "第一次提醒顾客 还没有迟到"
-        },
-        "invoice_reminder_second": {
-          "title": "发票提醒——第二(与Mahngebühr)",
-          "description": "第二次催复，并加收滞纳金附加费。"
-        },
-        "invoice_payment_check_admin": {
-          "title": "付款核对(门诊)",
-          "description": "带有三个签名的操作按钮的管理邮件。"
-        },
-        "contract_sent": {
-          "title": "(发给客户)的合同",
-          "description": "行政员 – 客户随未签合同的PDF随附."
-        },
-        "contract_signed_admin_notification": {
-          "title": "已签合同——通知",
-          "description": "客户签的电话回管理员，没有附件"
-        },
-        "contract_fully_signed": {
-          "title": "完全签署的合同(双方)",
-          "description": "双方签字后立即发送，并附上印章合同PDF。"
-        },
-        "event_reminder_default": {
-          "title": "项目提醒——缺省(包罗万象)",
-          "description": "没有每个类别模板匹配时使用的活动前推移。"
-        },
-        "event_reminder_wedding": {
-          "title": "项目提醒——婚礼",
-          "description": "项目前预告_类型=婚礼."
-        },
-        "event_reminder_birthday": {
-          "title": "项目提醒——生日",
-          "description": "项目前预告，项目类型=诞生日。"
-        },
-        "event_reminder_corporate": {
-          "title": "项目提醒——公司",
-          "description": "项目前预告_类型=公司."
-        },
-        "event_reminder_other": {
-          "title": "项目提醒-其他",
-          "description": "用项目_type=其他类型预选项目。"
-        }
-      }
-    }
-  },
-  "ledger": {
-    "intro": "原始图表+增值税代码遵循瑞士/LI KMU-Kontenrahmen; 调整它们以适应您的Treuhänder的设置。",
-    "settingsSaved": "地图保存完毕。",
-    "saveDefaults": "保存映射",
-    "accountType": {
-      "asset": "资产",
-      "liability": "赔偿责任",
-      "equity": "股权",
-      "revenue": "收入",
-      "expense": "支出"
-    },
-    "vatDirection": {
-      "input": "输入( Vorsteuer)",
-      "output": "产出(Umsatzsteuer)"
-    },
-    "defaults": {
-      "title": "默认系统账户",
-      "none": "没有。",
-      "ledger_account_debitoren": "应收账款(迪比托伦)",
-      "ledger_account_kreditoren": "应付账款(Kreditoren)",
-      "ledger_account_bank": "银行",
-      "ledger_account_cash": "现金",
-      "ledger_account_default_revenue": "默认收入账户",
-      "ledger_account_default_expense": "默认费用账户",
-      "ledger_account_mileage": "里程账户",
-      "ledger_account_per_diem": "个人账户",
-      "ledger_account_rebilled_revenue": "重计费用(收入)",
-      "ledger_vat_map": "增值税代码，按税种处理(成本)",
-      "ledger_output_vat_map": "按收入率分列的增值税代码"
-    },
-    "vatMap": {
-      "title": "增值税代码，按税种处理(成本)"
-    },
-    "outputVatMap": {
-      "title": "按收入率分列的增值税代码",
-      "empty": "以上增加输出增值税代码，配置每个收益率的代码."
-    },
-    "categoryMap": {
-      "title": "支出类别-账户"
-    },
-    "accounts": {
-      "title": "会计科目表"
-    },
-    "vatCodes": {
-      "title": "增值税代码"
-    },
-    "account": {
-      "addTitle": "添加账户",
-      "editTitle": "编辑账户",
-      "number": "帐号",
-      "name": "名称",
-      "type": "类型",
-      "confirmDelete": "删除此账户 ?"
-    },
-    "vat": {
-      "addTitle": "添加增值税代码",
-      "editTitle": "编辑增值税代码",
-      "code": "代码",
-      "name": "名称",
-      "rate": "比率(%)",
-      "direction": "方向",
-      "account": "增值税账户",
-      "noAccount": "没有。",
-      "confirmDelete": "删除此增值税代码吗 ?",
-      "legacyRate": "{{rate}} %( 未配置) (% )"
-    },
-    "export": {
-      "title": "Treuhänder 输出",
-      "intro": "下载集体日记账(收入+成本作为应计账面和增值税代码),以便输入您的Treuhänder的会计软件。",
-      "format": "目标工具",
-      "format_generic": "通用( 所有栏)",
-      "format_banana": "Banana——双进制",
-      "format_banana_ie": "Banana——收入和开支",
-      "format_bexio": "贝肖",
-      "download": "下载 CSV",
-      "failed": "导出失败。",
-      "disclaimer": "只计算应计制(文件日期)——不包括付款/银行变动。账户+增值税代码遵循您的账户图表映射。在归档前，始终与您的Treuhänder一起审查导入。"
-    }
-  },
-  "taxReport": {
-    "title": "税务报告",
-    "intro": "按增值税率分类的期间范围收入清单，加上增值税净额和增值税细目。",
-    "filters": {
-      "period": "期间",
-      "thisYear": "今年,",
-      "lastYear": "去年，我们一起来",
-      "thisQuarter": "这个季度",
-      "lastQuarter": "最后一个季度",
-      "custom": "自定义范围",
-      "from": "从",
-      "to": "改为:",
-      "currency": "货币"
-    },
-    "exportPdf": "导出 PDF",
-    "ledgerExport": "会计师导出",
-    "ledgerExportHint": "记账记录，通过你的账户图表。",
-    "ledgerExportConfigure": "配置 __",
-    "export": {
-      "reportTitle": "报告",
-      "reportHint": "可读列表——供你自己记录.",
-      "scopeLabel": "范围",
-      "scopeAll": "完成",
-      "scopeIncome": "仅收入",
-      "scopeCost": "仅计费用",
-      "journalTitle": "会计日记"
-    },
-    "exportCsv": "导出 CSV",
-    "exportFailed": "导出失败。 请再试一次。",
-    "errorTitle": "无法加载税务报告",
-    "empty": "这一时期没有发票。",
-    "statusCancelled": "已取消",
-    "totalsByVatRate": "按增值税税率计算共计",
-    "grandTotalNet": "净额共计",
-    "grandTotalVat": "增值税共计",
-    "grandTotalGross": "毛额共计",
-    "cancelledFootnote": "{{count}} 张已取消的发票不计入合计；保留此记录是为了保持审计记录的连续性。",
-    "skontoTooltip": "与 Skonto 支付",
-    "costsTitle": "费用(收到的发票+支出)",
-    "costsDisclaimer": "这个收入/支出概况是您记录(Einnahmen-Ausgaben-Recknung)的指南。增值税的可收回性和结果数字取决于每个成本的税收待遇 — — 在申报前与您的Treuhänder/税务当局核实。",
-    "summary": {
-      "outgoingTitle": "出货发票",
-      "title": "收入/费用",
-      "income": "收入",
-      "costs": "费用",
-      "result": "结果",
-      "vatPayable": "应付增值税(产出-投入)",
-      "vatUnconfigured": "增值税登记没有配置，因此无法计算应交增值税。 将其设定在“设置 – 会计”下。"
-    },
-    "cost": {
-      "source": "类型",
-      "sourceIncoming": "供应商发票",
-      "sourceExpense": "支出",
-      "supplier": "供应商/说明",
-      "taxTreatment": "税务处理",
-      "company": "公司",
-      "total": "费用共计"
-    },
-    "type": {
-      "outgoing": "发货发票",
-      "incoming": "收件发票",
-      "expense": "支出"
-    },
-    "col": {
-      "date": "日期",
-      "invoice": "发票",
-      "customer": "客户",
-      "event": "通知类型",
-      "vatRate": "增值税%",
-      "net": "净额",
-      "vat": "增值税",
-      "total": "毛额",
-      "skonto": "斯孔托语Name",
-      "type": "类型",
-      "reference": "参考",
-      "party": "客户/供应商",
-      "tax": "税收"
-    },
-    "cancelledFootnote_one": "{{count}} 张已取消的发票不计入合计；保留此记录是为了保持审计记录的连续性。",
-    "cancelledFootnote_other": "{{count}} 张已取消的发票不计入合计；保留此记录是为了保持审计记录的连续性。",
-    "costsErrorTitle": "无法加载成本"
-  },
-  "quotes": {
-    "errors": {
-      "popupBlocked": "允许弹出此站点预览 PDF。",
-      "customerRequired": "先挑个顾客",
-      "customerFeatureDisabled": "此客户端已禁用报价单。 先在客户端细节页面上启用报价单。"
-    },
-    "confirmSend": "把这段话发给客户?",
-    "sentToast": "报价单发给顾客.",
-    "confirmConvert": "将此已接受的报价转换为项目+预定的发票 ?",
-    "convertedToast": "引用转换为项目 #{{id}}",
-    "send": "发送",
-    "resend": "重新发送",
-    "convert": "转换为项目",
-    "declineOnBehalf": "以代表身份拒绝",
-    "declineReasonPrompt": "将此报价单标为代表客户拒绝的? 可选注原因( 留空白以跳过)。",
-    "declinedOnBehalfToast": "报价单标为已拒绝。",
-    "field": {
-      "issueDate": "已印发",
-      "validUntil": "有效期至",
-      "eventName": "通知类型",
-      "eventDate": "拍摄日期",
-      "sentAt": "发到",
-      "acceptedAt": "接受日期:",
-      "declinedAt": "下降时间",
-      "declineReason": "下降原因",
-      "responseWindow": "响应窗口",
-      "eventTimeStart": "开始时间",
-      "eventTimeEnd": "结束时间",
-      "expectedDuration": "预期期限(h)",
-      "vatRate": "增值税税率%",
-      "shipping": "运费",
-      "currency": "货币",
-      "selectPaymentTerm": "——选择支付条件.",
-      "paymentNetDays": "净天数",
-      "paymentTiming": "付款时间表",
-      "selectNetDays": "——选择净天数.",
-      "selectTiming": "——选择时间表.",
-      "introText": "输入文本",
-      "outroText": "外文本",
-      "ccPdfEmail": "CC PDF 调用( 外部收件人)",
-      "ccPdfEmailPlaceholder": "名称@ example.com",
-      "ccPdfPickFromAdmins": "从管理员中选择 :",
-      "ccPdfCustom": "自定义邮件",
-      "internalNotes": "内部说明(不在PDF上)",
-      "eventType": "项目类型",
-      "eventTypeNone": "— 使用默认值。",
-      "eventTypeHint": "用于此报价单被接受时创建的项目。",
-      "bookingWorkflow": "预订工作流程(接受时)",
-      "bookingWorkflowNone": "无。",
-      "bookingWorkflowDisabled": "(残疾)",
-      "bookingWorkflowHint": "当客户接受时运行的流量。 离开“ 无” 以运行任何预定流量。 必须启用该流量来发射。"
-    },
-    "responseWindowOpen": "打开直到 {{at}}",
-    "section": {
-      "lineItems": "细列项目",
-      "internalNotes": "内部说明",
-      "customer": "客户",
-      "event": "项目详情",
-      "payment": "付款条件",
-      "extras": "内演/外演/外演"
-    },
-    "savedToast": "报价单作为草稿保存.",
-    "edit": "编辑引用",
-    "new": "新建报价单",
-    "preview": "预览 PDF",
-    "saveAndSend": "保存发送",
-    "customerSearch": "通过邮件或公司搜索客户...",
-    "title": "报价单",
-    "subtitle": "发送、跟踪和转换报价单为项目。",
-    "searchPlaceholder": "按号码、客户、项目搜索...",
-    "sort": {
-      "newest": "最新的第一",
-      "oldest": "先老一点",
-      "customerAsc": "客户 A-Z",
-      "valueAsc": "价值低 高",
-      "valueDesc": "价值 高 低"
-    },
-    "empty": "还没有报价单。",
-    "table": {
-      "customer": "客户",
-      "event": "通知类型",
-      "issueDate": "已印发",
-      "total": "共计",
-      "status": "状态"
-    },
-    "pagination": "页次 {{page}}  共 {{total}} · {{count}}  引用",
-    "status": {
-      "draft": "草稿",
-      "sent": "发送",
-      "accepted": "已接受(第6条)",
-      "declined": "已减少",
-      "expired": "已过期",
-      "converted": "已转换"
-    },
-    "trigger": {
-      "quote_accepted": "接受时",
-      "before_event": "项目发生前",
-      "after_event": "项目发生后",
-      "after_delivery": "交货后",
-      "fixed_date": "固定日期"
-    },
-    "acceptOnBehalf": "代表接受",
-    "confirmAcceptOnBehalf": "将此报价单标为代表客户接受的报价单 ? 仅在其口头同意(如电话)时使用.",
-    "acceptedOnBehalfToast": "报价单标明为已接受。",
-    "convertToInvoice": "只转换为发票",
-    "confirmConvertToInvoice": "仅将此报价单转换为发票吗 ? 没有创建相册/ 项目。",
-    "convertedToInvoiceToast": "{{count}}  从此报价单创建的发票",
-    "convertToContract": "转换为合同",
-    "confirmConvertToContract": "从这个报价单起草合同? 客户+管理员会在项目/发票创建前都签署.",
-    "convertedToContractToast": "合同是根据本报价单起草的。",
-    "contractAlreadyLinkedToast": "已经从这一报价单中起草了一份合同。",
-    "pagination_one": "页次 {{page}}  共 {{total}} · {{count}}  引用",
-    "pagination_other": "页次 {{page}}  共 {{total}} · {{count}}  引用",
-    "convertedToInvoiceToast_one": "{{count}}  从此报价单创建的发票",
-    "convertedToInvoiceToast_other": "{{count}}  从此报价单创建的发票"
-  },
-  "crm": {
-    "lineItems": {
-      "quantity": "齐哥",
-      "description": "说明",
-      "unitPrice": "单位",
-      "total": "共计",
-      "subtotal": "小计",
-      "vat": "增值税",
-      "rounding": "四舍五入",
-      "position": "宝斯",
-      "discount": "拉巴特%",
-      "descriptionPlaceholder": "描述( 多行 确定)",
-      "saveAsPreset": "另存为预设",
-      "empty": "还没有细列项目——要开始添加一个。",
-      "addRow": "添加行",
-      "addFromPreset": "从预设中添加...",
-      "shipping": "航运",
-      "addSubItem": "增加分项",
-      "detailsAdd": "+ 添加明细 / 备注",
-      "detailsFilled": "详情",
-      "detailsPlaceholder": "可选笔记——精细的印刷品，包装包含，条件.",
-      "autoTotaledHint": "以下分项目自动计算共计",
-      "autoTotaledNote": "= 分项目总和"
-    },
-    "customerPicker": {
-      "search": "通过邮件或公司搜索客户..."
-    }
-  },
-  "bills": {
-    "title": "发票",
-    "subtitle": "计时，发送，跟踪付款并追赶逾期的发票.",
-    "new": "新发票",
-    "searchPlaceholder": "按号码或客户搜索...",
-    "sort": {
-      "newest": "最新的第一",
-      "dueAsc": "早点到",
-      "dueDesc": "第一次到期",
-      "customerAsc": "客户 A-Z",
-      "valueAsc": "价值低 高",
-      "valueDesc": "价值 高 低"
-    },
-    "filter": {
-      "unpaidOnly": "仅未支付"
-    },
-    "empty": "还没有发票",
-    "table": {
-      "customer": "客户",
-      "event": "通知类型",
-      "installment": "分期付款",
-      "issueDate": "已印发",
-      "dueDate": "到期",
-      "total": "共计",
-      "status": "状态"
-    },
-    "errors": {
-      "popupBlocked": "允许弹出此站点预览 PDF。",
-      "customerRequired": "先挑个顾客"
-    },
-    "confirmSend": "现在把发票寄给客户?",
-    "sentToast": "发票已经发出。",
-    "confirmRelease": "将照片标为交付，现在把这张发票寄给客户?",
-    "releaseForDelivery": "标记已发送",
-    "releasedToast": "发货发票。",
-    "monthlyDraftBadge": "月票——通过顾客的cadence日或\"现在的卡车发票\"的船舶.",
-    "confirmReminder": "现在发送一个提醒?",
-    "reminderToast": "提醒发送。",
-    "confirmCancel": "取消这张发票?",
-    "confirmCancelDraft": "取消这张发票?",
-    "confirmCancelIssued": "将立即生成一个 Sdronorechnung 并发邮件给客户。 无法撤销。 继续吗 ?",
-    "cancelledToast": "发票被取消。",
-    "cancelledWithStornoToast": "发票被取消——向客户开具的Sdronorechnung.",
-    "confirmReissue": "将为这张发票向客户发放一张Sdronorechnung, 并用相同的细列项目创建一份新的预定的草稿。 新的发票将使用“ 替换 R- ”。 继续吗 ?",
-    "confirmReissueCancelled": "创建一个新的、包含相同细列项目的预定发票，链接到这个已取消的发票上 ?",
-    "reissuedToast": "重新开具发票——开启新稿.",
-    "reissuedWithStornoToast": "斯德洛雷克诺发行——开启新稿.",
-    "reissue": "重新印发e",
-    "cancelAndReissue": "取消重新发行",
-    "kind": {
-      "storno": "斯多诺雷克诺",
-      "reissue": "重新印发e"
-    },
-    "stornoCancelsLabel": "沙陀罗尼什纽取消了发票",
-    "cancelledByStornoLabel": "这张发票被Sdronorechnung注销了",
-    "paymentRecordedToast": "付款记录。",
-    "sendNow": "马上发送",
-    "resend": "重新发送",
-    "markPaid": "马克已支付",
-    "sendReminder": "发送提醒",
-    "field": {
-      "issueDate": "已印发",
-      "dueDate": "到期",
-      "dueDateOverrideOn": "手动到期日——从发送日期+付款期限开始不选中自动设置",
-      "dueDateOverrideOff": "从发送日期 + 付款期限开始自动设置—— 勾选手动设置",
-      "scheduledSendAt": "预定发送",
-      "installment": "分期付款",
-      "total": "共计",
-      "paid": "已支付",
-      "outstanding": "未执行",
-      "lateFee": "迟付费用",
-      "qrFormat": "付款 QR 格式",
-      "vatRate": "增值税税率%",
-      "shipping": "航运",
-      "currency": "货币",
-      "ccPdfEmail": "CC PDF 调用( 外部收件人)",
-      "sourceQuote": "从引用",
-      "businessBankAccount": "支付账户",
-      "bankAccountProfileDefault": "使用商务配置默认值 {{currency}}",
-      "bankAccountDefaultBadge": "(默认)",
-      "bankAccountHelp": "仅覆盖此发票的配置默认值。 默认时留任从设置 → 业务配置中继承货币匹配的账户。",
-      "paymentNetDays": "净天数",
-      "paymentTiming": "付款时间表",
-      "selectNetDays": "——选择净天数.",
-      "selectTiming": "——选择时间表.",
-      "eventName": "通知类型",
-      "eventDate": "拍摄日期",
-      "eventNamePlaceholder": "例如,2024年史密斯婚礼",
-      "eventTimeStart": "开始时间",
-      "eventTimeEnd": "结束时间",
-      "customer": "客户",
-      "invoiceNumber": "发票号码",
-      "paidAmount": "支付数额(可选)",
-      "pdfFile": "PDF 文件",
-      "ccPdfCustom": "自定义邮件",
-      "ccPdfEmailPlaceholder": "名称@ example.com",
-      "ccPdfPickFromAdmins": "从管理员中选择 :",
-      "paymentTermHelp": "此发票的净天数 + Skonto。 请留下空白以继承来源引用或全球客户关系管理默认值。",
-      "skontoDisabled": "禁用 Skonto 的此发票( 给 PDF 上的提前支付贴现块和 admin mail / record- pay 对话框中的“ 与 Skonto 一同支付 ” 按钮)。",
-      "sourceContract": "从合同中",
-      "status": "状态"
-    },
-    "import": "导入历史",
-    "importTitle": "进口历史发票",
-    "importHelp": "附加一个来自先前的计费系统的 PDF。 客户在他们的门户网站中看到此原始文档 —— picpeak 不重生它。",
-    "importedToast": "进口发票。",
-    "importError": "导入失败",
-    "importing": "正在导入...",
-    "noMatch": "无匹配",
-    "section": {
-      "lineItems": "细列项目",
-      "paymentLog": "付款记录",
-      "customer": "客户",
-      "event": "项目详情",
-      "details": "详情",
-      "payment": "付款条件"
-    },
-    "noPayments": "尚未记录付款情况。",
-    "payment": {
-      "paidAt": "日期",
-      "amount": "数额",
-      "date": "缴款日期",
-      "method": "方法",
-      "reference": "参考",
-      "notes": "备注",
-      "methodPlaceholder": "选择方法...",
-      "methods": {
-        "bankTransfer": "银行转账",
-        "card": "纸牌",
-        "cash": "现金",
-        "paypal": "付费页",
-        "twint": "双关"
-      },
-      "withSkonto": "与 Skonto 一同支付{{percent}} 折价%)"
-    },
-    "recordPayment": "记录付款",
-    "savedToast": "发票被保存。",
-    "savedToastMulti": "已创建 {{n}}  发票。",
-    "saveAndSpawn": "创建 {{n}}  发票",
-    "edit": "编辑发票",
-    "customerSearch": "通过邮件或公司搜索...",
-    "qrFormat": {
-      "none": "无",
-      "swiss": "瑞士 QR 单",
-      "epc": "EPC QR (SEPA) (英语).",
-      "profileDefault": "使用商务配置默认"
-    },
-    "status": {
-      "scheduled": "计划",
-      "draft": "草稿",
-      "pending_delivery": "等待交货",
-      "sent": "发送",
-      "paid": "已支付",
-      "overdue": "逾期未交",
-      "cancelled": "已取消",
-      "skipped": "跳过( 空月 )"
-    },
-    "send": {
-      "title": "发送发票",
-      "proofIntro": "该发票重新开具了供应商发票。 选择在邮件上附上哪些供应商证明—— 发票PDF总是附在后面。",
-      "proofsLabel": "供应商证明",
-      "selectAll": "全部选择",
-      "selectNone": "无",
-      "unknownSupplier": "供应商",
-      "modePassthrough": "传递",
-      "modeRebill": "重新填单",
-      "noProofFile": "没有存储的证明文件",
-      "sendWithCount": "发送方式 {{count}}  证明",
-      "sendWithCount_one": "发送方式 {{count}}  证明",
-      "sendWithCount_other": "发送方式 {{count}}  证明"
-    }
-  },
-  "businessProfile": {
-    "savedToast": "商业简介保存.",
-    "movedToAccounting": "增值税税率、增值税标签和缺省小时税率目前都按照Stents = 会计制度执行。",
-    "title": "企业概况.",
-    "subtitle": "每个报价单和发票PDF上都显示发行方块.",
-    "businessHours": {
-      "title": "办公时间",
-      "subtitle": "设定每周的开放时间——在午餐间休息时增加第二个区块。{{tz}}).",
-      "closed": "关闭",
-      "addHours": "添加时数",
-      "addBlock": "添加另一个块",
-      "copyToAll": "复制到所有天数",
-      "startTime": "开幕时间",
-      "endTime": "闭幕时间",
-      "floorToggle": "在办公时间前保留预定的邮件",
-      "floorToggleHelp": "打开时，下一个开机时会发送超过上述时间的自动邮件，而不是一个奇数小时。 关闭时，预定的邮件会按其准确时间发送。",
-      "weekday": {
-        "1": "星期一",
-        "2": "星期二",
-        "3": "星期三",
-        "4": "星期四",
-        "5": "星期五",
-        "6": "星期六( 星期六)",
-        "7": "星期日( 星期日)"
-      }
-    },
-    "section": {
-      "company": "公司",
-      "contact": "联系人",
-      "defaults": "默认",
-      "banks": "银行账户"
-    },
-    "field": {
-      "companyName": "公司名称",
-      "vatId": "增值税识别码(USt-IdNr.",
-      "taxId": "税号( Steuernummer)",
-      "addressLine1": "地址1",
-      "addressLine2": "地址: 2",
-      "postalCode": "邮政编码",
-      "city": "城市",
-      "state": "州/区",
-      "countryCode": "国家(ISO 3166)",
-      "phone": "电话",
-      "mobile": "手机",
-      "email": "邮箱",
-      "website": "网站",
-      "defaultCurrency": "默认货币",
-      "defaultLocale": "默认区域",
-      "timezone": "时区(IANA)",
-      "defaultQrFormat": "默认发票 QR",
-      "footerLine": "PDF 页脚",
-      "timezoneSystemDefault": "系统默认",
-      "pdfLogoUpload": "PDF 信头标志( PNG, JPEG, 或 SVG)",
-      "pdfLogoUploadHelp": "每个引用和发票上都使用 PDF. SVG 被自动接受并光栅化到 PNG。 当空时，渲染器会回到全球品牌标志上。",
-      "pdfLogoHeight": "PDF 标识高度(pt,24-200)",
-      "pdfFoldingMarks": "PDF 页面边缘的折叠标记",
-      "pdfShowLogo": "在 PDF 信头中显示标志",
-      "pdfShowLogoHelp": "关闭时，即使一个标志被上传，每个 PDF 上都会压制标志图像。",
-      "pdfShowCompanyName": "在 PDF 信头中显示公司名称",
-      "pdfShowCompanyNameHelp": "关闭时，公司名称线会被压制(如果标志是已经包含名称的文字标记，则有用).",
-      "pdfCompanyNameInline": "与地址连接的 Render 公司名称",
-      "pdfCompanyNameInlineHelp": "上线时，公司名称直接出现在街道地址上方( 大小相同 + 重量)。 当关闭时，它会成为标志下的一个粗体标题。",
-      "pdfQuoteShowNetDays": "引用 PDF 时显示净支付日",
-      "pdfQuoteShowNetDaysHelp": "使用时，引用 PDF 时在付款条件块中包含“ 从发票日期算起的 X 日数 ”。 发票总是显示此行，不论如何。",
-      "pdfQuoteShowSkonto": "在引用 PDF 时显示 Skonto / 提前支付折扣",
-      "pdfQuoteShowSkontoHelp": "打开时，引用 PDF 包括 Skonto 报价和“ 折扣的挂载”。 发票总是显示这些。"
-    },
-    "qrFormat": {
-      "none": "无",
-      "swiss": "瑞士QR-单(CH / LI)",
-      "epc": "EPC QR(SEPA/欧元)"
-    },
-    "bankCreatedToast": "增加了银行账户。",
-    "bankDeletedToast": "银行账户被移除。",
-    "addBank": "添加账户",
-    "bank": {
-      "label": "标签",
-      "accountHolder": "账户持有人",
-      "currency": "货币",
-      "isDefault": "此货币的默认值",
-      "makeDefault": "设定默认",
-      "confirmDelete": "移除这个银行账户吗?"
-    },
-    "noBanks": "尚未配置银行账户。",
-    "foldingMarks": {
-      "none": "无",
-      "half": "一半(148.5毫米)——用于C5信封",
-      "third": "三进制(105+210毫米)——用于DL/DIN长信封",
-      "both": "全部三个标记"
-    },
-    "qrDisclaimer": {
-      "title": "QR-单 / 银行数据—— 启用前核实",
-      "body": "Picpeak 是开源的。 我们从您输入的数值中调出 QR 码和 IBAN 块—— 我们不验证它们。 在发送真实的发票之前，打印一张测试发票，用您的银行的应用程序扫描它。 我们不负责发送错误的发票。"
-    },
-    "logoUploadedToast": "PDF 标志上传.",
-    "logoConfirmClear": "删除 PDF 标志吗 ? 如果设置了，渲染器会倒回 Branding 标志。",
-    "logoClearedToast": "PDF标志被移除.",
-    "bankUpdatedToast": "银行账户更新。",
-    "emailSignature": {
-      "title": "邮件签名",
-      "subtitle": "将您的公司细节添加到安装发送的每封邮件的页脚。 由上面的地址和联系字段所建 — 没有任何内容重复。",
-      "toggle": "在邮件页脚中显示签名",
-      "toggleHelp": "关闭时，邮件会保留普通的标志 + 公司名称页脚。 适用于每个自动邮件 — 相册通知、 报价单、 发票、 提醒 — 以及测试发送和预览。 您在信件中写作的回复会按字体排版方式发送，而无法获得签名。",
-      "extra": "法律线(可选)",
-      "extraPlaceholder": "瓦杜兹FL-0002.123.456-7号机车",
-      "extraHelp": "注册号、 免责声明或任何没有字段的行。 纯文本，最多500个字符。",
-      "previewTitle": "页脚预览",
-      "previewOff": "签名关闭——邮件只显示标志和公司名称.",
-      "previewEmpty": "签名在上，但上面的每一个字段都是空白的——脚本上不会添加任何东西。"
-    }
-  },
-  "crmSettings": {
-    "savedToast": "已保存 CRM 设置。",
-    "title": "客户关系管理设置",
-    "subtitle": "精细的报价和发票行为。",
-    "emptyState": "目前没有启用 CRM 特性。 打开 Quotes、 发票或设置中的合同 = 特性，以查看匹配配置。",
-    "section": {
-      "quotes": "报价单",
-      "invoices": "发票",
-      "paymentDefaults": "默认付款条件",
-      "installmentDefaults": "默认分期付款触发器",
-      "contracts": "合同",
-      "quotesTos": "服务条件/AGB级",
-      "dashboardOverview": "Dashboard 客户关系管理概览",
-      "dashboardOverviewHint": "将 CMM 概览牌片隐藏在管理仪表板上。 所有牌片默认都会渲染; 取消选中以隐藏。"
-    },
-    "paymentDefaults": {
-      "help": "在每个新引用和发票上预填。编辑器仍然允许您选择一个不同的文档组合。",
-      "none": "-没有缺省"
-    },
-    "installmentDefaults": {
-      "help": "在分期付款面板中预填新行的触发器。 每个文档编辑会覆盖; 现有的文档会保留其快照计划。",
-      "trigger": {
-        "quote_accepted": "签名/ 创建时",
-        "before_event": "项目发生前",
-        "after_event": "项目发生后",
-        "after_delivery": "分娩时(人工释放)",
-        "fixed_date": "固定日期"
-      }
-    },
-    "crm_invoices_default_payment_net_days_template_id": {
-      "label": "默认净天数"
-    },
-    "crm_invoices_default_payment_timing_template_id": {
-      "label": "默认付款时间表"
-    },
-    "crm_quotes_accept_window_minutes": {
-      "label": "接受窗口( 分钟)"
-    },
-    "crm_quotes_default_valid_days": {
-      "label": "默认有效性( 天)"
-    },
-    "crm_quotes_number_format": {
-      "label": "报价单格式"
-    },
-    "crm_invoices_reminder_first_days": {
-      "label": "逾期(逾期天数)第一次提醒"
-    },
-    "crm_invoices_reminder_second_days": {
-      "label": "第二次催复(逾期天数)"
-    },
-    "crm_invoices_late_fee_minor": {
-      "label": "迟付费用(未成年人单位/拉彭)"
-    },
-    "crm_invoices_late_fee_type": {
-      "label": "迟付费用类型"
-    },
-    "crm_invoices_late_fee_percent": {
-      "label": "迟付费用(发票的%)"
-    },
-    "lateFeeType": {
-      "flat": "平方( Rappen )",
-      "percent": "发票百分比"
-    },
-    "lateFeeAgb": {
-      "title": "逾期收费必须逐项列出(AGB)",
-      "body": "合同义务:“延迟收费”等短语是不够的。 您的条款必须写明具体收费(例如“第二提醒函中的20瑞士法郎 ” )。 您的州会与您进行校验。"
-    },
-    "dunningMoved": {
-      "title": "提醒时间表现已进入工作流程",
-      "body": "逾期的提醒在“发票充电”工作流程中配置。 低于延迟收费的金额仍然适用。",
-      "link": "打开工作流程"
-    },
-    "crm_invoices_late_fee_label": {
-      "label": "逾期收费标签"
-    },
-    "crm_invoices_vat_note_text": {
-      "label": "发票增值税说明／自定义文字",
-      "placeholder": "例如：Gemäß § 6 Abs. 1 Z 27 UStG 1994 wird keine Umsatzsteuer berechnet (Kleinunternehmer).",
-      "help": "每张发票PDF直接打印在MwSt行下。 请留空以隐藏。 请与您的税务顾问确认确切的措辞。"
-    },
-    "crm_invoices_skonto_percent_default": {
-      "label": "Skonto 比率( 默认% )"
-    },
-    "crm_invoices_skonto_business_days": {
-      "label": "Skonto 窗口( 工作日)"
-    },
-    "crm_invoices_installment_trigger_first": {
-      "label": "第一分期付款触发器"
-    },
-    "crm_invoices_installment_days_before_event": {
-      "label": "活动前几天( 中间分期)"
-    },
-    "crm_invoices_installment_days_after_event": {
-      "label": "活动日后(最后分期)"
-    },
-    "crm_invoices_number_format": {
-      "label": "发票号码格式"
-    },
-    "crm_quotes_pdf_attachment_enabled": {
-      "label": "在邮件中附加引用 PDF"
-    },
-    "crm_quotes_skonto_enabled": {
-      "label": "引用时允许提前支付折扣( Skonto)"
-    },
-    "crm_invoices_qr_enabled": {
-      "label": "发票PDF的付款"
-    },
-    "crm_invoice_round_total": {
-      "label": "调和子圆圆形到一个干净的总数( 当每行圆形漂移从 qty × 速率时，加上一行“ Rundung ” )"
-    },
-    "crm_invoices_reminders_enabled": {
-      "label": "自动提醒过期发票"
-    },
-    "crm_invoices_late_fee_enabled": {
-      "label": "第一次提醒后，每一次都会加一个迟到费"
-    },
-    "crm_quotes_tos_required": {
-      "label": "要求客户在接受前在“我接受服务条款”中勾选"
-    },
-    "crm_quotes_tos_url": {
-      "label": "服务条款 URL (可选)"
-    },
-    "crm_quotes_tos_text": {
-      "label": "报价单页上显示的内含术语文本",
-      "placeholder": "在此粘贴合同条款。 纯文本。 留空仅显示复选框 + URL。"
-    },
-    "crm_contracts_pdf_attachment_enabled": {
-      "label": "在邮件中附加合同 PDF"
-    },
-    "crm_contracts_require_drawn_signature": {
-      "label": "需要抽签签名( 仅用类型名称是不够的)"
-    },
-    "crm_contracts_allow_pdf_upload": {
-      "label": "允许客户端上传湿签名的 PDF"
-    },
-    "crm_contracts_store_ip": {
-      "label": "存储签名者的IP地址(推荐的——民事纠纷中的确凿证据)",
-      "help": "当关闭时，客户和管理员在签署时的IP不会被记录在合同行或公开的签页审计确认中。 根据GDPR数据最小化原则，一些运营商更喜欢这样 — 但如果合同被质疑,IP就是身份证据的佐证，所以我们建议继续使用。"
-    },
-    "crm_contracts_default_valid_days": {
-      "label": "签名窗口( 天)"
-    },
-    "crm_contracts_number_format": {
-      "label": "合同编号格式",
-      "help": "支持的符號 : {YEAR},{MONTH},{SEQ:04d}. 示例:LBM-C-{YEAR}-{SEQ:04d}}_LBM-C-2026-0001."
-    },
-    "crm_overview_show_revenue": {
-      "label": "收入瓦片(30/90/365天)"
-    },
-    "crm_overview_show_outstanding": {
-      "label": "未缴会费"
-    },
-    "crm_overview_show_quotes": {
-      "label": "报价单管道(每状态)"
-    },
-    "crm_overview_show_invoices": {
-      "label": "发票管道(每份状况)"
-    }
-  },
-  "quoteResponse": {
-    "notFound": "报价单未找到",
-    "notFoundBody": "此链接可能已经过期或被取消。 请联系摄影师获取新的报价单。",
-    "locked": "您的反应窗口已经关闭，决定现在为最后决定。",
-    "title": "引语",
-    "event": "通知类型",
-    "issueDate": "已印发",
-    "validUntil": "有效，直到",
-    "description": "说明",
-    "qty": "齐哥",
-    "unit": "单位",
-    "total": "共计",
-    "subtotal": "小计",
-    "vat": "增值税",
-    "acceptedLocked": "你接受这首歌 {{date}} . 裁决为最终裁决。",
-    "declinedLocked": "你拒绝了这个报价单 {{date}} . 裁决为最终裁决。",
-    "cannotRespond": "此报价单再也无法通过此链接回复.",
-    "changeWithin": "你可以改变你的反应，直到 {{at}}.",
-    "intro": "请接受或拒绝此报价单:",
-    "accept": "接受引用",
-    "decline": "缩写",
-    "tosRequiredError": "请在接受报价单前选中“ 我接受服务条款”, 或者点击 Dellowe 拒绝。",
-    "submitting": "正在记录你的反应...",
-    "tosCheckbox": "我读过并接受《服务条款》。",
-    "tosLink": "阅读全文",
-    "preselectAcceptHint": "您跟随邮件上的“ 接受” 链接—— 点击下面的按钮确认。",
-    "preselectDeclineHint": "您跟随邮件的“ 解禁” 链接 —— 点击下面的按钮确认。"
   },
   "reminderTemplates": {
-    "title": "项目前提醒邮件",
+    "title": "拍摄前提醒邮件",
     "scheduleMoved": {
-      "title": "提醒时间表现已进入工作流程",
-      "body": "项目前提醒是否发送，以及项目前几天，在“ 项目前提醒” 工作流程中配置。 此页面会编辑邮件模板; 每个项目都会覆盖每个项目的细节页面。",
+      "title": "提醒时间表已移至工作流",
+      "body": "是否发送拍摄前提醒以及提前天数，现由“拍摄前提醒”工作流配置。本页用于编辑邮件模板；单个项目的设置仍在项目详情页调整。",
       "link": "打开工作流程"
     },
-    "globalSection": "全球行为",
-    "globalHelp": "默认关闭 —— 打开开始发送项目前提醒。 下面的偏移是默认; 每个项目都可以在细节页面上覆盖。",
+    "globalSection": "全局设置",
+    "globalHelp": "默认关闭。开启后会发送拍摄前提醒。下方天数为默认值，每个项目可在详情页单独调整。",
     "enableLabel": "发送项目前提醒邮件",
-    "daysBeforeLabel": "活动前几天",
+    "daysBeforeLabel": "拍摄前天数",
     "saveSettings": "保存全局设置",
     "settingsSaved": "已保存提醒设置。",
     "settingsSaveError": "无法保存提醒设置。",
     "sidebarHeading": "模板",
     "sectionTemplates": "模板",
-    "defaultLabel": "默认( 全部捕获)",
+    "defaultLabel": "默认（通用模板）",
     "usesDefault": "默认",
-    "usesDefaultTooltip": "目前还没有专门的模板——此项目类型回到默认状态。 编辑 + 保存以创建。",
-    "willCreateOnSave": "此项目类型使用默认模板。 下面的字段会从默认中预填; 保存会为此项目类型创建专用模板。",
-    "variablesHint": "可用的变量 : {{customer_name}}, {{event_name}}, {{event_date}}, {{event_type}}, {{days_before}}, {{business_name}}  ——在发送邮件时替换。",
-    "subjectLabel": "议题",
+    "variablesHint": "可用变量：{{customer_name}}、{{event_name}}、{{event_date}}、{{days_before}}、{{business_name}}。发送邮件时会自动替换。",
+    "subjectLabel": "主题",
     "subjectPlaceholder": "邮件主题",
-    "bodyLabel": "体质",
+    "bodyLabel": "正文",
     "noTranslation": "尚未翻译",
     "saveTemplate": "保存模板",
     "saved": "模板已保存。",
     "saveError": "无法保存模板。"
   },
   "eventReminderOverride": {
-    "title": "项目前提醒",
+    "title": "拍摄前提醒",
     "save": "保存覆盖",
-    "help": "客户提醒的每个项目覆盖。 全球在线 + 默认值在设置 → 提醒邮件 下进行实时抵消。 这里留下的空白都继承了全局设置/ 解析模板。",
-    "disabledLabel": "禁用此项目的提醒( 没有邮件发送)",
-    "offsetLabel": "活动前几天(覆盖)——留下空白以继承",
-    "offsetPlaceholder": "空白以使用全局默认值",
-    "bodyOverrideLabel": "此项目的自定义机构( 覆盖已解决的模板机构)",
-    "bodyOverridePlaceholder": "空留以使用模板正文。 {{customer_name}}, {{event_name}}, {{event_date}}  仍然在这里工作。",
+    "help": "单个项目的客户提醒设置。全局开关和默认提前天数可在“设置 → 提醒邮件”中配置。此处留空的内容将沿用全局设置或匹配到的模板。",
+    "disabledLabel": "停用此项目的提醒（不发送邮件）",
+    "offsetLabel": "拍摄前天数（覆盖设置）；留空则沿用全局设置",
+    "offsetPlaceholder": "留空则使用全局默认值",
+    "bodyOverrideLabel": "本项目自定义正文（覆盖最终使用的模板正文）",
+    "bodyOverridePlaceholder": "留空则使用模板正文。仍可使用 {{customer_name}}、{{event_name}} 和 {{event_date}}。",
     "saved": "已保存提醒覆盖。",
     "saveError": "无法保存提醒覆盖。",
     "invalidOffset": "偏移必须是非负整数或空白。"
   },
-  "dealLineage": {
-    "title": "有关文件",
-    "quotes": "报价单",
-    "contracts": "合同",
-    "invoices": "发票",
-    "loading": "正在加载相关的文档...",
-    "error": "无法加载相关文档。",
-    "empty": "目前还没有其他文件同意这项交易。新的发票、合同或分期付款一旦建立，将出现于此。",
-    "editPlan": "编辑计划",
-    "editPlanModalTitle": "编辑分期计划",
-    "editPlanHelp": "原子弹重塑此计划: 更改百分数、 标签、 触发器、 添加或删除行。 计划总和保持不变; 现有发票号码尽可能保留。 一旦任何发票已经发运，就会拒绝。",
-    "editPlanWarning": "三进制行删除其发票号码( 序列无法释放它们 —— §14 UStG 连续性规则)。 添加行要求新号码。",
-    "editPlanSave": "保存计划",
-    "editPlanSuccess": "分期付款计划得到更新。",
-    "editPlanLocked": "计划再也不能编辑——至少有一张发票已经发运或被注销.",
-    "editPlanPercentSumError": "百分率必须等于100。",
-    "editPlanGeneralError": "无法更新计划。",
-    "editPlanEmpty": "计划不能是空的。"
-  },
-  "installments": {
-    "enableLabel": "拆分为分期",
-    "advancedToggle": "使用动态触发器",
-    "simpleToggle": "使用简单的日期拾取器",
-    "simpleHint": "每行在指定日期开火。 切换到动态触发器，用于将计划绑定在项目日期或交付上。",
-    "advancedHint": "选择一个触发器( 引用已接受，项目发生前/ 之后，交付时，固定日期) + 天数抵消。 如果项目日期晚些转移，触发器会重新解析。",
-    "percent": "%",
-    "label": "标签",
-    "labelPlaceholder": "安扎赫隆 / 事发前...",
-    "sendOn": "发送到",
-    "trigger": "触发",
-    "offsetDays": "抵销(日数)",
-    "onDeliveryHint": "交付时——管理员手动发布，切换到高级以改变.",
-    "addRow": "添加分期付款",
-    "removeRow": "删除行",
-    "total": "共计",
-    "mustSumTo100": "必须等于100%",
-    "firstRowDefaultLabel": "降薪费",
-    "triggerOption": {
-      "quote_accepted": "签名/ 创建时",
-      "before_event": "项目发生前",
-      "after_event": "项目发生后",
-      "after_delivery": "分娩时(人工释放)",
-      "fixed_date": "固定日期"
-    }
-  },
-  "contracts": {
-    "title": "合同",
-    "subtitle": "由可重复使用的块组成合同，并让客户在浏览器上签名或上传一个湿签的PDF.",
-    "sections": {
-      "basics": "基本情况",
-      "scope": "范围",
-      "privacy": "隐私",
-      "commercial": "商业",
-      "nda": "保密性",
-      "closing": "最后条款"
-    },
-    "status": {
-      "draft": "草稿",
-      "sent": "发送",
-      "signed_by_customer": "客户签名",
-      "signed_by_admin": "反签",
-      "fully_signed": "完全签名",
-      "cancelled": "已取消"
-    },
-    "list": {
-      "new": "新合同",
-      "blocksLibrary": "块库",
-      "searchPlaceholder": "按号码、标题或客户搜索...",
-      "empty": "还没有合同。",
-      "table": {
-        "number": "数目",
-        "customer": "客户",
-        "title": "标题",
-        "issueDate": "已印发",
-        "status": "状态"
-      },
-      "pagination": "页次 {{page}}  共 {{total}} · {{count}}  合同",
-      "pagination_one": "页次 {{page}}  共 {{total}} · {{count}}  合同",
-      "pagination_other": "页次 {{page}}  共 {{total}} · {{count}}  合同"
-    },
-    "detail": {
-      "previewPdf": "预览 PDF",
-      "integrity": {
-        "title": "PDF 完整性检查",
-        "help": "重新检查未签名的+在磁盘上签名的PDF,并将其与文件发行时存储的SHA-256进行对比. 捕捉自客户收到副本后备份腐败或手动编辑.",
-        "verify": "验证",
-        "reverify": "重新验证",
-        "unsignedTitle": "未签名的 PDF",
-        "signedTitle": "已签名 PDF",
-        "match": "哈希值一致",
-        "mismatch": "hash 不匹配——文件已更改",
-        "missing": "磁盘中缺少文件",
-        "notIssued": "尚未印发",
-        "expected": "预期",
-        "actual": "实际数",
-        "error": "诚信检查失败。"
-      },
-      "alreadyEventToast": "已经链接到一个项目。",
-      "auditEmpty": "尚未有审计记录记录。",
-      "auditTrail": "审计线索",
-      "auditTrailHelp": "合同上记录的每件事物，清单仅是附件，如果合同受到质疑，则属真相来源。",
-      "back": "返回到列表",
-      "blocks": "包含块",
-      "cancel": "取消",
-      "cancelConfirm": "取消这份合同? 客户签名链接将失效。",
-      "cancelError": "取消失败",
-      "cancelledToast": "合同被取消。",
-      "clearSignature": "清除",
-      "confirmConvertEvent": "将合同转换为项目+预定发票?",
-      "confirmConvertInvoice": "仅将合同转换为发票 ? 不创建相册/ 项目。",
-      "confirmCountersign": "反签名",
-      "confirmResendSigned": "重新将签署的PDF合同交给双方?.",
-      "confirmRestamp": "重挂标签并重新提交 PDF",
-      "convertError": "转换失败",
-      "convertToEvent": "转换为项目",
-      "convertToInvoice": "只转换为发票",
-      "convertedToEvent": "转换为项目",
-      "convertedToEventToast": "合同转换为项目#{{id}}",
-      "convertedToInvoiceToast": "{{count}}  根据本合同开具的发票",
-      "countersignError": "反签名失败",
-      "countersignHelp": "输入您的姓名并绘制下面的签名—— 两者都印在重发的 PDF 上。 IP 和 时间戳 被记录用于审计。",
-      "countersignSignaturePrompt": "绘制您的签名",
-      "countersignTitle": "反签名使其具有约束力",
-      "countersignedToast": "反签.",
-      "customer": "客户",
-      "dates": "日期",
-      "downloadPdf": "下载 PDF",
-      "downloadSignedPdf": "下载签名的 PDF",
-      "edit": "编辑",
-      "fromQuote": "从引用",
-      "issued": "已印发",
-      "linkedInvoice": "发票",
-      "newInvoice": "新发票",
-      "noBlocks": "没有区块。",
-      "noSignatureImage": "没有捕获到的签名图像——下面使用\"重印签名\"来添加一个.",
-      "notFound": "合同未找到。",
-      "parties": "缔约方",
-      "popupBlocked": "允许弹出此站点预览 PDF。",
-      "renderFailedBody": "签名证据被记录，但上次尝试时没有生成盖章的 PDF。 点击上面的“ 重新发送签名的 PDF ” , 从原始文档中重新加印并重新发送。",
-      "renderFailedTitle": "签名的 PDF 印章失败 — 需要重新加印",
-      "resendError": "重新发送失败",
-      "resendSigned": "重新发送签名的 PDF",
-      "resentSignedToast": "双方重新同意签署合同。",
-      "restampAdmin": "管理签名",
-      "restampCustomer": "客户签名",
-      "restampError": "重印失败",
-      "restampHelp": "一个或两个签名都没有捕获到图像。 在此绘制缺失的签名，我们将重新提交 PDF。 已输入的名称、 时间戳和已放入文件的 IP 保持未动。",
-      "restampTitle": "重印缺失的签名",
-      "restampedToast": "签名重新加印,PDF重新加签.",
-      "send": "发送给客户",
-      "sendError": "发送失败",
-      "sentAt": "发到",
-      "sentToast": "合同已发出。",
-      "signBy": "签名:",
-      "signatures": "签署",
-      "signedByAdmin": "反签",
-      "signedByCustomer": "客户签名",
-      "signedNamePlaceholder": "你的全名是\"你\"的全名，你叫\"你\"的全名",
-      "uploadError": "上传失败",
-      "uploadSigned": "上传已签名的 PDF",
-      "uploadedToast": "已签名的 PDF 上传。",
-      "convertedToInvoiceToast_one": "{{count}}  根据本合同开具的发票",
-      "convertedToInvoiceToast_other": "{{count}}  根据本合同开具的发票"
-    },
-    "editor": {
-      "back": "返回到列表",
-      "backToDetail": "回到合同状态",
-      "create": "创建草稿",
-      "createdToast": "创建合同。",
-      "customer": "客户",
-      "disclaimerBody": "种子块文本是维护者而不是律师所写的例子。在您发出合同之前，您要为您的权限和使用案件审查块，您仍要对其内容负责。这并不妨碍您保存草稿。",
-      "disclaimerTitle": "建议的法律审查",
-      "saving": "保存中…",
-      "disclaimerLink": "阅读 CRM 免责声明",
-      "errors": {
-        "createNotSaved": "草案没有保存下来。",
-        "updateNotSaved": "您的更改没有保存。",
-        "createUnconfirmed": "我们无法确认草案是否得到保存，再次保存是安全的——它不会产生第二份草案。",
-        "createdChangesNotSaved": "草稿被保存了，但您最近的修改没有。 保存再次应用它们。",
-        "createdChangesUnconfirmed": "草案已经保存下来，但是我们无法确认您的最新修改是否是。 再次保存是安全的。",
-        "updateUnconfirmed": "我们无法确认您的更改是否被保存。 再次保存是安全的。",
-        "fieldsHeading": "请检查access-date=中的日期值 (帮助) 请检查access-date=中的日期值 (帮助) 互联网档案馆的存檔，存档日期2013-09-02.",
-        "unexpected": "服务器发生了意外错误。",
-        "referenceId": "参考 ID",
-        "customerRequired": "挑一个客户",
-        "tooLong": "保持到255个字符或更少",
-        "invalidDate": "输入有效日期",
-        "invalidTime": "输入时间为 HH: MM",
-        "invalidLanguage": "选一个语言",
-        "invalidText": "检查此文本",
-        "blocksLabel": "块",
-        "checkBlocks": "检查块选择",
-        "requestLabel": "请求",
-        "reloadAndRetry": "重新加载页面并再次尝试",
-        "checkValue": "检查此值"
-      },
-      "eventDate": "拍摄日期",
-      "eventHelp": "抓取到合同，并传播到它所产生的任何项目/ 发票。 设定此选项后，客户端和邮件会显示正确的“ 婚礼 Doe / Müller ” 标签。",
-      "eventName": "项目名称",
-      "eventNamePlaceholder": "例如，婚礼Doe/Müller",
-      "eventType": "项目类型",
-      "eventTypeNone": "— 使用默认值。",
-      "eventTypeHint": "用于此报价单被接受时创建的项目。",
-      "bookingWorkflow": "预订工作流程(接受时)",
-      "bookingWorkflowNone": "无。",
-      "bookingWorkflowDisabled": "(残疾)",
-      "bookingWorkflowHint": "当客户接受时运行的流量。 离开“ 无” 以运行任何预定流量。 必须启用该流量来发射。",
-      "eventSection": "项目(可选)",
-      "eventTimeEnd": "结束",
-      "eventTimeStart": "开始",
-      "intro": "输入文本( 可选)",
-      "issueDate": "发行日期",
-      "language": "语言",
-      "locked": "已发合同无法编辑。 取消并创建新的合同供修改。",
-      "noBlocksInSection": "本节尚未设置块。",
-      "outro": "关闭文本( 可选)",
-      "popupBlocked": "允许弹出此站点预览 PDF。",
-      "preview": "预览 PDF",
-      "previewAfterSave": "先保存草稿，然后进行预览.",
-      "previewError": "预览失败",
-      "save": "保存",
-      "saveError": "保存失败",
-      "savedToast": "合同保存。",
-      "schriftformWarning": "签名类型为简单电子签名（SES），适用于 CH / DE / AT / FL 的一般摄影合同。对于依法要求书面形式的保证、消费者贷款、定期劳动合同等文件，需由信任服务提供商签发合格电子签名（QES）；PicPeak 不提供 QES。",
-      "searchCustomer": "通过邮件搜索...",
-      "systemBadge": "系统",
-      "titleEdit": "编辑合同",
-      "titleField": "合同名称",
-      "titleNew": "新合同",
-      "titlePlaceholder": "例如，婚约 Doe/Müller",
-      "validUntil": "由( 可选的) 签名"
-    },
-    "blocks": {
-      "back": "回到合同领域",
-      "title": "合同区块库",
-      "hideInactive": "隐藏不活动",
-      "disclaimerTitle": "仅举实例——请您的律师审查",
-      "disclaimerLink": "阅读 CRM 免责声明",
-      "disclaimerBody": "种子的\"系统块\"是由picpeak维护者而不是律师写的，它们只是作为起点——审查和调整你打算与自己的律师一起发送的每一个块，系统块的编辑被坚持;种子体文本替换为律师审查的版本到位.",
-      "sidebarHeading": "块",
-      "new": "新块",
-      "systemBadge": "系统",
-      "empty": "还没有街区。",
-      "selectPrompt": "选择左边的块或创建新的块开始编辑。",
-      "active": "启用",
-      "inactive": "停用",
-      "delete": "删除",
-      "deleteConfirm": "删除此块 ?",
-      "save": "保存",
-      "noTranslation": "尚未翻译",
-      "createdToast": "块创建。",
-      "createError": "创建失败",
-      "updatedToast": "块更新。",
-      "updateError": "更新失败",
-      "deletedToast": "块删除。",
-      "deleteError": "删除失败",
-      "dialog": {
-        "createTitle": "新块",
-        "editTitle": "编辑块",
-        "name": "名称",
-        "section": "节次",
-        "description": "描述( admin 提示)",
-        "body": "体质",
-        "placeholderHint": "你可以用这个 {{customer_name}}, {{event_name}}, {{event_date}}, {{net_days}}, {{skonto_percent}}, {{skonto_within_days}}, {{cancellation_30d_percent}}, {{currency}}, {{issuer_company_name}}, {{issuer_address}}, {{contract_number}}, {{source_quote_number}}  ——在合同订立时替换。"
-      },
-      "quoteLineItems": {
-        "calloutTitle": "自动生成的表格跟随正文",
-        "calloutBody": "从报价创建的合同将于正文后插入报价明细表（编号、说明、数量、单位、总计），子项缩进并显示 ↳。没有关联报价的合同仅显示正文。",
-        "previewExample": "输出示例 :"
-      }
-    }
-  },
   "messages": {
-    "remoteContentBlocked": "外部图像被屏蔽以保护您的隐私.",
+    "remoteContentBlocked": "为保护隐私，已屏蔽外部图片。",
     "loadRemoteContent": "加载外部图像",
-    "emailBody": "邮件机体",
+    "emailBody": "邮件正文",
     "title": "消息",
     "subtitle": "发送、自动和接收邮件——一个地方。",
     "sync": "同步",
     "newMessage": "新消息",
-    "searchPlaceholder": "搜索此文件夹...",
+    "searchPlaceholder": "搜索当前文件夹…",
     "account": {
       "all": "全部邮件",
       "customers": "客户",
-      "accounting": "账务",
       "automated": "自动化"
     },
     "folder": {
       "inbox": "收件箱",
-      "sent": "发送",
+      "sent": "已发送",
       "archived": "已存档",
-      "deleted": "删除"
+      "deleted": "已删除"
     },
     "unified": "统一账户",
     "systemGenerated": "系统生成",
     "acrossAccounts": "在所有账户",
-    "selectPrompt": "选择要读的信件",
-    "noMessages": "无消息",
-    "noSearchResults": "无匹配",
+    "selectPrompt": "请选择一封邮件查看",
+    "noMessages": "没有邮件",
+    "noSearchResults": "没有符合条件的邮件",
     "noSubject": "(无主题)",
-    "from": "从",
-    "to": "改为:",
-    "reply": "答复",
+    "from": "发件人",
+    "to": "收件人",
+    "reply": "回复",
     "replyAll": "全部回复",
-    "forward": "前进",
+    "forward": "转发",
     "archive": "归档",
     "delete": "删除",
     "deleteForever": "永久删除",
     "restore": "恢复",
-    "bookExpense": "记为支出的账簿",
-    "rebill": "向客户端重新开单",
-    "createQuote": "引语",
-    "createContract": "合同",
     "createGallery": "相册",
-    "createInvoice": "发票",
     "doc": {
-      "quote": "引语",
-      "contract": "合同",
-      "invoice": "发票",
       "gallery": "相册"
     },
     "soon": "可在以后阶段使用",
     "viewDocument": "查看文档",
-    "openInAccounting": "在会计信箱中打开",
-    "noInboundBody": "没有为这封邮件抓取到信件正文。",
-    "noBody": "此消息是在添加身体抓取之前发送的，因此没有预览可用.",
-    "loadError": "无法加载此信件。",
-    "attachments": "附件(s)",
+    "noInboundBody": "未能获取此邮件的正文。",
+    "noBody": "此邮件发送时尚未保存正文，因此无法预览。",
+    "loadError": "无法加载此邮件。",
+    "attachments": "附件",
     "notArchived": "未存档",
-    "sentAttachHint": "发送附件尚未存档——第二阶段.",
+    "sentAttachHint": "尚未支持将已发送邮件的附件存档。",
     "document": "文档",
     "previewUnavailable": "无法预览",
     "rasterNote": "服务器已交付预览——原始文件从未到达浏览器.",
     "close": "关闭",
-    "compose": "撰写信件",
+    "compose": "撰写邮件",
     "cancel": "取消",
     "send": "发送",
-    "subject": "议题",
+    "subject": "主题",
     "optional": "可选",
     "bodyHint": "消息内容可自由编辑，发送前可在任意位置添加备注。",
     "sendsFromHint": "从您所配置的出处发送。",
-    "sentToast": "发了消息。",
+    "sentToast": "邮件已发送。",
     "sendFailed": "发送消息失败。",
-    "onWrote": "开启",
+    "onWrote": "写道",
     "customer": "客户",
     "resolvingCustomer": "将发送者匹配到客户...",
-    "noCustomerMatch": "没有客户匹配这个发送者——在上方搜索一个或创建一个新的客户.",
+    "noCustomerMatch": "未找到与发件人匹配的客户。请在上方搜索，或创建客户记录。",
     "createNewDoc": "创建新 {{label}}",
-    "existingDocs": "或参考已有的",
-    "noExistingDocs": "还没有为这位客户提供现有文件。",
-    "galleryCreateOnly": "盖尔列斯是基于项目的——这打开了项目编辑器，在那里可以指定客户.",
+    "existingDocs": "或选择已有文档",
+    "noExistingDocs": "此客户暂无可选文档。",
+    "galleryCreateOnly": "相册与项目关联。此操作会打开项目编辑页，您可在其中指定客户。",
     "syncOk": "检查过的信箱—— {{count}}  新的，我刚说。",
     "syncDisabled": "邮件发送已关闭 —— 在设置下启用 —— 特性。",
     "syncUnconfigured": "在设置 ~ 邮件下先配置一个邮箱。",
@@ -7402,37 +5275,6 @@
     "actionFailed": "动作失败。",
     "syncOk_one": "检查过的信箱—— {{count}}  新的，我刚说。",
     "syncOk_other": "检查过的信箱—— {{count}}  新的，我刚说。"
-  },
-  "rebills": {
-    "createInvoice": "从重新开具的发票中创建发票",
-    "unknownSupplier": "供应商",
-    "costLabel": "费用 {{amount}}",
-    "proofError": "未附证明: {{err}}",
-    "status": {
-      "open": "打开",
-      "sent": "发送",
-      "paid": "已支付"
-    },
-    "mode": {
-      "passthrough": "传球",
-      "rebill": "重新开张"
-    },
-    "toast": {
-      "billed": "发票是从重新开出单子上创造出来的",
-      "billedCombined": "发票是从重新开出单子和时间里产生的",
-      "billFailed": "创建发票失败"
-    }
-  },
-  "crossAdd": {
-    "title": "添加其它打开的项目吗 ?",
-    "body": "这个顾客也... {{count}} {{label}} · 把它们加在同一张发票上?",
-    "addBoth": "添加两者",
-    "hours": "开放时间",
-    "rebills": "打开重新填单",
-    "hoursOnly": "仅仅几个小时",
-    "rebillsOnly": "只是重新开张",
-    "body_one": "这个顾客也... {{count}} {{label}} · 把它们加在同一张发票上?",
-    "body_other": "这个顾客也... {{count}} {{label}} · 把它们加在同一张发票上?"
   },
   "roleEditor": {
     "loading": "正在加载角色...",
@@ -7454,7 +5296,7 @@
     "description": "说明",
     "descriptionPlaceholder": "这个角色是为了什么",
     "permissions": "权限",
-    "selectedCount": "{{count}}  选中",
+    "selectedCount": "已选择 {{count}} 项",
     "selectAll": "全部选择",
     "clearAll": "全部清除",
     "nameError": "使用小写字母，数字和下划线(2-49个字符，从字母开始).",
@@ -7474,110 +5316,8 @@
     "permCount_other": "{{count}}  权限",
     "userCount_one": "{{count}}  用户",
     "userCount_other": "{{count}}  用户",
-    "selectedCount_one": "{{count}}  选中",
-    "selectedCount_other": "{{count}}  选中"
-  },
-  "paymentCheck": {
-    "missingToken": "缺少符号",
-    "alreadyUsed": "此链接已被使用( 动作 : {{action}}。如果需要记录另一笔付款，请以管理员身份开具发票。",
-    "expired": "此链接已过期。 打开管理器的发票，手动记录付款。",
-    "loadError": "无法加载发票。 链接可能无效。",
-    "partialInvalid": "输入正数。",
-    "partialTooHigh": "数额不得超过未清总额({{max}}).",
-    "submitError": "无法记录动作。",
-    "title": "确认付款",
-    "subtitle": "选择此发票的收件。 选择会被记录，相应的提醒会被自动排队。",
-    "field": {
-      "invoice": "发票",
-      "customer": "客户",
-      "issued": "已印发",
-      "due": "到期",
-      "total": "共计",
-      "outstanding": "未执行",
-      "paid": "已经支付",
-      "lateFee": "迟付费用"
-    },
-    "action": {
-      "paidFull": "全额缴付",
-      "paidFullHelp": "标出全部未清金额{{amount}}。没有发出任何提醒。",
-      "paidSkonto": "与 Skonto 支付",
-      "paidSkontoHelp": "客户在 Skonto 窗口中定居。 记录 {{amount}} ({{percent}} 折价折价折价),按实收金额计.",
-      "partial": "部分缴付",
-      "partialHelp": "记录收到的金额，然后排队将客户提醒记录其余内容。",
-      "partialAmount": "收到的数额",
-      "partialMax": "最大数 : {{max}}",
-      "unpaid": "尚未支付",
-      "unpaidHelp": "没有收到任何信息。 客户提醒将被排队{{fee}}.",
-      "unpaidWithFee": "(第二次催复时收费过迟)"
-    },
-    "submitting": "正在录制...",
-    "submit": "确认",
-    "result": {
-      "title": "记录的行动",
-      "paid": "发票 {{n}}  标记为已足额支付。",
-      "paidSkonto": "发票 {{n}}  标记为应用 Skonto 的已支付。",
-      "partial": "部分付款已记入发票 {{n}}。为其余的客户排队提醒。",
-      "unpaidMax": "记录为未支付。 已达到最大提醒级别。 处理此客户离线。",
-      "unpaid": "记录为未支付。 客户提醒队列已队列( 级别) {{lvl}}).",
-      "close": "你可以关闭此标签。"
-    }
-  },
-  "publicContract": {
-    "errorAccept": "请在接收框中勾选。",
-    "errorName": "请入名.",
-    "errorSignatureRequired": "本合同需要抽签签字。",
-    "notFoundTitle": "合同不详",
-    "notFoundBody": "此签名链接无效或过期。 请联系发送者。",
-    "fallbackTitle": "合同",
-    "signed": {
-      "title": "谢谢——合同签订.",
-      "by": "签名:",
-      "counterBy": "签字人:",
-      "auditTitle": "签署审计线索",
-      "auditBody": "用于记录。保存或截图这个 — SHA-256 散列让您稍后证明您下载的PDF正是我们发布的(重打您拥有的文件并进行比较)。",
-      "contractNumber": "合同",
-      "signedAt": "签署日期:",
-      "ipAddress": "签名时的 IP",
-      "counterSignedAt": "签字日期:2004年9月1日",
-      "signedSha": "已签署的PDF SHA-256",
-      "unsignedSha": "原始 PDF SHA-256"
-    },
-    "downloadSigned": "下载签名的 PDF",
-    "download": "下载 PDF",
-    "signTitle": "签了这份合同",
-    "nameField": "你的全名是\"你\"的全名，你叫\"你\"的全名",
-    "signaturePromptRequired": "绘制您的签名",
-    "signaturePrompt": "绘制您的签名( 可选)",
-    "clearSignature": "清除",
-    "acceptCheckbox": "我读过这份合同，同意接受合同条款的约束。",
-    "submit": "签署合同",
-    "uploadAlternative": "或上传湿签名的 PDF",
-    "uploadHint": "手签打印合同，扫描后上传PDF到这里.",
-    "uploadButton": "上传已签名的 PDF",
-    "downloadError": "下载失败",
-    "popupBlocked": "允许弹出此网站下载 PDF。",
-    "notSignable": "此合同不能再在网上签署，请联系发送方。"
-  },
-  "crmOverview": {
-    "title": "客户关系管理概览",
-    "loadError": "无法加载 CRM 数据。 请检查您是否有帐单。 查看或引用。 查看权限以及后端是否在最新构建中。",
-    "revenue": {
-      "month": "· 30天前的收入",
-      "quarter": "收入——过去90天",
-      "yearCalendar": "· 今年的收入",
-      "year": "收入 365天",
-      "toggleHint": "磁带切换窗口"
-    },
-    "outstanding": "未缴会费",
-    "outstandingSub_one": "{{count}}  未付发票",
-    "outstandingSub_other": "{{count}}  未付发票",
-    "quotes": {
-      "title": "报价单"
-    },
-    "viewAll": "全部查看",
-    "invoices": {
-      "title": "发票"
-    }
+    "selectedCount_one": "已选择 {{count}} 项",
+    "selectedCount_other": "已选择 {{count}} 项"
   },
   "users": {
     "roles": {
@@ -7585,140 +5325,6 @@
       "editor": "编辑器",
       "admin": "管理员",
       "super_admin": "超级管理员"
-    }
-  },
-  "newsletters": {
-    "title": "通讯",
-    "subtitle": "向客户账户发送一个活动。 选择退出的每个人都自动跳过，而每个发送都会带一个未订阅的链接。",
-    "new": "新运动",
-    "untitled": "无标题运动",
-    "untitledSubject": "通讯",
-    "empty": "还没有竞选。",
-    "allStatuses": "所有状态",
-    "filterByStatus": "按状态过滤",
-    "backToList": "所有运动",
-    "recipientsTitle": "收件人",
-    "notEditable": "此活动已排队，无法再编辑。",
-    "viewCampaign": "查看活动",
-    "status": {
-      "draft": "草稿",
-      "queued": "队列",
-      "sending": "发送中",
-      "sent": "发送",
-      "cancelled": "已取消",
-      "failed": "失败"
-    },
-    "recipientStatus": {
-      "queued": "队列",
-      "sent": "发送",
-      "failed": "失败",
-      "cancelled": "已取消",
-      "skipped_opt_out": "跳过( 退出)"
-    },
-    "col": {
-      "name": "名称",
-      "status": "状态",
-      "recipients": "收件人",
-      "sent": "发送",
-      "failed": "失败",
-      "created": "已创建"
-    },
-    "section": {
-      "content": "内容",
-      "recipients": "收件人发送",
-      "preview": "预览"
-    },
-    "field": {
-      "name": "运动名称( 内部)",
-      "subject": "议题",
-      "body": "体质",
-      "rate": "发送率(每分钟邮件)",
-      "testTo": "发送测试到"
-    },
-    "mode": {
-      "allActive": "所有活跃的客户",
-      "manual": "挑客户"
-    },
-    "showCss": "自定义 CSS (可选)",
-    "hideCss": "隐藏自定义 CSS",
-    "cssHelp": "许多邮件客户端丢弃 a <style>  块 —— 将重要的样式保留在内置属性上。远程图像和@import 被剥离。",
-    "rateHelp": "发送量被分散，这样您的邮件提供者不会限制您收费，所以突然爆发看起来不像垃圾邮件。 在提升前请检查您的提供者的小时封顶。",
-    "recipientCount": "{{count}}  接收者",
-    "skippedOptOut": "{{count}}  跳过( 退出)",
-    "saveToRefresh": "保存以刷新此数。",
-    "refreshPreview": "刷新预览",
-    "previewTitle": "通讯预览",
-    "sendTest": "测试",
-    "queueButton": "队列运动",
-    "queueBlocked": "发送前需要一个主题、一个机构和至少一个接收者。",
-    "queueTitle": "送这场竞选?",
-    "queueBody": "这个会发邮件 {{count}}  顾客在 {{rate}}  每分钟( 略数) {{minutes}}  分钟。 一旦消息开始外传，它就无法被撤消。",
-    "queueConfirm": "发送到 {{count}}  客户",
-    "cancel": "取消活动",
-    "cancelTitle": "取消这场竞选?",
-    "cancelBody": "尚未发出的邮件将被丢弃。 已经发出的邮件无法被召回。",
-    "cancelled": "{{count}}  正在处理的邮件已取消。",
-    "sendingAt": "发送时间 {{rate}}  每分钟有邮件。",
-    "deleteTitle": "删除竞选?",
-    "deleteBody": "\"{{name}} 将删除。无法撤销。",
-    "deleteAria": "删除 {{name}}",
-    "saved": "竞选成功。",
-    "queued": "竞选排队。",
-    "deleted": "竞选被删除。",
-    "testSent": "测试发送到的邮件 {{to}}.",
-    "createFailed": "无法创建竞选活动。",
-    "saveFailed": "无法保存竞选活动。",
-    "deleteFailed": "无法删除此活动。",
-    "previewFailed": "无法渲染预览。",
-    "testFailed": "无法发送测试邮件。",
-    "queueFailed": "无法排队运动。",
-    "cancelFailed": "无法取消竞选。",
-    "previewEmpty": "刷新预览以将邮件视为客户意愿。",
-    "largeSend": {
-      "title": "大型发送——先检查您的发送声誉",
-      "body": "邮寄 {{count}}  通常只发送交易邮件的域名上的人会立刻引起垃圾邮件过滤器的注意。 供应商可能会将整个批量的邮件推倒、丢弃或封堵，运行不良也会损坏您的相册邮件的发送。",
-      "advice": "确认SPF,DKIM和DMARC 是为您的发送域设置的，先给自己发送一个测试，并考虑在几个较小的发送中分出第一次活动.",
-      "duration": "时 {{rate}} 一分钟，这需要约 {{minutes}}  分钟。 发送队列是共享的，因此当它运行其他邮件时—— 相册邀请，密码重置程序—— 可以延迟到它后面。",
-      "body_one": "如果一个平时只发送事务邮件的域名突然向 {{count}} 人群发邮件，容易触发垃圾邮件过滤。邮件服务商可能会限流、归入垃圾邮件或拦截整批邮件，投递情况不佳也可能影响照片分享通知邮件。",
-      "body_other": "如果一个平时只发送事务邮件的域名突然向 {{count}} 人群发邮件，容易触发垃圾邮件过滤。邮件服务商可能会限流、归入垃圾邮件或拦截整批邮件，投递情况不佳也可能影响照片分享通知邮件。"
-    },
-    "queueBody_one": "将向 {{count}} 位客户发送邮件，发送速率为每分钟 {{rate}} 位（预计约 {{minutes}} 分钟）。开始发送后无法撤回。",
-    "queueBody_other": "将向 {{count}} 位客户发送邮件，发送速率为每分钟 {{rate}} 位（预计约 {{minutes}} 分钟）。开始发送后无法撤回。",
-    "queueConfirm_one": "向 {{count}} 位客户发送",
-    "queueConfirm_other": "向 {{count}} 位客户发送",
-    "recipientCount_one": "{{count}} 位收件人",
-    "recipientCount_other": "{{count}} 位收件人",
-    "skippedOptOut_one": "已跳过 {{count}} 位已退订的客户",
-    "skippedOptOut_other": "已跳过 {{count}} 位已退订的客户",
-    "cancelled_one": "已取消 {{count}} 封待发送邮件。",
-    "cancelled_other": "已取消 {{count}} 封待发送邮件。"
-  },
-  "documentVerification": {
-    "title": "确认是你",
-    "explanation": "为了保护你的个人资料 请确认是你 我们会把6位数的密码发到 {{email}}.",
-    "explanationNoHint": "为了保护你的个人数据 请确认是你 我们会把6位数的代码发到这个链接的地址",
-    "sendCode": "发送验证码",
-    "sending": "正在发送...",
-    "codeSent": "我们发送了密码 {{email}}.",
-    "codeSentNoHint": "我们通过邮件给你发了个密码",
-    "codeLabel": "6位数代码",
-    "confirm": "确认",
-    "confirming": "检查中...",
-    "resend": "发送新代码",
-    "resendIn": "发送新代码 {{seconds}}  s (韩语).",
-    "sessionExpired": "为了你的安全，请确认再次是你。",
-    "errors": {
-      "invalid": "密码不正确 {{count}}  尝试还剩。",
-      "invalidNoCount": "密码不正确",
-      "expired": "此代码已过期。 请发送新代码。",
-      "tooManyAttempts": "太多不正确的尝试。 请发送新代码。",
-      "rateLimited": "请等一下 {{seconds}}  在请求另一个代码之前秒。",
-      "noRecipientEmail": "文件没有发送代码的邮件地址。 请联系发送者。",
-      "emailUnavailable": "代码无法马上发送。 请稍候再试，或联系发送者。",
-      "codeFormat": "从邮件中输入6位数代码。",
-      "generic": "操作失败，请重试",
-      "invalid_one": "验证码不正确，还可尝试 {{count}} 次。",
-      "invalid_other": "验证码不正确，还可尝试 {{count}} 次。"
     }
   },
   "ui": {
@@ -7775,7 +5381,7 @@
     "beta": "（测试版）",
     "frontend": "前端版本：",
     "backend": "服务器版本：",
-    "preserveLineBreaks": "邮件中将保留换行。",
+    "preserveLineBreaks": "客户相册中会保留换行。",
     "preview": "预览：",
     "cssPlaceholder": "/* 在此填写自定义 CSS */",
     "systemFont": "系统默认字体",
@@ -7816,12 +5422,11 @@
     "dateGerman": "日.月.年（德国格式）",
     "recaptchaAdmin": "Google reCAPTCHA 管理页面",
     "umamiDashboard": "Umami 统计面板",
-    "party": "聚会",
     "currentFavicon": "当前网站图标",
     "logo": "品牌标志",
     "darkLogo": "深色主题标志",
     "currentWatermark": "当前水印",
-    "publicSitePreview": "公开首页预览",
+    "publicSitePreview": "公开网站预览",
     "autoSaving": "自动保存中…",
     "unsavedChanges": "有未保存的更改",
     "saved": "已保存",
@@ -7865,5 +5470,65 @@
     "sampleCeremony": "仪式",
     "sampleReception": "宴会",
     "samplePortraits": "人像"
+  },
+  "photographyWorkflow": {
+    "title": "选片与精修进度",
+    "stage": {
+      "SELECTING": "客户选片",
+      "EDITING": "精修中",
+      "DELIVERED": "已交付",
+      "ARCHIVED": "已归档"
+    },
+    "connected": "同步服务已连接",
+    "disconnected": "同步服务连接中断",
+    "loadError": "暂时无法读取精修进度。",
+    "help": "进入精修或交付阶段后，客户仍可追加选片。同一张照片再次导出精修成片即为返修。精修期间客户取消选择时，系统会保留正在处理的 RAW，等待摄影师确认。",
+    "metric": {
+      "selected": "已选照片",
+      "matched": "已匹配 RAW",
+      "unmatched": "未找到 RAW",
+      "delivered": "已精修",
+      "synced": "已同步",
+      "revisions": "返修版本",
+      "errors": "异常"
+    }
+  },
+  "nasFolder": {
+    "titleOptional": "关联 NAS 照片文件夹（可选）",
+    "selectHelp": "选择 Camera 中对应的照片文件夹；如果按项目整理文件，可选择 02_PROOF。PicPeak 直接引用 NAS 原文件，不会重复上传或修改原文件。",
+    "refresh": "刷新文件夹列表",
+    "selectedFolder": "已选 NAS 文件夹",
+    "noneSelected": "尚未选择文件夹",
+    "rootLabel": "NAS 照片文件夹",
+    "readError": "无法读取此文件夹，请检查挂载状态和读取权限。",
+    "reading": "正在读取文件夹…",
+    "availableCount": "当前文件夹可导入 {{count}} 张照片（不含子文件夹）",
+    "availableCount_one": "当前文件夹可导入 {{count}} 张照片（不含子文件夹）",
+    "availableCount_other": "当前文件夹可导入 {{count}} 张照片（不含子文件夹）",
+    "formatHelp": "支持 JPG、JPEG、PNG、WebP；导入时包含子文件夹。RAW 文件不会显示给客户。关联后请勿移动原文件或修改文件名。",
+    "autoImport": "自动导入此文件夹中新添加的照片",
+    "linkOrRescan": "关联 NAS 文件夹 / 重新扫描",
+    "linkedSuccess": "NAS 文件夹已关联：新增 {{imported}} 张，跳过 {{skipped}} 张。",
+    "linkAndImport": "关联文件夹并导入照片",
+    "importFailed": "无法关联或导入此文件夹。请检查文件夹和读取权限后重试。",
+    "linkFailedAfterCreate": "项目已创建，但 NAS 文件夹关联失败。请打开“照片”页完成关联。",
+    "autoImportSaveFailed": "照片已导入，但自动导入设置未能保存。请检查项目设置。"
+  },
+  "localUsers": {
+    "title": "管理员账号",
+    "existingTitle": "现有管理员",
+    "loadError": "无法读取账号，请确认当前账号具有超级管理员权限。",
+    "username": "用户名",
+    "role": "角色",
+    "status": "状态",
+    "enabled": "启用",
+    "disabled": "停用",
+    "createTitle": "创建本地账号",
+    "createHelp": "由超级管理员创建。请通过安全方式私下告知初始密码；新管理员首次登录时必须修改密码。",
+    "initialPassword": "初始密码",
+    "chooseRole": "请选择角色",
+    "createButton": "创建账号",
+    "creating": "正在创建…",
+    "createError": "创建账号失败，请检查填写内容和账号权限。"
   }
 }

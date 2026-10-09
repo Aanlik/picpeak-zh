@@ -22,7 +22,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'rating-removal-test-secret';
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const feedbackService = require('../../src/services/feedbackService');
 
@@ -59,11 +59,11 @@ async function photoAverage() {
 }
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
   const inserted = await db('events').insert({
     slug: EVENT_SLUG,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Rating Removal Test',
     event_date: '2026-06-22',
     host_email: 'host@example.com',

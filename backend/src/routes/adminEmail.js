@@ -23,6 +23,11 @@ const { queueTimestamp } = require('../utils/queueTimestamps');
 const PASSWORD_FOR_NEW_SERVER = (kind) => `Enter the ${kind} password again: the server, port, username or encryption changed, and the saved password is only used for the server it was saved for.`;
 const router = express.Router();
 
+const RETIRED_TEMPLATE_CATEGORIES = new Set(['billing', 'quotes', 'contracts', 'accounting', 'crm']);
+const RETIRED_TEMPLATE_KEY = /^(?:quote_|contract_|invoice_|storno_|incoming_invoice_|event_reminder_(?!default$))/i;
+const isRetiredTemplate = (template) => RETIRED_TEMPLATE_CATEGORIES.has(String(template?.category || '').toLowerCase())
+  || RETIRED_TEMPLATE_KEY.test(String(template?.template_key || ''));
+
 // Get email configuration
 router.get('/config', adminAuth, requirePermission('email.view'), async (req, res) => {
   try {
@@ -41,12 +46,16 @@ router.get('/config', adminAuth, requirePermission('email.view'), async (req, re
       });
     }
 
-    // Don't send the actual passwords — the row also carries the IMAP
-    // login (migration 128), which /incoming-config masks the same way.
+    // Don't send the actual SMTP password.
     res.json({
-      ...config,
+      smtp_host: config.smtp_host || '',
+      smtp_port: config.smtp_port || 587,
+      smtp_secure: !!config.smtp_secure,
+      smtp_user: config.smtp_user || '',
+      from_email: config.from_email || '',
+      from_name: config.from_name || '',
+      tls_reject_unauthorized: config.tls_reject_unauthorized !== false,
       smtp_pass: config.smtp_pass ? '********' : '',
-      imap_pass: config.imap_pass ? '********' : ''
     });
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to fetch email configuration');
@@ -142,172 +151,17 @@ router.post('/config', [
   }
 });
 
-// ── Incoming mail (IMAP) config — a second block alongside outgoing SMTP ──
-router.get('/incoming-config', adminAuth, requirePermission('email.view'), async (req, res) => {
-  try {
-    const c = await db('email_configs').first();
-    res.json({
-      imap_host: c?.imap_host || '',
-      imap_port: c?.imap_port || 993,
-      imap_secure: c?.imap_secure !== false,
-      imap_user: c?.imap_user || '',
-      imap_pass: c?.imap_pass ? '********' : '', // never send the real password
-      imap_folder: c?.imap_folder || 'INBOX',
-    });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to fetch incoming mail configuration');
-  }
-});
-
-router.post('/incoming-config', [
-  adminAuth,
-  requirePermission('email.edit'),
-  body('imap_host').notEmpty().withMessage('IMAP host is required'),
-  body('imap_port').isInt({ min: 1, max: 65535 }).withMessage('Invalid port number'),
-  // IMAP always needs a login (unlike SMTP relay) — the poller's
-  // getImapConfig() returns null without a username, so require it.
-  body('imap_user').notEmpty().withMessage('IMAP username is required'),
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: safeValidationErrors(errors) });
-    const { imap_host, imap_port, imap_secure, imap_user, imap_pass, imap_folder } = req.body;
-    const { isHostAllowed } = require('../utils/networkValidation');
-    if (!(await isHostAllowed(imap_host))) {
-      return res.status(400).json({ error: 'IMAP host cannot point to a private or internal network address' });
-    }
-    const existing = await db('email_configs').first();
-    // Same rule as SMTP: the poller would log in to the new server with it.
-    if (existing?.imap_pass && isMaskedOrBlank(imap_pass)
-      && !sameImapTarget(existing, { imap_host, imap_port, imap_user, imap_secure: imap_secure || false })) {
-      return res.status(400).json({ error: PASSWORD_FOR_NEW_SERVER('IMAP'), code: 'PASSWORD_REQUIRED' });
-    }
-    const data = {
-      imap_host,
-      imap_port: parseInt(imap_port),
-      imap_secure: imap_secure || false,
-      imap_user: imap_user || '',
-      imap_folder: imap_folder || 'INBOX',
-      updated_at: new Date(),
-    };
-    if (!isMaskedOrBlank(imap_pass)) data.imap_pass = imap_pass;
-    if (existing) await db('email_configs').where('id', existing.id).update(data);
-    else await db('email_configs').insert(data);
-    await logActivity('incoming_mail_config_updated', { imap_host }, null, { type: 'admin', id: req.admin.id, name: req.admin.username });
-    res.json({ message: 'Incoming mail configuration updated successfully' });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to update incoming mail configuration');
-  }
-});
-
-// Received-emails log (the IMAP poller's audit trail) — "Received emails" tab.
-// List IMAP folders so the UI can offer a dropdown (auto-detect) instead of a
-// free-text path. Accepts optional creds in the body to detect before saving;
-// falls back to the stored config (and stored password when masked).
-// Needs email.edit: it logs in with credentials, and the stored password is
-// only reused for the saved server (emailIntakeService).
-router.post('/incoming-config/folders', adminAuth, requirePermission('email.edit'), async (req, res) => {
-  try {
-    const { imap_host, imap_port, imap_secure, imap_user, imap_pass } = req.body || {};
-    if (imap_host) {
-      const { isHostAllowed } = require('../utils/networkValidation');
-      if (!(await isHostAllowed(imap_host))) {
-        return res.status(400).json({ error: 'IMAP host cannot point to a private or internal network address' });
-      }
-    }
-    const emailIntakeService = require('../services/emailIntakeService');
-    const folders = await emailIntakeService.listFolders(
-      imap_host ? { host: imap_host, port: imap_port, secure: imap_secure, user: imap_user, pass: imap_pass } : undefined
-    );
-    res.json({ folders });
-  } catch (error) {
-    if (error.code === 'PASSWORD_REQUIRED') return res.status(400).json({ error: error.message, code: error.code });
-    logger.error('IMAP folder detection error:', error);
-    res.status(422).json({ error: `Could not connect to the mailbox (${error.message}). Check host, port (IMAP is usually 993) and credentials.` });
-  }
-});
-
-// Test the incoming-mail connection: log in + open the configured folder and
-// report message/unread counts. Accepts current form creds (test before save).
-router.post('/incoming-config/test', adminAuth, requirePermission('email.edit'), async (req, res) => {
-  try {
-    const { imap_host, imap_port, imap_secure, imap_user, imap_pass, imap_folder } = req.body || {};
-    if (imap_host) {
-      const { isHostAllowed } = require('../utils/networkValidation');
-      if (!(await isHostAllowed(imap_host))) {
-        return res.status(400).json({ error: 'IMAP host cannot point to a private or internal network address' });
-      }
-    }
-    const emailIntakeService = require('../services/emailIntakeService');
-    const result = await emailIntakeService.testConnection(
-      imap_host ? { host: imap_host, port: imap_port, secure: imap_secure, user: imap_user, pass: imap_pass, folder: imap_folder } : undefined
-    );
-    if (result && result.ok === false) {
-      return res.status(400).json({ error: 'Incoming mail is not configured yet — enter host, username and password first.' });
-    }
-    if (result?.ok) capabilityEvidence(res, 'incoming_mail');
-    res.json(result);
-  } catch (error) {
-    if (error.code === 'PASSWORD_REQUIRED') return res.status(400).json({ error: error.message, code: error.code });
-    logger.error('IMAP connection test error:', error);
-    res.status(422).json({ error: `Could not connect to the mailbox (${error.message}). Check host, port (IMAP is usually 993), credentials and folder.` });
-  }
-});
-
-// End-to-end round-trip: send via SMTP to the IMAP mailbox, then confirm it
-// arrives. Uses saved config for both sides (real passwords needed).
-router.post('/incoming-config/roundtrip', adminAuth, requirePermission('email.send'), async (req, res) => {
-  try {
-    const emailIntakeService = require('../services/emailIntakeService');
-    const result = await emailIntakeService.roundTripTest();
-    if (result.ok) {
-      capabilityEvidence(res, 'incoming_mail', 'smtp');
-      return res.json(result);
-    }
-    const map = {
-      smtp_unconfigured: 'Configure and save the outgoing SMTP settings first.',
-      imap_unconfigured: 'Configure and save the incoming IMAP settings first.',
-      recipient_not_email: `The IMAP username (“${result.recipient || ''}”) isn’t an email address, so the round-trip test can’t auto-address itself. Use a mailbox whose username is its email, or send a test email there manually and use “Test connection”.`,
-      send_failed: `Could not send the test email${result.error ? `: ${result.error}` : ''}.`,
-      not_received: 'The email was sent but did not arrive within 30s — possible delivery delay/greylisting. Check the Received emails tab in a moment.',
-    };
-    return res.status(result.reason === 'not_received' ? 504 : 400)
-      .json({ error: map[result.reason] || 'Round-trip test failed.', sent: !!result.sent, recipient: result.recipient });
-  } catch (error) {
-    logger.error('Round-trip test error:', error);
-    res.status(422).json({ error: `Round-trip test failed (${error.message}) — check both SMTP and IMAP settings.` });
-  }
-});
-
-// Run the incoming-mail poller on demand (instead of waiting for the 60s loop)
-// so the admin can verify ingestion + see why nothing arrived. Respects the
-// incomingMail flag — a manual run still won't ingest when the feature is off.
-router.post('/incoming-config/poll', adminAuth, requirePermission('email.view'), async (req, res) => {
-  try {
-    const emailIntakeService = require('../services/emailIntakeService');
-    const result = await emailIntakeService.pollOnce();
-    if (result && !result.skipped) capabilityEvidence(res, 'incoming_mail');
-    res.json(result); // { processed } or { skipped: 'disabled'|'unconfigured'|'busy' }
-  } catch (error) {
-    logger.error('Manual poll error:', error);
-    res.status(422).json({ error: `Mailbox poll failed (${error.message}).` });
-  }
-});
-
 router.get('/received', adminAuth, requirePermission('email.view'), async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize, 10) || 25));
-    const account = req.query.account ? String(req.query.account) : null;
     // mailbox_state filter: no param → active (+ legacy NULL); else exact.
     const state = ['archived', 'deleted'].includes(String(req.query.state)) ? String(req.query.state) : 'active';
     // Optional full-table search (sender / subject) so results aren't truncated
     // to the first page before matching.
     const q = req.query.q ? String(req.query.q).trim().slice(0, 255) : '';
-    // 'accounting' matches legacy rows too (account_key was NULL before mig 154).
     const applyAccount = (qb) => {
-      if (account === 'accounting') qb.where((b) => b.where('account_key', 'accounting').orWhereNull('account_key'));
-      else if (account) qb.where('account_key', account);
+      qb.where('account_key', 'customers');
       if (state === 'active') qb.where((b) => b.where('mailbox_state', 'active').orWhereNull('mailbox_state'));
       else qb.where('mailbox_state', state);
       if (q) qb.where((b) => b.where('from_address', 'like', `%${q}%`).orWhere('subject', 'like', `%${q}%`));
@@ -318,7 +172,7 @@ router.get('/received', adminAuth, requirePermission('email.view'), async (req, 
     // Bodies are excluded from the list (can be large); fetched per-message.
     const items = await applyAccount(db('received_emails'))
       .select('id', 'message_id', 'account_key', 'from_address', 'to_address', 'subject',
-        'received_at', 'attachment_count', 'status', 'inbound_document_id', 'error')
+        'received_at', 'attachment_count', 'status', 'error')
       .orderBy('received_at', 'desc').limit(pageSize).offset((page - 1) * pageSize);
     res.json({ items, pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) } });
   } catch (error) {
@@ -376,11 +230,10 @@ router.delete('/item/:kind/:id', adminAuth, messagingGate, requirePermission('em
   }
 });
 
-// Additional inbound mailboxes (beyond the primary accounting IMAP in
-// email_configs) — e.g. the customer hello@ box. Passwords are masked out.
+// Customer mailbox settings. Passwords are masked out.
 router.get('/accounts', adminAuth, messagingGate, requirePermission('email.view'), async (req, res) => {
   try {
-    const rows = await db('mail_accounts').orderBy('id');
+    const rows = await db('mail_accounts').where({ account_key: 'customers' }).orderBy('id');
     res.json({ items: rows.map((a) => ({
       ...a,
       imap_pass: a.imap_pass ? '********' : '',
@@ -391,10 +244,7 @@ router.get('/accounts', adminAuth, messagingGate, requirePermission('email.view'
   }
 });
 
-// Resolved sender/mailbox addresses for the Messages UI — so the sidebar shows
-// the REAL configured addresses instead of hardcoded placeholders. Accounting =
-// the primary IMAP login (rechnungen@); customers = the hello@ mailbox; the
-// automated stream sends from the global SMTP from-address.
+// Resolved sender/mailbox addresses for the Messages UI.
 router.get('/identities', adminAuth, messagingGate, requirePermission('email.view'), async (req, res) => {
   try {
     const cfg = await db('email_configs').first();
@@ -409,7 +259,6 @@ router.get('/identities', adminAuth, messagingGate, requirePermission('email.vie
     const identity = await resolveFromIdentity();
     res.json({
       automated: cfg?.from_email || identity?.fromEmail || null,
-      accounting: cfg?.imap_user || null,
       customers,
     });
   } catch (error) {
@@ -422,9 +271,8 @@ router.get('/identities', adminAuth, messagingGate, requirePermission('email.vie
 router.post('/accounts', adminAuth, messagingGate, requirePermission('email.edit'), async (req, res) => {
   try {
     const b = req.body || {};
-    if (!b.account_key) return res.status(400).json({ error: 'account_key is required' });
-    // SSRF guard — mirror /config + /incoming-config: neither the IMAP nor the
-    // SMTP host may point at a private/internal address.
+    if (b.account_key !== 'customers') return res.status(400).json({ error: 'Only the customer mailbox is supported' });
+    // SSRF guard: neither mail host may point at a private/internal address.
     const { isHostAllowed } = require('../utils/networkValidation');
     if (b.imap_host && !(await isHostAllowed(b.imap_host))) {
       return res.status(400).json({ error: 'IMAP host cannot point to a private or internal network address' });
@@ -504,7 +352,7 @@ router.post('/accounts/test', adminAuth, messagingGate, requirePermission('email
       host: b.imap_host, port: b.imap_port, secure: b.imap_secure,
       user: b.imap_user, pass, folder: b.imap_folder || 'INBOX',
     });
-    if (result?.ok) capabilityEvidence(res, 'incoming_mail');
+    if (result?.ok) capabilityEvidence(res, 'messaging');
     res.json(result);
   } catch (error) {
     res.status(422).json({ ok: false, error: `Mailbox test failed (${error.message}).` });
@@ -547,7 +395,7 @@ router.post('/test', adminAuth, requirePermission('email.send'), async (req, res
           // The HTML goes through wrapEmailHtml and gains the signature; the
           // text alternative has to be given it explicitly (#1264 review).
           text: 'Test Email Successful! Delivered through the configured email webhook.'
-            + await buildSignatureTextFor('en'),
+            + await buildSignatureTextFor(),
         });
       } catch (webhookError) {
         // Handled here, not by the outer catch: that one maps ECONNREFUSED and
@@ -634,7 +482,7 @@ router.post('/test', adminAuth, requirePermission('email.send'), async (req, res
       subject,
       html: wrappedHtml,
       text: 'Test Email Successful! Your email configuration is working correctly.'
-        + await buildSignatureTextFor('en')
+        + await buildSignatureTextFor()
     });
 
     capabilityEvidence(res, 'smtp');
@@ -1003,6 +851,7 @@ router.get('/templates', adminAuth, requirePermission('email.view'), async (req,
 
     const formattedTemplates = [];
     for (const template of templates) {
+      if (isRetiredTemplate(template)) continue;
       const translations = await getTemplateTranslations(template.id, template);
       formattedTemplates.push({
         id: template.id,
@@ -1033,7 +882,7 @@ router.get('/templates/:key', adminAuth, requirePermission('email.view'), async 
       .where('template_key', req.params.key)
       .first();
 
-    if (!template) {
+    if (!template || isRetiredTemplate(template)) {
       return res.status(404).json({ error: 'Template not found' });
     }
 
@@ -1065,7 +914,7 @@ router.put('/templates/:key', [
       .where('template_key', req.params.key)
       .first();
 
-    if (!template) {
+    if (!template || isRetiredTemplate(template)) {
       return res.status(404).json({ error: 'Template not found' });
     }
 
@@ -1147,8 +996,8 @@ router.put('/templates/:key', [
 });
 
 // Create a new email template. Used by the ReminderTemplatesPage to
-// mint a per-event-type reminder (template_key like
-// `event_reminder_<slug_prefix>`). Idempotent at the API level — if
+// create a project reminder (template_key like `event_reminder_default`).
+// Idempotent at the API level — if
 // the key already exists we return 409 so the caller knows to PUT
 // instead.
 router.post('/templates', [
@@ -1164,6 +1013,9 @@ router.post('/templates', [
       feature_flag: featureFlag,
       variables,
     } = req.body;
+    if (templateKey !== 'event_reminder_default') {
+      return res.status(400).json({ error: 'Only the shared project reminder template can be created.' });
+    }
     if (!templateKey || typeof templateKey !== 'string' || !/^[a-z0-9_]+$/.test(templateKey)) {
       return res.status(400).json({ error: 'template_key must be a snake_case identifier' });
     }
@@ -1242,7 +1094,7 @@ router.post('/templates/:key/preview', adminAuth, requirePermission('email.view'
       .where('template_key', req.params.key)
       .first();
 
-    if (!template) {
+    if (!template || isRetiredTemplate(template)) {
       return res.status(404).json({ error: 'Template not found' });
     }
 
@@ -1317,7 +1169,7 @@ router.post('/templates/:key/preview', adminAuth, requirePermission('email.view'
       // Concatenating the signature onto '' produced a non-empty string, so
       // the Text tab rendered a footer with no message above it.
       body_text: (textContent || htmlToText(wrappedHtml))
-        + await buildSignatureTextFor(language),
+        + await buildSignatureTextFor(),
       language,
       // Migration 198 — the wrapper above already rendered the global
       // signature into body_html when it's on. This flag just lets the

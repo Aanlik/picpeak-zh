@@ -26,7 +26,6 @@ import { useMutationWithToast } from '../../hooks';
 import { Button, Card, Loading } from '../../components/common';
 import { UpdateNotification } from '../../components/admin/UpdateNotification';
 import { WhatsNewBanner } from '../../components/admin/WhatsNewBanner';
-import { CrmOverviewSection } from '../../components/admin/CrmOverviewSection';
 import { useQuery } from '@tanstack/react-query';
 import { eventsService } from '../../services/events.service';
 import { adminService, ActivityType, type Activity } from '../../services/admin.service';
@@ -46,8 +45,7 @@ interface StatCard {
  *
  * The activity's own metadata is spread in first: the keys interpolate
  * whatever the backend recorded for that type ({{name}} for
- * webhook_created, {{quoteNumber}} for quote_created, {{contractNumber}},
- * {{username}}, {{word}}, …). Before that, only a fixed five-value
+ * webhook_created, {{username}}, {{word}}, …). Before that, only a fixed five-value
  * allowlist was passed, so every other key rendered its raw "{{…}}"
  * placeholder in the activity feed (QA S7). The explicit entries below
  * stay as derived/defaulted overrides — they resolve from columns that
@@ -126,8 +124,7 @@ export const AdminDashboard: React.FC = () => {
     refreshExpiring,
   );
 
-  // Pending workflow approvals — only when the workflow engine is live. These
-  // are the human-in-the-loop gates (e.g. "review invoice before sending").
+  // Pending workflow approvals — only when the workflow engine is live.
   const { flags } = useFeatureFlags();
   const { data: pendingApprovals } = useQuery({
     queryKey: ['workflow-approvals'],
@@ -141,12 +138,11 @@ export const AdminDashboard: React.FC = () => {
     errorMessage: t('common.error', 'Something went wrong') as string,
   });
 
-  // Admin detail route for an approval's run entity, so clicking opens the
-  // document under review. Mirrors WorkflowApprovalsPage (`invoice` → /bills).
+  // Admin detail route for an approval's project or customer entity.
   const approvalEntityHref = (a: { entity_type?: string | null; entity_id?: number | null }): string | null => {
     if (!a.entity_type || a.entity_id == null) return null;
     const base: Record<string, string> = {
-      quote: 'quotes', invoice: 'bills', event: 'events', contract: 'contracts', customer: 'customers',
+      event: 'events', customer: 'customers',
     };
     const seg = base[a.entity_type];
     return seg ? `/admin/${seg}/${a.entity_id}` : null;
@@ -472,14 +468,6 @@ export const AdminDashboard: React.FC = () => {
 
         </Card>
       </div>
-
-      {/* CRM overview — quote / invoice pipeline + revenue +
-          outstanding. The section internally gates on the `clients`
-          feature flag (renders nothing when off), and further hides
-          the quotes / invoices subsections individually when their
-          sub-flag is off. Lives at the bottom so admins who don't
-          use the CRM see no visual difference. */}
-      <CrmOverviewSection />
 
     </div>
   );

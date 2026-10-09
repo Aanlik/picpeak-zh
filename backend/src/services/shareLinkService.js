@@ -191,7 +191,6 @@ const resolveShareIdentifier = async (identifier, { includeDrafts = false } = {}
       'share_token',
       'require_password',
       'event_name',
-      'event_type',
       'event_date',
       'expires_at',
       'is_active',

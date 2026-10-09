@@ -28,9 +28,6 @@ vi.mock('../../services/productUsage.service', () => ({ productUsageService: {
   status: vi.fn(), enable: vi.fn(), promptSeen: vi.fn().mockResolvedValue({}),
 } }));
 vi.mock('../../components/admin/PicpeakBackupCard', () => ({ PicpeakRestoreCard: () => null }));
-vi.mock('../../components/admin/SetupEventTypesStep', () => ({
-  SetupEventTypesStep: ({ onDone }: { onDone: () => void }) => <button onClick={onDone}>Finish event types</button>,
-}));
 vi.mock('../../components/admin/SetupConfigStep', () => ({
   SetupConfigStep: ({ onDone }: { onDone: () => void }) => <button onClick={onDone}>Finish configuration</button>,
 }));
@@ -58,7 +55,6 @@ async function reachInvitation() {
   fireEvent.change(screen.getByLabelText('setup.confirmLabel'), { target: { value: 'Review-test-password1' } });
   fireEvent.click(screen.getByRole('button', { name: 'setup.submit' }));
   fireEvent.click(await screen.findByRole('button', { name: 'setup.usageSkip' }));
-  fireEvent.click(await screen.findByText('Finish event types'));
   fireEvent.click(await screen.findByText('Finish configuration'));
   await waitFor(() => expect(usage.status).toHaveBeenCalled());
   return screen.getByRole('button', { name: 'productUsage.review' });

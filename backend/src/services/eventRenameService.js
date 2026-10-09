@@ -64,19 +64,18 @@ class EventRenameService {
 
   /**
    * Generate a slug from event details
-   * @param {string} eventType - Type of event (wedding, birthday, etc.)
    * @param {string} eventName - Name of the event
    * @param {string|Date} eventDate - Date of the event
    * @returns {string} Generated slug
    */
-  generateSlug(eventType, eventName, eventDate) {
+  generateSlug(eventName, eventDate) {
     const processedEventName = eventName
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
     const formattedDate = this.formatDate(eventDate);
-    return `${eventType}-${processedEventName}-${formattedDate}`;
+    return `${processedEventName}-${formattedDate}`;
   }
 
   /**
@@ -107,7 +106,7 @@ class EventRenameService {
       }
 
       // Generate new slug
-      const newSlug = this.generateSlug(event.event_type, newEventName.trim(), event.event_date);
+      const newSlug = this.generateSlug(newEventName.trim(), event.event_date);
 
       // Check if slug already exists (for different event)
       const existingEvent = await db('events')

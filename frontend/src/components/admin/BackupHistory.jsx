@@ -82,9 +82,9 @@ export const BackupHistory = () => {
       const response = await api.delete(`/admin/backup/runs/${backupId}`);
       return response.data;
     },
-    successMessage: 'Backup deleted successfully',
+    successMessage: t('backup.history.deleteSuccess'),
     invalidateKeys: [['backup-history']],
-    errorMessage: 'Failed to delete backup'
+    errorMessage: t('backup.history.deleteError')
   });
 
   const toggleRowExpansion = (id) => {
@@ -98,7 +98,7 @@ export const BackupHistory = () => {
   };
 
   const handleDelete = (backup) => {
-    if (window.confirm(`Are you sure you want to delete this backup from ${format(new Date(backup.created_at))}?`)) {
+    if (window.confirm(t('backup.history.deleteConfirm', { date: format(new Date(backup.created_at)) }))) {
       deleteMutation.mutate(backup.id);
     }
   };
@@ -134,11 +134,11 @@ export const BackupHistory = () => {
               onChange={(e) => setFilterStatus(e.target.value)}
               className="px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
             >
-              <option value="all">All Status</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
-              <option value="running">Running</option>
-              <option value="partial">Partial</option>
+              <option value="all">{t('backup.history.filters.all')}</option>
+              <option value="completed">{t('backup.history.filters.completed')}</option>
+              <option value="failed">{t('backup.history.filters.failed')}</option>
+              <option value="running">{t('backup.history.filters.running')}</option>
+              <option value="partial">{t('backup.history.filters.partial')}</option>
             </select>
             
             <Button
@@ -183,8 +183,8 @@ export const BackupHistory = () => {
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-neutral-500 dark:text-neutral-400">
                     <FileArchive className="h-12 w-12 mx-auto mb-3 text-neutral-300 dark:text-neutral-600" />
-                    <p className="text-lg font-medium text-neutral-900 dark:text-neutral-100">No backups found</p>
-                    <p className="text-sm mt-1">Backups will appear here once created</p>
+                    <p className="text-lg font-medium text-neutral-900 dark:text-neutral-100">{t('backup.history.empty.title')}</p>
+                    <p className="text-sm mt-1">{t('backup.history.empty.description')}</p>
                   </td>
                 </tr>
               ) : (
@@ -201,7 +201,7 @@ export const BackupHistory = () => {
                           <div className="flex items-center">
                             <StatusIcon className={`h-5 w-5 ${statusColor}`} />
                             <span className="ml-2 text-sm font-medium text-neutral-900 dark:text-neutral-100 capitalize">
-                              {backup.status}
+                              {t(`backup.history.status.${backup.status}`, { defaultValue: backup.status })}
                             </span>
                           </div>
                         </td>
@@ -217,7 +217,7 @@ export const BackupHistory = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 capitalize">
-                            {backup.backup_type || 'Manual'}
+                            {t(`backup.history.types.${backup.backup_type || 'manual'}`, { defaultValue: backup.backup_type || t('backup.history.types.manual') })}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

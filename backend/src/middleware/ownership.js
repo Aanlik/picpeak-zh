@@ -133,7 +133,7 @@ async function filterOwnedEventIds(admin, eventIds) {
  *      set to a live admin, only that admin (and super_admin) may act on it.
  *      Earlier this union'd in "any linked event I can see", which meant one
  *      legacy ownerless event inside another admin's project exposed the whole
- *      project — its other events, invoices and emails — through the overview.
+ *      project and its related galleries through the overview.
  *   2. Only when there is NO usable stored owner (NULL, or pointing at a
  *      deleted admin) do we derive from linked events, and then EVERY linked
  *      event must be accessible: a project the old unrestricted routes filled

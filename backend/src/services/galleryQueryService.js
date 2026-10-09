@@ -397,7 +397,6 @@ async function getGalleryPhotos({ event, query = {}, identity, accessLevel, admi
     event: {
       id: event.id,
       event_name: event.event_name,
-      event_type: event.event_type,
       event_date: event.event_date,
       welcome_message: event.welcome_message,
       color_theme: event.color_theme,

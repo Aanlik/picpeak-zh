@@ -4,7 +4,7 @@
  * Invitation and password-reset emails link to a token that sets the
  * account's password; the Messages reading pane (email.view) served those
  * links verbatim, so an admin could accept a pending super-admin invite.
- * Workflow approval and payment-check links act without a login too. And
+ * Workflow approval links act without a login too. And
  * webhook delivery payloads, readable with settings.view, carry the event's
  * gallery share link.
  */
@@ -18,7 +18,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'recoverylinks-test-secret';
 process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-recoverylinks-storage-'));
 
 const request = require('supertest');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
 const { invalidateFeatureFlagCache } = require('../../src/middleware/requireFeatureFlag');
 const { clearPermissionCache } = require('../../src/middleware/permissions');
 const { MASK, redactBearerLinks, hasMaskedRecoveryLink } = require('../../src/utils/emailSecretRedaction');
@@ -27,7 +27,6 @@ const INVITE = 'b1'.repeat(32);
 const CUSTOMER_INVITE = 'c2'.repeat(32);
 const RESET = 'd3'.repeat(32);
 const APPROVAL = 'e4'.repeat(32);
-const PAYMENT = 'f5'.repeat(32);
 
 function stubWebhookTransport() {
   const transport = require('../../src/services/emailWebhookTransport');
@@ -46,17 +45,16 @@ function stubWebhookTransport() {
 }
 
 describe('redactBearerLinks', () => {
-  it('masks invitation, reset, approval and payment-check tokens and keeps the rest', () => {
+  it('masks invitation, reset, and approval tokens and keeps the rest', () => {
     const body = `<a href="https://photos.example.com/invite/${INVITE}">join</a>`
       + ` https://photos.example.com/customer/invite/${CUSTOMER_INVITE}`
       + ` https://photos.example.com/customer/reset-password/${RESET}`
       + ` https://photos.example.com/api/public/workflow-approvals/${APPROVAL}/confirm`
-      + ` https://photos.example.com/payment-check/${PAYMENT}?action=paid_full`;
+;
     const out = redactBearerLinks(body);
-    for (const secret of [INVITE, CUSTOMER_INVITE, RESET, APPROVAL, PAYMENT]) expect(out).not.toContain(secret);
+    for (const secret of [INVITE, CUSTOMER_INVITE, RESET, APPROVAL]) expect(out).not.toContain(secret);
     expect(out).toContain(`/invite/${MASK}`);
     expect(out).toContain(`/workflow-approvals/${MASK}/confirm`);
-    expect(out).toContain(`/payment-check/${MASK}?action=paid_full`);
     expect(out).toContain('join');
     expect(redactBearerLinks(`/gallery/${'a'.repeat(64)}`)).toBe(`/gallery/${'a'.repeat(64)}`);
   });
@@ -85,7 +83,7 @@ describe('admin archive of credential links', () => {
   }).returning('id').then((r) => r[0]?.id ?? r[0]);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId } = await seedMinimal(db));
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);
@@ -98,7 +96,7 @@ describe('admin archive of credential links', () => {
 
   afterAll(async () => { if (cleanup) await cleanup(); });
 
-  it('the Messages reading pane masks invitation, reset, approval and payment-check links', async () => {
+  it('the Messages reading pane masks invitation, reset, and approval links', async () => {
     const app = buildRouteApp('/api/admin/email', require('../../src/routes/adminEmail'));
     const id = await queueRow({
       email_type: 'admin_invitation',
@@ -106,29 +104,15 @@ describe('admin archive of credential links', () => {
       rendered_html: `<p><a href="https://photos.example.com/invite/${INVITE}">Accept</a></p>`
         + `<p>https://photos.example.com/customer/reset-password/${RESET}</p>`
         + `<p>https://photos.example.com/api/public/workflow-approvals/${APPROVAL}/deny</p>`
-        + `<p>https://photos.example.com/payment-check/${PAYMENT}?action=unpaid</p>`,
+
     });
 
     const res = await request(app).get(`/api/admin/email/queue/${id}`).set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     const body = JSON.stringify(res.body);
-    for (const secret of [INVITE, RESET, APPROVAL, PAYMENT]) expect(body).not.toContain(secret);
+    for (const secret of [INVITE, RESET, APPROVAL]) expect(body).not.toContain(secret);
     expect(res.body.renderedHtml).toContain(`/invite/${MASK}`);
-  });
-
-  it('the project email preview masks them too', async () => {
-    const { getEmailPreview } = require('../../src/services/projectService');
-    const id = await queueRow({
-      email_type: 'customer_invitation',
-      email_data: JSON.stringify({ invite_link: `https://photos.example.com/customer/invite/${CUSTOMER_INVITE}` }),
-      rendered_html: `<a href="https://photos.example.com/customer/invite/${CUSTOMER_INVITE}">Join</a>`,
-    });
-
-    const preview = await getEmailPreview(id);
-
-    expect(preview.html).not.toContain(CUSTOMER_INVITE);
-    expect(preview.html).toContain(`/customer/invite/${MASK}`);
   });
 
   it('scrubs the invitation link once sent, and never sends that row again', async () => {
@@ -153,13 +137,7 @@ describe('admin archive of credential links', () => {
     if (row.rendered_html) expect(row.rendered_html).not.toContain(RESET);
     expect(hasMaskedRecoveryLink(JSON.parse(row.email_data))).toBe(true);
 
-    // resend, retry and send-now refuse instead of mailing a dead link
-    const projectService = require('../../src/services/projectService');
-    for (const action of ['resendEmail', 'retryEmail', 'sendEmailNow']) {
-      await expect(projectService[action](id)).rejects.toMatchObject({ statusCode: 409 });
-    }
-
-    // any other requeue path (e.g. a raw status reset) is refused by the processor
+    // Any requeue path (e.g. a raw status reset) is refused by the processor.
     await db('email_queue').where({ id }).update({ status: 'pending', retry_count: 0 });
     const again = stubWebhookTransport();
     try {

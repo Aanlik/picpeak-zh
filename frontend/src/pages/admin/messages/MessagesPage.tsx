@@ -2,26 +2,21 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   Inbox, Send, Reply, ReplyAll, Forward, Archive, Trash2, Paperclip,
-  FileText, Quote, FileSignature, Image as ImageIcon, ReceiptText,
-  Link2, X, ChevronLeft, ChevronRight, Mail, RefreshCw, PenSquare, Search, RotateCcw, type LucideIcon,
+  FileText, Mail, PenSquare, Search, RotateCcw, type LucideIcon,
 } from 'lucide-react';
 import { emailService, type ReceivedEmail, type MailIdentities } from '../../../services/email.service';
-import { accountingService } from '../../../services/accounting.service';
 import { Loading } from '../../../components/common';
 import { MessageComposer, type ComposerInit } from './MessageComposer';
-import { DocumentActionModal, type DocType } from './DocumentActionModal';
 import { EmailBodyFrame } from './EmailBodyFrame';
-import { useFeatureFlags } from '../../../contexts/FeatureFlagsContext';
 import { usePermission } from '../../../hooks/usePermission';
 
 /**
  * Admin "Messages" — read-only viewer over the mail picpeak already
  * has: the Automated stream (email_queue, incl. rendered bodies from migration
- * 119) and the Accounting inbox (received_emails / supplier invoices). The
+ * 119) and the customer mailbox. The
  * Customers (hello@) mailbox and reply/compose land in later phases; those
  * folders render an explanatory empty state so the full IA is visible now.
  */
@@ -36,17 +31,8 @@ type Selection =
   | null;
 
 const TYPE_LABELS: Record<string, string> = {
-  invoice_sent: 'Invoice sent',
-  invoice_reminder_first: 'Payment reminder',
-  invoice_reminder_second: 'Payment reminder',
-  invoice_reminder_final: 'Final reminder',
-  invoice_payment_check: 'Payment check',
-  invoice_collections_handoff: 'Collections handoff',
-  invoice_paid_admin_notification: 'Payment received',
   expiration_warning: 'Gallery expiring',
   gallery_expired: 'Gallery expired',
-  quote_sent: 'Quote sent',
-  contract_sent: 'Contract sent',
 };
 const friendlyType = (t: string) =>
   TYPE_LABELS[t] || t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -83,16 +69,12 @@ const STATUS_STYLES: Record<string, string> = {
 
 export const MessagesPage: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   // Archive / Restore / Delete write the shared folders, which the backend
   // guards with email.edit; email.view alone reads the page.
   const canEditMailbox = usePermission('email.edit');
   const [activeFolder, setActiveFolder] = useState('auto-sent');
   const [selection, setSelection] = useState<Selection>(null);
-  const [pdfDocId, setPdfDocId] = useState<number | null>(null);
   const [composer, setComposer] = useState<{ init: ComposerInit; title?: string; accountKey?: string } | null>(null);
-  const [docAction, setDocAction] = useState<{ docType: DocType; senderEmail: string } | null>(null);
-  const { flags } = useFeatureFlags();
   const [search, setSearch] = useState('');
   // Debounced copy drives the server-side search (so results aren't truncated to
   // the first page); the raw `search` still filters the loaded rows instantly.
@@ -103,19 +85,6 @@ export const MessagesPage: React.FC = () => {
   }, [search]);
   const sq = debouncedSearch || undefined;
 
-  // "Sync" = poll the inbound mailboxes now instead of waiting for the 60s loop.
-  const sync = useMutation({
-    mutationFn: () => emailService.pollIncoming(),
-    onSuccess: (r) => {
-      if (r.skipped === 'disabled') toast.info(t('messages.syncDisabled', 'Incoming mail is off — enable it under Settings → Features.'));
-      else if (r.skipped === 'unconfigured') toast.info(t('messages.syncUnconfigured', 'Configure a mailbox under Settings → Email first.'));
-      else if (r.skipped === 'busy') toast.info(t('messages.syncBusy', 'A sync is already running.'));
-      else toast.success(t('messages.syncOk', 'Checked mailboxes — {{count}} new.', { count: r.processed || 0 }));
-      acctQuery.refetch(); custQuery.refetch(); queueQuery.refetch();
-    },
-    onError: (e: any) => toast.error(e?.response?.data?.error || e.message || t('messages.syncFailed', 'Sync failed.')),
-  });
-
   const openNewMessage = () => setComposer({
     init: { to: '', subject: '', html: '' },
     title: t('messages.newMessage', 'New message'),
@@ -125,11 +94,6 @@ export const MessagesPage: React.FC = () => {
   const queueQuery = useQuery({
     queryKey: ['messages', 'queue', sq],
     queryFn: () => emailService.listQueue({ pageSize: 100, q: sq }),
-    refetchInterval: 60000,
-  });
-  const acctQuery = useQuery({
-    queryKey: ['messages', 'received', 'accounting', sq],
-    queryFn: () => emailService.listReceived({ account: 'accounting', pageSize: 100, q: sq }),
     refetchInterval: 60000,
   });
   const custQuery = useQuery({
@@ -160,7 +124,7 @@ export const MessagesPage: React.FC = () => {
   });
 
   const refetchAll = () => {
-    queueQuery.refetch(); acctQuery.refetch(); custQuery.refetch();
+    queueQuery.refetch(); custQuery.refetch();
     stateQueueQuery.refetch(); stateRecvQuery.refetch();
   };
   const stateMut = useMutation({
@@ -187,20 +151,16 @@ export const MessagesPage: React.FC = () => {
   };
 
   const queueTotal = queueQuery.data?.pagination.total;
-  const acctTotal = acctQuery.data?.pagination.total;
   const custTotal = custQuery.data?.pagination.total;
 
   const accounts: Account[] = useMemo(() => [
     { id: 'all', name: t('messages.account.all', 'All mail'), color: '#64748b', folders: [
-      { id: 'all-in', name: t('messages.folder.inbox', 'Inbox'), icon: Inbox, src: 'received' },
+      { id: 'all-in', name: t('messages.folder.inbox', 'Inbox'), icon: Inbox, src: 'received', account: 'customers' },
       { id: 'all-sent', name: t('messages.folder.sent', 'Sent'), icon: Send, src: 'queue' },
     ] },
     { id: 'cust', name: t('messages.account.customers', 'Customers'), addr: identities?.customers || undefined, color: '#2563c9', folders: [
       { id: 'cust-in', name: t('messages.folder.inbox', 'Inbox'), icon: Inbox, src: 'received', account: 'customers' },
       { id: 'cust-sent', name: t('messages.folder.sent', 'Sent'), icon: Send, src: 'queue', origin: 'manual' },
-    ] },
-    { id: 'acct', name: t('messages.account.accounting', 'Accounting'), addr: identities?.accounting || undefined, color: '#12876a', folders: [
-      { id: 'acct-in', name: t('messages.folder.inbox', 'Inbox'), icon: Inbox, src: 'received', account: 'accounting' },
     ] },
     { id: 'auto', name: t('messages.account.automated', 'Automated'), addr: identities?.automated || undefined, color: '#7a52d6', folders: [
       { id: 'auto-sent', name: t('messages.folder.sent', 'Sent'), icon: Send, src: 'queue', origin: 'system' },
@@ -232,27 +192,22 @@ export const MessagesPage: React.FC = () => {
     if (f.src === 'queue') return f.origin ? queueFor(f.origin).length : queueTotal;
     if (f.src === 'received') {
       if (f.account === 'customers') return custTotal;
-      if (f.account === 'accounting') return acctTotal;
-      return (acctTotal || 0) + (custTotal || 0);
+      return custTotal;
     }
     return undefined;
   };
 
-  // Which received rows feed the active folder (customer / accounting / union).
+  // Received customer messages shown in the active folder.
   const receivedItems = useMemo(() => {
     if (folder.f.src !== 'received') return undefined;
-    const a = acctQuery.data?.items || [];
     const c = custQuery.data?.items || [];
     if (folder.f.account === 'customers') return c;
-    if (folder.f.account === 'accounting') return a;
-    return [...a, ...c].sort((x, y) => (y.received_at || '').localeCompare(x.received_at || ''));
-  }, [folder, acctQuery.data, custQuery.data]);
+    return c;
+  }, [folder, custQuery.data]);
 
   const receivedLoading = folder.f.account === 'customers'
     ? custQuery.isLoading
-    : folder.f.account === 'accounting'
-      ? acctQuery.isLoading
-      : acctQuery.isLoading || custQuery.isLoading;
+    : custQuery.isLoading;
 
   return (
     <div className="flex flex-col h-[calc(100vh-8.5rem)] min-h-[540px]">
@@ -276,14 +231,6 @@ export const MessagesPage: React.FC = () => {
           />
         </div>
         <div className="flex items-center gap-2 flex-none">
-          <button
-            onClick={() => sync.mutate()}
-            disabled={sync.isPending}
-            className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-neutral-300 dark:border-neutral-700 text-sm font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-60"
-          >
-            <RefreshCw className={`w-4 h-4 ${sync.isPending ? 'animate-spin' : ''}`} />
-            {t('messages.sync', 'Sync')}
-          </button>
           <button
             onClick={openNewMessage}
             className="inline-flex items-center gap-2 h-9 px-3.5 rounded-lg bg-accent-dark text-white text-sm font-medium hover:opacity-90"
@@ -381,14 +328,9 @@ export const MessagesPage: React.FC = () => {
         <section className="flex-1 min-w-0 flex flex-col min-h-0">
           <ReadingPane
             selection={selection}
-            account={folder.a}
             identities={identities}
-            flags={flags}
             folderState={folderState}
-            onViewDoc={setPdfDocId}
-            onOpenAccounting={() => navigate('/admin/accounting/inbox')}
             onCompose={(init, title) => setComposer({ init, title, accountKey: 'customers' })}
-            onOpenDoc={(docType, senderEmail) => setDocAction({ docType, senderEmail })}
             onItemAction={doItemAction}
             canEdit={canEditMailbox}
             t={t}
@@ -396,7 +338,6 @@ export const MessagesPage: React.FC = () => {
         </section>
       </div>
 
-      {pdfDocId != null && <PdfModal docId={pdfDocId} onClose={() => setPdfDocId(null)} t={t} />}
       {composer && (
         <MessageComposer
           init={composer.init}
@@ -404,15 +345,6 @@ export const MessagesPage: React.FC = () => {
           accountKey={composer.accountKey}
           onClose={() => setComposer(null)}
           onSent={() => { queueQuery.refetch(); setActiveFolder('cust-sent'); }}
-          t={t}
-        />
-      )}
-      {docAction && (
-        <DocumentActionModal
-          docType={docAction.docType}
-          senderEmail={docAction.senderEmail}
-          onCompose={(init) => { setDocAction(null); setComposer({ init: { to: init.to, subject: init.subject, html: init.html }, title: init.subject, accountKey: 'customers' }); }}
-          onClose={() => setDocAction(null)}
           t={t}
         />
       )}
@@ -513,18 +445,13 @@ const MessageList: React.FC<{
 // ─────────────────────────────────────────────────────────── reading pane ──
 const ReadingPane: React.FC<{
   selection: Selection;
-  account: Account;
   identities?: MailIdentities | null;
-  flags: Record<string, boolean>;
   folderState?: 'archived' | 'deleted';
-  onViewDoc: (id: number) => void;
-  onOpenAccounting: () => void;
   onCompose: (init: ComposerInit, title?: string) => void;
-  onOpenDoc: (docType: DocType, senderEmail: string) => void;
   onItemAction: (action: 'archive' | 'delete' | 'restore') => void;
   canEdit: boolean;
   t: TFunction;
-}> = ({ selection, account, identities, flags, folderState, onViewDoc, onOpenAccounting, onCompose, onOpenDoc, onItemAction, canEdit, t }) => {
+}> = ({ selection, identities, folderState, onCompose, onItemAction, canEdit, t }) => {
   const detailQuery = useQuery({
     queryKey: ['messages', 'queue', selection?.kind === 'queue' ? selection.id : null],
     queryFn: () => emailService.getQueueItem((selection as { kind: 'queue'; id: number }).id),
@@ -542,16 +469,6 @@ const ReadingPane: React.FC<{
     );
   }
 
-  // Accounting toolbar only for the rechnungen@ stream; customer mail (inbound
-  // or the automated/sent streams) gets the CRM action set.
-  const isAcct = selection.kind === 'received'
-    ? selection.item.account_key !== 'customers'
-    : account.id === 'acct';
-
-  const recipient = extractEmail(selection.kind === 'received'
-    ? selection.item.from_address
-    : detailQuery.data?.recipientEmail);
-
   // Reply only makes sense for an inbound message with a sender.
   const onReply = selection.kind === 'received' && selection.item.from_address
     ? () => {
@@ -562,15 +479,9 @@ const ReadingPane: React.FC<{
       }
     : undefined;
 
-  // Quote/Contract/Invoice/Gallery open the document-action flow (resolve the
-  // customer, then create-new or select-existing). Customer-facing streams only.
-  const onDoc = !isAcct && recipient
-    ? (docType: DocType) => onOpenDoc(docType, recipient)
-    : undefined;
-
   return (
     <div className="flex flex-col min-h-0 flex-1">
-      <Toolbar isAcct={isAcct} flags={flags} folderState={folderState} onReply={onReply} onDoc={onDoc} onItemAction={onItemAction} canEdit={canEdit} t={t} />
+      <Toolbar folderState={folderState} onReply={onReply} onItemAction={onItemAction} canEdit={canEdit} t={t} />
       <div className="flex-1 overflow-y-auto p-6">
         {selection.kind === 'queue' ? (
           detailQuery.isLoading ? <Loading /> : detailQuery.data ? (
@@ -581,9 +492,7 @@ const ReadingPane: React.FC<{
         ) : (
           <ReceivedDetail
             item={selection.item}
-            mailboxAddr={selection.item.account_key === 'customers' ? identities?.customers : identities?.accounting}
-            onViewDoc={onViewDoc}
-            onOpenAccounting={onOpenAccounting}
+            mailboxAddr={identities?.customers}
             t={t}
           />
         )}
@@ -642,10 +551,8 @@ const QueueDetail: React.FC<{ d: import('../../../services/email.service').Email
 const ReceivedDetail: React.FC<{
   item: ReceivedEmail;
   mailboxAddr?: string | null;
-  onViewDoc: (id: number) => void;
-  onOpenAccounting: () => void;
   t: TFunction;
-}> = ({ item, mailboxAddr, onViewDoc, onOpenAccounting, t }) => {
+}> = ({ item, mailboxAddr, t }) => {
   const detail = useQuery({
     queryKey: ['messages', 'received', 'item', item.id],
     queryFn: () => emailService.getReceivedItem(item.id),
@@ -678,22 +585,6 @@ const ReceivedDetail: React.FC<{
         </div>
       )}
 
-      {item.inbound_document_id != null && (
-        <div className="mt-5 flex flex-wrap gap-2">
-          <button
-            onClick={() => onViewDoc(item.inbound_document_id as number)}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-accent-dark hover:opacity-90 text-white text-sm font-medium"
-          >
-            <FileText className="w-4 h-4" />{t('messages.viewDocument', 'View document')}
-          </button>
-          <button
-            onClick={onOpenAccounting}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800"
-          >
-            <Link2 className="w-4 h-4" />{t('messages.openInAccounting', 'Open in Accounting inbox')}
-          </button>
-        </div>
-      )}
       {item.error && (
         <div className="mt-4 text-sm text-red-600 dark:text-red-400">{item.error}</div>
       )}
@@ -703,15 +594,12 @@ const ReceivedDetail: React.FC<{
 
 // ─────────────────────────────────────────────────────────────── toolbar ──
 const Toolbar: React.FC<{
-  isAcct: boolean;
-  flags: Record<string, boolean>;
   folderState?: 'archived' | 'deleted';
   onReply?: () => void;
-  onDoc?: (docType: DocType) => void;
   onItemAction: (action: 'archive' | 'delete' | 'restore') => void;
   canEdit: boolean;
   t: TFunction;
-}> = ({ isAcct, flags, folderState, onReply, onDoc, onItemAction, canEdit, t }) => {
+}> = ({ folderState, onReply, onItemAction, canEdit, t }) => {
   const Tb: React.FC<{ icon: LucideIcon; label: string; accent?: boolean; onClick?: () => void }> = ({ icon: Icon, label, accent, onClick }) => {
     const enabled = !!onClick;
     return (
@@ -727,26 +615,12 @@ const Toolbar: React.FC<{
       </button>
     );
   };
-  const doc = (docType: DocType) => (onDoc ? () => onDoc(docType) : undefined);
   return (
     <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-b border-neutral-200 dark:border-neutral-800 flex-none">
       <Tb icon={Reply} label={t('messages.reply', 'Reply')} onClick={onReply} />
       <Tb icon={ReplyAll} label={t('messages.replyAll', 'Reply all')} />
       <Tb icon={Forward} label={t('messages.forward', 'Forward')} />
       <span className="w-px h-5 bg-neutral-200 dark:bg-neutral-700 mx-1" />
-      {isAcct ? (
-        <>
-          <Tb icon={ReceiptText} label={t('messages.bookExpense', 'Book as expense')} accent />
-          <Tb icon={Forward} label={t('messages.rebill', 'Re-bill to client')} accent />
-        </>
-      ) : (
-        <>
-          {flags.quotes && <Tb icon={Quote} label={t('messages.createQuote', 'Quote')} accent onClick={doc('quote')} />}
-          {flags.contracts && <Tb icon={FileSignature} label={t('messages.createContract', 'Contract')} accent onClick={doc('contract')} />}
-          <Tb icon={ImageIcon} label={t('messages.createGallery', 'Gallery')} accent onClick={doc('gallery')} />
-          {flags.bills && <Tb icon={FileText} label={t('messages.createInvoice', 'Invoice')} accent onClick={doc('invoice')} />}
-        </>
-      )}
       <span className="flex-1" />
       {canEdit && folderState && <Tb icon={RotateCcw} label={t('messages.restore', 'Restore')} onClick={() => onItemAction('restore')} />}
       {canEdit && folderState !== 'archived' && <Tb icon={Archive} label={t('messages.archive', 'Archive')} onClick={() => onItemAction('archive')} />}
@@ -757,73 +631,6 @@ const Toolbar: React.FC<{
           onClick={() => onItemAction('delete')}
         />
       )}
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────── pdf modal ──
-const PdfModal: React.FC<{ docId: number; onClose: () => void; t: TFunction }> = ({ docId, onClose, t }) => {
-  const [page, setPage] = useState(1);
-  const [url, setUrl] = useState<string | null>(null);
-  const [err, setErr] = useState(false);
-
-  useEffect(() => {
-    let revoked: string | null = null;
-    let cancelled = false;
-    setErr(false);
-    setUrl(null);
-    accountingService.getInboundPageBlob(docId, page)
-      .then((blob) => {
-        if (cancelled) return;
-        const u = URL.createObjectURL(blob);
-        revoked = u;
-        setUrl(u);
-      })
-      .catch(() => { if (!cancelled) setErr(true); });
-    return () => { cancelled = true; if (revoked) URL.revokeObjectURL(revoked); };
-  }, [docId, page]);
-
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-6" onClick={onClose}>
-      <div className="bg-white dark:bg-neutral-900 rounded-xl w-[min(620px,94vw)] max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
-          <FileText className="w-4 h-4 text-red-500" />
-          <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">{t('messages.document', 'Document')}</span>
-          <div className="ml-auto flex items-center gap-1">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
-              className="w-8 h-8 grid place-items-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-xs tabular-nums text-neutral-500 w-6 text-center">{page}</span>
-            <button onClick={() => setPage((p) => p + 1)}
-              className="w-8 h-8 grid place-items-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-            <button onClick={onClose} aria-label={t('messages.close', 'Close')}
-              className="w-8 h-8 grid place-items-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 ml-1">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <div className="overflow-auto p-5 bg-neutral-100 dark:bg-neutral-800 grid place-items-center min-h-[240px]">
-          {err ? (
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">{t('messages.previewUnavailable', 'Preview unavailable')}</div>
-          ) : url ? (
-            <img src={url} alt="" className="max-w-full shadow-lg rounded" />
-          ) : (
-            <Loading />
-          )}
-        </div>
-        <div className="text-center text-[11px] text-neutral-400 py-2 border-t border-neutral-200 dark:border-neutral-800">
-          {t('messages.rasterNote', 'Server-rendered preview — the raw file never reaches the browser.')}
-        </div>
-      </div>
     </div>
   );
 };

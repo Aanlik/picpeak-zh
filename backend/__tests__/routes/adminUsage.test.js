@@ -207,18 +207,17 @@ test('public/gallery paths and failed/unauthenticated admin operations never set
   simulate('/customers', null, 200);
   simulate('/quotes', { id: 1 }, 403);
   expect(service.markUsed).not.toHaveBeenCalled();
-  simulate('/customers/42/hour-entries', { id: 1 }, 200);
-  // The second argument tells markUsed whether this operation writes to the
-  // configured backup destination; a CRM route never does.
+  simulate('/customers/invite', { id: 1 }, 200);
+  // Customer invitations are part of the customer portal capability.
   expect(service.markUsed).toHaveBeenCalledWith(
-    expect.arrayContaining(['crm', 'crm_hours']),
+    expect.arrayContaining(['customer_portal']),
     expect.objectContaining({ destinationBackup: false })
   );
   expect(JSON.stringify(service.markUsed.mock.calls)).not.toContain('42');
 });
 
-test.each(['usage-consent.v2', 'usage-consent.v3', 'usage-consent.v4', 'usage-consent.v5'])('consent upgrade accepts exactly the explicit %s choice, never extra fields', async (consent_version) => {
-  for (const data of [{}, { consent_version: 'usage-consent.v1' }, { consent_version: 'usage-consent.v6' }, { consent_version, user: 'PRIVATE' }])
+test.each(['usage-consent.v2', 'usage-consent.v3', 'usage-consent.v4', 'usage-consent.v5', 'usage-consent.v6'])('consent upgrade accepts exactly the explicit %s choice, never extra fields', async (consent_version) => {
+  for (const data of [{}, { consent_version: 'usage-consent.v1' }, { consent_version: 'usage-consent.v7' }, { consent_version, user: 'PRIVATE' }])
     await request(app).post('/api/admin/usage/consent').set('Authorization', `Bearer ${token('admin')}`).send(data).expect(400);
   expect(service.command).not.toHaveBeenCalled();
   await request(app).post('/api/admin/usage/consent').set('Authorization', `Bearer ${token('admin')}`)

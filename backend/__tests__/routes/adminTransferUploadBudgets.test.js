@@ -12,15 +12,15 @@
 
 const request = require('supertest');
 const {
-  bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
-} = require('../integration/helpers/crmDb');
+  bootTestDb, seedMinimal, assignAdminRole, mintAdminToken, buildRouteApp,
+} = require('../integration/helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
 let db; let cleanup; let adminApp; let token;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   const { adminId } = await seedMinimal(db);
   await assignAdminRole(db, adminId, 'super_admin');
   token = mintAdminToken(adminId);

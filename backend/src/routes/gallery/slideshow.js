@@ -255,7 +255,6 @@ router.get('/:slug/show/:token/session', noStoreCache, handleAsync(async (req, r
     token: sessionToken,
     event: {
       event_name: event.event_name,
-      event_type: event.event_type,
       color_theme: event.color_theme
     },
     settings: await slideshowSettings(event, req),

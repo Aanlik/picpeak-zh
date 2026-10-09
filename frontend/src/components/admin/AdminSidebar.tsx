@@ -9,8 +9,6 @@ import {
   Activity,
   X,
   Users,
-  Briefcase,
-  Landmark,
   Mail,
   Workflow,
   PanelLeftClose,
@@ -65,7 +63,7 @@ interface NavItem {
 //
 // Removed (now live as Settings tabs, with redirects from the old
 // top-level paths so bookmarks keep working):
-//   /admin/email, /admin/branding, /admin/event-types, /admin/backup,
+//   /admin/email, /admin/branding, /admin/backup,
 //   /admin/cms.
 //
 // Feature-gated (only render when the corresponding feature flag is on):
@@ -84,54 +82,7 @@ export const adminNavigation: NavItem[] = [
   { nameKey: 'navigation.settings',  href: '/admin/settings',  icon: Settings,        permission: 'settings.view' },
   { nameKey: 'navigation.systemHealth', href: '/admin/system-health', icon: Activity,  permission: 'settings.view' },
   { nameKey: 'navigation.users',     href: '/admin/users',     icon: Users,           permission: 'users.view',     featureFlag: 'userManagement' },
-  // Clients section (#354 follow-up) — admin-side surface for the
-  // CRM-area sub-features. Today this entry leads to /admin/clients
-  // which renders a Settings-style sub-nav with one item (Accounts).
-  // When calendar / quotes / bills / messaging ship they slot in as
-  // additional sub-nav items inside ClientsLayout without needing
-  // their own top-level sidebar entry.
-  //
-  // Gate uses the parent `clients` flag (master). The Accounts page
-  // itself is independently gated by `customerPortal` inside the
-  // route tree — that nested check is invisible from here.
-  //
-  // `permission: 'customers.view'` is the only Clients-area
-  // permission today; future sub-features (booking, billing) get
-  // their own permission keys and the gate here grows into an OR.
-  {
-    nameKey: 'navigation.clients', href: '/admin/clients', icon: Briefcase,
-    // Any of these opens the section; each sub-page is gated on its own
-    // permission once inside.
-    permissionAny: ['customers.view', 'newsletters.view'],
-    featureFlag: 'clients',
-    // Hide the entry when the parent is on but no sub-feature is —
-    // there's nothing inside ClientsLayout to link to. Mirror the same
-    // set used to derive the parent `clients` flag in
-    // FeatureFlagsContext (see clientsDependsOn) so the two checks
-    // can't disagree: any sub-feature on lights up the entry, all off
-    // hides it. Future siblings (e.g. `messaging`) get appended here
-    // AND in the context derivation.
-    // taxReport intentionally excluded — Tax moved to the Accounting section
-    // and is not a Clients sub-nav item, so it must not reveal Clients (would
-    // open an empty ClientsLayout). Mirrors the context's `clients` derivation.
-    featureFlagsAny: [
-      'customerPortal', 'crmDevelopment', 'quotes', 'bills',
-      'hoursLogging', 'contracts', 'calendar', 'projects',
-      // #1264 — newsletters is a Clients child and must light up the entry,
-      // or a newsletter-only install has no way into the section.
-      'newsletters',
-    ],
-  },
-  // Accounting section (migration 122) — inbound supplier invoices,
-  // expenses + re-bill, and the tax report (which relocates here from
-  // the CRM sub-nav when `accounting` is on). Gated by the `accounting`
-  // master flag; the sub-pages inside AccountingLayout are each
-  // independently feature-gated.
-  {
-    nameKey: 'navigation.accounting', href: '/admin/accounting', icon: Landmark,
-    permission: 'accounting.view',
-    featureFlag: 'accounting',
-  },
+  { nameKey: 'navigation.clients', href: '/admin/customers', icon: Users, permission: 'customers.view', featureFlag: 'customerPortal' },
   // Workflows (automation engine) — top-level, gated by the `workflows` flag.
   {
     nameKey: 'navigation.workflows', href: '/admin/workflows', icon: Workflow,

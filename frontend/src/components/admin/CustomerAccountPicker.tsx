@@ -26,21 +26,6 @@ interface Props {
   value: SelectedCustomer[];
   onChange: (next: SelectedCustomer[]) => void;
   disabled?: boolean;
-  /**
-   * Event-form mode (default): this picker IS part of the customer-portal
-   * feature — it assigns portal logins to a gallery, so it hides itself
-   * when `customerPortal` is off and explains the password bypass.
-   *
-   * Pass false where the picker only needs to identify an existing
-   * customer record (Accounting → "bill this to a client"). Those
-   * surfaces have their own gates (`accounting` / `expenses` /
-   * `incomingInvoices`) and their data path never touches the portal:
-   * /admin/customers{,/search} are permission-gated, not flag-gated, and
-   * POST /admin/customers explicitly creates passive, portal-less
-   * customers "to attach a quote / invoice / gallery to". Callers in this
-   * mode render their own field label.
-   */
-  portalAssignment?: boolean;
 }
 
 const labelFor = (c: { email: string; displayName?: string | null; companyName?: string | null }) => {
@@ -48,7 +33,7 @@ const labelFor = (c: { email: string; displayName?: string | null; companyName?:
   return display ? `${display} · ${c.email}` : c.email;
 };
 
-export const CustomerAccountPicker: React.FC<Props> = ({ value, onChange, disabled, portalAssignment = true }) => {
+export const CustomerAccountPicker: React.FC<Props> = ({ value, onChange, disabled }) => {
   const { t } = useTranslation();
   // Rules of Hooks: the feature-flag gate (early-return) is moved to
   // the very end of this hook list (see end of function). The previous
@@ -61,12 +46,8 @@ export const CustomerAccountPicker: React.FC<Props> = ({ value, onChange, disabl
   // crash). That tanked the entire /admin/events/new page through
   // the global error boundary. PR #458 reviewer flag.
   const customerPortalEnabled = useFeatureEnabled('customerPortal');
-  // Inline create is the ONLY way to reach POST /admin/customers on an
-  // Accounting-only install: /admin/clients/accounts and the CRM editors
-  // that embed InlineCustomerCreate are all feature-gated, while the
-  // endpoint itself is permission-gated only and exists precisely to
-  // create passive, portal-less customers. Mirror that with the
-  // permission rather than a flag.
+  // Mirror the endpoint's permission check so users without customer-create
+  // access do not see an unavailable action.
   const canCreateCustomer = usePermission('customers.create');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<CustomerAccountSummary[]>([]);
@@ -143,25 +124,16 @@ export const CustomerAccountPicker: React.FC<Props> = ({ value, onChange, disabl
     [t]
   );
 
-  // Feature-flag gate (deliberately placed AFTER all hooks — see the
-  // long comment at the top of this component for why). Only applies to
-  // the event-assignment mode: hiding the UI there keeps the event form
-  // clean and removes the dangling "Customer accounts" label that would
-  // otherwise appear above an empty placeholder. Non-portal call sites
-  // must NOT be gated — their required customer field would render as a
-  // lone label with no input at all (QA S10).
-  if (portalAssignment && !customerPortalEnabled) return null;
+  // Keep this after all hooks: hiding the picker before React Query resolves
+  // would change the hook count between renders.
+  if (!customerPortalEnabled) return null;
 
   return (
     <div ref={containerRef} className="relative">
-      {portalAssignment && (
-        <>
-          <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
-            {t('events.customerPicker.label', 'Customer accounts')}
-          </label>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">{helpText}</p>
-        </>
-      )}
+      <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+        {t('events.customerPicker.label', 'Customer accounts')}
+      </label>
+      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">{helpText}</p>
 
       {/* Selected chips */}
       {value.length > 0 && (
@@ -236,10 +208,6 @@ export const CustomerAccountPicker: React.FC<Props> = ({ value, onChange, disabl
             </div>
           ) : results.length === 0 ? (
             <div className="px-3 py-3 text-sm text-neutral-500 dark:text-neutral-400">
-              {/* The old copy pointed at Clients → Accounts, which is
-                  feature-gated and therefore unreachable on an
-                  Accounting-only install. Point at the button that is
-                  always right there instead. */}
               {canCreateCustomer
                 ? t('events.customerPicker.noResultsCanCreate', 'No matches. Use “Create new customer” to add one.')
                 : t('events.customerPicker.noResultsNoPermission', 'No matches, and your role cannot create customers. Ask an administrator to add this customer.')}

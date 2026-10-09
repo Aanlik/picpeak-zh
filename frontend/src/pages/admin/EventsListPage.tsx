@@ -487,9 +487,6 @@ export const EventsListPage: React.FC = () => {
                   {t('events.event')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                  {t('events.type')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                   {t('events.date')}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
@@ -547,9 +544,6 @@ export const EventsListPage: React.FC = () => {
                             </span>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-neutral-700 dark:text-neutral-300">
-                        {event.event_type}
                       </td>
                       <td className="px-6 py-4 text-sm text-neutral-700 dark:text-neutral-300">
                         {event.event_date ? format(parseISO(event.event_date)) : 'N/A'}

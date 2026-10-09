@@ -22,7 +22,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 const { findWriteBlocker } = require('../../src/utils/localBackupDestination');
 
 // root ignores directory modes, so a read-only parent blocks nothing.
@@ -43,7 +43,7 @@ describe('local backup destination', () => {
     fs.mkdirSync(readOnly);
     fs.chmodSync(readOnly, 0o555);
 
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const role = await db('roles').where({ name: 'super_admin' }).first();
     const inserted = await db('admin_users').insert({
       username: 'root-admin',

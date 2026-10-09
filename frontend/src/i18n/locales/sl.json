@@ -162,13 +162,11 @@
     "events": "Dogodki",
     "archives": "Arhivi",
     "settings": "Nastavitve",
-    "eventTypes": "Vrste dogodkov",
     "branding": "Blagovna znamka",
     "emailSettings": "Nastavitve e-pošte",
     "backup": "Varnostne kopije in obnovitev",
     "cmsPages": "CMS strani",
     "users": "Uporabniki",
-    "calendar": "Koledar",
     "clients": "Stranke"
   },
   "archives": {
@@ -180,17 +178,11 @@
     "totalPhotos": "Skupaj fotografij",
     "avgArchiveSize": "Povprečna velikost arhiva",
     "searchPlaceholder": "Iskanje arhivov...",
-    "allTypes": "Vse vrste",
-    "wedding": "Poroka",
-    "birthday": "Rojstni dan",
-    "corporate": "Poslovno",
-    "other": "Drugo",
     "sortByDate": "Razvrsti po datumu",
     "sortByName": "Razvrsti po imenu",
     "sortBySize": "Razvrsti po velikosti",
     "tableHeaders": {
       "event": "Dogodek",
-      "type": "Vrsta",
       "archivedDate": "Datum arhiviranja",
       "size": "Velikost",
       "photos": "Fotografije",
@@ -393,7 +385,6 @@
     "confirmPasswordPlaceholder": "Potrdite geslo",
     "eventDetails": "Podrobnosti dogodka",
     "eventName": "Ime dogodka",
-    "eventType": "Vrsta dogodka",
     "eventDate": "Datum dogodka",
     "hostEmail": "E-pošta stranke",
     "hostName": "Ime stranke",
@@ -673,8 +664,8 @@
     },
     "ogShare": {
       "title": "Uporabi hero fotografijo kot predogled pri deljenju",
-      "help": "Ko se URL te galerije deli na WhatsAppu, Facebooku, Slacku itd., bo predogled povezave zgoraj prikazal hero fotografijo. Sličico brez prijave pridobijo pregledovalniki povezav — vsak z URL-jem to sliko dejansko naredi javno. Privzeto je izklopljeno; pred vklopom izberite hero fotografijo, ki jo lahko varno javno prikažete.",
-      "heroRequired": "Najprej izberite hero fotografijo zgoraj — ta možnost jo uporabi kot predogled za WhatsApp / Facebook / Slack."
+      "help": "Ko se URL te galerije deli na Facebooku, Slacku itd., bo predogled povezave zgoraj prikazal hero fotografijo. Sličico brez prijave pridobijo pregledovalniki povezav — vsak z URL-jem to sliko dejansko naredi javno. Privzeto je izklopljeno; pred vklopom izberite hero fotografijo, ki jo lahko varno javno prikažete.",
+      "heroRequired": "Najprej izberite hero fotografijo zgoraj — ta možnost jo uporabi kot predogled za Facebook / Slack."
     }
   },
   "settings": {
@@ -894,7 +885,7 @@
       "showGalleryFilterBar": "Prikaži vrstico filtrov v galerijah",
       "showGalleryFilterBarHelp": "Prikaže iskanje po imenu datoteke in razvrščanje nad galerijami z mrežno postavitvijo. Izklopite za čistejšo postavitev.",
       "enablePhoneField": "Omogoči polje za telefonsko številko",
-      "enablePhoneFieldHelp": "Doda neobvezno polje za telefonsko številko v obrazec dogodka. Uporabno za nadaljnje avtomatizacije, kot je dostava prek WhatsAppa z n8n. Vedno je neobvezno, tudi ko je omogočeno.",
+      "enablePhoneFieldHelp": "V obrazec projekta doda neobvezno telefonsko številko za nadaljnjo komunikacijo in avtomatizacijo. Polje ostane neobvezno.",
       "feedbackTypeDefaultsHelp": "S katerimi vrstami odzivov se ustvarijo nove galerije. Obstoječe galerije ostanejo nespremenjene – vsako galerijo je še vedno mogoče nastaviti posebej.",
       "defaultAllowRatings": "Ocene z zvezdicami",
       "defaultAllowLikes": "Všečki",
@@ -1100,9 +1091,6 @@
     },
     "sectionLabel": "Razdelek nastavitev",
     "navAriaLabel": "Navigacija nastavitev",
-    "eventTypes": {
-      "title": "Vrste dogodkov"
-    },
     "cms": {
       "title": "CMS strani"
     },
@@ -1129,11 +1117,7 @@
       "sections": {
         "core": "Jedro",
         "communication": "Komunikacija",
-        "scheduling": "Razporejanje",
-        "sales": "Prodaja",
-        "insights": "Vpogledi in dostop",
-        "customers": "Stranke",
-        "clients": "Stranke"
+        "insights": "Vpogledi in dostop"
       },
       "status": {
         "stable": "stabilno",
@@ -1156,21 +1140,6 @@
         "description": "Niti sporočil z gosti v aplikaciji, povezane z galerijo. E-pošta je za večino ekip povsem dovolj — to je za studie, ki želijo vse na enem mestu.",
         "sidebar": "Sporočila"
       },
-      "calendar": {
-        "title": "Koledar",
-        "description": "Oglejte si vse prihajajoče in pretekle dogodke v mesečnem/tedenskem pogledu. Po želji sprejemajte nove rezervacije strank.",
-        "sidebar": "Koledar"
-      },
-      "quotes": {
-        "title": "Ponudbe",
-        "description": "Pošiljajte razčlenjene ponudbe strankam. Sprejmejo ali zavrnejo jih lahko prek javne povezave; plačilo se spremlja ročno.",
-        "sidebar": "Ponudbe"
-      },
-      "bills": {
-        "title": "Računi",
-        "description": "Ustvarite račun iz sprejete ponudbe. Ročno označite kot plačano — brez integracije plačilnega procesorja.",
-        "sidebar": "Računi"
-      },
       "analytics": {
         "title": "Analitika",
         "description": "Poraba prostora, ogledi galerij, število prenosov in statistika po dogodkih."
@@ -1183,10 +1152,6 @@
       "customerPortal": {
         "title": "Stranke",
         "description": "Stalne prijave strank. Redne stranke vidijo vse dodeljene galerije na enem mestu — brez gesel za vsak dogodek. Stranke se prijavijo na /customer/login, upravljate pa jih pod Stranke → Računi."
-      },
-      "clients": {
-        "title": "Stranke",
-        "description": "Glavno stikalo za razdelek Stranke v stranski vrstici. Izklop skrije razdelek in vse podfunkcije spodaj, ne glede na njihova posamezna stikala — ob ponovnem vklopu se obnovijo na zadnje nastavitve."
       }
     },
     "customerSurface": {
@@ -1639,10 +1604,6 @@
       "webhookDeleted": "Webhook izbrisan: {{name}}",
       "apiTokenCreated": "API žeton ustvarjen: {{name}}",
       "apiTokenRevoked": "API žeton preklican: {{name}}",
-      "eventTypeCreated": "Vrsta dogodka ustvarjena: {{name}}",
-      "eventTypeUpdated": "Vrsta dogodka posodobljena: {{name}}",
-      "eventTypeDeleted": "Vrsta dogodka izbrisana: {{name}}",
-      "eventTypesReordered": "Vrstni red vrst dogodkov spremenjen",
       "eventPublished": "Dogodek objavljen: {{eventName}}",
       "eventLogoUploaded": "Logotip dogodka naložen za {{eventName}}",
       "eventLogoRemoved": "Logotip dogodka odstranjen za {{eventName}}",
@@ -1862,10 +1823,6 @@
       "webhook_deleted": "Webhook izbrisan: {{name}}",
       "api_token_created": "API žeton ustvarjen: {{name}}",
       "api_token_revoked": "API žeton preklican: {{name}}",
-      "event_type_created": "Vrsta dogodka ustvarjena: {{name}}",
-      "event_type_updated": "Vrsta dogodka posodobljena: {{name}}",
-      "event_type_deleted": "Vrsta dogodka izbrisana: {{name}}",
-      "event_types_reordered": "Vrstni red vrst dogodkov spremenjen",
       "event_published": "Dogodek objavljen: {{eventName}}",
       "event_logo_uploaded": "Logotip dogodka naložen za {{eventName}}",
       "event_logo_removed": "Logotip dogodka odstranjen za {{eventName}}",
@@ -2069,9 +2026,7 @@
     "categories": {
       "core": "Jedro",
       "customers": "Stranke",
-      "calendar": "Koledar",
-      "quotes": "Ponudbe",
-      "billing": "Obračun"
+      "calendar": "Koledar"
     },
     "featureOff": "Funkcija izklopljena",
     "featureOffTooltip": "Funkcija, ki ji pripada ta predloga, je trenutno onemogočena. Predlogo lahko še vedno urejate — uporabljena bo, ko bo funkcija znova omogočena.",
@@ -2111,54 +2066,6 @@
     "replaceLogo": "Zamenjaj logotip",
     "uploadLogo": "Naloži logotip",
     "clearLogo": "Uporabi privzeto stran"
-  },
-  "eventTypes": {
-    "title": "Vrste dogodkov",
-    "subtitle": "Prilagodite vrste dogodkov in njihove privzete teme",
-    "loading": "Nalaganje vrst dogodkov...",
-    "loadError": "Vrst dogodkov ni bilo mogoče naložiti",
-    "createNew": "Nova vrsta dogodka",
-    "edit": "Uredi vrsto dogodka",
-    "created": "Vrsta dogodka je bila uspešno ustvarjena",
-    "updated": "Vrsta dogodka je bila uspešno posodobljena",
-    "deleted": "Vrsta dogodka je bila uspešno izbrisana",
-    "createError": "Vrste dogodka ni bilo mogoče ustvariti",
-    "updateError": "Vrste dogodka ni bilo mogoče posodobiti",
-    "deleteError": "Vrste dogodka ni bilo mogoče izbrisati",
-    "searchPlaceholder": "Iskanje vrst dogodkov...",
-    "showInactive": "Prikaži neaktivne",
-    "noResults": "Ni najdenih vrst dogodkov",
-    "empty": "Vrst dogodkov še ni",
-    "system": "Sistem",
-    "table": {
-      "type": "Vrsta",
-      "slugPrefix": "URL predpona",
-      "theme": "Privzeta tema",
-      "status": "Stanje",
-      "actions": "Dejanja"
-    },
-    "form": {
-      "name": "Prikazno ime",
-      "namePlaceholder": "npr. Družinsko fotografiranje",
-      "slugPrefix": "URL predpona",
-      "slugPrefixPlaceholder": "npr. družina",
-      "slugPreview": "Primer URL-ja:",
-      "emoji": "Ikona",
-      "themePreset": "Privzeta tema",
-      "isActive": "Aktivno (vidno pri ustvarjanju dogodka)"
-    },
-    "validation": {
-      "slugFormat": "Dovoljene so samo črke, številke in vezaji"
-    },
-    "slugInfo": {
-      "title": "Informacije o URL predponi:",
-      "description": "URL predpona se uporablja za ustvarjanje URL-jev galerij. Na primer, vrsta dogodka s predpono »druzina« bo ustvarila URL-je, kot je: druzina-novak-druzina-2025-01-22"
-    },
-    "deleteConfirm": {
-      "title": "Izbriši vrsto dogodka",
-      "message": "Ali res želite izbrisati",
-      "warning": "Tega dejanja ni mogoče razveljaviti. Prepričajte se, da noben dogodek ne uporablja te vrste."
-    }
   },
   "backup": {
     "title": "Upravljanje varnostnih kopij",
@@ -2886,8 +2793,6 @@
     "nav": {
       "galleries": "Galerije",
       "calendar": "Koledar",
-      "quotes": "Ponudbe",
-      "bills": "Računi",
       "profile": "Profil",
       "soon": "Kmalu"
     },
@@ -2897,14 +2802,6 @@
     "calendar": {
       "title": "Koledar",
       "body": "Prihajajoči termini, datumi dostave galerij in drugi dogodki, povezani s fotografiranjem, bodo prikazani tukaj. Obvestili vas bomo, ko bo pripravljeno."
-    },
-    "quotes": {
-      "title": "Ponudbe",
-      "body": "Na enem mestu pregledujte in sprejemajte ponudbe za prihajajoča fotografiranja. To še gradimo — za zdaj vam bo fotograf ponudbe še naprej pošiljal na običajen način."
-    },
-    "bills": {
-      "title": "Računi",
-      "body": "Računi in zgodovina plačil za vaše termine bodo na voljo tukaj. Ko bo funkcija aktivna, vam bomo poslali e-pošto."
     },
     "profile": {
       "title": "Profil stranke",
@@ -2936,7 +2833,6 @@
         "displayNameHint": "Kako vas pozdravimo na nadzorni plošči.",
         "phone": "Telefon",
         "companyName": "Ime podjetja",
-        "vatId": "Davčna številka",
         "addressLine1": "Naslovna vrstica 1",
         "addressLine2": "Naslovna vrstica 2",
         "postalCode": "Poštna številka",
@@ -3043,7 +2939,6 @@
       "expires": "poteče",
       "accountSection": "Račun",
       "personalSection": "Osebni podatki",
-      "billingSection": "Naslov in obračun",
       "notesSection": "Interne opombe",
       "eventsSection": "Dodeljeni dogodki",
       "noEvents": "Ni še dodeljena nobenemu dogodku. Stranko dodajte dogodku iz obrazca dogodka.",
@@ -3056,8 +2951,6 @@
       "displayName": "Prikazno ime",
       "phone": "Telefon",
       "company": "Podjetje",
-      "billingEmail": "E-pošta za račune",
-      "vatId": "DDV / davčna številka",
       "addressLine1": "Naslovna vrstica 1",
       "addressLine2": "Naslovna vrstica 2",
       "postalCode": "Poštna številka",
@@ -3108,18 +3001,6 @@
       "removedN": "{{count}} odstranjenih",
       "error": "Dodelitev ni bilo mogoče posodobiti",
       "clearSearchAria": "Počisti iskanje"
-    }
-  },
-  "clients": {
-    "title": "Stranke",
-    "subtitle": "Računi strank, razporejanje, ponudbe in obračun za stalne stranke.",
-    "navAriaLabel": "Navigacija strank",
-    "empty": {
-      "title": "Nobena funkcija strank ni omogočena",
-      "body": "Za začetek omogočite Račune (ali drugo podfunkcijo Stranke) v Nastavitve → Funkcije."
-    },
-    "subnav": {
-      "accounts": "Računi"
     }
   }
 }

@@ -1,4 +1,3 @@
-import { NO_EMAIL_MODE } from '../../../config/communication';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FolderTreeNode } from './FolderTreeNode';
@@ -33,7 +32,7 @@ export const ExternalFolderPicker: React.FC<{ value: string; onChange: (p: strin
     <div className="mt-2 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2">
       <div className="flex items-center justify-between gap-2 mb-2 px-1">
         <div className="text-xs text-neutral-600 dark:text-neutral-400 truncate">
-          {NO_EMAIL_MODE ? '已选 NAS 文件夹' : t('common.selected', 'Selected')}: {NO_EMAIL_MODE ? value || '尚未选择' : `/external-media/${value}`}
+          {t('nasFolder.selectedFolder')}: {value || t('nasFolder.noneSelected')}
         </div>
         {value && (
           <button
@@ -48,7 +47,7 @@ export const ExternalFolderPicker: React.FC<{ value: string; onChange: (p: strin
       <div className="max-h-80 overflow-auto [color-scheme:light] dark:[color-scheme:dark]">
         <FolderTreeNode
           path=""
-          name={NO_EMAIL_MODE ? 'NAS 照片文件夹' : '/external-media'}
+          name={t('nasFolder.rootLabel')}
           depth={0}
           value={value}
           onChange={onChange}

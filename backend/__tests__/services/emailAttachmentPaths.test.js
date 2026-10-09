@@ -11,7 +11,7 @@ const os = require('os');
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'attachment-paths-test-secret';
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 let db; let cleanup; let root; let outside;
 
@@ -42,7 +42,7 @@ async function queue(attachments) {
   const [row] = await db('email_queue').insert({
     recipient_email: 'someone@example.com', email_type: 'gallery_created', status: 'pending', retry_count: 0,
     created_at: new Date().toISOString(), scheduled_at: new Date().toISOString(),
-    email_data: JSON.stringify({ invoice_number: 'I-1', attachments }),
+    email_data: JSON.stringify({ project_name: 'Portrait session', attachments }),
   }).returning('id');
   return row.id ?? row;
 }
@@ -57,7 +57,7 @@ async function send(id) {
 }
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   root = process.env.STORAGE_PATH;
   outside = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-outside-'));
   expect(await db('email_templates').where({ template_key: 'gallery_created' }).first()).toBeTruthy();
@@ -68,20 +68,13 @@ afterAll(async () => {
 });
 
 test('a file each sender writes goes out as an attachment', async () => {
-  // Where every sender that attaches a file writes it (none uses a temp dir):
-  // quote and invoice PDFs, the Mahnung, contract PDFs and certificates,
-  // separately delivered contract attachments, re-bill proofs (inbound) and
-  // the dev test email's synthetic PDFs.
   const files = [
-    'business-docs/quote/2026/Q-1.pdf',
-    'business-docs/invoice/2026/I-1.pdf',
-    'business-docs/mahnung/2026/I-1_Mahnung.pdf',
-    'business-docs/contract/2026/C-1_fully-signed.pdf',
-    'business-docs/contract/2026/C-1_certificate.pdf',
-    'business-docs/attachments/abc.pdf',
-    'business-docs/inbound/2026/email-1.pdf',
-    'business-docs/dev-test/quote.pdf',
-    'uploads/contracts/signed/wet.pdf',
+    'uploads/files/session.pdf',
+    'uploads/imports/source.pdf',
+    'uploads/attachments/abc.pdf',
+    'uploads/archive/2026/message.pdf',
+    'uploads/test/attachment.pdf',
+    'uploads/signed/scan.pdf',
   ].map((rel) => ({ rel, abs: put(rel) }));
   const id = await queue(files.map((f) => ({ filename: path.basename(f.rel), contentPath: f.abs, contentType: 'application/pdf' })));
   const { mails, row } = await send(id);
@@ -95,11 +88,11 @@ test('a path outside the storage root fails the email with the reason, and sends
   const secret = path.join(outside, 'secret.txt');
   fs.writeFileSync(secret, 'root:x:0:0');
   for (const target of [secret, '/etc/passwd', '../../../etc/hosts']) {
-    const id = await queue([{ filename: 'invoice.pdf', contentPath: target, contentType: 'application/pdf' }]);
+    const id = await queue([{ filename: 'document.pdf', contentPath: target, contentType: 'application/pdf' }]);
     const { mails, row } = await send(id);
     expect(mails).toHaveLength(0);
     expect(row.status).toBe('failed');
-    expect(row.error_message).toMatch(/Attachment "invoice\.pdf" was refused/);
+    expect(row.error_message).toMatch(/Attachment "document\.pdf" was refused/);
     expect(row.error_message).not.toContain(target);
   }
 });
@@ -107,7 +100,7 @@ test('a path outside the storage root fails the email with the reason, and sends
 test('a symlink inside storage that points outside it is refused too', async () => {
   const secret = path.join(outside, 'linked.txt');
   fs.writeFileSync(secret, 'secret');
-  const link = path.join(root, 'business-docs', 'invoice', '2026', 'linked.pdf');
+  const link = path.join(root, 'uploads', 'files', 'linked.pdf');
   fs.mkdirSync(path.dirname(link), { recursive: true });
   fs.symlinkSync(secret, link);
   const id = await queue([{ filename: 'linked.pdf', contentPath: link, contentType: 'application/pdf' }]);
@@ -118,8 +111,8 @@ test('a symlink inside storage that points outside it is refused too', async () 
 });
 
 test('a row queued before a restore onto another root still sends the restored file', async () => {
-  const file = put('business-docs/invoice/2026/I-9.pdf');
-  const id = await queue([{ filename: 'I-9.pdf', contentPath: '/app/storage/business-docs/invoice/2026/I-9.pdf', contentType: 'application/pdf' }]);
+  const file = put('uploads/files/I-9.pdf');
+  const id = await queue([{ filename: 'I-9.pdf', contentPath: '/app/storage/uploads/files/I-9.pdf', contentType: 'application/pdf' }]);
   const { mails, row } = await send(id);
   expect(row.status).toBe('sent');
   expect(mails[0].attachments[0].path).toBe(fs.realpathSync(file));
@@ -130,7 +123,7 @@ test('a symlink inside storage whose outside target is not there yet is not atta
   // the link path to the transport anyway would let a target created after
   // the check (or a link planted in its place) be read outside the root.
   const target = path.join(outside, 'later.txt');
-  const link = path.join(root, 'business-docs', 'invoice', '2026', 'dangling.pdf');
+  const link = path.join(root, 'uploads', 'files', 'dangling.pdf');
   fs.mkdirSync(path.dirname(link), { recursive: true });
   fs.symlinkSync(target, link);
   const id = await queue([{ filename: 'dangling.pdf', contentPath: link, contentType: 'application/pdf' }]);
@@ -153,7 +146,7 @@ test('a symlink inside storage whose outside target is not there yet is not atta
 });
 
 test('a missing file fails the send and stays queued for a retry, naming only the attachment', async () => {
-  const gone = path.join(root, 'business-docs', 'invoice', '2026', 'deleted.pdf');
+  const gone = path.join(root, 'uploads', 'files', 'deleted.pdf');
   const id = await queue([{ filename: 'deleted.pdf', contentPath: gone, contentType: 'application/pdf' }]);
   const { mails, row } = await send(id);
   expect(mails).toHaveLength(0);

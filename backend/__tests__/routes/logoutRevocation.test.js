@@ -1,7 +1,7 @@
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { randomUUID } = require('crypto');
-const { bootCrmDb, seedMinimal, assignAdminRole, buildRouteApp } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
 
 let db, cleanup, adminId, customerId, eventId, apps, revocation;
 const slug = 'logout-revocation';
@@ -17,11 +17,11 @@ const sign = type => jwt.sign({
 }, process.env.JWT_SECRET, { issuer: 'picpeak-auth' });
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId, customerId } = await seedMinimal(db));
   await assignAdminRole(db, adminId);
   const event = await require('../../src/services/eventCreationService').createEvent({
-    event_type: 'wedding', event_name: 'Logout revocation', event_date: '2026-10-01',
+    event_type: 'project', event_name: 'Logout revocation', event_date: '2026-10-01',
     slug, password: 'Logout-Strong-Password-924!', expiration_days: 30,
     customer_email: 'customer@example.test', admin_email: 'admin@example.test',
   }, { actor: { id: adminId }, source: 'v1' });

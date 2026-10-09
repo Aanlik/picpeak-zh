@@ -12,7 +12,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'hero-anchor-test-secret';
 
@@ -36,12 +36,12 @@ describe('hero route focal-point URL (issue 1737)', () => {
     .set('Authorization', `Bearer ${galleryToken()}`);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const inserted = await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Hero Anchor',
       event_date: '2026-09-01',
       host_email: 'host@example.com',

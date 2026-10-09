@@ -23,7 +23,6 @@ const normalizeEvent = (event: Event): Event => {
 };
 
 interface CreateEventData {
-  event_type: string;
   event_name: string;
   event_date?: string;
   customer_name?: string;

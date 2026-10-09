@@ -130,7 +130,7 @@ export const ShortUrlsCard: React.FC<Props> = ({ eventId }) => {
       <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
         {t(
           'events.shortUrls.description',
-          'Create memorable links like /s/sofia-graduation that resolve to this gallery. The short URL itself shows the rich social preview when shared — so iMessage, Facebook, WhatsApp etc. see the gallery photo + name even when pasting the short link.',
+          'Create memorable links like /s/sofia-graduation that resolve to this gallery. The short URL itself shows the rich social preview when shared on supported platforms.',
         )}
       </p>
 

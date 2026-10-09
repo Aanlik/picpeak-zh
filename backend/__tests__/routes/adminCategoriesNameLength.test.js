@@ -18,7 +18,7 @@ process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-catlen
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 const TOO_LONG = 'z'.repeat(101);
 
@@ -28,7 +28,7 @@ describe('category name length validation', () => {
   const auth = (req) => req.set('Authorization', `Bearer ${superTok}`);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId: superId } = await seedMinimal(db);
     await assignAdminRole(db, superId, 'super_admin');
     superTok = mintAdminToken(superId);

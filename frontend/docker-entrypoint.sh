@@ -6,8 +6,8 @@
 # the static HTML head. This is what self-hosters running the pre-built
 # GHCR image use to brand their link-preview fallback — see the matching
 # comment in frontend/index.html for the three-path architecture
-# (per-event OG endpoint, crawler-detected SPA shell, and this static
-# fallback that catches WhatsApp Business / Twilio / LinkPreview).
+# (per-gallery OG endpoint, crawler-detected SPA shell, and the static
+# fallback for preview services that do not run JavaScript).
 #
 # Re-runs on every container start. The .tpl is the immutable source so
 # changing BRAND_TITLE in compose env and `docker compose up -d frontend`

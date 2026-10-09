@@ -40,9 +40,6 @@ vi.mock('../../../services/settings.service', () => ({
 vi.mock('../../../services/cssTemplates.service', () => ({
   cssTemplatesService: { getEnabledTemplates: vi.fn(async () => []) },
 }));
-vi.mock('../../../services/eventTypes.service', () => ({
-  eventTypesService: { getEventTypes: vi.fn(async () => []) },
-}));
 vi.mock('../../../services/userManagement.service', () => ({
   userManagementService: { getUsers: vi.fn(async () => []) },
 }));

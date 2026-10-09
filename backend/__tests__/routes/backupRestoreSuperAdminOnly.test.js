@@ -24,7 +24,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 describe('backup destinations, restores and portable import are Super Admin only', () => {
   let db;
@@ -78,7 +78,7 @@ describe('backup destinations, restores and portable import are Super Admin only
     .send(body);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const operatorRoleId = await insertId('roles', {
       name: 'restore-operator', display_name: 'Restore operator', description: 'test role', is_system: false, priority: 10,
     });

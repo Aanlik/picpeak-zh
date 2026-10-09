@@ -1,4 +1,7 @@
-# Product-usage coverage: usage.v5
+# Historical product-usage coverage: usage.v5
+
+This file documents the retired v5 consent scope for existing reports. For the
+active allowlist, see [usage.v6](usage-coverage.v6.json).
 
 ## What the numbers mean
 

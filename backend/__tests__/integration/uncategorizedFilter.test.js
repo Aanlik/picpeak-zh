@@ -16,7 +16,7 @@
 const request = require('supertest');
 const express = require('express');
 
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 
 describe('admin photo list — uncategorized filter (#1211)', () => {
   let db; let cleanup; let app;
@@ -45,11 +45,11 @@ describe('admin photo list — uncategorized filter (#1211)', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const [ev] = await db('events').insert({
-      slug: 'uncat-filter', event_type: 'wedding', event_name: 'Uncat Filter',
+      slug: 'uncat-filter', event_type: 'project', event_name: 'Uncat Filter',
       event_date: '2026-08-01', host_email: 'h@example.com', admin_email: 'a@example.com',
       password_hash: 'x', share_link: '/gallery/uncat-filter/share',
       expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),

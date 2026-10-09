@@ -21,8 +21,8 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const {
-  bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken,
-} = require('../integration/helpers/crmDb');
+  bootTestDb, seedMinimal, assignAdminRole, mintAdminToken,
+} = require('../integration/helpers/sqliteTestDb');
 
 describe('authorization / ownership gaps', () => {
   let db; let cleanup; let app;
@@ -39,7 +39,7 @@ describe('authorization / ownership gaps', () => {
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId: superId } = await seedMinimal(db));
     await assignAdminRole(db, superId, 'super_admin');
     superTok = mintAdminToken(superId);
@@ -115,7 +115,7 @@ describe('authorization / ownership gaps', () => {
     it('ignores identity/secret columns in the request body', async () => {
       const seedShareToken = 'orig-share-token';
       const ins = await db('events').insert({
-        slug: 'authz-mass-assign', event_type: 'wedding', event_name: 'Before',
+        slug: 'authz-mass-assign', event_type: 'project', event_name: 'Before',
         event_date: '2026-08-01', host_email: 'h@example.com', admin_email: 'a@example.com',
         password_hash: 'orig-hash', share_link: '/gallery/authz/share', share_token: seedShareToken, expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
         is_active: 1, is_archived: 0, is_draft: 0, created_by: superId,
@@ -161,7 +161,7 @@ describe('authorization / ownership gaps', () => {
 
     it('returns 200 (no-op) when the body contains only protected fields', async () => {
       const ins = await db('events').insert({
-        slug: 'authz-empty-update', event_type: 'wedding', event_name: 'Keep',
+        slug: 'authz-empty-update', event_type: 'project', event_name: 'Keep',
         event_date: '2026-08-01', host_email: 'h@example.com', admin_email: 'a@example.com',
         password_hash: 'x', share_link: '/gallery/authz-empty/share', share_token: 'authz-empty-share',
         expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
@@ -182,7 +182,7 @@ describe('authorization / ownership gaps', () => {
   describe('category hero cross-category (j2f4)', () => {
     it('rejects a hero photo that is not in the category', async () => {
       const evIns = await db('events').insert({
-        slug: 'authz-cat', event_type: 'wedding', event_name: 'Cat Event',
+        slug: 'authz-cat', event_type: 'project', event_name: 'Cat Event',
         event_date: '2026-08-01', host_email: 'h@example.com', admin_email: 'a@example.com',
         password_hash: 'x', share_link: '/gallery/authz-cat/share', share_token: 'authz-cat-share', expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
         is_active: 1, is_archived: 0, is_draft: 0, created_by: superId,

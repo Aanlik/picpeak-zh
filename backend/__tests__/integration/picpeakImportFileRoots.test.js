@@ -13,7 +13,7 @@ const path = require('path');
 const os = require('os');
 const archiver = require('archiver');
 const StreamZip = require('node-stream-zip');
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 const { decodeSettingValue } = require('../helpers/settingValue');
 
 let db;
@@ -63,12 +63,9 @@ async function withExtraEntries(sourcePath, extras) {
 }
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId } = await seedMinimal(db));
-  // A genuine business document so the legitimate archive carries a files/ tree.
-  const docDir = path.join(process.env.STORAGE_PATH, 'business-docs');
-  fs.mkdirSync(docDir, { recursive: true });
-  fs.writeFileSync(path.join(docDir, 'invoice-1.pdf'), '%PDF-1.4 fixture');
+  // A genuine logo asset so the legitimate archive carries a files/ tree.
   const logoDir = path.join(process.env.STORAGE_PATH, 'uploads', 'logos');
   fs.mkdirSync(logoDir, { recursive: true });
   fs.writeFileSync(path.join(logoDir, 'logo.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>');
@@ -143,36 +140,34 @@ describe('.picpeak import — files/ roots and content types', () => {
     expect(fs.existsSync(path.join(process.env.STORAGE_PATH, 'uploads', 'transfers', '7', 'page.html'))).toBe(true);
   });
 
-  it('still imports a genuine export with business documents and an SVG logo', async () => {
+  it('still imports a genuine export with an SVG logo', async () => {
     await setMarker('in_backup');
     const { filePath } = await createPicpeak({ includePhotos: false });
     await setMarker('current');
-    fs.rmSync(path.join(process.env.STORAGE_PATH, 'business-docs', 'invoice-1.pdf'));
+    fs.rmSync(path.join(process.env.STORAGE_PATH, 'uploads', 'logos', 'logo.svg'));
     try {
       const result = await importFromPicpeak({ picpeakPath: filePath, currentAdminId: adminId });
       expect(result.restored).toBe(true);
-      expect(result.filesRestored).toBeGreaterThanOrEqual(2);
+      expect(result.filesRestored).toBeGreaterThanOrEqual(1);
     } finally {
       fs.rmSync(path.dirname(filePath), { recursive: true, force: true });
     }
     expect(await getMarker()).toBe('in_backup');
-    expect(fs.readFileSync(path.join(process.env.STORAGE_PATH, 'business-docs', 'invoice-1.pdf'), 'utf8')).toBe('%PDF-1.4 fixture');
+    expect(fs.readFileSync(path.join(process.env.STORAGE_PATH, 'uploads', 'logos', 'logo.svg'), 'utf8'))
+      .toContain('<svg');
   });
 });
 
 describe('importFilePathProblem', () => {
   it.each([
-    'business-docs/invoice-1.pdf',
-    'business-docs/legacy/invoice-1.pdf',
     'uploads/logos/logo.svg',
-    'uploads/contracts/signed/c-1.pdf',
+    'uploads/signed/c-1.pdf',
     'events/active/wedding/individual/a.jpg',
     'events/archived/old.zip',
     // Attachment-only trees keep whatever name the client gave the file.
     'uploads/transfers/12/payload.js',
     'uploads/transfers/12/page.html',
-    'uploads/contracts/signed/notes.htm',
-    'business-docs/inbound/report.html',
+    'uploads/signed/notes.htm',
     'events/active/wedding/script.mjs',
   ])('accepts %s', (rel) => {
     expect(importFilePathProblem(rel)).toBeNull();
@@ -195,6 +190,7 @@ describe('importFilePathProblem', () => {
     ['uploads/favicons/x.html', /active web content/],
     ['uploads/favicons/deep/x.js', /active web content/],
     ['uploads/Logos/x.HTML', /active web content/],
+    ['business-docs/invoice-1.pdf', /not under an exported storage folder/],
     ['business-docs/../fonts/x.woff2', /malformed/],
     ['uploads//x.jpg', /malformed/],
   ])('refuses %s', (rel, reason) => {

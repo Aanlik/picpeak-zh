@@ -18,7 +18,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'block-severity-secret';
 
@@ -40,12 +40,12 @@ describe('word-filter severity tiers at submission (#B11)', () => {
     .send({ feedback_type: 'comment', comment_text: text });
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const [ev] = await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Block Severity',
       event_date: '2026-08-01',
       host_email: 'h@example.com',

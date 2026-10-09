@@ -92,19 +92,19 @@ jest.mock('../../src/services/downloadRendition', () => ({
   renderPhotoForDownload: jest.fn(async () => null),
 }));
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 const downloadZipService = require('../../src/services/downloadZipService');
 
 describe('pre-zip build releases its storage reads', () => {
   let db; let cleanup; let eventId;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const ev = await db('events').insert({
       slug: 'zipleak',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Zip Leak',
       event_date: '2026-09-01',
       host_email: 'h@example.com',

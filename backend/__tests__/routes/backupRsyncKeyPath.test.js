@@ -21,7 +21,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 const PASTED_KEY = '-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAA\n-----END OPENSSH PRIVATE KEY-----';
 
@@ -44,7 +44,7 @@ describe('rsync SSH key is a key file path', () => {
   const as = (req) => req.set('Authorization', `Bearer ${superToken}`);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const role = await db('roles').where({ name: 'super_admin' }).first();
     const inserted = await db('admin_users').insert({
       username: 'root-admin',

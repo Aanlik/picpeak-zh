@@ -46,7 +46,7 @@ jest.mock('../../src/utils/frontendUrl', () => ({
   getFrontendBaseUrl: async () => 'https://example.test',
 }));
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const DAY = 24 * 60 * 60 * 1000;
 const now = Date.now();
@@ -75,11 +75,11 @@ describe('expires_at comparisons on SQLite', () => {
   const idBySlug = {};
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ customerId } = await seedMinimal(db));
     for (const [slug, expires_at] of FIXTURES) {
       const [inserted] = await db('events').insert({
-        slug, event_type: 'wedding', event_name: slug, event_date: '2026-09-01',
+        slug, event_type: 'project', event_name: slug, event_date: '2026-09-01',
         host_email: 'host@example.com', admin_email: 'admin@example.com',
         customer_email: 'customer@example.com',
         password_hash: 'unused', require_password: false,

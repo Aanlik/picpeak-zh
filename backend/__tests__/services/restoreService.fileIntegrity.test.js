@@ -21,7 +21,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'restore-integrity-test-secret';
 
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
@@ -37,7 +37,7 @@ describe('restoreService — file restore integrity', () => {
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ restoreService, _internal } = require('../../src/services/restoreService'));
     storageRoot = process.env.STORAGE_PATH;
     backupRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-restore-integrity-backup-'));

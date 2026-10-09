@@ -8,7 +8,7 @@
  * helpers below only ever name a flat leaf inside the fixed directory.
  */
 const path = require('path');
-const { uploadedAssetPath, uploadedPdfLogoPath, isPublicUploadImage } = require('../../src/utils/safePath');
+const { uploadedAssetPath, isPublicUploadImage } = require('../../src/utils/safePath');
 
 const root = '/srv/picpeak/storage';
 
@@ -33,47 +33,6 @@ describe('uploadedAssetPath', () => {
     42,
   ])('refuses %p', (value) => {
     expect(uploadedAssetPath(value, 'logos', root)).toBeNull();
-  });
-});
-
-describe('uploadedPdfLogoPath', () => {
-  it('resolves the file the upload route writes', () => {
-    expect(uploadedPdfLogoPath('/uploads/logos/pdf-logo-1700000000000.png', root))
-      .toBe(path.join(root, 'uploads', 'logos', 'pdf-logo-1700000000000.png'));
-    expect(uploadedPdfLogoPath('uploads/logos/pdf-logo-1.svg', root))
-      .toBe(path.join(root, 'uploads', 'logos', 'pdf-logo-1.svg'));
-  });
-
-  it.each([
-    'pdf-logo-1./../../../../etc/target',
-    '/uploads/logos/pdf-logo-1./../../secret',
-    '/etc/pdf-logo-1.x',
-    '/uploads/logos/pdf-logo-1.png/../other',
-    '/uploads/logos/other-logo.png',
-    '/uploads/contracts/signed/pdf-logo-1.pdf',
-    '',
-    null,
-  ])('refuses %p', (value) => {
-    expect(uploadedPdfLogoPath(value, root)).toBeNull();
-  });
-
-  it.each([
-    '/uploads/logos/pdf-logo-1.png',
-    '/uploads/logos/pdf-logo-1.jpg',
-    '/uploads/logos/pdf-logo-1.JPEG',
-    '/uploads/logos/pdf-logo-1.svg',
-  ])('accepts the image %p when only images are allowed', (value) => {
-    expect(uploadedPdfLogoPath(value, root, { imageOnly: true })).not.toBeNull();
-  });
-
-  it.each([
-    '/uploads/logos/pdf-logo-1.html',
-    '/uploads/logos/pdf-logo-1.js',
-    '/uploads/logos/pdf-logo-1.svgz',
-    '/uploads/logos/pdf-logo-1.pdf',
-  ])('refuses the non-image %p when only images are allowed, but still names it for cleanup', (value) => {
-    expect(uploadedPdfLogoPath(value, root, { imageOnly: true })).toBeNull();
-    expect(uploadedPdfLogoPath(value, root)).not.toBeNull();
   });
 });
 

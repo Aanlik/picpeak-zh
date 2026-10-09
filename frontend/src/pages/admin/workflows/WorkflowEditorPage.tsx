@@ -28,9 +28,6 @@ import { NodeConfigPanel } from './NodeConfigPanel';
 
 const PALETTE: WorkflowNodeType[] = ['trigger', 'condition', 'branch', 'loop', 'wait', 'action', 'gate', 'webhook'];
 const TRIGGERS = [
-  'invoice.sent', 'invoice.paid', 'invoice.overdue',
-  'quote.sent', 'quote.accepted', 'quote.declined',
-  'contract.sent', 'contract.signed',
   'event.date_approaching',
   'gallery.published', 'gallery.expiring', 'gallery.expired', 'gallery.revealed',
   'customer.created',
@@ -44,12 +41,11 @@ const SOURCE_HANDLES: Record<string, string[]> = {
   condition: ['yes', 'no'], branch: ['yes', 'no'], gate: ['confirm', 'deny'], loop: ['loop', 'exit'],
 };
 
-const WAIT_ANCHOR_LABEL: Record<string, string> = { dueDate: 'due date', issueDate: 'invoice date', eventDate: 'event date' };
+const WAIT_ANCHOR_LABEL: Record<string, string> = { eventDate: 'project date' };
 const ACTION_LABEL: Record<string, string> = {
-  queue_payment_check: 'Send payment-check email', escalate_to_collections: 'Collections handoff', send_email: 'Send email', reserve_date: 'Reserve the date',
+  send_email: 'Send email', reserve_date: 'Reserve the date',
   notify_pre_event: 'Send pre-event reminder', notify_gallery_expiring: 'Send gallery-expiring warning', notify_gallery_expired: 'Send gallery-expired email',
-  prepare_quote: 'Prepare quote', prepare_contract: 'Prepare contract', prepare_invoice: 'Prepare invoice',
-  prepare_event: 'Create event', prepare_gallery: 'Create gallery', send_document: 'Send document',
+  prepare_event: 'Create event', prepare_gallery: 'Create gallery',
   webhook: 'Call webhook', noop: 'Do nothing', set_context: 'Set value',
 };
 
@@ -63,7 +59,6 @@ function describeNode(type: string, config: any = {}, triggerType?: string): str
       return `Wait ${[c.delayDays && `${c.delayDays}d`, c.delayHours && `${c.delayHours}h`, c.delayMinutes && `${c.delayMinutes}m`].filter(Boolean).join(' ') || '…'}`;
     case 'condition':
     case 'branch':
-      if (c.condition === 'invoice_paid') return 'Invoice paid?';
       if (c.condition === 'expr') return `${c.field || 'field'} ${c.op || ''} ${c.value ?? ''}`.trim();
       if (c.condition === 'always') return 'Always';
       if (c.condition === 'never') return 'Never';
@@ -138,7 +133,7 @@ export const WorkflowEditorPage: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [name, setName] = useState('');
-  const [triggerType, setTriggerType] = useState('invoice.sent');
+  const [triggerType, setTriggerType] = useState('event.date_approaching');
   const [triggerConfig, setTriggerConfig] = useState<Record<string, any>>({});
   const [enabled, setEnabled] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);

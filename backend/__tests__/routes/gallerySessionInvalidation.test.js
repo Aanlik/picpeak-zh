@@ -11,7 +11,7 @@
  * - The admin preview skipped the idle timeout, which sessionTimeoutMiddleware
  *   only enforces under /api/admin.
  */
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
@@ -31,11 +31,11 @@ const galleryToken = (claims = {}) => jwt.sign({
 const listWith = (bearer) => request(app).get(photos).set('Authorization', `Bearer ${bearer}`);
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId, customerId } = await seedMinimal(db));
   await assignAdminRole(db, adminId);
   await db('events').insert({
-    id: eventId, slug, event_type: 'wedding', event_name: 'Session invalidation',
+    id: eventId, slug, event_type: 'project', event_name: 'Session invalidation',
     event_date: '2026-01-01', host_email: 'h@example.test', admin_email: 'a@example.test',
     password_hash: 'unused', share_link: `/gallery/${slug}`, created_by: adminId,
     // "Send gallery email" builds the share link from it.

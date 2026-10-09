@@ -17,7 +17,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'faceclust-test-secret';
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup; let clustering;
 
@@ -37,7 +37,7 @@ function makeEmbedding(id, variant = 0, dim = 64) {
 async function seedEvent(slug) {
   const [row] = await db('events').insert({
     slug,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: slug,
     event_date: '2026-01-01',
     host_email: 'h@example.com',
@@ -74,7 +74,7 @@ async function insertFace(eventId, embedding, overrides = {}) {
 
 describe('faceClustering (#1074)', () => {
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     clustering = require('../../src/services/faceClustering');
   }, 120000);
 

@@ -26,14 +26,14 @@ const request = require('supertest');
 const express = require('express');
 const bcrypt = require('bcrypt');
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 const { generateApiToken } = require('../../src/middleware/apiTokenAuth');
 
 describe('v1 token scopes intersect role permissions (GHSA-9697)', () => {
   let db; let cleanup; let app; let viewerToken; let viewerEventId;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const role = await db('roles').where({ name: 'viewer' }).first();
@@ -61,7 +61,7 @@ describe('v1 token scopes intersect role permissions (GHSA-9697)', () => {
 
     const ev = await db('events').insert({
       slug: 'viewer-ev',
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Viewer Event',
       event_date: '2026-08-01',
       host_email: 'h@example.com',
@@ -87,7 +87,7 @@ describe('v1 token scopes intersect role permissions (GHSA-9697)', () => {
     const res = await request(app)
       .post('/api/v1/events')
       .set('Authorization', `Bearer ${viewerToken}`)
-      .send({ event_name: 'Nope', event_type: 'wedding' });
+      .send({ event_name: 'Nope', event_type: 'project' });
     expect(res.status).toBe(403);
   });
 

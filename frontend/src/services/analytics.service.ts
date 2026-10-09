@@ -96,7 +96,7 @@ declare global {
 //   - the /s/ short links (the slug redeems to a gallery share URL);
 //   - the customer portal tree (/customer/*): login, invite/reset tokens and
 //     the cookie-authenticated portal pages behind them;
-//   - invitation, quote, contract, payment-check and transfer tokens.
+//   - invitation and transfer tokens.
 // A tracker that auto-collects page views would ship the token to the
 // analytics host, where anyone with access to the events could redeem it
 // first; and the tracker script (vendor code re-served through our origin, or
@@ -109,8 +109,7 @@ declare global {
 // also the second line of defence for a page view recorded just before a
 // client-side navigation onto one of the paths below.
 const CREDENTIAL_PATH_PREFIXES = [
-  '/s/', '/customer/', '/invite/', '/quote/', '/contract/', '/payment-check/',
-  '/transfer/', '/transfer-upload/',
+  '/s/', '/customer/', '/invite/', '/transfer/', '/transfer-upload/',
 ];
 const isCredentialPath = (pathname: string) => {
   let decoded: string;

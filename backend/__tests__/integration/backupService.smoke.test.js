@@ -4,7 +4,7 @@
  * decomposition.
  *
  * Uses the same real-SQLite harness as
- * backupService.configurableWalker.test.js (bootCrmDb + a temp
+ * backupService.configurableWalker.test.js (bootTestDb + a temp
  * STORAGE_PATH) rather than the broken deep-mock approach in
  * backupService.enhanced.test.js.
  */
@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
@@ -24,7 +24,7 @@ describe('backupService — config + file collection + manifest (smoke)', () => 
   let backupManifest;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     storagePath = process.env.STORAGE_PATH;
     backupService = require('../../src/services/backupService');
     backupManifest = require('../../src/services/backupManifest');

@@ -6,8 +6,6 @@
  * back to admin endpoints.
  */
 import { api } from '../config/api';
-import type { ContractStatus, PublicContractView } from './contracts.service';
-import type { PublicQuoteView, QuoteStatus } from './quotes.service';
 
 export interface CustomerProfile {
   id: number;
@@ -27,7 +25,6 @@ export interface CustomerProfileFull extends CustomerProfile {
   salutation: string | null;
   phone: string | null;
   companyName: string | null;
-  vatId: string | null;
   addressLine1: string | null;
   addressLine2: string | null;
   postalCode: string | null;
@@ -45,7 +42,6 @@ export interface CustomerProfilePrefill {
   display_name?: string;
   phone?: string;
   company_name?: string;
-  vat_id?: string;
   address_line1?: string;
   address_line2?: string;
   postal_code?: string;
@@ -58,7 +54,6 @@ export interface CustomerEvent {
   id: number;
   slug: string;
   eventName: string;
-  eventType: string;
   eventDate: string | null;
   expiresAt: string | null;
   isActive: boolean;
@@ -80,7 +75,6 @@ export interface CustomerProfileUpdate {
   displayName?: string | null;
   phone?: string | null;
   companyName?: string | null;
-  vatId?: string | null;
   addressLine1?: string | null;
   addressLine2?: string | null;
   postalCode?: string | null;
@@ -99,12 +93,10 @@ export const customerService = {
   // ---- auth ----
   async login(email: string, password: string, recaptchaToken?: string | null): Promise<{
     customer: CustomerProfile;
-    features: { calendar: boolean; quotes: boolean; bills: boolean; contracts: boolean };
     branding: { showLogo: boolean; showCompanyName: boolean };
   }> {
     const response = await api.post<{
       customer: CustomerProfile;
-      features?: { calendar: boolean; quotes: boolean; bills: boolean; contracts: boolean };
       branding?: { showLogo: boolean; showCompanyName: boolean };
     }>(
       '/customer/auth/login',
@@ -114,7 +106,6 @@ export const customerService = {
     // upgraded yet — defaults match CustomerAuthContext's DEFAULT_*.
     return {
       customer: response.data.customer,
-      features: response.data.features || { calendar: false, quotes: false, bills: false, contracts: false },
       branding: response.data.branding || { showLogo: true, showCompanyName: true },
     };
   },
@@ -147,19 +138,16 @@ export const customerService = {
    */
   async session(): Promise<{
     customer: CustomerProfile;
-    features: { calendar: boolean; quotes: boolean; bills: boolean; contracts: boolean };
     branding: { showLogo: boolean; showCompanyName: boolean };
   } | null> {
     try {
       const response = await api.get<{
         customer: CustomerProfile;
-        features?: { calendar: boolean; quotes: boolean; bills: boolean; contracts: boolean };
-        branding?: { showLogo: boolean; showCompanyName: boolean };
+          branding?: { showLogo: boolean; showCompanyName: boolean };
       }>('/customer/auth/session');
       return {
         customer: response.data.customer,
-        features: response.data.features || { calendar: false, quotes: false, bills: false, contracts: false },
-        branding: response.data.branding || { showLogo: true, showCompanyName: true },
+          branding: response.data.branding || { showLogo: true, showCompanyName: true },
       };
     } catch (error: any) {
       // Only treat an explicit 401 as "session is gone". Anything else
@@ -247,168 +235,4 @@ export const customerService = {
     return response.data;
   },
 
-  // ---- CRM (customer-side, read-only) ----
-  async listQuotes(): Promise<CustomerQuote[]> {
-    const response = await api.get<{ quotes: CustomerQuote[] }>('/customer/quotes');
-    return response.data.quotes;
-  },
-
-  async listInvoices(): Promise<CustomerInvoice[]> {
-    const response = await api.get<{ invoices: CustomerInvoice[] }>('/customer/invoices');
-    return response.data.invoices;
-  },
-
-  /** Returns a blob URL ready for window.open(). */
-  async invoicePdfUrl(id: number): Promise<string> {
-    const res = await api.get(`/customer/invoices/${id}/pdf`, { responseType: 'blob' });
-    return URL.createObjectURL(res.data);
-  },
-
-  /** Returns a blob URL for the quote PDF (customer-side). */
-  async quotePdfUrl(id: number): Promise<string> {
-    const res = await api.get(`/customer/quotes/${id}/pdf`, { responseType: 'blob' });
-    return URL.createObjectURL(res.data);
-  },
-
-  /** Full quote view for the portal response page. Session-authenticated:
-   *  the portal never handles the emailed response token. */
-  async getQuote(id: number): Promise<{ quote: PublicQuoteView; canRespond: boolean }> {
-    const { data } = await api.get(`/customer/quotes/${id}`);
-    return data.data || data;
-  },
-
-  async respondToQuote(
-    id: number,
-    action: 'accept' | 'decline',
-    options: { tosAccepted?: boolean } = {},
-  ): Promise<{ status: QuoteStatus; lockedAt: string }> {
-    const { data } = await api.post(`/customer/quotes/${id}/respond`, { action, tosAccepted: options.tosAccepted });
-    return data.data || data;
-  },
-
-  // ---- Contracts (customer-side) ----
-  async listContracts(): Promise<CustomerContract[]> {
-    const response = await api.get<{ contracts: CustomerContract[] }>('/customer/contracts');
-    return response.data.contracts;
-  },
-
-  /** Streams the signed PDF when available, otherwise the system-
-   *  rendered PDF. The backend handles the fallback so the frontend
-   *  just opens whatever it gets back. */
-  async contractPdfUrl(id: number): Promise<string> {
-    const res = await api.get(`/customer/contracts/${id}/pdf`, { responseType: 'blob' });
-    return URL.createObjectURL(res.data);
-  },
-
-  /** Full contract view for the portal signing page. Session-authenticated:
-   *  the portal never handles the emailed signing token. */
-  async getContract(id: number): Promise<{ contract: PublicContractView; canSign: boolean }> {
-    const { data } = await api.get(`/customer/contracts/${id}`);
-    return data.data || data;
-  },
-
-  async signContract(
-    id: number,
-    payload: { name: string; signatureDataUrl?: string | null; accepted: true },
-  ): Promise<{ status: ContractStatus; signedAt: string }> {
-    const { data } = await api.post(`/customer/contracts/${id}/sign`, payload);
-    return data.data || data;
-  },
-
-  async uploadSignedContractPdf(id: number, file: File): Promise<{ status: 'fully_signed' }> {
-    const form = new FormData();
-    form.append('file', file);
-    const { data } = await api.post(`/customer/contracts/${id}/upload-signed-pdf`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return data.data || data;
-  },
 };
-
-export interface CustomerQuote {
-  id: number;
-  quoteNumber: string;
-  status: 'draft' | 'sent' | 'accepted' | 'declined' | 'expired' | 'converted';
-  currency: string;
-  issueDate: string;
-  validUntil: string | null;
-  eventName: string | null;
-  eventDate: string | null;
-  netAmountMinor: number;
-  vatRate: number | null;
-  vatAmountMinor: number;
-  shippingAmountMinor: number;
-  totalAmountMinor: number;
-  introText: string | null;
-  outroText: string | null;
-  sentAt: string | null;
-  respondedAt: string | null;
-  responseLockedAt: string | null;
-  acceptedAt: string | null;
-  declinedAt: string | null;
-  /** Whether the quote can still be accepted or declined from the portal. */
-  canRespond: boolean;
-}
-
-export interface CustomerInvoice {
-  id: number;
-  /** Document discriminator. 'invoice' is the default; 'storno' rows
-   *  are Stornorechnungen (cancellation invoices) and render with a
-   *  distinct badge + lineage banner. */
-  kind: 'invoice' | 'storno';
-  invoiceNumber: string;
-  /** `cancelled` only appears on the customer side for invoices that
-   *  were formally reversed via Stornorechnung (cancellation_storno_id
-   *  IS NOT NULL). Soft-cancelled drafts stay hidden server-side. */
-  status: 'sent' | 'paid' | 'overdue' | 'cancelled';
-  currency: string;
-  issueDate: string;
-  dueDate: string;
-  installmentIndex: number;
-  installmentTotal: number;
-  installmentLabel: string | null;
-  netAmountMinor: number;
-  vatRate: number | null;
-  vatAmountMinor: number;
-  shippingAmountMinor: number;
-  totalAmountMinor: number;
-  paidAmountMinor: number;
-  paidAt: string | null;
-  lateFeeAmountMinor: number;
-  reminderLevel: number;
-  sentAt: string | null;
-  /** On a Storno row (kind='storno') → id of the invoice it reverses. */
-  cancelsInvoiceId: number | null;
-  /** Human invoice_number of the row referenced by `cancelsInvoiceId`,
-   *  joined server-side so the customer view can show the actual
-   *  invoice number instead of the bare row id. */
-  cancelsInvoiceNumber: string | null;
-  /** On a cancelled invoice → id of the Storno that cancelled it. */
-  cancellationStornoId: number | null;
-  /** Human invoice_number of the Storno referenced by
-   *  `cancellationStornoId`. */
-  cancellationStornoNumber: string | null;
-  /** Inline event snapshot (migration 123) — rendered next to the
-   *  invoice number on the customer portal bills list. */
-  eventName: string | null;
-  eventDate: string | null;
-}
-
-export interface CustomerContract {
-  id: number;
-  contractNumber: string;
-  status: 'sent' | 'signed_by_customer' | 'signed_by_admin' | 'fully_signed' | 'cancelled';
-  language: string;
-  issueDate: string;
-  validUntil: string | null;
-  title: string | null;
-  sentAt: string | null;
-  signedByCustomerAt: string | null;
-  signedByAdminAt: string | null;
-  signedCustomerName: string | null;
-  signedAdminName: string | null;
-  hasPdf: boolean;
-  hasSignedPdf: boolean;
-  /** Whether the customer can sign this contract from the portal. */
-  canSign: boolean;
-}

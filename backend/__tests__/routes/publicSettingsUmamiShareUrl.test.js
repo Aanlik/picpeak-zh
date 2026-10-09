@@ -16,13 +16,13 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'pubsettings-umami-test-secre
 process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-pubsettings-umami-storage-'));
 
 const request = require('supertest');
-const { bootCrmDb, buildRouteApp } = require('../integration/helpers/crmDb');
+const { bootTestDb, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
 
 describe('public settings — Umami share URL stays private', () => {
   let db; let cleanup; let app;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     for (const [key, value] of Object.entries({
       analytics_umami_enabled: true,
       analytics_umami_url: 'https://umami.example',

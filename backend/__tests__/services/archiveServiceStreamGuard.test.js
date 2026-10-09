@@ -60,7 +60,7 @@ jest.mock('../../src/services/emailProcessor', () => ({
   getSupportEmail: jest.fn(async () => 'support@example.com'),
 }));
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 describe('archiveService storage reads', () => {
   let db; let cleanup; let archiveEvent;
@@ -70,7 +70,7 @@ describe('archiveService storage reads', () => {
   async function makeEvent(slug, photoCount) {
     const id = unwrap(await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: `Archive ${slug}`,
       event_date: '2026-08-01',
       host_email: 'host@example.com',
@@ -96,7 +96,7 @@ describe('archiveService storage reads', () => {
   }
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     ({ archiveEvent } = require('../../src/services/archiveService'));
   }, 180000);

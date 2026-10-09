@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
 const { db } = require('../database/db');
-const { deleteWithAccountingHistory } = require('../services/accountingHistory');
+const { deleteWithHistory } = require('../services/changeHistory');
 const { formatBoolean } = require('../utils/dbCompat');
 const { slugify } = require('../utils/slug');
 const { adminAuth } = require('../middleware/auth');
@@ -39,7 +39,6 @@ router.get('/', adminAuth, requirePermission('archives.view'), async (req, res) 
   try {
     const { page, limit, offset } = getPagination(req);
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
-    const type = typeof req.query.type === 'string' ? req.query.type.trim() : '';
     const sortBy = ['date', 'name', 'size'].includes(req.query.sortBy) ? req.query.sortBy : 'date';
 
     // Search and type filtering run in SQL so both the returned rows and
@@ -61,9 +60,6 @@ router.get('/', adminAuth, requirePermission('archives.view'), async (req, res) 
           likeWithEscape('events.event_name'),
           [`%${escapeLikePattern(search)}%`]
         );
-      }
-      if (type && type !== 'all') {
-        query.where('events.event_type', type);
       }
       return query;
     };
@@ -122,7 +118,6 @@ router.get('/', adminAuth, requirePermission('archives.view'), async (req, res) 
         slug: archive.slug,
         eventName: archive.event_name,
         eventDate: archive.event_date,
-        eventType: archive.event_type,
         hostEmail: archive.host_email,
         archivedAt: archive.archived_at ? new Date(archive.archived_at).toISOString() : null,
         expiresAt: archive.expires_at ? new Date(archive.expires_at).toISOString() : null,
@@ -196,7 +191,6 @@ router.get('/:id', adminAuth, requirePermission('archives.view'), requireEventOw
       slug: archive.slug,
       eventName: archive.event_name,
       eventDate: archive.event_date,
-      eventType: archive.event_type,
       hostEmail: archive.host_email,
       adminEmail: archive.admin_email,
       welcomeMessage: archive.welcome_message,
@@ -741,7 +735,7 @@ router.delete('/:id', adminAuth, requirePermission('archives.delete'), requireEv
       }
       await trx('feedback_rate_limits').where('event_id', req.params.id).del();
       await trx('photos').where('event_id', req.params.id).del();
-      await deleteWithAccountingHistory(trx, 'events', { id: req.params.id },
+      await deleteWithHistory(trx, 'events', { id: req.params.id },
         { actor: req.admin.id, source: 'archive.delete' });
     });
 

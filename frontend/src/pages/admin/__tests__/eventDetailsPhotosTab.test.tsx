@@ -83,7 +83,7 @@ const EVENT = {
   id: 1,
   event_name: 'ZZTEST',
   slug: 'zztest',
-  event_type: 'wedding',
+  event_type: 'project',
   event_date: '2026-09-01T00:00:00.000Z',
   expires_at: '2027-09-01T00:00:00.000Z',
   is_active: true,

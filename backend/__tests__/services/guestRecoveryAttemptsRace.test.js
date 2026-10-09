@@ -7,7 +7,7 @@
  * The attempt is now claimed in one conditional UPDATE before the compare and
  * the code is consumed only once.
  */
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 jest.setTimeout(120000);
 
@@ -17,7 +17,7 @@ let guestRecovery;
 let eventId;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   // Under jest a service's `new Date()` binds as a foreign-realm Date that
   // node-sqlite3 stringifies; normalise bindings the same way the other
   // service-level suites do.
@@ -33,7 +33,7 @@ beforeAll(async () => {
   };
   const [row] = await db('events').insert({
     slug: 'guest-recovery-race',
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Guest recovery race',
     event_date: '2026-01-01',
     host_email: 'h@example.com',

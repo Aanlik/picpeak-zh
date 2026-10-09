@@ -20,7 +20,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-that-is-long-eno
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 
 const HOUR = 3600 * 1000;
 
@@ -28,7 +28,7 @@ describe('GET /api/admin/dashboard/health — failed emails of the last day', ()
   let db; let cleanup; let app; let token;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');
     token = mintAdminToken(adminId);

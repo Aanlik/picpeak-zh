@@ -22,7 +22,7 @@ process.env.STORAGE_PATH = tmp;
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-that-is-long-enough-for-validation';
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const SRC = path.join(__dirname, '../../src');
 // Every `db('email_queue').insert({ ... status: 'pending' ... })` in the
@@ -31,8 +31,6 @@ const SRC = path.join(__dirname, '../../src');
 const PENDING_WRITERS = [
   'services/emailProcessor.js',
   'services/eventCreationService.js',
-  'services/projectService.js',
-  'services/newsletterService.js',
   'routes/adminEvents/crud.js',
 ];
 
@@ -65,7 +63,7 @@ describe('queueEmail on SQLite', () => {
   let db; let cleanup; let queueEmail;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     ({ queueEmail } = require('../../src/services/emailProcessor'));
   }, 120000);

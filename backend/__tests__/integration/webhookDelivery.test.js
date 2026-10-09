@@ -5,7 +5,7 @@ process.env.WEBHOOK_ALLOW_PRIVATE_URLS = 'true';
 process.env.WEBHOOK_DELIVERY_INTERVAL_MS = '50';
 
 const http = require('http');
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 let db, cleanup, adminId;
 let webhookService;
 let __test, startWebhookDeliveryWorker, stopWebhookDeliveryWorker;
@@ -57,7 +57,7 @@ async function clearWebhooks() {
 
 describe('webhook delivery worker (#327)', () => {
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ adminId } = await seedMinimal(db));
     webhookService = require('../../src/services/webhookService');
     ({ __test, startWebhookDeliveryWorker, stopWebhookDeliveryWorker } = require('../../src/services/webhookDeliveryWorker'));

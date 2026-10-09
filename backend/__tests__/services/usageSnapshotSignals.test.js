@@ -58,9 +58,6 @@ async function bootDb() {
   for (const table of ['email_configs', 'mail_accounts']) {
     await db.schema.createTable(table, (t) => { t.increments('id'); t.string('smtp_host'); });
   }
-  await db.schema.createTable('whatsapp_configs', (t) => {
-    t.increments('id'); t.boolean('enabled'); t.string('phone_number_id'); t.string('access_token');
-  });
   return db;
 }
 
@@ -337,7 +334,7 @@ describe('v2 technical configuration and privacy boundaries', () => {
 
   it('produces all 73 closed booleans, never exposing sensitive values or configuration-only used', async () => {
     const client = await expandedDb();
-    const flags = [...new Set(Object.values(CATALOG.features).map((f) => f.flag).filter(Boolean)), 'incomingMail', 'whatsapp'];
+    const flags = [...new Set(Object.values(CATALOG.features).map((f) => f.flag).filter(Boolean)), 'incomingMail'];
     await db('feature_flags').insert([...new Set(flags)].map((key) => ({ key, value: true })));
     const settings = {
       general_allowed_file_types: 'jpg,dng,mp4', general_public_site_enabled: true,
@@ -356,7 +353,6 @@ describe('v2 technical configuration and privacy boundaries', () => {
     await db('event_feedback_settings').insert({ feedback_enabled: true, identity_mode: 'guest',
       allow_likes: true, allow_ratings: true, allow_comments: true, allow_favorites: true, allow_reactions: true, allow_color_labels: true });
     await db('email_configs').insert({ smtp_host: 'PRIVATE-host', imap_host: 'PRIVATE-host', imap_user: 'PRIVATE-user', imap_pass: 'PRIVATE-secret' });
-    await db('whatsapp_configs').insert({ enabled: true, phone_number_id: 'PRIVATE-phone', access_token: 'PRIVATE-token' });
     await db('api_tokens').insert({ token_hash: 'PRIVATE-token', expires_at: '2028-01-01T00:00:00.000Z' });
     await db('webhooks').insert({ active: true, url: 'https://PRIVATE.example.test', secret: 'PRIVATE-secret' });
     Object.assign(process.env, { STORAGE_BACKEND: 's3', STORAGE_S3_BUCKET: 'PRIVATE', STORAGE_S3_ACCESS_KEY: 'PRIVATE', STORAGE_S3_SECRET_KEY: 'PRIVATE', EMAIL_WEBHOOK_URL: 'https://PRIVATE.example.test', EMAIL_WEBHOOK_SECRET: 'PRIVATE' });

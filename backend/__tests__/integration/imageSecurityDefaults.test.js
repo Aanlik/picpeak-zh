@@ -17,7 +17,7 @@
  * canvas rendering, which is the memory profile under investigation in #1287.
  */
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 describe('image-security creation defaults', () => {
   let db;
@@ -27,7 +27,7 @@ describe('image-security creation defaults', () => {
   let readBooleanSetting;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ getImageSecurityDefaults, resolveImageSecurityColumns, readBooleanSetting } =
       require('../../src/routes/adminEvents/helpers'));
   }, 120000);

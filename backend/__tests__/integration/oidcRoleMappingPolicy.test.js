@@ -24,7 +24,7 @@ const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 const { MockOidcProvider } = require('./helpers/mockOidcProvider');
 
 describe('OIDC role mapping + login policy (#798 phase 2)', () => {
@@ -39,7 +39,7 @@ describe('OIDC role mapping + login policy (#798 phase 2)', () => {
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'oidc-test-secret';
     process.env.FRONTEND_URL = 'http://localhost:5199';
     delete process.env.OIDC_BREAK_GLASS;
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
 
     idp = new MockOidcProvider();
     const issuer = await idp.start();

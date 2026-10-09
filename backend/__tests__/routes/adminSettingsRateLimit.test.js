@@ -24,7 +24,7 @@ process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-rateli
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const { bootCrmDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole, mintAdminToken } = require('../integration/helpers/sqliteTestDb');
 const { clearPermissionCache } = require('../../src/middleware/permissions');
 const rateLimitService = require('../../src/services/rateLimitService');
 const { MemoryStore } = require('express-rate-limit');
@@ -35,7 +35,7 @@ describe('admin rate limiter settings', () => {
   const rows = () => db('app_settings').where('setting_key', 'like', 'rate_limit_%').orderBy('setting_key');
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     const { adminId } = await seedMinimal(db);
     await assignAdminRole(db, adminId, 'super_admin');
     tok = mintAdminToken(adminId);

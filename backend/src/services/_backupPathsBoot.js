@@ -30,6 +30,7 @@
  */
 
 const { DEFAULT_PATHS } = require('../../migrations/core/109_add_backup_paths');
+const ACTIVE_DEFAULT_PATHS = DEFAULT_PATHS.filter((row) => row.path !== 'business-docs');
 
 let booted = false;
 
@@ -56,7 +57,7 @@ async function seedBackupPathsAtBoot(db, logger) {
   // new feature ships.
   const existing = await db('backup_paths').select('path');
   const existingSet = new Set(existing.map((r) => r.path));
-  const missing = DEFAULT_PATHS.filter((p) => !existingSet.has(p.path));
+  const missing = ACTIVE_DEFAULT_PATHS.filter((p) => !existingSet.has(p.path));
 
   if (missing.length === 0) {
     booted = true;

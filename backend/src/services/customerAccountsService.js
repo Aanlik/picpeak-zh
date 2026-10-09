@@ -16,7 +16,7 @@ const { db, logActivity } = require('../database/db');
 const { formatBoolean, whereTimestamp } = require('../utils/dbCompat');
 const { getBcryptRounds } = require('../utils/passwordValidation');
 const { queueEmail } = require('./emailProcessor');
-const { auditedInsert, auditedUpdate, redactCustomerHistory } = require('./accountingHistory');
+const { auditedInsert, auditedUpdate, redactCustomerHistory } = require('./changeHistory');
 const { getFrontendBaseUrl } = require('../utils/frontendUrl');
 const logger = require('../utils/logger');
 const { ConflictError, NotFoundError, ValidationError } = require('../utils/errors');
@@ -53,7 +53,6 @@ const PREFILLABLE_FIELDS = [
   'display_name',
   'phone',
   'company_name',
-  'vat_id',
   'address_line1',
   'address_line2',
   'postal_code',
@@ -61,10 +60,7 @@ const PREFILLABLE_FIELDS = [
   'state',
   'country_code',
   'country_name',
-  // Locale used for portal UI AND for quote/invoice PDF rendering.
-  // Admin can pre-set this on the invitation so a German customer
-  // gets German documents from the very first invoice, without
-  // waiting for them to log in and pick their language.
+  // BCP-47 locale used by the customer portal.
   'preferred_language',
 ];
 
@@ -201,16 +197,8 @@ async function createInvitation({ email, invitedById, prefill }) {
 /**
  * Create a "passive" customer directly — no invitation, no email.
  *
- * Used for two flows:
- *   1. Admin opens the quote/invoice editor, clicks "+ Create new
- *      customer", fills out the form, hits "Save as passive customer".
- *      The customer becomes available immediately as the recipient of
- *      the document the admin is working on.
- *   2. Admin opens the same form and hits "Save & send portal
- *      invitation". The editor calls createDirect first to mint the
- *      customer id, then calls the send-invite route to fire the
- *      onboarding email. (Two separate API calls — easier to reason
- *      about than an atomic endpoint.)
+ * Used when an administrator creates a customer record without granting
+ * portal access, or creates the record before sending a separate invitation.
  *
  * A passive customer is identified by `password_hash IS NULL`. The
  * customerAuth middleware already rejects login for those (bcrypt
@@ -234,15 +222,7 @@ async function createDirect({ email, prefill, createdByAdminId }) {
     throw new ConflictError('A customer account with this email already exists', 'email');
   }
 
-  // Same default-locale resolution as acceptInvitation so German
-  // shops get German customers automatically.
-  let defaultPreferredLanguage = 'en';
-  try {
-    // eslint-disable-next-line global-require
-    const businessProfileService = require('./businessProfileService');
-    const { profile: bp } = await businessProfileService.getProfile();
-    if (bp && bp.default_locale) defaultPreferredLanguage = bp.default_locale;
-  } catch (_) { /* keep 'en' fallback */ }
+  const defaultPreferredLanguage = 'zh-CN';
 
   const sanitised = sanitisePrefill(prefill) || {};
   const preferredLanguage = sanitised.preferred_language || defaultPreferredLanguage;
@@ -255,7 +235,6 @@ async function createDirect({ email, prefill, createdByAdminId }) {
     display_name: sanitised.display_name || null,
     phone: sanitised.phone || null,
     company_name: sanitised.company_name || null,
-    vat_id: sanitised.vat_id || null,
     address_line1: sanitised.address_line1 || null,
     address_line2: sanitised.address_line2 || null,
     postal_code: sanitised.postal_code || null,
@@ -310,7 +289,7 @@ async function acceptInvitation({ token, name, password, profile }) {
   //   - existing.password_hash IS NULL    → passive customer being
   //     promoted to active. Branch to the UPSERT path further down so
   //     the customer's id (and all the rows that reference it —
-  //     invoices, quotes, gallery assignments) survive promotion.
+  //     gallery assignments survive promotion.
   const existing = await db('customer_accounts')
     .where('email', invitation.email)
     .first();
@@ -336,21 +315,7 @@ async function acceptInvitation({ token, name, password, profile }) {
     merged.display_name = String(name).trim();
   }
 
-  // Default the customer's preferred_language to the business profile's
-  // default_locale. Migration 090 sets the schema default to 'en' which
-  // is a poor fit for a Swiss/DE business — by pulling from the
-  // configured profile we make sure German shops issue German quotes
-  // and invoices to their new customers automatically. Customer-typed
-  // value still wins (if the accept form ever exposes the picker), and
-  // the admin can always override later on the customer detail page.
-  // Lazy require to avoid a service-cycle with businessProfileService.
-  let defaultPreferredLanguage = 'en';
-  try {
-    // eslint-disable-next-line global-require
-    const businessProfileService = require('./businessProfileService');
-    const { profile: bp } = await businessProfileService.getProfile();
-    if (bp && bp.default_locale) defaultPreferredLanguage = bp.default_locale;
-  } catch (_) { /* keep 'en' fallback */ }
+  const defaultPreferredLanguage = 'zh-CN';
   const preferredLanguage = merged.preferred_language || defaultPreferredLanguage;
 
   const customerId = await db.transaction(async (trx) => {
@@ -397,7 +362,6 @@ async function acceptInvitation({ token, name, password, profile }) {
       overwriteIfSet('display_name');
       overwriteIfSet('phone');
       overwriteIfSet('company_name');
-      overwriteIfSet('vat_id');
       overwriteIfSet('address_line1');
       overwriteIfSet('address_line2');
       overwriteIfSet('postal_code');
@@ -424,7 +388,6 @@ async function acceptInvitation({ token, name, password, profile }) {
         display_name: merged.display_name || null,
         phone: merged.phone || null,
         company_name: merged.company_name || null,
-        vat_id: merged.vat_id || null,
         address_line1: merged.address_line1 || null,
         address_line2: merged.address_line2 || null,
         postal_code: merged.postal_code || null,
@@ -521,19 +484,6 @@ async function listCustomers({ search } = {}) {
       // `isPassive` flag (passwordHash == null). The actual hash
       // never leaves the API — transformCustomer drops it.
       'customer_accounts.password_hash',
-      // Per-customer feature flags + hourly rate (migrations 092/129).
-      // Surfaced on the LIST endpoint so the standalone Hours-logging
-      // page can filter the customer dropdown to only customers with
-      // hours logging enabled, and read the default rate without an
-      // N+1 detail fetch. Without these in the SELECT,
-      // transformCustomer evaluates the four feature_* booleans as
-      // false (column absent → undefined → coerce to false).
-      'customer_accounts.feature_calendar',
-      'customer_accounts.feature_quotes',
-      'customer_accounts.feature_bills',
-      'customer_accounts.feature_hours_logging',
-      'customer_accounts.feature_contracts',
-      'customer_accounts.hourly_rate_minor',
       'customer_accounts.last_login',
       'customer_accounts.created_at',
       db.raw('COUNT(event_customer_assignments.id) as event_count')
@@ -587,160 +537,40 @@ async function getCustomerById(id) {
  * typo before the customer accepts. Uniqueness is enforced.
  */
 async function updateCustomer(id, updates, updatedByAdminId) {
-  // Set when marketing_opt_out actually flips, so the dedicated consent
-  // event can be logged after the write lands.
-  let marketingConsentTransition = null;
   const customer = await db('customer_accounts').where('id', id).first();
-  if (!customer) {
-    throw new NotFoundError('Customer', id);
-  }
+  if (!customer) throw new NotFoundError('Customer', id);
 
   const allowed = {};
   const fields = [
     'email', 'salutation', 'first_name', 'last_name', 'display_name',
-    'phone', 'company_name', 'billing_email', 'vat_id',
-    'address_line1', 'address_line2', 'postal_code', 'city', 'state',
-    'country_code', 'country_name', 'preferred_language', 'notes',
-    // Per-customer feature flags (#354 follow-up). Booleans below are
-    // coerced via formatBoolean for SQLite compatibility.
-    'feature_calendar', 'feature_quotes', 'feature_bills', 'feature_hours_logging',
-    // Per-customer contracts override (migration 131). Defaults TRUE so
-    // existing customers keep their Contracts tab.
-    'feature_contracts',
-    // CRM billing cadence (migration 102). 'per_event' (default) keeps
-    // each invoice firing on its own schedule; monthly/quarterly snap
-    // every scheduled invoice to billing_cycle_day of the next period.
-    'billing_cadence', 'billing_cycle_day',
-    // Hour-logging default rate (migration 129). Minor units; null
-    // means admin must enter a per-entry override on every entry.
-    'hourly_rate_minor',
-    // Per-customer Skonto opt-out (migration 112). Boolean, coerced
-    // via formatBoolean below for SQLite compatibility.
-    'skonto_disabled',
-    // Per-customer re-bill proof-attachment override (migration 169, #866).
-    // Tri-state: null = inherit global default, true/false = force. Handled
-    // in its own branch below so null survives (formatBoolean would coerce
-    // it to false and silently lose the "inherit" state).
-    'rebill_attach_proof',
-    // Newsletter consent (migration 199, #1264). Admin-settable so a
-    // customer who unsubscribes by phone can be honoured without waiting
-    // for them to click a link. Transactional mail ignores it entirely.
-    'marketing_opt_out',
+    'phone', 'company_name', 'address_line1', 'address_line2', 'postal_code',
+    'city', 'state', 'country_code', 'country_name', 'preferred_language',
+    'notes', 'is_active',
   ];
-  for (const f of fields) {
-    if (updates[f] !== undefined) {
-      // Trim+lowercase email; everything else passes through. country_code
-      // is uppercased to match ISO 3166-1 alpha-2 convention.
-      if (f === 'email') {
-        allowed[f] = String(updates[f] || '').trim().toLowerCase();
-      } else if (f === 'country_code' && updates[f]) {
-        allowed[f] = String(updates[f]).trim().toUpperCase().slice(0, 2);
-      } else if (
-        f === 'feature_calendar' || f === 'feature_quotes'
-        || f === 'feature_bills' || f === 'feature_hours_logging'
-        || f === 'feature_contracts'
-        || f === 'skonto_disabled'
-      ) {
-        allowed[f] = formatBoolean(updates[f]);
-      } else if (f === 'marketing_opt_out') {
-        // Only stamp on an actual transition. The customer form submits this
-        // field on every full-profile save, so saving an unrelated field
-        // while the customer stayed opted out would move
-        // marketing_opt_out_at to now — overwriting the moment consent was
-        // actually withdrawn with the moment someone edited a phone number.
-        const wasOptedOut = customer.marketing_opt_out === true
-          || customer.marketing_opt_out === 1
-          || customer.marketing_opt_out === '1';
-        const nowOptedOut = Boolean(updates[f]);
-        allowed[f] = formatBoolean(nowOptedOut);
-        if (wasOptedOut !== nowOptedOut) {
-          allowed.marketing_opt_out_at = nowOptedOut ? new Date().toISOString() : null;
-          // Consent changes are designed to be auditable in their own right.
-          // The generic `customer_updated` entry records only that a field
-          // named marketing_opt_out was touched — not the new value, and not
-          // that an admin made the change on the customer's behalf.
-          marketingConsentTransition = nowOptedOut;
-        }
-      } else if (f === 'rebill_attach_proof') {
-        // Tri-state override. null/'' → NULL (inherit global default);
-        // otherwise a real boolean (coerced for SQLite).
-        allowed[f] = (updates[f] === null || updates[f] === '') ? null : formatBoolean(updates[f]);
-      } else if (f === 'hourly_rate_minor') {
-        // Default hourly rate. Null clears it (forces per-entry
-        // overrides); otherwise coerce to a non-negative bigint-safe
-        // integer. Anything funky → null.
-        if (updates[f] === null || updates[f] === '') {
-          allowed[f] = null;
-        } else {
-          const v = parseInt(updates[f], 10);
-          allowed[f] = Number.isFinite(v) && v >= 0 ? v : null;
-        }
-      } else if (f === 'billing_cadence') {
-        // Whitelist enum. Anything else flips to 'per_event' so we
-        // never persist garbage that the scheduler can't interpret.
-        const v = String(updates[f] || '').toLowerCase();
-        allowed[f] = ['per_event', 'monthly', 'quarterly'].includes(v) ? v : 'per_event';
-      } else if (f === 'billing_cycle_day') {
-        // Sign carries the interpretation:
-        //   positive 1..28  → day-of-month (clamped to month length at
-        //                     schedule time, so cycleDay=28 stays valid
-        //                     in February)
-        //   negative -1..-15 → that many days before end of month
-        //                      (cycleDay=-3 on a 31-day month fires on
-        //                      the 28th; on a 28-day February fires on
-        //                      the 25th)
-        // Zero is meaningless and clamps to 1 so the column never
-        // stores "the 0th of the month".
-        const v = parseInt(updates[f], 10);
-        if (!Number.isFinite(v) || v === 0) {
-          allowed[f] = 1;
-        } else if (v > 0) {
-          allowed[f] = Math.min(28, v);
-        } else {
-          allowed[f] = Math.max(-15, v);
-        }
-      } else {
-        allowed[f] = updates[f];
-      }
-    }
+  for (const field of fields) {
+    if (updates[field] === undefined) continue;
+    if (field === 'email') allowed[field] = String(updates[field] || '').trim().toLowerCase();
+    else if (field === 'country_code' && updates[field]) allowed[field] = String(updates[field]).trim().toUpperCase().slice(0, 2);
+    else if (field === 'is_active') allowed[field] = formatBoolean(updates[field]);
+    else allowed[field] = updates[field];
   }
 
   if (allowed.email && allowed.email !== customer.email) {
-    const conflict = await db('customer_accounts')
-      .where('email', allowed.email)
-      .whereNot('id', id)
-      .first();
-    if (conflict) {
-      throw new ConflictError('Email already in use', 'email');
-    }
-  }
-
-  if (updates.is_active !== undefined) {
-    allowed.is_active = formatBoolean(updates.is_active);
+    const conflict = await db('customer_accounts').where('email', allowed.email).whereNot('id', id).first();
+    if (conflict) throw new ConflictError('Email already in use', 'email');
   }
 
   allowed.updated_at = new Date();
   await auditedUpdate(db, 'customer_accounts', { id }, allowed, {
-    actor: updatedByAdminId || null, source: 'customer.update',
+    actor: updatedByAdminId || null,
+    source: 'customer.update',
   });
-
-  await logActivity('customer_updated',
+  await logActivity(
+    'customer_updated',
     { customerId: id, fields: Object.keys(allowed) },
     null,
-    { type: 'admin', id: updatedByAdminId, name: 'system' }
+    { type: 'admin', id: updatedByAdminId, name: 'system' },
   );
-
-  // The dedicated consent event, alongside the generic one. It is what the
-  // newsletter audit trail reads: the new VALUE and the source, rather than
-  // just the fact that a field with that name was written (#1264).
-  if (marketingConsentTransition !== null) {
-    await logActivity('customer_marketing_opt_out',
-      { customerId: id, optOut: marketingConsentTransition, source: 'admin' },
-      null,
-      { type: 'admin', id: updatedByAdminId, name: 'system' }
-    );
-  }
-
   return getCustomerById(id);
 }
 
@@ -833,10 +663,8 @@ async function reactivateCustomer(id, reactivatedByAdminId) {
  *     any backup stop carrying their data (#1593). Matched on the address
  *     as stored *before* this function rewrites it to the sentinel below,
  *     case-insensitively (an address stored with different casing than the
- *     account is still the same mailbox). Contract mail on this branch is
- *     always queued to the account address (signatures v2 and its
- *     per-signer addresses haven't landed here), so it is covered by the
- *     same match. A cancelled row belonging to a newsletter campaign also flips its
+ *     account is still the same mailbox). Notifications for this account use
+ *     the account address, so the same match covers them. A cancelled row belonging to a newsletter campaign also flips its
  *     `email_campaign_recipients` row and rolls the campaign's counters,
  *     so a campaign whose last outstanding recipient was just erased
  *     doesn't stay stuck at queued/sending forever.
@@ -860,13 +688,6 @@ async function eraseCustomer(id, erasedByAdminId) {
   // a random suffix so a re-erase of a different account doesn't
   // collide on the unique index.
   const sentinelEmail = `deleted-${id}-${crypto.randomBytes(4).toString('hex')}@deleted.invalid`;
-  // Campaigns touched by the email_queue cancellation below (#1593 bug 3) —
-  // their email_campaign_recipients rows and counters are recomputed once
-  // this transaction commits (recomputeCounts reads through the shared
-  // `db` connection, not `trx`, so calling it in here would read stale —
-  // or on SQLite, deadlock on — the not-yet-committed rows).
-  const touchedCampaignIds = new Set();
-
   await db.transaction(async (trx) => {
     // email_queue (#1593): cancel what hasn't gone out yet, then redact the
     // variables + recipient on every row for this address that isn't
@@ -875,7 +696,7 @@ async function eraseCustomer(id, erasedByAdminId) {
     // against the real address, not the sentinel.
     const forCustomer = (q) => q.whereRaw('LOWER(recipient_email) = LOWER(?)', [customer.email]);
     const cancelledQueueRows = await forCustomer(trx('email_queue')).where('status', 'pending')
-      .select('id', 'campaign_id');
+      .select('id');
     if (cancelledQueueRows.length > 0) {
       await trx('email_queue')
         .whereIn('id', cancelledQueueRows.map((row) => row.id))
@@ -892,21 +713,6 @@ async function eraseCustomer(id, erasedByAdminId) {
         // in the DB and in every backup — defeating the erasure.
         rendered_html: null,
       });
-
-    // Newsletter campaign bookkeeping (#1593 bug 3): a cancelled row that
-    // belongs to a campaign must flip its email_campaign_recipients row
-    // too, or that recipient stays 'queued' forever and
-    // newsletterService.recomputeCounts's stillQueued check keeps the
-    // whole campaign stuck at 'queued'/'sending' even once every other
-    // recipient resolved.
-    for (const row of cancelledQueueRows) {
-      if (!row.campaign_id) continue;
-      await trx('email_campaign_recipients')
-        .where({ campaign_id: row.campaign_id, email_queue_id: row.id })
-        .where('status', 'queued')
-        .update({ status: 'cancelled' });
-      touchedCampaignIds.add(row.campaign_id);
-    }
 
     await auditedUpdate(trx, 'customer_accounts', { id }, {
       email: sentinelEmail,
@@ -949,28 +755,8 @@ async function eraseCustomer(id, erasedByAdminId) {
     // Active reset tokens for this customer should be invalidated.
     await trx('customer_password_resets').where('customer_account_id', id).del();
 
-    // Pending re-bills (incoming invoices, migration 132) attached to this
-    // customer would otherwise stay billable to the now-anonymized account —
-    // return the not-yet-billed ones to the inbox for re-triage so they're not
-    // silently lost or billed to a ghost (PR #636 review #2). Guarded for
-    // schema drift on installs that predate migration 132.
-    if (await trx.schema.hasColumn('inbound_documents', 'customer_account_id')) {
-      await auditedUpdate(trx, 'inbound_documents',
-        (q) => q.where({ customer_account_id: id }).whereNull('billed_invoice_id'),
-        { customer_account_id: null, disposition: null, status: 'unsorted', updated_at: new Date() },
-        { actor: erasedByAdminId || null, source: 'customer.erase' });
-    }
-  });
 
-  // Campaign counters (#1593 bug 3), recomputed now that the cancellations
-  // above have committed — recomputeCounts reads the recipient rows fresh
-  // through the shared `db` connection.
-  if (touchedCampaignIds.size > 0) {
-    const newsletterService = require('./newsletterService');
-    for (const campaignId of touchedCampaignIds) {
-      await newsletterService.recomputeCounts(campaignId);
-    }
-  }
+  });
 
   await logActivity('customer_erased',
     { customerId: id, originalEmail: customer.email },
@@ -1003,15 +789,9 @@ async function searchCustomers(query, { limit = 10 } = {}) {
     // admin only" because `undefined == null` is true. The hash itself
     // is dropped by the route's transformCustomer before leaving the API.
     //
-    // G.2 — `feature_hours_logging` is required by the calendar's
-    // drag-create modal (F.6) so the CustomerPicker can render the
-    // "Hour logging disabled" badge. Omitting it from this SELECT
-    // caused the badge to appear on EVERY search result regardless
-    // of the actual per-customer flag, because transformCustomer
-    // coerces undefined → false.
     .select(
       'id', 'email', 'display_name', 'first_name', 'last_name', 'company_name',
-      'password_hash', 'feature_hours_logging',
+      'password_hash',
     )
     .orderBy('email', 'asc')
     .limit(limit);
@@ -1300,7 +1080,6 @@ async function listEventsForCustomer(customerId) {
       'events.id',
       'events.slug',
       'events.event_name',
-      'events.event_type',
       'events.event_date',
       'events.expires_at',
       'events.is_active',
@@ -1390,96 +1169,22 @@ async function isCustomerPortalEnabled() {
   }
 }
 
-/**
- * Customer-surface global toggles. Branding visibility (logo /
- * company name in the customer dashboard header) lives in
- * app_settings under setting_type='customer_surface' and is edited
- * from the Branding page (Customer dashboard card, gated by the
- * customerPortal feature flag).
- *
- * Calendar / Quotes / Bills feature globals are intentionally OFF
- * here — those surfaces are now governed by the maintainer's
- * feature_flags table (Settings → Features), not by app_settings.
- *
- * Returns sane defaults when the keys aren't present so an install
- * missing migration 092 doesn't crash — branding defaults ON to
- * match the visual state before the toggle existed.
- */
+/** Customer portal branding visibility settings. */
 async function getCustomerSurfaceGlobals() {
-  const rows = await db('app_settings').where('setting_type', 'customer_surface').select('setting_key', 'setting_value');
-  const map = {};
-  for (const r of rows) {
-    let v = r.setting_value;
-    if (typeof v === 'string') {
-      try { v = JSON.parse(v); } catch { /* leave as-is */ }
+  const rows = await db('app_settings')
+    .where('setting_type', 'customer_surface')
+    .select('setting_key', 'setting_value');
+  const values = {};
+  for (const row of rows) {
+    let value = row.setting_value;
+    if (typeof value === 'string') {
+      try { value = JSON.parse(value); } catch { /* use stored value */ }
     }
-    map[r.setting_key] = v;
+    values[row.setting_key] = value;
   }
-  // Feature globals:
-  //   - quotes + bills default TRUE — the customer-facing pages are
-  //     fully built and the AND-logic with the per-customer flag is
-  //     the real gate. The earlier hardcoded `false` made it
-  //     impossible to surface the tabs without code changes.
-  //   - calendar defaults FALSE — the customer-side page is still a
-  //     coming-soon stub.
-  // Each is overridable via app_settings (setting_type='customer_surface').
-  const readBool = (key, fallback) => {
-    const v = map[key];
-    if (v === undefined) return fallback;
-    if (v === true || v === 1 || v === '1' || v === 't') return true;
-    if (v === false || v === 0 || v === '0' || v === 'f') return false;
-    return fallback;
-  };
   return {
-    calendarEnabled: readBool('customer_feature_calendar_enabled', false),
-    quotesEnabled:   readBool('customer_feature_quotes_enabled',   true),
-    billsEnabled:    readBool('customer_feature_bills_enabled',    true),
-    showLogo:        map.customer_show_logo !== false, // default true
-    showCompanyName: map.customer_show_company_name !== false, // default true
-  };
-}
-
-/**
- * Compute the effective feature-flag set for a single customer.
- *
- * AND-logic: a customer sees a feature iff the global toggle is on AND
- * their per-customer flag is on. This gives the admin two independent
- * levers — flip a feature on for the whole instance, then choose which
- * customers actually see it.
- *
- * Pass either a numeric customerId (we'll fetch) or a row already loaded.
- */
-async function getEffectiveFeaturesForCustomer(customerOrId) {
-  const customer = (typeof customerOrId === 'number')
-    ? await db('customer_accounts').where('id', customerOrId).first()
-    : customerOrId;
-  if (!customer) {
-    return { calendar: false, quotes: false, bills: false, hoursLogging: false, contracts: false };
-  }
-  const globals = await getCustomerSurfaceGlobals();
-  // SQLite returns booleans as 0/1; Postgres returns true/false. The
-  // strict `=== true` check used to falsely return `false` on SQLite,
-  // hiding the sidebar entry even when admin had flipped the per-
-  // customer toggle on. Normalise both shapes here so the Quotes /
-  // Invoices tabs appear consistently.
-  const truthy = (v) => v === true || v === 1 || v === '1' || v === 't';
-  // Hours logging gates on the master feature_flags row (Settings →
-  // Features) AND the per-customer flag. The customer_surface
-  // app_settings layer is admin-side-only here — no portal surface
-  // for hours, so we skip the third gate the bills/quotes use.
-  const hoursMaster = await db('feature_flags').where({ key: 'hoursLogging' }).first();
-  const hoursLoggingMaster = hoursMaster ? Boolean(hoursMaster.value) : true;
-  // Contracts: global feature_flags row AND the per-customer override
-  // (migration 131). feature_contracts defaults TRUE, so existing customers
-  // keep their Contracts tab; an admin can hide it per customer.
-  const contractsMaster = await db('feature_flags').where({ key: 'contracts' }).first();
-  const contractsEnabled = contractsMaster ? Boolean(contractsMaster.value) : false;
-  return {
-    calendar: globals.calendarEnabled && truthy(customer.feature_calendar),
-    quotes:   globals.quotesEnabled   && truthy(customer.feature_quotes),
-    bills:    globals.billsEnabled    && truthy(customer.feature_bills),
-    hoursLogging: hoursLoggingMaster && truthy(customer.feature_hours_logging),
-    contracts: contractsEnabled && truthy(customer.feature_contracts),
+    showLogo: values.customer_show_logo !== false,
+    showCompanyName: values.customer_show_company_name !== false,
   };
 }
 
@@ -1644,7 +1349,6 @@ module.exports = {
   // #354 follow-up
   isCustomerPortalEnabled,
   getCustomerSurfaceGlobals,
-  getEffectiveFeaturesForCustomer,
   createPasswordReset,
   validatePasswordResetToken,
   applyPasswordReset,

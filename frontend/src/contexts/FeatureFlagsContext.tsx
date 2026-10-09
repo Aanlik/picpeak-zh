@@ -12,71 +12,15 @@ export type { FeatureKey, FeatureFlags };
 // hasn't run its migration yet on this instance).
 export const DEFAULT_FLAGS: FeatureFlags = {
   galleries: true,
-  // F.3 — these three are placeholders. The UI cards are locked
-  // (lockedReason: NOT_YET_AVAILABLE) because the underlying flows
-  // aren't implemented yet. Default FALSE so the toggle isn't
-  // confusingly "on but locked".
   reminderEmails: false,
-  calendar: false,
-  calendarBooking: false,
-  quotes: false,
-  bills: false,
   messaging: false,
-  // Incoming mail (migration 128) — IMAP intake. Standalone, default off.
-  incomingMail: false,
   analytics: true,
   userManagement: true,
-  // Top-level Clients section (#354 follow-up). Migration 097 mirrors
-  // the install's current customerPortal value so admins who already
-  // had the portal enabled keep seeing the section after upgrade.
-  clients: false,
-  // Customer portal (#354). Defaults OFF on a fresh install — picpeak
-  // ships as a focused gallery delivery tool, recurring-customer
-  // logins are opt-in. Migration 095 flips this to TRUE on existing
-  // installs (events>0).
   customerPortal: false,
-  // CRM developer tools sub-tab. Strictly opt-in.
-  crmDevelopment: false,
-  // Tax / Steuer report sub-tab. Independent toggle; forced off when
-  // `bills` is off (no invoices → nothing to report).
-  taxReport: false,
-  // Hours logging master (migration 129). Off by default — admin
-  // enables in Settings → Features once they're ready to surface the
-  // per-customer Hours card.
-  hoursLogging: false,
-  // Contracts (migration 130). Off by default — admin enables in
-  // Settings → Features once they've reviewed the seeded block
-  // library with their lawyer.
-  contracts: false,
-  // Accounting (migration 122). Top-level MASTER for the Accounting
-  // section (separate from CRM). Sub-features below require it.
-  accounting: false,
-  // Incoming invoices (migration 124) — external supplier-invoice capture +
-  // re-bill. Accounting sub-feature; requires `accounting`.
-  incomingInvoices: false,
-  // Expenses (migration 127) — internal expenses (mileage / per-diem / cash).
-  // Separate Accounting sub-feature; requires `accounting`.
-  expenses: false,
-  // Projects (migration 120). Admin-only grouping layer above events +
-  // the Project Overview cockpit. Off by default — admin opts in under
-  // Settings → Features once they want the CRM → Overview area.
-  projects: false,
-  // WhatsApp Business API delivery channel (migration 136, #640D).
-  whatsapp: false,
-  // Live Slideshow ("Diashow") — opt-in; gates all slideshow admin UI.
   slideshow: false,
-  // PicTransfer — opt-in; gates the Transfers sidebar entry, the
-  // /admin/transfers area and the public recipient/upload pages.
   transfers: false,
-  // Workflow / automation engine — opt-in; gates the Workflows admin area
-  // and the engine runtime (triggers/actions/gates).
   workflows: false,
-  // #1074 — off by default is the whole "zero behaviour change" guarantee.
   faces: false,
-  // Newsletter campaigns (migration 199, #1264). Off by default — an
-  // install that never turns this on never gains a nav entry or a way to
-  // mass-mail its customers.
-  newsletters: false,
 };
 
 export const FEATURE_FLAGS_QUERY_KEY = ['feature-flags'] as const;
@@ -92,8 +36,7 @@ interface FeatureFlagsContextValue {
   isLoading: boolean;
   isSaving: boolean;
   isDirty: boolean;
-  // Stage a single change locally. Enforces dependency rules
-  // (quotes→bills, calendar→calendarBooking, galleries always true).
+  // Stage a single change locally; the gallery foundation always stays on.
   setFlag: (key: FeatureKey, value: boolean) => void;
   // PUT all staged changes to the server.
   save: () => Promise<void>;
@@ -105,54 +48,9 @@ const FeatureFlagsContext = createContext<FeatureFlagsContextValue | undefined>(
 
 function applyDependencyRules(flags: FeatureFlags): FeatureFlags {
   const out = { ...flags };
-  out.galleries = true;                            // foundation — always on
-  if (out.quotes === false) out.bills = false;     // bills depend on quotes
-  if (out.calendar === false) out.calendarBooking = false;  // booking depends on calendar
-  // Invoices (Bills) force-enable the Accounting master — invoice VAT config +
-  // hourly rate live under Settings → Accounting. Before the accounting→children
-  // rule so sub-features keep their own state.
-  if (out.bills === true) out.accounting = true;
-  // Accounting sub-features require the Accounting master. Tax export is
-  // independent of Bills now — it relocated permanently into Accounting.
-  if (out.accounting === false) {
-    out.taxReport = false;
-    out.incomingInvoices = false;
-    out.expenses = false;
-  }
-  // Clients parent flag is DERIVED from its children. Admins don't
-  // toggle it directly — enabling any CRM-area sub-feature
-  // (Accounts today; future Calendar / Quotes / Bills / Messaging)
-  // lights up the Clients sidebar section automatically, and
-  // disabling all of them hides it again.
-  out.clients = Boolean(
-    out.customerPortal
-    || out.crmDevelopment
-    || out.quotes
-    || out.bills
-    || out.hoursLogging
-    || out.contracts
-    // Migration 137 — admin calendar lights up the Clients section.
-    || out.calendar
-    // NOTE: taxReport is intentionally NOT here anymore — the Tax export
-    // moved permanently into the Accounting section (its own master).
-    // future siblings: || out.messaging
-    // #1264 — newsletters is a Clients child; without it here the staged
-    // sidebar preview disagrees with the server until Save.
-    || out.newsletters
-  );
+  out.galleries = true;
   return out;
 }
-
-/**
- * Flags whose customer-side surface only renders when the customer
- * portal is on. The FeaturesTab uses this to disable the toggle on
- * child cards when customerPortal=false (with a "requires Customer
- * portal" tooltip), so the admin doesn't flip something that has no
- * visible effect.
- */
-export const CUSTOMER_PORTAL_DEPENDENT_FLAGS: FeatureKey[] = [
-  'calendar', 'calendarBooking', 'quotes', 'bills', 'messaging',
-];
 
 function flagsEqual(a: FeatureFlags, b: FeatureFlags): boolean {
   return (Object.keys(a) as FeatureKey[]).every((k) => a[k] === b[k]);
@@ -173,7 +71,7 @@ export const FeatureFlagsProvider: React.FC<ProviderProps> = ({ children }) => {
   // Source-of-truth = server response; fall back to defaults during load.
   const flags = useMemo(() => {
     const next = { ...(serverFlags ?? DEFAULT_FLAGS) };
-    if (NO_EMAIL_MODE) for (const key of ["messaging", "incomingMail", "newsletters", "reminderEmails", "customerPortal", "crmDevelopment", "contracts", "quotes", "bills", "transfers"] as FeatureKey[]) next[key] = false;
+    if (NO_EMAIL_MODE) for (const key of ['messaging', 'reminderEmails', 'customerPortal'] as FeatureKey[]) next[key] = false;
     return next;
   }, [serverFlags]);
 
@@ -211,15 +109,6 @@ export const FeatureFlagsProvider: React.FC<ProviderProps> = ({ children }) => {
     if (key === 'galleries') return; // locked
     setStaged((prev) => {
       const next = { ...prev, [key]: value };
-      // Reverse the bills→accounting force-enable. applyDependencyRules is a
-      // pure invariant over one state — it can't tell "Accounting is on
-      // because the admin wants it" from "…because Invoices forced it on", so
-      // turning Invoices off used to leave the Accounting master (and its
-      // sidebar entry) silently on and freshly unlocked (QA S9). The
-      // reversal has to live here, at the toggle, where the transition is
-      // known; the admin sees the switch flip in the same staged state and
-      // can turn Accounting back on before saving if they want it standalone.
-      if (key === 'bills' && !value && prev.bills) next.accounting = false;
       return applyDependencyRules(next);
     });
   }, []);

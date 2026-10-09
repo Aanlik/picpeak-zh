@@ -57,14 +57,14 @@ jest.mock('../../src/services/faceClient', () => ({
   SidecarUnavailableError: class extends Error {},
 }));
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup; let faceProcessor;
 
 async function seedPhoto({ sourceOrigin = 'managed', sourceMode = 'managed' } = {}) {
   const [e] = await db('events').insert({
     slug: `ext-${Math.random().toString(36).slice(2, 8)}`,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'ext',
     event_date: '2026-01-01',
     host_email: 'h@example.com',
@@ -99,7 +99,7 @@ describe('face scanning of external/reference photos (#1090)', () => {
       create: { width: 1920, height: 1440, channels: 3, background: { r: 20, g: 40, b: 80 } },
     }).jpeg().toBuffer();
 
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await db('feature_flags').insert({ key: 'faces', value: true })
       .onConflict('key').merge()
       .catch(async () => { await db('feature_flags').where({ key: 'faces' }).update({ value: true }); });

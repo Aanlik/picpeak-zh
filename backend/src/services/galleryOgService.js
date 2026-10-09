@@ -9,12 +9,6 @@ const SOCIAL_CRAWLER_PATTERNS = [
   /facebookexternalhit/i,
   /facebot/i,
   /Twitterbot/i,
-  // WhatsApp's main app crawler is "WhatsApp/X.Y.Z"; the Business
-  // API and some Cloud API senders use "WhatsAppBot" or "wa-bot/" —
-  // detect both so API-driven sends get the rich preview too (#521).
-  /WhatsApp/i,
-  /WhatsAppBot/i,
-  /wa-bot/i,
   /Slackbot/i,
   /TelegramBot/i,
   /SkypeUriPreview/i,
@@ -346,9 +340,8 @@ async function handleGalleryOgCover(req, res) {
 
     // ETag = thumbnail mtime + photo id so a regenerated thumb (e.g.
     // after the admin changes thumbnail fit mode) busts crawler
-    // caches. Keep the cache window short on the response itself —
-    // crawlers like WhatsApp re-fetch eagerly; admins shouldn't have
-    // to wait an hour for a swap to land in chat previews.
+    // caches. Keep the cache window short so a regenerated cover appears
+    // promptly in social previews.
     const mtimeMs = stat.mtime ? stat.mtime.getTime() : 0;
     const etag = `"og-cover-${photo.id}-${mtimeMs}"`;
     if (req.headers['if-none-match'] === etag) {

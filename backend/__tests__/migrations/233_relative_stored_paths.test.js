@@ -15,8 +15,8 @@ beforeAll(async () => {
     process.env.DATABASE_CLIENT = 'pg';
     jest.doMock('../../knexfile', () => ({ client: 'pg', connection: pgUrl, searchPath: [schema] }));
   }
-  const crm = require('../integration/helpers/crmDb');
-  ({ db, cleanup } = await crm.bootCrmDb());
+  const crm = require('../integration/helpers/sqliteTestDb');
+  ({ db, cleanup } = await crm.bootTestDb());
   ({ customerId } = await crm.seedMinimal(db));
   root = path.resolve(process.env.STORAGE_PATH);
 });

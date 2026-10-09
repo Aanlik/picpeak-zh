@@ -23,9 +23,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 
-// Set up mocks BEFORE bootCrmDb so backupService picks them up at require time.
+// Set up mocks BEFORE bootTestDb so backupService picks them up at require time.
 const mockBackupFn = jest.fn();
 jest.mock('../../src/services/databaseBackup', () => ({
   databaseBackupService: { backup: mockBackupFn },
@@ -44,7 +44,7 @@ describe('backupService — inline DB dump + fail-loud guard', () => {
   let dumpFileAbs;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     storagePath = process.env.STORAGE_PATH;
     backupService = require('../../src/services/backupService');
 

@@ -80,7 +80,7 @@ describe('external import capture dates (#1172)', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    ({ db } = await require('./helpers/crmDb').bootCrmDb());
+    ({ db } = await require('./helpers/sqliteTestDb').bootTestDb());
 
     app = express();
     app.use(express.json());
@@ -99,7 +99,7 @@ describe('external import capture dates (#1172)', () => {
     await fs.promises.mkdir(mediaRoot, { recursive: true });
     const [e] = await db('events').insert({
       slug: `capdate-${Math.random().toString(36).slice(2, 8)}`,
-      event_type: 'wedding', event_name: 'capdate', event_date: '2026-01-01',
+      event_type: 'project', event_name: 'capdate', event_date: '2026-01-01',
       host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
       share_link: `capdate-${Math.random()}`, expires_at: new Date().toISOString(),
       source_mode: 'reference',

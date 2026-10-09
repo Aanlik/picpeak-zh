@@ -39,7 +39,7 @@ describe('maintenance job state (#1181)', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    ({ db } = await require('./helpers/crmDb').bootCrmDb());
+    ({ db } = await require('./helpers/sqliteTestDb').bootTestDb());
     jobs = require('../../src/services/maintenanceJobState');
 
     app = express();

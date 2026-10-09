@@ -8,9 +8,6 @@
  *   - branding header (logo + company name) sits inside the sidebar so the
  *     customer surface looks like *their* photographer's site, not picpeak
  *     chrome
- *   - calendar / quotes / bills nav items are stubbed (coming-soon pages);
- *     they're shown to the user behind a small "Coming soon" tag because
- *     they're built but intentionally inert until the matching backends ship
  *
  * Renders as a layout route (Outlet pattern) so individual pages don't need
  * to wrap their content in `<CustomerLayout>` — same approach AdminLayout uses.
@@ -19,13 +16,9 @@ import React, { useState } from 'react';
 import { Link, NavLink, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Calendar,
-  FileText,
   Image as ImageIcon,
   LogOut,
   Menu,
-  Receipt,
-  ScrollText,
   User as UserIcon,
   X,
 } from 'lucide-react';
@@ -39,29 +32,17 @@ interface NavItem {
   labelKey: string;
   fallback: string;
   icon: LucideIcon;
-  /**
-   * Optional gate — entry only renders when the matching feature is
-   * effective for this customer (i.e. global toggle ON and per-customer
-   * flag ON, AND-combined server-side in /api/customer/auth/session).
-   * Galleries + Profile are always visible; Calendar/Quotes/Bills are
-   * gated.
-   */
-  feature?: 'calendar' | 'quotes' | 'bills' | 'contracts';
 }
 
 const NAV: NavItem[] = [
   { to: '/customer/dashboard', labelKey: 'customer.nav.galleries', fallback: 'Galleries', icon: ImageIcon },
-  { to: '/customer/calendar', labelKey: 'customer.nav.calendar', fallback: 'Calendar', icon: Calendar, feature: 'calendar' },
-  { to: '/customer/quotes', labelKey: 'customer.nav.quotes', fallback: 'Quotes', icon: FileText, feature: 'quotes' },
-  { to: '/customer/contracts', labelKey: 'customer.nav.contracts', fallback: 'Contracts', icon: ScrollText, feature: 'contracts' },
-  { to: '/customer/bills', labelKey: 'customer.nav.bills', fallback: 'Invoices', icon: Receipt, feature: 'bills' },
   { to: '/customer/profile', labelKey: 'customer.nav.profile', fallback: 'Profile', icon: UserIcon },
 ];
 
 export const CustomerLayout: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { customer, features, branding, isAuthenticated, isLoading, logout } = useCustomerAuth();
+  const { customer, branding, isAuthenticated, isLoading, logout } = useCustomerAuth();
   const { data: settingsData } = usePublicSettings();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -81,7 +62,7 @@ export const CustomerLayout: React.FC = () => {
 
   // Filter out feature-gated entries the customer can't see. Galleries +
   // Profile have no feature property, so they're always present.
-  const visibleNav = NAV.filter((item) => !item.feature || features[item.feature] === true);
+  const visibleNav = NAV;
 
   // Branding visibility — admin can hide either piece independently. If
   // both are hidden the brand link still exists (you can click it to

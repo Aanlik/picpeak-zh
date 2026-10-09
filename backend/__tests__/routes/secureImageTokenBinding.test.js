@@ -39,7 +39,7 @@ jest.mock('../../src/middleware/secureImageMiddleware', () => ({
 const request = require('supertest');
 const express = require('express');
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 const secureImageService = require('../../src/services/secureImageService');
 
 describe('secure-image view route token binding (GHSA-g94x)', () => {
@@ -52,7 +52,7 @@ describe('secure-image view route token binding (GHSA-g94x)', () => {
   const mkEvent = async (slug, requirePassword) => {
     const r = await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: slug,
       event_date: '2026-08-01',
       host_email: 'h@example.com',
@@ -97,7 +97,7 @@ describe('secure-image view route token binding (GHSA-g94x)', () => {
     .get(`/api/secure-images/${slug}/secure/${photoId}/${token}`);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     galleryA = await mkEvent('secimg-public-a', false);   // public — token source
     galleryB = await mkEvent('secimg-private-b', true);   // password-protected — victim

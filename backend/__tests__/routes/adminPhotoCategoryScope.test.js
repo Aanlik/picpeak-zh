@@ -31,7 +31,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 describe('admin photo category scope (PATCH / bulk-update)', () => {
   let db;
@@ -53,7 +53,7 @@ describe('admin photo category scope (PATCH / bulk-update)', () => {
   const seedEvent = async (slug) => {
     const inserted = await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: `Cat Scope ${slug}`,
       event_date: '2026-09-01',
       host_email: 'host@example.com',
@@ -86,7 +86,7 @@ describe('admin photo category scope (PATCH / bulk-update)', () => {
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     eventId = await seedEvent('cat-scope-event');

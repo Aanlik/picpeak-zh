@@ -23,8 +23,8 @@ function withAdminPreview(url: string): string {
 // iOS is the only platform whose system share sheet exposes a
 // first-party "Save Image" / "Save to Photos" action for files
 // shared via navigator.share(). On Android the share sheet only
-// lists installed apps that registered an image/* intent (WhatsApp,
-// Telegram, etc.) — there is no built-in save-to-gallery action,
+// lists installed apps that registered an image/* intent — there is no
+// built-in save-to-gallery action,
 // so the share path produces a useless app-picker for users who
 // just wanted to save the photo (#554). UA-sniff is the only signal
 // available because feature detection (canShare) is true on both.

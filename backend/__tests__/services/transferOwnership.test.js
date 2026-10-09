@@ -31,7 +31,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'transferown-test-secret';
 
 const bcrypt = require('bcrypt');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 describe('PicTransfer ownership guards (#998)', () => {
   let db; let cleanup; let transferService;
@@ -54,7 +54,7 @@ describe('PicTransfer ownership guards (#998)', () => {
 
   const mkEvent = async (slug, createdBy) => {
     const r = await db('events').insert({
-      slug, event_type: 'wedding', event_name: slug, event_date: '2026-08-01',
+      slug, event_type: 'project', event_name: slug, event_date: '2026-08-01',
       host_email: 'h@e.com', admin_email: 'a@e.com', password_hash: 'x',
       share_token: `t-${slug}`, share_link: `/g/${slug}/t-${slug}`,
       created_by: createdBy,
@@ -86,7 +86,7 @@ describe('PicTransfer ownership guards (#998)', () => {
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     transferService = require('../../src/services/transferService');
 

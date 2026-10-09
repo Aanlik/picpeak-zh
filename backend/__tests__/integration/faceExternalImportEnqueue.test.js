@@ -91,9 +91,9 @@ describe('external import queues faces (#1090)', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    // bootCrmDb runs every migrations/core/*.up() directly — knex's Migrator
+    // bootTestDb runs every migrations/core/*.up() directly — knex's Migrator
     // deadlocks on 001_init's nested initializeDatabase() call.
-    ({ db } = await require('./helpers/crmDb').bootCrmDb());
+    ({ db } = await require('./helpers/sqliteTestDb').bootTestDb());
 
     app = express();
     app.use(express.json());
@@ -117,7 +117,7 @@ describe('external import queues faces (#1090)', () => {
     await db('events').del();
     const [e] = await db('events').insert({
       slug: `extenq-${Math.random().toString(36).slice(2, 8)}`,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'extenq',
       event_date: '2026-01-01',
       host_email: 'h@example.com',

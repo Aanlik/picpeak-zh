@@ -14,7 +14,7 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'slideshow-session-binding-secret';
 
@@ -46,13 +46,13 @@ describe('slideshow session binding', () => {
     .get(`/api/gallery/${SLUG}/photo/${photoId}`).set('Authorization', `Bearer ${token}`);
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     ({ invalidateFeatureFlagCache } = require('../../src/middleware/requireFeatureFlag'));
 
     eventId = unwrap(await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Slideshow Binding',
       event_date: '2026-08-01',
       host_email: 'host@example.com',

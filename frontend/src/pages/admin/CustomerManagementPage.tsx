@@ -35,7 +35,6 @@ import {
 type TabType = 'customers' | 'invitations';
 
 export const CustomerManagementPage: React.FC = () => {
-  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   // formatDate respects the admin-configured `general_date_format`
@@ -49,8 +48,7 @@ export const CustomerManagementPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('customers');
   // `searchTerm` is the live controlled-input value (keeps the box
   // responsive). `debouncedTerm` lags 250ms behind so the filter +
-  // table re-render only fire after the user pauses typing — matches
-  // the pattern used in CustomerPicker for the same reason. Filtering
+  // table re-render only fire after the user pauses typing. Filtering
   // is client-side so this doesn't change network shape; the win is
   // on the render side for installs with many rows.
   const [searchTerm, setSearchTerm] = useState('');
@@ -161,15 +159,6 @@ export const CustomerManagementPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{t('customers.pageTitle', 'Customers')}</h1>
-            {/* Beta badge — Calendar/Quotes/Bills tabs in the customer
-                surface are placeholders, so flag the whole feature as
-                still evolving. Keeps expectations honest. */}
-            <span
-              className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-              title={tAudit("ui.betaHint")}
-            >
-              {t('navigation.betaTag', 'Beta')}
-            </span>
           </div>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
             {t('customers.pageSubtitle', 'Recurring customer accounts that can log in at /customer/login.')}
@@ -227,7 +216,7 @@ export const CustomerManagementPage: React.FC = () => {
                   {filteredCustomers.map((c) => (
                     <tr key={c.id} className="border-t border-neutral-200 dark:border-neutral-700">
                       <td className="px-3 py-3">
-                        <Link to={`/admin/clients/accounts/${c.id}`} className="text-neutral-900 dark:text-neutral-100 hover:underline">
+                        <Link to={`/admin/customers/${c.id}`} className="text-neutral-900 dark:text-neutral-100 hover:underline">
                           {renderCustomerName(c)}
                         </Link>
                       </td>

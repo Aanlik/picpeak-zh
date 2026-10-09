@@ -30,7 +30,7 @@ const PRESETS = [
   {
     name: 'solo_photographer',
     display_name: 'Solo Photographer',
-    description: 'Full operator for a one-person studio — everything needed to run the business. A preset starting point; new-release permissions are not auto-added (only Super Admin tracks all).',
+    description: 'Full operator for a one-person photo studio. A preset starting point; new-release permissions are not auto-added (only Super Admin tracks all).',
     is_system: true,
     priority: 90,
     permissions: 'ALL',
@@ -38,13 +38,13 @@ const PRESETS = [
   {
     name: 'team_photographer',
     display_name: 'Team Photographer',
-    description: 'Contributing photographer (second/festival shooter) — view events, upload and manage photos, and see read-only client context. Not the customer contact: no settings, user management, billing edits or event configuration. A preset starting point.',
+    description: 'Contributing photographer — view events, upload and manage photos, and see read-only client context. Not the customer contact: no settings, user management, or event configuration. A preset starting point.',
     is_system: true,
     priority: 40,
     permissions: [
       'events.view',
       'photos.view', 'photos.upload', 'photos.edit', 'photos.download',
-      'customers.view', 'quotes.view', 'bills.view',
+      'customers.view',
     ],
   },
 ];

@@ -2,7 +2,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const knex = require('knex');
 const { randomUUID, createHash } = require('crypto');
-const { bootCrmDb, seedMinimal, buildRouteApp } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal, buildRouteApp } = require('./helpers/sqliteTestDb');
 const pgUrl = process.env.PICPEAK_PG_TEST_URL;
 let db; let cleanup; let app; let eventId; let photoId; let token; let owner; let schema;
 beforeAll(async () => {
@@ -13,9 +13,9 @@ beforeAll(async () => {
     process.env.DATABASE_CLIENT = 'pg';
     jest.doMock('../../knexfile', () => ({ client: 'pg', connection: pgUrl, searchPath: [schema] }));
   }
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
-  const [event] = await db('events').insert({ slug: 'limits', event_type: 'wedding', event_name: 'Limits',
+  const [event] = await db('events').insert({ slug: 'limits', event_type: 'project', event_name: 'Limits',
     event_date: '2026-09-16', host_email: 'h@example.test', admin_email: 'a@example.test',
     password_hash: 'unused', share_link: '/gallery/limits/share', is_active: true, is_archived: false, is_draft: false }).returning('id');
   eventId = event.id ?? event;

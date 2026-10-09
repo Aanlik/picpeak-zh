@@ -160,7 +160,6 @@ router.get('/:slug/info', async (req, res) => {
         'id',
         'created_by',
         'event_name',
-        'event_type',
         'event_date',
         'expires_at',
         'is_active',
@@ -249,7 +248,6 @@ router.get('/:slug/info', async (req, res) => {
 
     res.json({
       event_name: event.event_name,
-      event_type: event.event_type,
       event_date: event.event_date,
       expires_at: event.expires_at,
       is_active: event.is_active,

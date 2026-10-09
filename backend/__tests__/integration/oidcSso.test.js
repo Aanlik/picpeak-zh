@@ -24,7 +24,7 @@ const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb } = require('./helpers/crmDb');
+const { bootTestDb } = require('./helpers/sqliteTestDb');
 const { MockOidcProvider } = require('./helpers/mockOidcProvider');
 
 describe('OIDC SSO (#798)', () => {
@@ -42,12 +42,12 @@ describe('OIDC SSO (#798)', () => {
     // CI has no backend/.env, and getFrontendBaseUrl() returning '' makes
     // buildAuthorizationRequest fail (by design) with OIDC_BAD_CONFIG.
     process.env.FRONTEND_URL = 'http://localhost:5199';
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
 
     idp = new MockOidcProvider();
     const issuer = await idp.start();
 
-    // Require AFTER bootCrmDb so services share this db instance.
+    // Require AFTER bootTestDb so services share this db instance.
     oidcService = require('../../src/services/oidcService');
     await oidcService.saveOidcSettings({
       oidc_enabled: true,

@@ -1,11 +1,10 @@
 /**
- * Inline "+ Create new customer" form mounted inside the quote /
- * invoice editor's customer card.
+ * Inline customer creation form used by customer management.
  *
  * Two save modes:
  *   - "Save as passive customer" → POST /admin/customers. No email,
  *     no invitation. The customer becomes a usable record
- *     immediately for the current quote/invoice.
+ *     immediately as a customer account.
  *   - "Save & send portal invitation" → POST /admin/customers
  *     followed by POST /admin/customers/:id/send-invite. Customer is
  *     created (passive in DB), then a standard onboarding email is
@@ -34,23 +33,19 @@ import {
   type CustomerAccountDetail,
   type CustomerInvitePrefill,
 } from '../../services/customerAdmin.service';
-import { businessProfileService } from '../../services/businessProfile.service';
-import { useQuery } from '@tanstack/react-query';
 
 interface Props {
   /**
    * Fires after a successful save. The customer payload is the same
    * shape the customer-detail endpoint returns, so callers can use
-   * its id/email/company directly to populate the quote/invoice's
-   * customer pin.
+   * its id/email/company for follow-up UI.
    */
   onCreated: (customer: CustomerAccountDetail) => void;
   /** Revert the editor card back to the search-only state. */
   onCancel: () => void;
   /**
    * Which save action(s) the form should expose.
-   *  - 'both' (default): renders both buttons — used by the quote /
-   *    invoice editors where the admin picks the mode in-place.
+   *  - 'both' (default): renders both buttons.
    *  - 'passive': renders only "Save as passive customer".
    *  - 'invite': renders only "Save & send portal invitation".
    * The "passive" / "invite" specialisations let CustomerManagementPage
@@ -68,7 +63,6 @@ type FormState = {
   displayName: string;
   phone: string;
   companyName: string;
-  vatId: string;
   addressLine1: string;
   addressLine2: string;
   postalCode: string;
@@ -80,7 +74,7 @@ type FormState = {
 
 const empty: FormState = {
   email: '', salutation: '', firstName: '', lastName: '', displayName: '',
-  phone: '', companyName: '', vatId: '',
+  phone: '', companyName: '',
   addressLine1: '', addressLine2: '', postalCode: '', city: '', state: '',
   countryCode: '', preferredLanguage: '',
 };
@@ -96,7 +90,6 @@ function buildPrefill(f: FormState): CustomerInvitePrefill {
   if (f.displayName)     out.display_name = f.displayName;
   if (f.phone)           out.phone = f.phone;
   if (f.companyName)     out.company_name = f.companyName;
-  if (f.vatId)           out.vat_id = f.vatId;
   if (f.addressLine1)    out.address_line1 = f.addressLine1;
   if (f.addressLine2)    out.address_line2 = f.addressLine2;
   if (f.postalCode)      out.postal_code = f.postalCode;
@@ -132,29 +125,6 @@ export const InlineCustomerCreate: React.FC<Props> = ({ onCreated, onCancel, mod
           subtitle: t('customers.create.subtitle',
             'Fill in the details below. Choose "Save as passive customer" to create an admin-only record, or "Save & send portal invitation" to also email the customer a sign-up link.'),
         };
-
-  // Business-profile default locale powers the preferred-language
-  // hint AND seeds the field on mount.
-  const { data: profileSnapshot } = useQuery({
-    queryKey: ['business-profile-snapshot'],
-    queryFn: () => businessProfileService.get(),
-    staleTime: 5 * 60 * 1000,
-  });
-  const profileDefaultLocale = profileSnapshot?.profile?.defaultLocale || 'en';
-  const profileCountryCode = profileSnapshot?.profile?.countryCode || '';
-
-  // Seed preferredLanguage + countryCode with the profile defaults once
-  // the profile arrives (only if the field is still empty so we don't
-  // clobber explicit user input).
-  React.useEffect(() => {
-    setForm((prev) => {
-      const next = { ...prev };
-      if (profileDefaultLocale && !prev.preferredLanguage) next.preferredLanguage = profileDefaultLocale;
-      if (profileCountryCode && !prev.countryCode) next.countryCode = profileCountryCode.toUpperCase();
-      return next;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileDefaultLocale, profileCountryCode]);
 
   const setField = (key: keyof FormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -313,11 +283,6 @@ export const InlineCustomerCreate: React.FC<Props> = ({ onCreated, onCancel, mod
           label={t('customers.detail.displayName', 'Display name') as string}
           value={form.displayName}
           onChange={setField('displayName')}
-        />
-        <Input
-          label={t('customers.detail.vatId', 'VAT ID') as string}
-          value={form.vatId}
-          onChange={setField('vatId')}
         />
         <div className="md:col-span-2">
           <Input

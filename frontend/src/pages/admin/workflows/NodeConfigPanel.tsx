@@ -22,32 +22,23 @@ const field = 'w-full px-2 py-1.5 rounded border border-neutral-300 dark:border-
 const lbl = 'block text-xs text-neutral-500 dark:text-neutral-400 mb-1';
 
 const ACTIONS = [
-  ['queue_payment_check', 'Send payment-check email (dunning gate)'],
-  ['escalate_to_collections', 'Hand off to collections (email admin)'],
   ['send_email', 'Send email'],
   ['notify_pre_event', 'Send pre-event reminder'],
   ['notify_gallery_expiring', 'Send gallery-expiring warning'],
   ['notify_gallery_expired', 'Send gallery-expired email'],
   ['reserve_date', 'Reserve the event date'],
-  ['prepare_quote', 'Prepare a quote (draft)'],
-  ['prepare_contract', 'Prepare a contract (draft)'],
-  ['prepare_invoice', 'Prepare an invoice (draft)'],
   ['prepare_event', 'Create an event (draft)'],
   ['prepare_gallery', 'Create a gallery (draft)'],
-  ['send_document', 'Send the document'],
   ['webhook', 'Call a webhook'],
   ['noop', 'Do nothing'],
 ];
 const CONDITIONS = [
-  ['invoice_paid', 'Invoice is paid'],
   ['expr', 'Compare a field'],
   ['always', 'Always → yes'],
   ['never', 'Never → no'],
 ];
 const WAIT_ANCHORS = [
-  ['dueDate', 'the invoice due date'],
-  ['issueDate', 'the invoice date'],
-  ['eventDate', 'the event date'],
+  ['eventDate', 'the project date'],
 ];
 const OPS = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'truthy', 'falsy'];
 
@@ -97,18 +88,9 @@ export const NodeConfigPanel: React.FC<Props> = ({ nodeType, config, onChange, w
             </select>
           </Row>
           <Row label={t('workflows.editor.emailTemplate', 'Email template key')}>
-            <input className={field} value={config.emailType || ''} onChange={(e) => set({ emailType: e.target.value })} placeholder="invoice_reminder" />
+            <input className={field} value={config.emailType || ''} onChange={(e) => set({ emailType: e.target.value })} placeholder="event_reminder_default" />
           </Row>
         </>
-      )}
-
-      {nodeType === 'action' && config.action === 'notify_pre_event' && (
-        <Row label={t('workflows.editor.templateGroup', 'Reminder template group')}>
-          <input className={field} value={config.templateGroup || ''} onChange={(e) => set({ templateGroup: e.target.value })} placeholder="event_reminder" />
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-            {t('workflows.editor.templateGroupHint', 'The exact template is auto-picked per event type within this group: «group»_«eventType» if you authored one, else «group»_default. Blank = event_reminder.')}
-          </p>
-        </Row>
       )}
 
       {(nodeType === 'action' || nodeType === 'webhook') && (config.action === 'webhook' || nodeType === 'webhook') && (
@@ -200,7 +182,7 @@ export const NodeConfigPanel: React.FC<Props> = ({ nodeType, config, onChange, w
       {nodeType === 'gate' && (
         <>
           <Row label={t('workflows.editor.gatePrompt', 'Question for the admin')}>
-            <textarea className={field} rows={2} value={config.prompt || ''} onChange={(e) => set({ prompt: e.target.value })} placeholder={t('workflows.editor.gatePromptPh', 'e.g. No payment received — send a reminder?') as string} />
+            <textarea className={field} rows={2} value={config.prompt || ''} onChange={(e) => set({ prompt: e.target.value })} placeholder={t('workflows.editor.gatePromptPh', 'e.g. Review this request — approve or reject?') as string} />
           </Row>
           <Row label={t('workflows.editor.gateTimeout', 'Auto-expire after (days, optional)')}>
             <input type="number" min={0} className={field} value={config.timeoutDays ?? ''} onChange={(e) => set({ timeoutDays: num(e.target.value) })} />

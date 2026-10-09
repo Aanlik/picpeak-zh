@@ -19,14 +19,14 @@ const express = require('express');
 const request = require('supertest');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
-const { bootCrmDb } = require('../integration/helpers/crmDb');
+const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 
 const fsSync = require('fs');
 const osMod = require('os');
 const pathMod = require('path');
 
 process.env.NODE_ENV = 'test';
-// Its own database file. bootCrmDb otherwise reuses whatever path is already
+// Its own database file. bootTestDb otherwise reuses whatever path is already
 // configured, and a leftover from a previous run fails with
 // "table `migrations` already exists".
 process.env.TEST_DATABASE_PATH = pathMod.join(
@@ -51,7 +51,7 @@ describe('admin session lifetime honours remember me (#1186)', () => {
   const TIMEOUT_MINUTES = 60;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await db('admin_users').insert({
       username: 'remember-admin',
       email: 'remember-admin@example.com',

@@ -1,13 +1,10 @@
 /**
  * Finder-style sortable table header.
  *
- * The admin list pages (invoices / quotes / contracts) drive sorting
- * through a single server-side `sort` enum (e.g. 'customer_asc'). This
- * component + the `useColumnSort` hook map that flat enum onto clickable
- * column headers: clicking a column applies its ascending/descending
- * variant, clicking the active column again flips direction. The active
- * column shows a filled chevron; inactive sortable columns show a faint
- * up/down hint so it's discoverable that the header is clickable.
+ * Admin list pages drive sorting through a single server-side `sort` enum.
+ * This component and `useColumnSort` map that enum onto clickable headers;
+ * clicking a column applies its ascending/descending variant, and clicking
+ * it again flips direction.
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';

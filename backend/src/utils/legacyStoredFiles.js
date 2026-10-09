@@ -1,8 +1,8 @@
 'use strict';
 
 /**
- * Stored documents that live in the legacy root (`<cwd>/storage`, where the
- * contract writers put files before they moved onto the shared resolver)
+ * Stored assets that live in the legacy root (`<cwd>/storage`, where older
+ * versions wrote paths before moving onto the shared resolver)
  * rather than under the configured storage root.
  *
  * On a stock install the two are the same directory. When STORAGE_PATH points
@@ -16,7 +16,7 @@
  * whole directory), each with the storage-relative path it is archived under,
  * and `applyStoredPathMap` rewrites the rows after a backup restore so they
  * name that path (a .picpeak export writes the rows that way directly). The archived path keeps the file's storage suffix, so it lands in the
- * same folder it came from (the per-type read roots in safePath.js allow it).
+ * same folder it came from.
  * When the configured root already holds a different file at that suffix, the
  * legacy one goes to a `legacy/` folder next to it instead; writers reuse
  * document-number filenames, so the two can hold different bytes.

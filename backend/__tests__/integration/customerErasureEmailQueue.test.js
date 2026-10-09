@@ -35,7 +35,7 @@ process.env.TEST_DATABASE_PATH = path.join(fs.mkdtempSync(path.join(os.tmpdir(),
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'erase-mailq-test-secret';
 process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-erase-mailq-storage-'));
 
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 
 let customerSeq = 0;
 /** Insert a minimal extra customer_accounts row, distinct from the shared one. */
@@ -74,7 +74,7 @@ describe('customer erasure clears email_queue', () => {
   let db; let cleanup; let customerId; let customerEmail;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     ({ customerId } = await seedMinimal(db));
     customerEmail = (await db('customer_accounts').where({ id: customerId }).first('email')).email;
   }, 120000);
@@ -175,7 +175,7 @@ describe('customer erasure clears email_queue', () => {
     const later = new Date().toISOString();
 
     const decoyEventInsert = await db('events').insert({
-      slug: `erase-race-decoy-${customerSeq}`, event_type: 'wedding', event_name: 'Decoy Event', event_date: '2026-09-07',
+      slug: `erase-race-decoy-${customerSeq}`, event_type: 'project', event_name: 'Decoy Event', event_date: '2026-09-07',
       customer_email: 'decoy@example.com', customer_name: 'Decoy', password_hash: 'x',
       share_link: `/gallery/erase-race-decoy-${customerSeq}/tok`, share_token: `tok-${customerSeq}`,
       expires_at: new Date(Date.now() + 86400000).toISOString(), is_active: true, created_at: new Date().toISOString(),

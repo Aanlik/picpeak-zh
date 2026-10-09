@@ -31,7 +31,6 @@ const SOCIAL_BOTS = [
   'facebookexternalhit',
   'LinkedInBot',
   'Slackbot',
-  'WhatsApp',
   'TelegramBot',
   'Discordbot'
 ];

@@ -19,30 +19,13 @@ const crypto = require('crypto');
 const { body, param, validationResult } = require('express-validator');
 const { db, logActivity } = require('../database/db');
 const { getBcryptRounds, MAX_PASSWORD_LENGTH } = require('../utils/passwordValidation');
-const { resolveStoredPathStrict, contractPdfRoots } = require('../utils/safePath');
 const logger = require('../utils/logger');
 const { errorResponse, safeValidationErrors } = require('../utils/routeHelpers');
 const { getClientIp } = require('../utils/requestIp');
 const { customerAuth } = require('../middleware/customerAuth');
 const { setGalleryAuthCookies } = require('../utils/tokenUtils');
 const customerAccountsService = require('../services/customerAccountsService');
-const publicDocumentViews = require('../services/publicDocumentViews');
-const { clientIpForAudit } = require('../utils/clientIp');
-const contractSignedPdfUpload = require('../utils/contractSignedPdfUpload');
-const { auditedUpdate } = require('../services/accountingHistory');
-
-// Gate a customer-facing route on BOTH the global master flag AND the
-// per-customer override — getEffectiveFeaturesForCustomer combines them, so an
-// admin disabling e.g. Bills globally is honoured even when feature_bills=true
-// on the row. Sends the 403 and returns false on denial; true if allowed.
-async function customerFeatureAllowed(req, res, featureKey, label) {
-  const eff = await customerAccountsService.getEffectiveFeaturesForCustomer(req.customer.id);
-  if (!eff || !eff[featureKey]) {
-    res.status(403).json({ error: `${label} are disabled for this account`, code: 'CUSTOMER_FEATURE_DISABLED' });
-    return false;
-  }
-  return true;
-}
+const { auditedUpdate } = require('../services/changeHistory');
 
 /**
  * Customer-side password policy mirrors the one in customerAuth.js — kept
@@ -70,7 +53,6 @@ const PROFILE_FIELD_MAP = {
   displayName: 'display_name',
   phone: 'phone',
   companyName: 'company_name',
-  vatId: 'vat_id',
   addressLine1: 'address_line1',
   addressLine2: 'address_line2',
   postalCode: 'postal_code',
@@ -91,7 +73,6 @@ function shapeProfile(row) {
     displayName: row.display_name,
     phone: row.phone,
     companyName: row.company_name,
-    vatId: row.vat_id,
     addressLine1: row.address_line1,
     addressLine2: row.address_line2,
     postalCode: row.postal_code,
@@ -99,13 +80,6 @@ function shapeProfile(row) {
     state: row.state,
     countryCode: row.country_code,
     preferredLanguage: row.preferred_language || 'en',
-    // Newsletter consent (migration 199, #1264). Read-only here — it is
-    // changed through /profile/marketing, which logs the consent change
-    // with its own activity entry rather than burying it in a generic
-    // profile update.
-    marketingOptOut: row.marketing_opt_out === true
-      || row.marketing_opt_out === 1
-      || row.marketing_opt_out === '1',
   };
 }
 
@@ -123,7 +97,6 @@ router.get('/events', customerAuth, async (req, res) => {
         id: e.id,
         slug: e.slug,
         eventName: e.event_name,
-        eventType: e.event_type,
         eventDate: e.event_date,
         expiresAt: e.expires_at,
         isActive: e.is_active,
@@ -286,9 +259,6 @@ router.get('/profile', customerAuth, async (req, res) => {
  *   - email          (would invalidate the login credential silently)
  *   - is_active      (admin-only)
  *   - notes          (admin-only metadata)
- *   - billing_email  (kept admin-managed for now; we'll surface it later
- *                     when the quotes/bills flows actually need a separate
- *                     billing contact)
  *   - password_hash  (separate /profile/password endpoint)
  */
 router.put('/profile', [
@@ -299,7 +269,6 @@ router.put('/profile', [
   body('displayName').optional({ nullable: true }).isString().isLength({ max: 120 }),
   body('phone').optional({ nullable: true }).isString().isLength({ max: 40 }),
   body('companyName').optional({ nullable: true }).isString().isLength({ max: 120 }),
-  body('vatId').optional({ nullable: true }).isString().isLength({ max: 40 }),
   body('addressLine1').optional({ nullable: true }).isString().isLength({ max: 255 }),
   body('addressLine2').optional({ nullable: true }).isString().isLength({ max: 255 }),
   body('postalCode').optional({ nullable: true }).isString().isLength({ max: 20 }),
@@ -345,60 +314,6 @@ router.put('/profile', [
     res.json({ profile: shapeProfile(row) });
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to update profile');
-  }
-});
-
-/**
- * GET /profile/marketing
- *
- * Newsletter consent, on its own endpoint (migration 199, #1264).
- *
- * Not folded into PUT /profile because a consent change is an auditable
- * event: it needs its own `customer_marketing_opt_out` activity entry with
- * the source recorded, and burying it in a 14-field profile update would
- * lose that. Transactional mail is unaffected either way, which the response
- * says explicitly so the UI never has to guess.
- */
-router.get('/profile/marketing', customerAuth, async (req, res) => {
-  try {
-    const row = await db('customer_accounts')
-      .where('id', req.customer.id)
-      .select('marketing_opt_out', 'marketing_opt_out_at')
-      .first();
-    if (!row) return res.status(404).json({ error: 'Profile not found' });
-    res.json({
-      marketingOptOut: row.marketing_opt_out === true
-        || row.marketing_opt_out === 1
-        || row.marketing_opt_out === '1',
-      marketingOptOutAt: row.marketing_opt_out_at || null,
-    });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to load marketing preferences');
-  }
-});
-
-/**
- * PUT /profile/marketing  { optOut: boolean }
- */
-router.put('/profile/marketing', [
-  customerAuth,
-  body('optOut').isBoolean(),
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: safeValidationErrors(errors) });
-    }
-    const newsletterService = require('../services/newsletterService');
-    await newsletterService.setMarketingOptOut(
-      req.customer.id,
-      Boolean(req.body.optOut),
-      'portal',
-      { type: 'customer', id: req.customer.id, name: req.customer.email }
-    );
-    res.json({ marketingOptOut: Boolean(req.body.optOut) });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to update marketing preferences');
   }
 });
 
@@ -461,518 +376,5 @@ router.post('/profile/password', [
     errorResponse(res, error, 500, 'Failed to change password');
   }
 });
-
-// ---- quotes (customer-facing read-only) ------------------------------
-// Lists quotes belonging to the logged-in customer. Scoped strictly to
-// the customer's own customer_account_id so a stale or stolen token can
-// never see another customer's quotes. Returns the same shape the admin
-// list does, minus fields that are admin-only (internal_notes, pdf_path,
-// created_by_admin_id). Disabled when the customer has `feature_quotes`
-// off OR the global `quotes` flag is off — the frontend's RequireFeature
-// already hides the sidebar entry, but we belt-and-braces it here so a
-// direct API hit gets a 403 instead of leaking rows.
-router.get('/quotes', customerAuth, async (req, res) => {
-  try {
-    const { db: dbi } = require('../database/db');
-    // Customer-feature gate — master flag AND per-customer override.
-    if (!(await customerFeatureAllowed(req, res, 'quotes', 'Quotes'))) return;
-    const rows = await dbi('quotes')
-      .where({ customer_account_id: req.customer.id })
-      // Hide drafts — they're admin scratch work; nothing has been
-      // sent to the customer yet. Mirrors the invoice list above
-      // which suppresses 'scheduled' + 'cancelled' for the same
-      // reason. Customers should only see quotes the admin has
-      // actually issued (sent / accepted / declined / expired /
-      // converted).
-      .whereNotIn('status', ['draft'])
-      .orderBy('issue_date', 'desc')
-      .orderBy('id', 'desc')
-      .select(
-        'id', 'quote_number', 'status', 'currency',
-        'issue_date', 'valid_until', 'event_name', 'event_date',
-        'net_amount_minor', 'vat_rate', 'vat_amount_minor',
-        'shipping_amount_minor', 'total_amount_minor',
-        'intro_text', 'outro_text',
-        'sent_at', 'responded_at', 'response_locked_at',
-        'accepted_at', 'declined_at',
-      );
-
-    // Whether each quote can still be answered. The list used to carry the
-    // live accept/decline token so the dashboard could link to the public
-    // page, which put a bearer secret — usable with no login and no emailed
-    // code — into every portal response. The portal now answers through
-    // POST /quotes/:id/respond with the customer's session instead.
-    const usableTokens = await publicDocumentViews.usableQuoteTokens(rows.map((r) => r.id));
-
-    res.json({
-      quotes: rows.map((q) => ({
-        id: q.id,
-        quoteNumber: q.quote_number,
-        status: q.status,
-        currency: q.currency,
-        issueDate: q.issue_date,
-        validUntil: q.valid_until,
-        eventName: q.event_name,
-        eventDate: q.event_date,
-        netAmountMinor: q.net_amount_minor,
-        vatRate: q.vat_rate == null ? null : Number(q.vat_rate),
-        vatAmountMinor: q.vat_amount_minor,
-        shippingAmountMinor: q.shipping_amount_minor,
-        totalAmountMinor: q.total_amount_minor,
-        introText: q.intro_text,
-        outroText: q.outro_text,
-        sentAt: q.sent_at,
-        respondedAt: q.responded_at,
-        responseLockedAt: q.response_locked_at,
-        acceptedAt: q.accepted_at,
-        declinedAt: q.declined_at,
-        canRespond: publicDocumentViews.quoteAcceptsResponse(q) && usableTokens.has(q.id),
-      })),
-    });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to load quotes');
-  }
-});
-
-// ---- invoices (customer-facing read-only + PDF) ----------------------
-// Mirrors /quotes — list owned by the customer with the same feature
-// gate. Adds a PDF download endpoint so customers can grab the rendered
-// invoice from their dashboard.
-router.get('/invoices', customerAuth, async (req, res) => {
-  try {
-    const { db: dbi } = require('../database/db');
-    // Customer-feature gate — master flag AND per-customer override.
-    if (!(await customerFeatureAllowed(req, res, 'bills', 'Invoices'))) return;
-    // Visibility rules for the customer-facing list:
-    //   - Hide `scheduled` always (drafts the admin is still tweaking).
-    //   - Show `sent`, `overdue`, `paid` always (the customer's
-    //     outstanding + paid history).
-    //   - Show `cancelled` ONLY when `cancellation_storno_id IS NOT NULL`,
-    //     i.e. the cancellation was made customer-visible via a
-    //     Stornorechnung (migration 114). Soft-cancelled drafts stay
-    //     hidden — the customer never saw the draft, so a "cancelled"
-    //     phantom in their list would just be confusing.
-    //   - Show `kind='storno'` rows (status='sent' after sendStorno)
-    //     unconditionally — they're the customer's legal proof of
-    //     cancellation and the only document with the §14c reversal.
-    const rows = await dbi('invoices')
-      .leftJoin('invoices as cancels_inv', 'invoices.cancels_invoice_id', 'cancels_inv.id')
-      .leftJoin('invoices as cancellation_storno', 'invoices.cancellation_storno_id', 'cancellation_storno.id')
-      .where({ 'invoices.customer_account_id': req.customer.id })
-      .whereNot('invoices.status', 'scheduled')
-      .whereNot('invoices.status', 'skipped')
-      .andWhere(function () {
-        this.whereNot('invoices.status', 'cancelled').orWhereNotNull('invoices.cancellation_storno_id');
-      })
-      .orderBy('invoices.issue_date', 'desc')
-      .orderBy('invoices.id', 'desc')
-      .select(
-        'invoices.id', 'invoices.kind', 'invoices.invoice_number', 'invoices.status', 'invoices.currency',
-        'invoices.issue_date', 'invoices.due_date',
-        // Inline event snapshot (migration 123) — the customer portal
-        // shows event_name next to the invoice number, mirroring the
-        // quotes list.
-        'invoices.event_name', 'invoices.event_date',
-        'invoices.installment_index', 'invoices.installment_total', 'invoices.installment_label',
-        'invoices.net_amount_minor', 'invoices.vat_rate', 'invoices.vat_amount_minor',
-        'invoices.shipping_amount_minor', 'invoices.total_amount_minor',
-        'invoices.paid_amount_minor', 'invoices.paid_at',
-        'invoices.late_fee_amount_minor', 'invoices.reminder_level', 'invoices.sent_at',
-        // Lineage — drives the Storno banner / cancelled-by-Storno
-        // indicator on the customer's bills page. Self-join the
-        // linked rows so we can surface the human invoice_number,
-        // not just the bare DB row id.
-        'invoices.cancels_invoice_id', 'invoices.cancellation_storno_id',
-        'cancels_inv.invoice_number as cancels_invoice_number',
-        'cancellation_storno.invoice_number as cancellation_storno_number',
-      );
-    res.json({
-      invoices: rows.map((i) => ({
-        id: i.id,
-        kind: i.kind || 'invoice',
-        invoiceNumber: i.invoice_number,
-        status: i.status,
-        currency: i.currency,
-        issueDate: i.issue_date,
-        dueDate: i.due_date,
-        installmentIndex: i.installment_index,
-        installmentTotal: i.installment_total,
-        installmentLabel: i.installment_label,
-        netAmountMinor: i.net_amount_minor,
-        vatRate: i.vat_rate == null ? null : Number(i.vat_rate),
-        vatAmountMinor: i.vat_amount_minor,
-        shippingAmountMinor: i.shipping_amount_minor,
-        totalAmountMinor: i.total_amount_minor,
-        paidAmountMinor: i.paid_amount_minor,
-        paidAt: i.paid_at,
-        lateFeeAmountMinor: i.late_fee_amount_minor,
-        reminderLevel: i.reminder_level,
-        sentAt: i.sent_at,
-        cancelsInvoiceId: i.cancels_invoice_id || null,
-        cancelsInvoiceNumber: i.cancels_invoice_number || null,
-        cancellationStornoId: i.cancellation_storno_id || null,
-        cancellationStornoNumber: i.cancellation_storno_number || null,
-        eventName: i.event_name || null,
-        eventDate: i.event_date || null,
-      })),
-    });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to load invoices');
-  }
-});
-
-/**
- * Customer-side quote PDF — mirrors the invoice PDF endpoint above.
- * The customer can re-download any quote that's been sent to them
- * (the public response page also uses this view). Draft quotes are
- * hidden — they're not yet meant for the customer.
- */
-router.get('/quotes/:id/pdf', customerAuth, async (req, res) => {
-  try {
-    const { db: dbi } = require('../database/db');
-    // Feature-gate — master flag AND per-customer override.
-    if (!(await customerFeatureAllowed(req, res, 'quotes', 'Quotes'))) return;
-    const quote = await dbi('quotes')
-      .where({ id: parseInt(req.params.id, 10), customer_account_id: req.customer.id })
-      .first();
-    if (!quote) return res.status(404).json({ error: 'Quote not found' });
-    if (quote.status === 'draft') {
-      // Drafts aren't visible to the customer.
-      return res.status(404).json({ error: 'Quote not found' });
-    }
-    const quoteService = require('../services/quoteService');
-    const buf = await quoteService.renderQuotePdfBuffer(quote.id);
-    const { buildPdfFilename } = require('../utils/pdfFilename');
-    const { buildContentDisposition } = require('../utils/filenameSanitizer');
-    const customer = await dbi('customer_accounts').where({ id: req.customer.id }).first();
-    const filename = buildPdfFilename({
-      docNumber: quote.quote_number,
-      customer,
-      fallback: `quote-${quote.id}`,
-    });
-    res.set('Content-Type', 'application/pdf');
-    res.set('Content-Disposition', buildContentDisposition(filename, 'inline'));
-    res.send(buf);
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to render quote PDF');
-  }
-});
-
-router.get('/invoices/:id/pdf', customerAuth, async (req, res) => {
-  try {
-    const { db: dbi } = require('../database/db');
-    // Feature-gate — master flag AND per-customer override.
-    if (!(await customerFeatureAllowed(req, res, 'bills', 'Invoices'))) return;
-    const invoice = await dbi('invoices')
-      .where({ id: parseInt(req.params.id, 10), customer_account_id: req.customer.id })
-      .first();
-    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
-    if (['scheduled', 'cancelled', 'skipped'].includes(invoice.status)) {
-      // Don't expose scheduled drafts, cancelled docs, or
-      // skipped empty-monthly placeholders.
-      return res.status(404).json({ error: 'Invoice not found' });
-    }
-    const invoiceService = require('../services/invoiceService');
-    const buf = await invoiceService.renderInvoicePdfBuffer(invoice.id);
-    const { buildPdfFilename } = require('../utils/pdfFilename');
-    const { buildContentDisposition } = require('../utils/filenameSanitizer');
-    const customer = await dbi('customer_accounts').where({ id: req.customer.id }).first();
-    const filename = buildPdfFilename({
-      docNumber: invoice.invoice_number,
-      customer,
-      fallback: `invoice-${invoice.id}`,
-    });
-    res.set('Content-Type', 'application/pdf');
-    res.set('Content-Disposition', buildContentDisposition(filename, 'inline'));
-    res.send(buf);
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to render invoice PDF');
-  }
-});
-
-// ---- contracts (customer-facing read-only + PDF + signed-PDF) -------
-// Same shape as /quotes and /invoices. Drafts are hidden; everything
-// from `sent` onwards is visible. Two PDF download endpoints because
-// the signed PDF (stamped with signatures OR a wet-signed upload) is
-// the authoritative copy customers want after both parties sign.
-router.get('/contracts', customerAuth, async (req, res) => {
-  try {
-    const { db: dbi } = require('../database/db');
-    if (!(await dbi.schema.hasTable('contracts'))) {
-      // Feature not migrated on this install yet.
-      return res.json({ contracts: [] });
-    }
-    // Contracts gate — master flag AND per-customer override (migration 131).
-    if (!(await customerFeatureAllowed(req, res, 'contracts', 'Contracts'))) return;
-    const rows = await dbi('contracts')
-      .where({ customer_account_id: req.customer.id })
-      .whereNotIn('status', ['draft'])
-      .orderBy('issue_date', 'desc')
-      .orderBy('id', 'desc')
-      .select(
-        'id', 'contract_number', 'status', 'language',
-        'issue_date', 'valid_until', 'title',
-        'sent_at', 'signed_by_customer_at', 'signed_by_admin_at',
-        'signed_customer_name', 'signed_admin_name',
-        'pdf_path', 'signed_pdf_path',
-      );
-
-    // Whether each contract can still be signed. The list used to carry the
-    // live signing token for the dashboard's "Sign now" link; the portal
-    // now signs through POST /contracts/:id/sign with the session, so the
-    // token never leaves the server.
-    const liveTokens = await publicDocumentViews.liveContractTokens(rows.map((r) => r.id));
-
-    res.json({
-      contracts: rows.map((c) => ({
-        id: c.id,
-        contractNumber: c.contract_number,
-        status: c.status,
-        language: c.language,
-        issueDate: c.issue_date,
-        validUntil: c.valid_until,
-        title: c.title,
-        sentAt: c.sent_at,
-        signedByCustomerAt: c.signed_by_customer_at,
-        signedByAdminAt: c.signed_by_admin_at,
-        signedCustomerName: c.signed_customer_name,
-        signedAdminName: c.signed_admin_name,
-        // Surface flags only — no paths leaked to the customer.
-        hasPdf: !!c.pdf_path,
-        hasSignedPdf: !!c.signed_pdf_path,
-        canSign: c.status === 'sent' && liveTokens.has(c.id),
-      })),
-    });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to load contracts');
-  }
-});
-
-router.get('/contracts/:id/pdf', customerAuth, async (req, res) => {
-  try {
-    const { db: dbi } = require('../database/db');
-    if (!(await dbi.schema.hasTable('contracts'))) {
-      return res.status(404).json({ error: 'Contract not found' });
-    }
-    // Contracts gate — master flag AND per-customer override.
-    if (!(await customerFeatureAllowed(req, res, 'contracts', 'Contracts'))) return;
-    const contract = await dbi('contracts')
-      .where({ id: parseInt(req.params.id, 10), customer_account_id: req.customer.id })
-      .first();
-    if (!contract) return res.status(404).json({ error: 'Contract not found' });
-    if (contract.status === 'draft') {
-      return res.status(404).json({ error: 'Contract not found' });
-    }
-    // Prefer the wet-signed PDF when present, otherwise the system-
-    // generated PDF (signed in-browser, stamped, or unsigned).
-    const path = require('path');
-    const fs = require('fs');
-    // Same containment the admin and public contract routes apply, with
-    // symlinks followed: a stored path outside the contract folders is
-    // refused with 403 (a bad row must not become an arbitrary-file read);
-    // only a file that is simply missing falls back to rendering.
-    const filePath = resolveStoredPathStrict(contract.signed_pdf_path || contract.pdf_path, contractPdfRoots());
-    if (!filePath) {
-      // Render on-demand so customers who hit the link before the
-      // first send still get something usable.
-      const contractService = require('../services/contractService');
-      const buf = await contractService.renderContractPdfBuffer(contract.id);
-      res.set('Content-Type', 'application/pdf');
-      res.set('Content-Disposition', `inline; filename="${contract.contract_number}.pdf"`);
-      return res.send(buf);
-    }
-    res.set('Content-Type', 'application/pdf');
-    res.set('Content-Disposition', `inline; filename="${path.basename(filePath)}"`);
-    fs.createReadStream(filePath).pipe(res);
-  } catch (error) {
-    if (error && error.statusCode === 403) return res.status(403).json({ error: error.message, code: error.code });
-    errorResponse(res, error, 500, 'Failed to render contract PDF');
-  }
-});
-
-// ---- signing and responding from the portal ---------------------------
-// A logged-in customer reads, signs and answers here with their session.
-// The action token that the public pages use is looked up on the server and
-// handed to the same service calls, so the signature evidence and the
-// single-use bookkeeping are identical — but the token itself never reaches
-// the browser.
-
-// Load a document the customer owns, behind the same feature gate as the
-// list. Drafts and other customers' documents are a plain 404.
-async function ownedDocument(req, res, { table, featureKey, label, notFound }) {
-  if (!(await customerFeatureAllowed(req, res, featureKey, label))) return null;
-  const id = Number.parseInt(req.params.id, 10);
-  const row = Number.isInteger(id)
-    ? await db(table).where({ id, customer_account_id: req.customer.id }).first()
-    : null;
-  if (!row || row.status === 'draft') {
-    res.status(404).json({ error: notFound });
-    return null;
-  }
-  return row;
-}
-
-const CONTRACT = { table: 'contracts', featureKey: 'contracts', label: 'Contracts', notFound: 'Contract not found' };
-const QUOTE = { table: 'quotes', featureKey: 'quotes', label: 'Quotes', notFound: 'Quote not found' };
-
-// The signed-in customer, as the actor the accounting change history records
-// for a portal signature, upload or response.
-function portalActor(req) {
-  return { type: 'customer', id: req.customer.id, name: req.customer.displayName || null };
-}
-
-function sendValidationErrors(req, res) {
-  const errors = validationResult(req);
-  if (errors.isEmpty()) return false;
-  res.status(400).json({
-    error: 'Validation failed',
-    code: 'VALIDATION_ERROR',
-    details: safeValidationErrors(errors).map((e) => ({ field: e.path || e.param, message: e.msg })),
-  });
-  return true;
-}
-
-// Operational refusals from the services (expired link, already signed,
-// ToS not accepted, ...) go back as they are; anything else is a 500.
-function sendServiceRefusal(res, err) {
-  if (!err || !err.statusCode || err.statusCode >= 500) return false;
-  res.status(err.statusCode).json({ error: err.message, code: err.code });
-  return true;
-}
-
-router.get('/contracts/:id', customerAuth, async (req, res) => {
-  try {
-    const contract = await ownedDocument(req, res, CONTRACT);
-    if (!contract) return;
-    const view = await publicDocumentViews.buildContractView(contract.id);
-    if (!view) return res.status(404).json({ error: CONTRACT.notFound });
-    const liveTokens = await publicDocumentViews.liveContractTokens([contract.id]);
-    res.json({ contract: view, canSign: contract.status === 'sent' && liveTokens.has(contract.id) });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to load contract');
-  }
-});
-
-router.post(
-  '/contracts/:id/sign',
-  customerAuth,
-  [
-    body('name').isString().isLength({ min: 1, max: 255 }),
-    body('accepted').isBoolean(),
-    body('signatureDataUrl').optional({ nullable: true }).isString(),
-  ],
-  async (req, res) => {
-    try {
-      if (sendValidationErrors(req, res)) return;
-      const contract = await ownedDocument(req, res, CONTRACT);
-      if (!contract) return;
-      const token = (await publicDocumentViews.liveContractTokens([contract.id])).get(contract.id);
-      if (contract.status !== 'sent' || !token) {
-        return res.status(409).json({ error: 'This contract cannot be signed right now.', code: 'NOT_SIGNABLE' });
-      }
-      const contractService = require('../services/contractService');
-      const result = await contractService.recordCustomerSignature({
-        token: token.token,
-        name: req.body.name,
-        signatureDataUrl: req.body.signatureDataUrl,
-        accepted: req.body.accepted === true,
-        // See utils/clientIp.js — the trusted req.ip only.
-        ip: clientIpForAudit(req),
-        actor: portalActor(req),
-      });
-      res.json(result);
-    } catch (error) {
-      if (sendServiceRefusal(res, error)) return;
-      errorResponse(res, error, 500, 'Failed to sign contract');
-    }
-  },
-);
-
-router.post(
-  '/contracts/:id/upload-signed-pdf',
-  customerAuth,
-  // Setting, ownership and signability are all checked BEFORE multer, so a
-  // refused upload never writes to disk.
-  contractSignedPdfUpload.uploadSignedPdfSettingGuard,
-  async (req, res, next) => {
-    try {
-      const contract = await ownedDocument(req, res, CONTRACT);
-      if (!contract) return undefined;
-      const token = (await publicDocumentViews.liveContractTokens([contract.id])).get(contract.id);
-      if (contract.status !== 'sent' || !token) {
-        return res.status(409).json({ error: 'This contract cannot be signed right now.', code: 'NOT_SIGNABLE' });
-      }
-      req.publicTokenRow = token;
-      return next();
-    } catch (error) {
-      return next(error);
-    }
-  },
-  contractSignedPdfUpload.signedPdfSingle,
-  async (req, res) => {
-    try {
-      await contractSignedPdfUpload.finishSignedPdfUpload(req, res, { actor: portalActor(req) });
-    } catch (error) {
-      if (sendServiceRefusal(res, error)) return;
-      errorResponse(res, error, 500, 'Failed to upload the signed contract');
-    }
-  },
-);
-
-router.get('/quotes/:id', customerAuth, async (req, res) => {
-  try {
-    const quote = await ownedDocument(req, res, QUOTE);
-    if (!quote) return;
-    const view = await publicDocumentViews.buildQuoteView(quote.id);
-    if (!view) return res.status(404).json({ error: QUOTE.notFound });
-    const usableTokens = await publicDocumentViews.usableQuoteTokens([quote.id]);
-    res.json({
-      quote: view,
-      canRespond: publicDocumentViews.quoteAcceptsResponse(quote) && usableTokens.has(quote.id),
-    });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to load quote');
-  }
-});
-
-router.post(
-  '/quotes/:id/respond',
-  customerAuth,
-  [
-    body('action').isIn(['accept', 'decline']),
-    body('tosAccepted').optional().isBoolean(),
-  ],
-  async (req, res) => {
-    try {
-      if (sendValidationErrors(req, res)) return;
-      const quote = await ownedDocument(req, res, QUOTE);
-      if (!quote) return;
-      const token = (await publicDocumentViews.usableQuoteTokens([quote.id])).get(quote.id);
-      if (!publicDocumentViews.quoteAcceptsResponse(quote) || !token) {
-        return res.status(409).json({ error: 'This quote cannot be answered right now.', code: 'NOT_RESPONDABLE' });
-      }
-      const quoteService = require('../services/quoteService');
-      const result = await quoteService.recordResponse({
-        token: token.token,
-        action: req.body.action,
-        ip: clientIpForAudit(req),
-        tosAccepted: req.body.tosAccepted === true,
-        actor: portalActor(req),
-      });
-      res.json({ status: result.status, lockedAt: result.lockedAt });
-    } catch (error) {
-      if (error && error.code === 'RESPONSE_LOCKED') {
-        return res.status(423).json({
-          error: error.message,
-          code: 'RESPONSE_LOCKED',
-          currentStatus: error.currentStatus,
-          lockedAt: error.lockedAt,
-        });
-      }
-      if (sendServiceRefusal(res, error)) return;
-      errorResponse(res, error, 500, 'Failed to record the response');
-    }
-  },
-);
 
 module.exports = router;

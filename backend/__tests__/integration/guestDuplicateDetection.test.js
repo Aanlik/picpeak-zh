@@ -20,7 +20,7 @@
 const request = require('supertest');
 const express = require('express');
 
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 
 describe('duplicate guest detection (#1210)', () => {
   let db; let cleanup; let app; let eventId;
@@ -60,11 +60,11 @@ describe('duplicate guest detection (#1210)', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const [ev] = await db('events').insert({
-      slug: 'dupe-guests', event_type: 'wedding', event_name: 'Dupe Guests',
+      slug: 'dupe-guests', event_type: 'project', event_name: 'Dupe Guests',
       event_date: '2026-08-01', host_email: 'h@example.com', admin_email: 'a@example.com',
       password_hash: 'x', share_link: '/gallery/dupe-guests/share',
       expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),

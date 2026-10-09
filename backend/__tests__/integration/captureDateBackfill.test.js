@@ -54,7 +54,7 @@ describe('capture date backfill (#1172)', () => {
       debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(),
     }));
 
-    ({ db } = await require('./helpers/crmDb').bootCrmDb());
+    ({ db } = await require('./helpers/sqliteTestDb').bootTestDb());
 
     app = express();
     app.use(express.json());
@@ -70,7 +70,7 @@ describe('capture date backfill (#1172)', () => {
     await db('photos').del();
     await db('events').del();
     const [e] = await db('events').insert({
-      slug: 'capfill', event_type: 'wedding', event_name: 'capfill', event_date: '2026-01-01',
+      slug: 'capfill', event_type: 'project', event_name: 'capfill', event_date: '2026-01-01',
       host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
       share_link: `capfill-${Math.random()}`, expires_at: new Date().toISOString(),
       source_mode: 'reference', external_path: 'trip', is_archived: archived,

@@ -21,9 +21,9 @@
  * applied to roles.manage (see adminRolesGuards.test.js) — inside both
  * updateAdminUser's role_id branch and createInvitation().
  *
- * Both describe blocks below share a single bootCrmDb() call: the
+ * Both describe blocks below share a single bootTestDb() call: the
  * `db` module (`src/database/db.js`) is a singleton keyed off
- * TEST_DATABASE_PATH at first require, and bootCrmDb's own comment
+ * TEST_DATABASE_PATH at first require, and bootTestDb's own comment
  * warns that a second call after the first's cleanup() destroys the
  * pool, leaving "Unable to acquire a connection" for every later query.
  */
@@ -38,7 +38,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'rolegrantguard-test-secret';
 process.env.STORAGE_PATH = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-rolegrantguard-storage-'));
 
-const { bootCrmDb, seedMinimal, assignAdminRole } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal, assignAdminRole } = require('../integration/helpers/sqliteTestDb');
 const svc = require('../../src/services/userManagementService');
 const { clearPermissionCache } = require('../../src/middleware/permissions');
 
@@ -46,7 +46,7 @@ let db; let cleanup;
 let superId;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId: superId } = await seedMinimal(db));
   await assignAdminRole(db, superId, 'super_admin');
   clearPermissionCache();

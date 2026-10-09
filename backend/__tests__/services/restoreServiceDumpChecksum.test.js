@@ -17,7 +17,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'dump-checksum-test-secret';
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 describe('restoreService — database dump checksum', () => {
   let db; let cleanup; let _internal; let RestoreService;
@@ -25,7 +25,7 @@ describe('restoreService — database dump checksum', () => {
   const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     backupPath = fs.mkdtempSync(path.join(os.tmpdir(), 'picpeak-dumpsum-root-'));
     fs.mkdirSync(path.join(backupPath, 'database'), { recursive: true });

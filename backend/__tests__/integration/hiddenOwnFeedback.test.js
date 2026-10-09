@@ -24,7 +24,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'hidden-feedback-secret';
 
@@ -57,13 +57,13 @@ describe('a guest\'s own hidden feedback (#1150)', () => {
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     feedbackService = require('../../src/services/feedbackService');
 
     const [ev] = await db('events').insert({
       slug: SLUG,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: 'Hidden Own Feedback',
       event_date: '2026-08-01',
       host_email: 'h@example.com',

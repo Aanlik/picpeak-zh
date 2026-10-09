@@ -167,11 +167,9 @@
     "archives": "Arquivos",
     "emailSettings": "Configurações de e-mail",
     "branding": "Identidade visual",
-    "eventTypes": "Tipos de evento",
     "backup": "Backup e Restauração",
     "cmsPages": "Páginas CMS",
     "users": "Utilizadores",
-    "calendar": "Calendário",
     "clients": "Clientes"
   },
   "archives": {
@@ -183,17 +181,11 @@
     "totalPhotos": "Total de Fotos",
     "avgArchiveSize": "Tamanho Médio do Arquivo",
     "searchPlaceholder": "Buscar arquivos...",
-    "allTypes": "Todos os Tipos",
-    "wedding": "Casamento",
-    "birthday": "Aniversário",
-    "corporate": "Corporativo",
-    "other": "Outro",
     "sortByDate": "Ordenar por Data",
     "sortByName": "Ordenar por Nome",
     "sortBySize": "Ordenar por Tamanho",
     "tableHeaders": {
       "event": "Evento",
-      "type": "Tipo",
       "archivedDate": "Data de Arquivamento",
       "size": "Tamanho",
       "photos": "Fotos",
@@ -401,7 +393,6 @@
     "confirmPasswordPlaceholder": "Confirme a senha",
     "eventDetails": "Detalhes do Evento",
     "eventName": "Nome do Evento",
-    "eventType": "Tipo de Evento",
     "eventDate": "Data do Evento",
     "hostEmail": "E-mail do Cliente",
     "hostName": "Nome do Cliente",
@@ -689,8 +680,8 @@
     },
     "ogShare": {
       "title": "Usar a foto principal como visualização ao compartilhar",
-      "help": "Quando o URL desta galeria é compartilhado no WhatsApp, Facebook, Slack etc., a pré-visualização do link mostrará a foto principal acima. A miniatura é obtida sem autenticação pelos rastreadores de pré-visualização — quem compartilha o URL torna esta imagem efetivamente pública. Desativado por padrão; escolha uma foto principal que você esteja confortável em expor publicamente antes de ativar.",
-      "heroRequired": "Escolha primeiro uma foto principal acima — esta opção a usa como imagem de pré-visualização no WhatsApp / Facebook / Slack."
+      "help": "Quando o URL desta galeria é compartilhado no Facebook, Slack etc., a pré-visualização do link mostrará a foto principal acima. A miniatura é obtida sem autenticação pelos rastreadores de pré-visualização — quem compartilha o URL torna esta imagem efetivamente pública. Desativado por padrão; escolha uma foto principal que você esteja confortável em expor publicamente antes de ativar.",
+      "heroRequired": "Escolha primeiro uma foto principal acima — esta opção a usa como imagem de pré-visualização no Facebook / Slack."
     }
   },
   "settings": {
@@ -907,7 +898,7 @@
       "showGalleryFilterBar": "Mostrar barra de filtros nas galerias",
       "showGalleryFilterBarHelp": "Exibe a pesquisa por nome de ficheiro e os controlos de ordenação acima das galerias em grelha. Desative para um layout mais limpo.",
       "enablePhoneField": "Ativar campo de número de telefone",
-      "enablePhoneFieldHelp": "Adiciona um campo opcional de número de telefone ao formulário de evento. Útil para automatizações como entrega via WhatsApp com n8n. Sempre opcional mesmo quando ativado.",
+      "enablePhoneFieldHelp": "Adiciona um campo opcional de telefone ao formulário do projeto para comunicação e automações posteriores. O campo continua opcional.",
       "feedbackTypeDefaultsHelp": "Que tipos de feedback as novas galerias trazem. As galerias existentes não são alteradas — cada galeria continua a poder ser ajustada individualmente.",
       "defaultAllowRatings": "Classificação por estrelas",
       "defaultAllowLikes": "Gostos",
@@ -1106,9 +1097,6 @@
     },
     "sectionLabel": "Secção de configurações",
     "navAriaLabel": "Navegação de configurações",
-    "eventTypes": {
-      "title": "Tipos de Evento"
-    },
     "cms": {
       "title": "Páginas CMS"
     },
@@ -1135,11 +1123,7 @@
       "sections": {
         "core": "Núcleo",
         "communication": "Comunicação",
-        "scheduling": "Agendamento",
-        "sales": "Vendas",
-        "insights": "Análises & Acesso",
-        "customers": "Clientes",
-        "clients": "Clientes"
+        "insights": "Análises & Acesso"
       },
       "status": {
         "stable": "estável",
@@ -1162,21 +1146,6 @@
         "description": "Conversas no aplicativo com convidados, vinculadas a uma galeria. E-mail é suficiente para a maioria das equipes — isto é para estúdios que querem tudo em um só lugar.",
         "sidebar": "Mensagens"
       },
-      "calendar": {
-        "title": "Calendário",
-        "description": "Veja todos os eventos futuros e passados em uma visualização mensal/semanal. Opcionalmente aceite novos agendamentos de clientes.",
-        "sidebar": "Calendário"
-      },
-      "quotes": {
-        "title": "Orçamentos",
-        "description": "Envie orçamentos com itens detalhados aos clientes. Eles podem aceitar ou recusar por um link público; o pagamento é controlado manualmente.",
-        "sidebar": "Orçamentos"
-      },
-      "bills": {
-        "title": "Faturas",
-        "description": "Gere uma fatura a partir de qualquer orçamento aceito. Marque como pago manualmente — sem integração com processadores de pagamento.",
-        "sidebar": "Faturas"
-      },
       "analytics": {
         "title": "Análises",
         "description": "Uso de armazenamento, visualizações de galerias, contagens de downloads e estatísticas por evento."
@@ -1189,10 +1158,6 @@
       "customerPortal": {
         "title": "Clientes",
         "description": "Logins persistentes para clientes. Clientes recorrentes veem todas as galerias atribuídas em um só lugar — sem senhas por evento. Os clientes entram em /customer/login e você os gerencia em Clientes → Contas."
-      },
-      "clients": {
-        "title": "Clientes",
-        "description": "Chave principal da seção Clientes na barra lateral. Desligado oculta a seção e todas as sub-funcionalidades independentemente dos seus controles individuais — reativar restaura o estado anterior."
       }
     },
     "customerSurface": {
@@ -1399,7 +1364,6 @@
     "previewLayout": "Visualizar Layout",
     "livePreview": "Prévia ao Vivo",
     "pdfTypography": "Tipografia do PDF",
-    "pdfTypographyHelp": "Usada nos cabeçalhos de faturas e orçamentos. Escolha uma das fontes incluídas ou mantenha o padrão para usar Helvetica.",
     "pdfFontFamily": "Fonte do corpo",
     "pdfFontFamilyDefault": "Usar Helvetica (padrão)",
     "pdfFontFamilyMissing": "ausente",
@@ -1639,10 +1603,6 @@
       "webhookDeleted": "Webhook excluído: {{name}}",
       "apiTokenCreated": "Token de API criado: {{name}}",
       "apiTokenRevoked": "Token de API revogado: {{name}}",
-      "eventTypeCreated": "Tipo de evento criado: {{name}}",
-      "eventTypeUpdated": "Tipo de evento atualizado: {{name}}",
-      "eventTypeDeleted": "Tipo de evento excluído: {{name}}",
-      "eventTypesReordered": "Tipos de evento reordenados",
       "eventPublished": "Evento publicado: {{eventName}}",
       "eventLogoUploaded": "Logotipo do evento carregado para {{eventName}}",
       "eventLogoRemoved": "Logotipo do evento removido de {{eventName}}",
@@ -1867,10 +1827,6 @@
       "webhook_deleted": "Webhook excluído: {{name}}",
       "api_token_created": "Token de API criado: {{name}}",
       "api_token_revoked": "Token de API revogado: {{name}}",
-      "event_type_created": "Tipo de evento criado: {{name}}",
-      "event_type_updated": "Tipo de evento atualizado: {{name}}",
-      "event_type_deleted": "Tipo de evento excluído: {{name}}",
-      "event_types_reordered": "Tipos de evento reordenados",
       "event_published": "Evento publicado: {{eventName}}",
       "event_logo_uploaded": "Logotipo do evento carregado para {{eventName}}",
       "event_logo_removed": "Logotipo do evento removido de {{eventName}}",
@@ -2074,9 +2030,7 @@
     "categories": {
       "core": "Principal",
       "customers": "Clientes",
-      "calendar": "Calendário",
-      "quotes": "Orçamentos",
-      "billing": "Faturamento"
+      "calendar": "Calendário"
     },
     "featureOff": "Recurso desativado",
     "featureOffTooltip": "O recurso ao qual este modelo pertence está atualmente desativado. Você ainda pode editar o modelo — ele será usado assim que o recurso for reativado.",
@@ -2116,54 +2070,6 @@
     "replaceLogo": "Substituir logótipo",
     "uploadLogo": "Enviar logótipo",
     "clearLogo": "Usar padrão do site"
-  },
-  "eventTypes": {
-    "title": "Tipos de Evento",
-    "subtitle": "Personalize os tipos de evento e seus temas padrão",
-    "loading": "Carregando tipos de evento...",
-    "loadError": "Falha ao carregar tipos de evento",
-    "createNew": "Novo Tipo de Evento",
-    "edit": "Editar Tipo de Evento",
-    "created": "Tipo de evento criado com sucesso",
-    "updated": "Tipo de evento atualizado com sucesso",
-    "deleted": "Tipo de evento excluído com sucesso",
-    "createError": "Falha ao criar tipo de evento",
-    "updateError": "Falha ao atualizar tipo de evento",
-    "deleteError": "Falha ao excluir tipo de evento",
-    "searchPlaceholder": "Buscar tipos de evento...",
-    "showInactive": "Mostrar inativos",
-    "noResults": "Nenhum tipo de evento encontrado",
-    "empty": "Nenhum tipo de evento cadastrado",
-    "system": "Sistema",
-    "table": {
-      "type": "Tipo",
-      "slugPrefix": "Prefixo de URL",
-      "theme": "Tema Padrão",
-      "status": "Status",
-      "actions": "Ações"
-    },
-    "form": {
-      "name": "Nome de Exibição",
-      "namePlaceholder": "ex: Ensaio de Família",
-      "slugPrefix": "Prefixo de URL",
-      "slugPrefixPlaceholder": "ex: familia",
-      "slugPreview": "Exemplo de URL:",
-      "emoji": "Ícone",
-      "themePreset": "Tema Padrão",
-      "isActive": "Ativo (visível na criação de eventos)"
-    },
-    "validation": {
-      "slugFormat": "Apenas letras, números e hífens permitidos"
-    },
-    "slugInfo": {
-      "title": "Informação do Prefixo de URL:",
-      "description": "O prefixo é usado para gerar a URL da galeria. Ex: um tipo \"família\" criará URLs como familia-silva-2025."
-    },
-    "deleteConfirm": {
-      "title": "Excluir Tipo de Evento",
-      "message": "Tem certeza que deseja excluir",
-      "warning": "Esta ação não pode ser desfeita. Certifique-se de que nenhum evento usa este tipo."
-    }
   },
   "backup": {
     "title": "Gerenciamento de Backup",
@@ -2899,8 +2805,6 @@
     "nav": {
       "galleries": "Galerias",
       "calendar": "Calendário",
-      "quotes": "Orçamentos",
-      "bills": "Faturas",
       "profile": "Perfil",
       "soon": "Em breve"
     },
@@ -2910,14 +2814,6 @@
     "calendar": {
       "title": "Calendário",
       "body": "Próximas sessões, datas de entrega de galerias e outros eventos relacionados a sessões aparecerão aqui. Avisaremos quando estiver pronto."
-    },
-    "quotes": {
-      "title": "Orçamentos",
-      "body": "Revise e aceite orçamentos para sessões futuras em um só lugar. Ainda estamos construindo — por enquanto, seu fotógrafo continuará enviando orçamentos da maneira habitual."
-    },
-    "bills": {
-      "title": "Faturas",
-      "body": "Faturas e histórico de pagamentos das suas sessões estarão disponíveis aqui. Enviaremos um e-mail quando estiver no ar."
     },
     "profile": {
       "title": "Perfil do cliente",
@@ -2949,7 +2845,6 @@
         "displayNameHint": "Como te cumprimentamos no painel.",
         "phone": "Telefone",
         "companyName": "Nome da empresa",
-        "vatId": "CNPJ / IVA",
         "addressLine1": "Endereço linha 1",
         "addressLine2": "Endereço linha 2",
         "postalCode": "CEP",
@@ -3056,7 +2951,6 @@
       "expires": "expira em",
       "accountSection": "Conta",
       "personalSection": "Informações pessoais",
-      "billingSection": "Endereço & cobrança",
       "notesSection": "Notas internas",
       "eventsSection": "Eventos atribuídos",
       "noEvents": "Ainda não atribuído a nenhum evento. Adicione este cliente a um evento pelo formulário do evento.",
@@ -3069,8 +2963,6 @@
       "displayName": "Nome de exibição",
       "phone": "Telefone",
       "company": "Empresa",
-      "billingEmail": "E-mail de cobrança",
-      "vatId": "CNPJ / IVA",
       "addressLine1": "Endereço linha 1",
       "addressLine2": "Endereço linha 2",
       "postalCode": "CEP",
@@ -3121,58 +3013,6 @@
       "removedN": "{{count}} removida(s)",
       "error": "Não foi possível atualizar as atribuições",
       "clearSearchAria": "Limpar pesquisa"
-    }
-  },
-  "clients": {
-    "title": "Clientes",
-    "subtitle": "Contas de clientes, agendamento, orçamentos e faturamento para clientes recorrentes.",
-    "navAriaLabel": "Navegação de Clientes",
-    "empty": {
-      "title": "Nenhuma funcionalidade de cliente ativada",
-      "body": "Ative Contas (ou outra sub-funcionalidade de Clientes) em Configurações → Recursos para começar."
-    },
-    "subnav": {
-      "accounts": "Contas",
-      "quotes": "Orçamentos",
-      "bills": "Faturas",
-      "taxReport": "Fiscal",
-      "development": "Desenvolvimento"
-    }
-  },
-  "taxReport": {
-    "title": "Relatório fiscal",
-    "intro": "Lista de receita por período com discriminação líquido + IVA agrupada por taxa de IVA. Faturas canceladas permanecem visíveis para continuidade do rastro de auditoria, mas são excluídas dos totais.",
-    "filters": {
-      "period": "Período",
-      "thisYear": "Este ano",
-      "lastYear": "Ano passado",
-      "thisQuarter": "Este trimestre",
-      "lastQuarter": "Trimestre passado",
-      "custom": "Intervalo personalizado",
-      "from": "De",
-      "to": "Até",
-      "currency": "Moeda"
-    },
-    "exportPdf": "Exportar PDF",
-    "exportCsv": "Exportar CSV",
-    "exportFailed": "Falha na exportação. Por favor, tente novamente.",
-    "errorTitle": "Não foi possível carregar o relatório fiscal",
-    "empty": "Sem faturas neste período.",
-    "statusCancelled": "Cancelada",
-    "totalsByVatRate": "Totais por taxa de IVA",
-    "grandTotalNet": "Total líquido",
-    "grandTotalVat": "Total IVA",
-    "grandTotalGross": "Total bruto",
-    "cancelledFootnote": "{{count}} fatura(s) cancelada(s) — valores excluídos dos totais (apresentados para continuidade do rastro de auditoria).",
-    "col": {
-      "date": "Data",
-      "invoice": "Fatura",
-      "customer": "Cliente",
-      "event": "Evento",
-      "vatRate": "IVA %",
-      "net": "Líquido",
-      "vat": "IVA",
-      "total": "Bruto"
     }
   }
 }

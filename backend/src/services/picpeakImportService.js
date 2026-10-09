@@ -76,7 +76,7 @@ function archiveLimitError(message, statusCode) {
 // was not produced by PicPeak and is refused before any live state changes:
 // the import copies files/ into STORAGE_PATH as-is, and some of that tree is
 // served publicly (fonts/, uploads/logos, uploads/favicons).
-const IMPORT_FILE_ROOTS = ['business-docs', 'uploads', 'events/active', 'events/archived'];
+const IMPORT_FILE_ROOTS = ['uploads', 'events/active', 'events/archived'];
 // The storage subtrees (inside the roots above) that the app serves as
 // static web content, without authentication:
 //   uploads/logos     backend/server.js `app.use('/uploads/logos', secureStatic(...))`
@@ -85,8 +85,7 @@ const IMPORT_FILE_ROOTS = ['business-docs', 'uploads', 'events/active', 'events/
 // frontend/nginx.conf proxies `location ^~ /uploads` to those mounts and
 // serves no storage path itself. fonts/ is served too but is not an import
 // root; /photos and /thumbnails are no longer mounted. Everything else under
-// the roots — transfer attachments (uploads/transfers/<id>/...), signed
-// contracts, business documents, event media — is handed out by authorised
+// the roots — transfer attachments (uploads/transfers/<id>/...) and event media — is handed out by authorised
 // routes as an attachment under its stored name, never as a page.
 const IMPORT_PUBLICLY_SERVED_PREFIXES = ['uploads/logos', 'uploads/favicons'];
 // Active web content must never land in a served subtree through an archive.
@@ -576,7 +575,7 @@ async function replaceAllTables(tables, dataDir, currentAdmin, roleSnapshot, { c
       await dropExternalRelpathIndex(trx);
     }
 
-    // An archive made before accounting history existed must also replace
+    // An archive made before change history existed must also replace
     // the local history. Keeping it would attach later/foreign changes to
     // restored documents whose numeric IDs happen to match.
     const hasAccountingHistory = await trx.schema.hasTable('accounting_change_history');

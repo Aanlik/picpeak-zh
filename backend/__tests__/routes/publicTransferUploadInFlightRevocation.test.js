@@ -22,14 +22,14 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-at-least-32-char
 const fs = require('fs');
 const path = require('path');
 const request = require('supertest');
-const { bootCrmDb, buildRouteApp } = require('../integration/helpers/crmDb');
+const { bootTestDb, buildRouteApp } = require('../integration/helpers/sqliteTestDb');
 
 const TOKEN = 'UPLD7K';
 const DOWNLOAD_TOKEN = 'd'.repeat(64);
 let db; let cleanup; let app; let transferService; let transferId;
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   const flag = await db('feature_flags').where({ key: 'transfers' }).first();
   if (flag) await db('feature_flags').where({ key: 'transfers' }).update({ value: true });
   else await db('feature_flags').insert({ key: 'transfers', value: true });

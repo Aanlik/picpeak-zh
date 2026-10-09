@@ -94,7 +94,7 @@ export const AdminLoginPage: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.email) {
-      newErrors.email = NO_EMAIL_MODE ? '请输入用户名' : t('adminLogin.emailRequired');
+      newErrors.email = NO_EMAIL_MODE ? t('adminLogin.usernameRequired') : t('adminLogin.emailRequired');
     } else if (!NO_EMAIL_MODE && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = t('adminLogin.invalidEmail');
     }
@@ -297,7 +297,7 @@ export const AdminLoginPage: React.FC = () => {
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-1">
-                {NO_EMAIL_MODE ? '用户名' : t('adminLogin.emailLabel')}
+                {NO_EMAIL_MODE ? t('adminLogin.usernameLabel') : t('adminLogin.emailLabel')}
               </label>
               <Input
                 id="email"
@@ -305,7 +305,7 @@ export const AdminLoginPage: React.FC = () => {
                 value={formData.email}
                 onChange={handleInputChange('email')}
                 error={errors.email}
-                placeholder={NO_EMAIL_MODE ? '请输入管理员用户名' : t('adminLogin.emailPlaceholder')}
+                placeholder={NO_EMAIL_MODE ? t('adminLogin.usernamePlaceholder') : t('adminLogin.emailPlaceholder')}
                 leftIcon={<Mail className="w-5 h-5 text-neutral-400" />}
                 autoComplete={NO_EMAIL_MODE ? "username" : "email"}
                 autoFocus

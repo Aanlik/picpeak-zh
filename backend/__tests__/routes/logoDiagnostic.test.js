@@ -26,15 +26,15 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 describe('logo diagnostic disclosure (GHSA-29vm)', () => {
   let db; let cleanup; let app; let token;
-  // bootCrmDb() sets STORAGE_PATH itself, so resolve these AFTER it runs.
+  // bootTestDb() sets STORAGE_PATH itself, so resolve these AFTER it runs.
   let STORAGE; let logoDir; let logoPath;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     // A legitimately contained absolute logo in a NON-standard storage subdir.

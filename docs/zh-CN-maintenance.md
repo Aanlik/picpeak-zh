@@ -6,32 +6,64 @@
 `v3.134.1` / `5fc54d9a5e17a7f054c926922a6f820f3c98eda2`，记录在
 `.picpeak-upstream-sha`。不要从 `main` 的测试版本直接发布生产镜像。
 
-中文差异仅包括 `zh-CN.json`、locale 文件名识别、语言选择器、部署默认语言、
-两份 Dockerfile 的前端构建参数、中文日期与字体适配、中文检查/上游提醒工作流和本维护文档。
-另有一个独立的小型兼容补丁：反馈姓名验证允许 Unicode 字母、组合符、数字和
-有限姓名标点，解决官方拒绝中文客户姓名的问题。该补丁有 11 项测试，适合单独
-向上游贡献；上游接受后应移除 Fork 对应补丁。Bridge 代码全部位于独立仓库。
+Fork 改动分为两类：低冲突的简体中文支持（语言包、locale 解析、语言选择器、
+部署默认语言、中文日期/字体和检查流程）；以及产品范围改动（本地账号/无邮件模式、
+NAS 文件夹入口、删除 WhatsApp、销售/财务、客户合同和拍摄类型等模块）。另有一个
+Unicode 客户姓名验证补丁。产品范围改动会触及共享路由、设置、导航和数据清理代码，
+因此这已不是“纯翻译 Fork”；上游改动到共享入口时必须人工比对，不能整文件保留任一侧。
+PixCake Bridge 代码全部位于独立仓库。
 
 ## 分支与远程
 
 ```bash
 git remote add upstream https://github.com/PicPeak/picpeak.git # 已配置时跳过
 git remote -v
-git switch zh-stable
-git fetch upstream stable --tags
-git switch -c sync/stable-新版本
-bash scripts/sync-upstream-zh.sh --merge
+git switch zh-stable # 或切换到 Fork 的正式维护分支
+git status --short # 必须先提交/保存现有改动
+bash scripts/sync-upstream-zh.sh --plan --exclude-retired
+bash scripts/sync-upstream-zh.sh --merge --exclude-retired
 ```
 
 `origin` 指向自己的 Fork，`upstream` 始终指向官方。保留官方 Git 历史；
-禁止 squash 整个上游历史、直接覆盖官方文件、长期从旧版本复制核心后端。
-`--merge` 要求工作区干净，遇到冲突会停止，不自动猜测解决方案。
+禁止 squash 整个上游历史或从旧版本覆盖核心文件。删除模块清单维护在
+`.fork/upstream-exclusions.txt`：同步脚本先生成逐路径计划，再从临时上游树中剔除
+清单匹配的模块文件和对应测试，然后合并剩余官方 stable 改动。历史迁移、旧版签名
+使用统计协议、备份清理和共享入口文件不放进排除清单。
+
+当本 Fork 删除一个完整官方模块时，应把其源码目录、路由/服务入口及专属测试加入排除
+清单，并在 `scripts/upstream-filter.test.mjs` 增加“未来新增文件也会被排除”的断言。
+规则按文件路径生效；不要为了消除冲突而排除共享文件或整个过宽的父目录。当前清单
+覆盖 WhatsApp、销售/财务单据、合同/报价/公共单据、项目管理残留页面和拍摄类型目录。
+新增官方共享文件仍正常合并；共享文件同一位置发生冲突时脚本会中止，不能自动丢弃一侧。
+
+## 每次同步前先选择一种方式
+
+必须明确选择下面一种方式，并在预览和合并命令中使用同一个参数：
+
+1. **完整同步官方代码**：使用 `--all`。官方 stable 的所有改动都会参与合并，包含本 Fork
+   已删除的 WhatsApp、销售/财务、邮件相关及拍摄类型模块。仅在准备恢复完整官方功能时选择。
+   先预览 `bash scripts/sync-upstream-zh.sh --plan --all`，确认后运行
+   `bash scripts/sync-upstream-zh.sh --merge --all`。
+2. **剔除已删除模块**：使用 `--exclude-retired`。自动从上游候选中移除排除清单内的模块和测试，
+   其余官方 stable 改动继续同步；这是维持当前精简产品范围时应选择的方式。先预览
+   `bash scripts/sync-upstream-zh.sh --plan --exclude-retired`，确认后运行
+   `bash scripts/sync-upstream-zh.sh --merge --exclude-retired`。
+
+`--plan` 列出上游新增/修改路径、所选策略下的自动剔除路径，以及 Fork 和上游都改动的共享文件。
+如果上游把已移除模块文件改名到其他路径，计划会沿着 Git 重命名记录识别并继续剔除新路径。
+两种方式的 `--merge` 都要求工作区干净。采用方式 2 时，脚本只自动解决排除清单内的路径冲突；
+任何共享文件冲突都会自动中止并恢复合并前状态，列出文件供人工逐段比对，避免丢掉官方修复
+或重新引入已删模块。
+清单有新模块时，先补路径规则和测试，再同步。脚本只过滤文件路径；不能凭路径规则
+安全删除共享入口中的代码，因此这类注册变动需人工审阅，并运行完整构建验证。
+网络不可用时可用 `PICPEAK_SKIP_FETCH=true bash scripts/sync-upstream-zh.sh --plan --exclude-retired`
+查看本机缓存的版本；这只是离线预览，不代表已检查 GitHub 最新 stable。
 
 ## 解决冲突和补翻译
 
 1. 语言包以新 `en.json` 为准，保留新功能对应键与完整复数形式。
 2. 执行 `node scripts/check-zh-cn.mjs`，按缺失键报告补译；检查插值变量
-   `{{count}}`、格式参数和模板变量 `{INVOICE}` 等，不把它们翻译成中文。
+   `{{count}}`、格式参数和模板变量，不把变量名翻译成中文。
 3. 检查客户侧 green 的中文仍为精修语义；底层 color_label 值仍为 `green`。
 4. 若上游已修复带连字符 locale、默认语言或 Unicode 姓名，优先采用上游实现，
    删除本地冗余补丁，不同时维持两份逻辑。
@@ -49,6 +81,7 @@ bash scripts/sync-upstream-zh.sh --merge
 ```bash
 node scripts/check-zh-cn.mjs
 node --test scripts/check-zh-cn.test.mjs
+node --test scripts/upstream-filter.test.mjs
 cd frontend
 npm ci --legacy-peer-deps
 # 当前上游遗漏 testing-library 的 DOM peer，仅用于测试环境：
@@ -87,7 +120,8 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 
 ## 翻译质量
 
-6,331 个英文键和 196 个复数键已完整覆盖；插值和模板占位符自动检查。
+4,688 个中英文词条键保持完整对齐，178 个复数键及插值/模板占位符自动检查；
+提取器管理 4,075 个源码静态引用键，CI 会检查上游新增遗漏。
 初始长尾翻译由本地 Argos Translate 模型生成，客户核心选片、登录、反馈、下载及
 通用后台控件已经逐项修订。财务、合同、遥测等长尾专业文字仍需后续人工语言审校。
 键齐全和构建成功不代表每一条专业文案都已达到人工翻译质量。

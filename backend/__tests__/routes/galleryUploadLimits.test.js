@@ -32,7 +32,7 @@ const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'gallery-upload-limits-secret';
 
@@ -49,7 +49,7 @@ describe('guest upload limits', () => {
     const slug = `upload-limits-${seq}`;
     const id = unwrap(await db('events').insert({
       slug,
-      event_type: 'wedding',
+      event_type: 'project',
       event_name: `Upload Limits ${seq}`,
       event_date: '2026-08-01',
       host_email: 'host@example.com',
@@ -96,7 +96,7 @@ describe('guest upload limits', () => {
   };
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
     app = express();
     app.use(express.json());

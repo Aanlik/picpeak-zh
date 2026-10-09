@@ -60,9 +60,9 @@ describe('admin thumbnail regeneration (#1129)', () => {
     // completion line is what drain() below waits for.
     logInfo = jest.spyOn(require('../../src/utils/logger'), 'info');
 
-    // bootCrmDb, not run-migrations: the latter calls process.exit(0) on
+    // bootTestDb, not run-migrations: the latter calls process.exit(0) on
     // success, which ends the jest worker mid-suite.
-    ({ db, cleanup } = await require('./helpers/crmDb').bootCrmDb());
+    ({ db, cleanup } = await require('./helpers/sqliteTestDb').bootTestDb());
 
     imageProcessor = require('../../src/services/imageProcessor');
     storage = require('../../src/services/storage').getStorage();
@@ -84,7 +84,7 @@ describe('admin thumbnail regeneration (#1129)', () => {
 
   async function seedEvent() {
     const [row] = await db('events').insert({
-      slug: 'nas-wedding', event_type: 'wedding', event_name: 'nas',
+      slug: 'nas-wedding', event_type: 'project', event_name: 'nas',
       event_date: '2026-01-01', host_email: 'h@example.com', admin_email: 'a@example.com',
       password_hash: 'x', share_link: 'nas-share', expires_at: new Date().toISOString(),
       source_mode: 'reference', external_path: 'weddings/2026-08',
@@ -331,7 +331,7 @@ describe('admin thumbnail regeneration (#1129)', () => {
     const a = await seedEvent();
     await seedPhoto(a, { source_origin: 'external', external_relpath: 'a.jpg' });
     const [b] = await db('events').insert({
-      slug: 'other', event_type: 'wedding', event_name: 'other', event_date: '2026-01-01',
+      slug: 'other', event_type: 'project', event_name: 'other', event_date: '2026-01-01',
       host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
       share_link: 'other-share', expires_at: new Date().toISOString(),
     }).returning('id');

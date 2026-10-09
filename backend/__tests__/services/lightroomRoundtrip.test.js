@@ -24,7 +24,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'lr-roundtrip-test-secret';
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 const { mergeMarks, roundRating } = require('../../src/services/markMerge');
 
 let db;
@@ -45,13 +45,13 @@ async function addPhoto({ filename, originalFilename, sourceFilename }) {
 }
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   ({ adminId } = await seedMinimal(db));
 
   const [event] = await db('events').insert({
     slug: 'lr-roundtrip-event',
     event_name: 'Round-trip Event',
-    event_type: 'wedding',
+    event_type: 'project',
     event_date: '2026-08-25',
     host_email: 'host@example.com',
     password_hash: 'not-a-real-hash',

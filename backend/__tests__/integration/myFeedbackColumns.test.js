@@ -12,7 +12,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'my-feedback-columns-secret';
 
@@ -22,11 +22,11 @@ describe('/my-feedback columns', () => {
   let db; let cleanup; let app; let eventId; let photoId; let guestId;
 
   beforeAll(async () => {
-    ({ db, cleanup } = await bootCrmDb());
+    ({ db, cleanup } = await bootTestDb());
     await seedMinimal(db);
 
     const [ev] = await db('events').insert({
-      slug: SLUG, event_type: 'wedding', event_name: 'My feedback columns',
+      slug: SLUG, event_type: 'project', event_name: 'My feedback columns',
       event_date: '2026-09-16', host_email: 'h@example.com', admin_email: 'a@example.com',
       password_hash: 'x', share_link: `/gallery/${SLUG}/share`,
       expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),

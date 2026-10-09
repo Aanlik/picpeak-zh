@@ -3,8 +3,8 @@
  *
  * Mounted at /customer/profile. Lets the logged-in customer edit:
  *   - personal name (salutation / first / last / display)
- *   - contact (phone, company, VAT id)
- *   - billing address
+ *   - contact details (phone and company)
+ *   - profile address
  *   - password
  *
  * The layout intentionally mirrors the admin detail pages (sectioned
@@ -73,7 +73,6 @@ function profileToForm(p: CustomerProfileFull): CustomerProfileUpdate {
     displayName: p.displayName ?? '',
     phone: p.phone ?? '',
     companyName: p.companyName ?? '',
-    vatId: p.vatId ?? '',
     addressLine1: p.addressLine1 ?? '',
     addressLine2: p.addressLine2 ?? '',
     postalCode: p.postalCode ?? '',
@@ -203,7 +202,7 @@ export const CustomerProfilePage: React.FC = () => {
           {t('customer.profile.title', 'Customer profile')}
         </h1>
         <p className="mt-1 text-sm text-muted-theme">
-          {t('customer.profile.subtitle', 'Keep your contact and billing details up to date — they\'re shown on quotes and invoices once those features go live.')}
+          {t('customer.profile.subtitle', 'Keep your contact details up to date so the studio can reach you about your galleries.')}
         </p>
       </div>
 
@@ -336,19 +335,6 @@ export const CustomerProfilePage: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-theme mb-1" htmlFor="profile-vat">
-                {t('customer.profile.field.vatId', 'VAT ID')}
-              </label>
-              {/* No standard autocomplete token for VAT — leave it off so
-                  browsers don't try to fill it from a random saved value. */}
-              <Input
-                id="profile-vat"
-                name="vat-id"
-                value={form.vatId || ''}
-                onChange={(e) => updateField('vatId', e.target.value)}
-              />
-            </div>
           </div>
         </ProfileTile>
 
@@ -356,20 +342,20 @@ export const CustomerProfilePage: React.FC = () => {
           <div className="flex items-center gap-2 mb-4">
             <MapPin className="w-5 h-5 text-muted-theme" />
             <h2 className="text-lg font-semibold text-theme">
-              {t('customer.profile.section.address', 'Billing address')}
+              {t('customer.profile.section.address', 'Address')}
             </h2>
           </div>
 
           {/*
             Address autofill: browsers (especially Safari) need three things
-            to reliably fill a billing address:
+            to reliably fill a profile address:
               1. Each input has a `name` attribute that matches a standard
                  form-autofill token (address-line1, postal-code, etc.).
               2. The corresponding `autoComplete` attribute matches the
                  same token.
               3. All address fields share an autocomplete *section* — we
                  prefix every token with `billing` so browser fills the
-                 user's billing address rather than their shipping one
+                 user's profile address rather than their shipping one
                  (Safari treats unprefixed and `shipping` as the default).
             Without `name`+`id` matching, Safari heuristics give up and
             fall back to nothing, which is what the maintainer hit.
@@ -382,7 +368,7 @@ export const CustomerProfilePage: React.FC = () => {
               <Input
                 id="profile-address-line1"
                 name="address-line1"
-                autoComplete="billing address-line1"
+                autoComplete="profile address-line1"
                 value={form.addressLine1 || ''}
                 onChange={(e) => updateField('addressLine1', e.target.value)}
               />
@@ -395,7 +381,7 @@ export const CustomerProfilePage: React.FC = () => {
               <Input
                 id="profile-address-line2"
                 name="address-line2"
-                autoComplete="billing address-line2"
+                autoComplete="profile address-line2"
                 value={form.addressLine2 || ''}
                 onChange={(e) => updateField('addressLine2', e.target.value)}
               />
@@ -408,7 +394,7 @@ export const CustomerProfilePage: React.FC = () => {
               <Input
                 id="profile-postal-code"
                 name="postal-code"
-                autoComplete="billing postal-code"
+                autoComplete="postal-code"
                 inputMode="numeric"
                 value={form.postalCode || ''}
                 onChange={(e) => updateField('postalCode', e.target.value)}
@@ -422,7 +408,7 @@ export const CustomerProfilePage: React.FC = () => {
               <Input
                 id="profile-city"
                 name="address-level2"
-                autoComplete="billing address-level2"
+                autoComplete="profile address-level2"
                 value={form.city || ''}
                 onChange={(e) => updateField('city', e.target.value)}
               />
@@ -435,7 +421,7 @@ export const CustomerProfilePage: React.FC = () => {
               <Input
                 id="profile-state"
                 name="address-level1"
-                autoComplete="billing address-level1"
+                autoComplete="profile address-level1"
                 value={form.state || ''}
                 onChange={(e) => updateField('state', e.target.value)}
               />

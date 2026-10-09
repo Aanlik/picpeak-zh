@@ -6,12 +6,10 @@ import { ThemeCustomizerEnhanced, GalleryPreview } from '../../components/admin'
 import { useTheme, type ThemeConfig, GALLERY_THEME_PRESETS } from '../../contexts/ThemeContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { settingsService, type BrandingSettings } from '../../services/settings.service';
-import { businessProfileService } from '../../services/businessProfile.service';
 import { useTranslation } from 'react-i18next';
 import { buildResourceUrl } from '../../utils/url';
-import { useFeatureEnabled, useFeatureFlags } from '../../contexts/FeatureFlagsContext';
+import { useFeatureEnabled } from '../../contexts/FeatureFlagsContext';
 import { CustomerDashboardBrandingCard } from '../../components/admin/CustomerDashboardBrandingCard';
-import { PdfTypographyCard } from '../../components/admin/PdfTypographyCard';
 import { usePublicSettings } from '../../hooks/usePublicSettings';
 import { useMutationWithToast } from '../../hooks';
 
@@ -19,9 +17,6 @@ export const BrandingPage: React.FC = () => {
   const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
-  // Used to gate the PDF typography card — when no PDF-producing
-  // feature is enabled the setting has no surface to apply to.
-  const { flags } = useFeatureFlags();
   const [brandingSettings, setBrandingSettings] = useState<BrandingSettings>({
     company_name: '',
     company_tagline: '',
@@ -46,7 +41,6 @@ export const BrandingPage: React.FC = () => {
     login_logo_size: 'medium',
     facebook_url: '',
     instagram_url: '',
-    whatsapp_url: '',
     twitter_url: '',
     youtube_url: '',
     promo_markdown: '',
@@ -58,11 +52,6 @@ export const BrandingPage: React.FC = () => {
   const [currentTheme, setCurrentTheme] = useState<ThemeConfig>(theme);
   const [currentThemeName, setCurrentThemeName] = useState('default');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  // PDF body font selection (migration 121). Lives on this page so the
-  // top-level Save button can persist it together with branding +
-  // theme — no card-local save button. Null = "no preference,
-  // fall back to Helvetica" — same encoding the column uses.
-  const [pdfFontFamily, setPdfFontFamily] = useState<string | null>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch current settings
@@ -75,17 +64,6 @@ export const BrandingPage: React.FC = () => {
   const { data: themeSettings } = useQuery({
     queryKey: ['admin-settings', 'theme'],
     queryFn: () => settingsService.getSettingsByType('theme'),
-  });
-
-  // Fetch business profile snapshot — needed to hydrate the PDF
-  // typography card with the saved pdfFontFamily value. The PDF
-  // typography card is rendered only when a PDF-producing feature is
-  // enabled, but the query is cheap and the page already issues other
-  // settings queries on mount, so we always fetch.
-  const { data: businessProfileSnapshot } = useQuery({
-    queryKey: ['business-profile-snapshot'],
-    queryFn: () => businessProfileService.get(),
-    staleTime: 5 * 60 * 1000,
   });
 
   // Update branding mutation
@@ -118,13 +96,6 @@ export const BrandingPage: React.FC = () => {
       setBrandingSettings(prev => ({ ...prev, ...formatted }));
     }
   }, [settings]);
-
-  // Hydrate the PDF font selection once the business profile arrives.
-  useEffect(() => {
-    if (businessProfileSnapshot?.profile) {
-      setPdfFontFamily(businessProfileSnapshot.profile.pdfFontFamily || null);
-    }
-  }, [businessProfileSnapshot?.profile?.pdfFontFamily]);
 
   // Initialize theme from database
   useEffect(() => {
@@ -337,17 +308,6 @@ export const BrandingPage: React.FC = () => {
       // Save theme settings to database
       await themeMutation.mutateAsync(currentTheme);
 
-      // Persist PDF font family if it changed. Skipped when the value
-      // matches the snapshot to avoid touching business_profile on
-      // every Branding save (the row carries unrelated settings).
-      const savedPdfFontFamily = businessProfileSnapshot?.profile?.pdfFontFamily || null;
-      if (savedPdfFontFamily !== pdfFontFamily) {
-        await businessProfileService.update({
-          pdfFontFamily: pdfFontFamily ? pdfFontFamily : null,
-        });
-        queryClient.invalidateQueries({ queryKey: ['business-profile-snapshot'] });
-      }
-
       // Apply theme globally
       setTheme(currentTheme);
 
@@ -470,14 +430,6 @@ export const BrandingPage: React.FC = () => {
                 value={brandingSettings.instagram_url || ''}
                 onChange={(e) => handleBrandingChange('instagram_url', e.target.value)}
                 placeholder="https://instagram.com/yourstudio"
-              />
-              <Input
-                label="WhatsApp"
-                type="text"
-                value={brandingSettings.whatsapp_url || ''}
-                onChange={(e) => handleBrandingChange('whatsapp_url', e.target.value)}
-                placeholder="https://wa.me/491234567890 or +491234567890"
-                helperText={t('branding.socialMedia.whatsappHelp', 'A wa.me URL or a phone number with country code (will be converted).')}
               />
               <Input
                 label="X / Twitter"
@@ -1157,11 +1109,6 @@ export const BrandingPage: React.FC = () => {
                 hideActions={true}
                 forceColorMode={brandingSettings.force_color_mode ?? null}
                 onForceColorModeChange={handleForceColorModeChange}
-                slotBeforeCustomCss={
-                  (flags.quotes || flags.bills || flags.taxReport)
-                    ? <PdfTypographyCard value={pdfFontFamily} onChange={setPdfFontFamily} />
-                    : null
-                }
               />
             </div>
 

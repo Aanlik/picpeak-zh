@@ -13,19 +13,19 @@
 
 const fs = require('fs');
 const path = require('path');
-const { bootCrmDb, seedMinimal } = require('./helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('./helpers/sqliteTestDb');
 
 let db; let cleanup; let tmpDir; let backupFile;
 
 beforeAll(async () => {
-  ({ db, cleanup, tmpDir } = await bootCrmDb());
+  ({ db, cleanup, tmpDir } = await bootTestDb());
   process.env.STORAGE_PATH = tmpDir;
   const { adminId } = await seedMinimal(db);
   const { createPicpeak } = require('../../src/services/picpeakExportService');
   const { importFromPicpeak } = require('../../src/services/picpeakImportService');
 
   const base = {
-    event_type: 'wedding', host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
+    event_type: 'project', host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
     is_active: 1, is_archived: 0, is_draft: 0, created_by: adminId, created_at: new Date().toISOString(),
   };
   await db('events').insert([

@@ -156,7 +156,7 @@ router.get('/config', adminAuth, requirePermission('backup.view'), async (req, r
       }
     });
 
-    // Never return the stored credentials — mask like the email/WhatsApp
+    // Never return the stored credentials — mask like other integration keys
     // config endpoints do. The PUT below skips the mask sentinel, so the
     // form round-trips without clobbering the real values.
     if (config.backup_s3_secret_key) config.backup_s3_secret_key = '••••••••';
@@ -327,7 +327,7 @@ router.post('/run', adminAuth, requirePermission('backup.create'), async (req, r
 });
 
 // Generate + download a portable ".picpeak" export — an engine-neutral logical
-// snapshot (DB rows as NDJSON + PDFs/business-docs) that can be re-uploaded to
+// snapshot (DB rows as NDJSON + stored assets) that can be re-uploaded to
 // another instance via the web UI. `?includePhotos=true` also bundles original
 // gallery photos (larger); otherwise the admin re-uploads them per gallery.
 //
@@ -335,7 +335,7 @@ router.post('/run', adminAuth, requirePermission('backup.create'), async (req, r
 // hashes, API keys). The download UI must warn before offering it. We surface
 // the flag as a response header too so the client can double-confirm.
 // Full-instance export dumps every table unredacted — bcrypt password
-// hashes, 2FA columns, and all integration secrets (SMTP/SSO/WhatsApp/
+// hashes, 2FA columns, and all integration secrets (SMTP/SSO/
 // webhook/S3) in cleartext. The built-in `admin` role holds backup.create,
 // but is denied this data everywhere else (config APIs mask secrets as
 // ********). Gate the raw dump behind super_admin (GHSA-pv6w-rj34-wj9v).

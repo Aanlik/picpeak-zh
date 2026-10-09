@@ -1,9 +1,9 @@
 /**
  * Generic placeholder for customer-surface features that aren't built yet
  * but are surfaced in the sidebar so the maintainer can demo the layout
- * without the feature being live (Calendar, Quotes, Bills — #354 follow-ups).
+ * without the feature being live.
  *
- * Single component re-used for all three; the calling page passes the title
+ * The calling page passes the title
  * + lucide icon so each route stays distinguishable in the address bar and
  * heading.
  */

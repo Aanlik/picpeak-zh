@@ -23,7 +23,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 );
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'feedback-color-labels-test-secret';
 
-const { bootCrmDb, seedMinimal } = require('../integration/helpers/crmDb');
+const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 const feedbackService = require('../../src/services/feedbackService');
 const { COLOR_LABELS, dominantColorLabel } = require('../../src/constants/colorLabels');
@@ -54,11 +54,11 @@ async function colorLabelCountOf(photoId) {
 }
 
 beforeAll(async () => {
-  ({ db, cleanup } = await bootCrmDb());
+  ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
   const inserted = await db('events').insert({
     slug: EVENT_SLUG,
-    event_type: 'wedding',
+    event_type: 'project',
     event_name: 'Colour Labels Test',
     event_date: '2026-07-20',
     host_email: 'host@example.com',
