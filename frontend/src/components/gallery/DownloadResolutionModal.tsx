@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'react-toastify';
 import { Download, Check, AlertCircle, X, Loader2 } from 'lucide-react';
 
 import { Button, Card } from '../common';
@@ -9,10 +10,10 @@ import type { DownloadResolutionChoice, DownloadJobStatus } from '../../types';
 /**
  * Resolution picker for gallery downloads (#858).
  *
- * Shown after "Download all"/"Download selected" when the gallery has the
- * picker enabled. A non-standard size has nothing cached behind it and can
- * take minutes to build, so the server prepares it as a job and this modal
- * walks the three states the build actually has:
+ * For a selected set, the chosen rendition is streamed as individual files.
+ * For a whole-gallery download, a non-standard size has nothing cached behind
+ * it and can take minutes to build, so the server prepares an archive as a job
+ * and this modal walks the three states the build actually has:
  *
  *   choose → preparing (poll) → ready (click to download)
  *
@@ -86,6 +87,20 @@ export const DownloadResolutionModal: React.FC<DownloadResolutionModalProps> = (
   }, [slug, t]);
 
   const start = useCallback(async () => {
+    // A selected set is downloaded as separate files. The single-photo route
+    // applies the requested rendition and streams each file directly, so no
+    // ZIP build or polling job is needed.
+    if (photoIds && photoIds.length > 0) {
+      try {
+        await galleryService.downloadSelectedPhotos(slug, photoIds, selected);
+        toast.info(t('gallery.downloadStarted', { photoCount: photoIds.length }));
+        onClose();
+      } catch {
+        toast.error(t('gallery.downloadError'));
+      }
+      return;
+    }
+
     // Whole-gallery download at the gallery's OWN standard size is exactly
     // what the pre-built archive already contains — take it instead of
     // re-resizing and re-packaging the entire gallery for the same bytes.
@@ -194,7 +209,9 @@ export const DownloadResolutionModal: React.FC<DownloadResolutionModalProps> = (
                 {t('common.cancel', 'Cancel')}
               </Button>
               <Button variant="primary" onClick={start} leftIcon={<Download className="w-4 h-4" />}>
-                {t('gallery.prepareDownload', 'Prepare download')}
+                {photoIds?.length
+                  ? t('gallery.download', 'Download')
+                  : t('gallery.prepareDownload', 'Prepare download')}
               </Button>
             </div>
           </>

@@ -764,7 +764,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
       return;
     }
 
-    toastify.info(t('gallery.downloading', { count: selectedPhotoIds.length }));
+    toastify.info(t('gallery.downloadStarted', { photoCount: selectedPhotoIds.length }));
     try {
       await galleryService.downloadSelectedPhotos(slug, selectedPhotoIds);
       analyticsService.trackGalleryEvent('bulk_download', {

@@ -817,7 +817,7 @@ export const RestoreWizard = () => {
     <div className="max-w-4xl mx-auto">
       {/* Progress Steps */}
       <div className="mb-8">
-        <nav aria-label="Progress">
+        <nav aria-label={t('backup.restore.steps.progress')}>
           <ol className="flex items-center">
             {steps.map((step, stepIdx) => (
               <li key={step.id} className={`relative ${stepIdx !== steps.length - 1 ? 'pr-8 flex-1' : ''}`}>

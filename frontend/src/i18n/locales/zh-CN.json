@@ -8,7 +8,7 @@
     "catalogEmpty": "没有匹配能力。",
     "configuredLabel": "可用性/配置",
     "usedLabel": "已使用",
-    "configurationOnly": "只配置——实际使用不收集.",
+    "configurationOnly": "仅记录功能配置，不采集实际使用情况。",
     "currentSchema": "当前报告格式：{{schema}}",
     "upgradePending": "升级同意正在等待确认，仅收集原先同意范围内的数据。接收服务恢复后可重试，或关闭参与并请求删除。",
     "pendingBlocksPortal": "待发送报告重试或发送成功前，无法打开报告中心；请使用上方“重试／到期时发送”。",
@@ -16,117 +16,117 @@
       "customer_portal": {
         "name": "客户中心",
         "configured": "客户中心功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "workflows": {
         "name": "自动化流程",
         "configured": "自动化流程功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "face_recognition": {
         "name": "本地人物识别",
         "configured": "本地人物识别功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "custom_css": {
         "name": "自定义 CSS",
         "configured": "全局配置了自定义 CSS，或已将其应用于相册、主题或模板；不会发送 CSS 内容。",
-        "used": "应用式CSS在征得同意后观察，不观察访客."
+        "used": "仅在获得同意后记录是否应用了自定义 CSS，不监测访客行为。"
       },
       "oauth": {
         "name": "管理员单点登录",
-        "configured": "管理者 OIDC 启用，并存在发行者/客户端配置; 没有提供者或证书值。",
+        "configured": "已启用管理员 OIDC 单点登录并填写服务提供方和客户端配置；不采集服务提供方或凭据的具体值。",
         "used": "管理员通过单点登录（SSO）成功登录；不记录账号、身份提供商或会话详情。"
       },
       "smtp": {
         "name": "SMTP 邮件发送",
-        "configured": "已配置了一个正在发送的 SMTP 主机; 没有主机、账户、地址或证书。",
-        "used": "成功启动管理员 SMTP 测试/ 发送; 没有收件人或消息。"
+        "configured": "已配置 SMTP 发信服务；不采集服务器地址、账号、邮箱地址或凭据。",
+        "used": "管理员主动发起的 SMTP 测试或发送已成功；不采集收件人或邮件内容。"
       },
       "backup": {
         "name": "备份",
-        "configured": "启用了完整或数据库备份时间表;没有时间表、路径、存储大小或备份名称。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "configured": "已启用完整备份或数据库备份计划；不采集计划详情、路径、存储空间大小或备份名称。",
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "s3_storage": {
         "name": "S3 存储",
-        "configured": "S3配置用于媒体或备份;没有桶，端点，证书或对象密钥.",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "configured": "已将 S3 配置为媒体或备份存储；不采集存储桶、服务端点、凭据或对象键。",
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "share_mounts": {
         "name": "NAS 外部文件夹",
-        "configured": "至少一个相册使用外部文件夹;只有存在，没有文件夹路径或相册标识符.",
-        "used": "管理员启动一个已接受的外部文件夹导入; 没有扫描路径、文件或计数。"
+        "configured": "至少有一个相册引用了外部文件夹；仅记录是否存在，不采集文件夹路径或相册标识。",
+        "used": "管理员主动发起的外部文件夹导入已成功受理；不采集扫描路径、文件信息或数量。"
       },
       "galleries": {
         "name": "相册管理",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "photo_management": {
         "name": "照片与视频管理",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "photo_exports": {
         "name": "摄影师导出照片",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "photo_processing": {
         "name": "照片维护工具",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "archive_management": {
         "name": "相册归档",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "gallery_sharing": {
         "name": "分享链接与二维码",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "short_links": {
         "name": "短链接",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "gallery_categories": {
         "name": "照片分类",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "slideshow": {
         "name": "现场幻灯片放映",
         "configured": "现场幻灯片放映功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "transfers": {
         "name": "文件传输",
         "configured": "文件传输功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "video_uploads": {
         "name": "摄影师上传视频",
         "configured": "全局上传设置允许上传视频格式；不记录已上传文件的元数据。",
-        "used": "至少一个管理员视频文件被成功存储/接受;没有名称，格式，长度，大小或处理/访问历史."
+        "used": "至少有一个管理员上传的视频已成功保存或接收；不采集文件名、格式、时长、大小或处理及访问记录。"
       },
       "camera_raw_uploads": {
         "name": "摄影师上传 RAW",
         "configured": "全局上传设置允许上传 DNG 格式的相机 RAW 文件；不记录相机型号或 EXIF 信息。",
-        "used": "至少一个管理员相机RAW上传被存储/接受;只有容量位，没有文件名或元数据."
+        "used": "至少有一个管理员上传的相机 RAW 文件已成功保存或接收；仅记录是否使用此功能，不采集文件名或元数据。"
       },
       "messaging": {
         "name": "客户消息",
         "configured": "客户消息功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "incoming_mail": {
         "name": "IMAP 邮件接收",
-        "configured": "已启用来信，并有 IMAP 配置;没有邮箱、服务器、文件夹或证书。",
-        "used": "成功进行明确的管理连接测试或非滑动的人工民意调查;没有背景摄入、信件、附件或计数。"
+        "configured": "已启用收信功能并配置 IMAP；不采集邮箱地址、服务器、文件夹或凭据。",
+        "used": "管理员主动发起的连接测试或手动轮询已成功；不采集后台收信活动、邮件、附件或数量。"
       },
       "reminder_emails": {
         "name": "自动拍摄提醒",
@@ -135,86 +135,86 @@
       "email_templates": {
         "name": "邮件模板",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "email_webhook": {
         "name": "邮件 Webhook 发送",
-        "configured": "两个邮件webhook设置都存在;没有URL或秘密.",
-        "used": "成功通过webhook传输系统明确启动管理员发送/测试;没有接收者、消息或自动发送。"
+        "configured": "已填写邮件 Webhook 的两项配置；不采集网址或密钥。",
+        "used": "管理员主动通过 Webhook 发起的邮件发送或测试已成功；不采集收件人、邮件内容或自动发送记录。"
       },
       "cms": {
         "name": "内容页面",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "public_site": {
         "name": "公开首页",
-        "configured": "启用了公共登陆页面设置;没有页面 HTML,文本，域或访问者."
+        "configured": "已启用公开落地页；不采集页面内容、文字、域名或访客信息。"
       },
       "branding": {
         "name": "品牌设置",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "seo_customization": {
         "name": "搜索引擎设置",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "admin_management": {
         "name": "管理员与角色管理",
         "configured": "管理员与角色管理功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "api_integration": {
         "name": "HTTP API 集成",
-        "configured": "一个未经撤销，未过期的API证书存在;没有符号，名称，范围或所有者数据.",
-        "used": "成功验证的 HTTP API 能力调用; 只有此位，绝不是 URL, 请求值，令牌/ 拥有者 ID 或调用计数。 不触发报告。"
+        "configured": "存在未撤销且未过期的 API 凭据；不采集令牌、名称、权限范围或所有者信息。",
+        "used": "至少一次经过身份验证的 HTTP API 调用已成功；仅记录是否使用，不采集网址、请求内容、令牌或所有者 ID，也不记录调用次数。此项不会单独触发报告。"
       },
       "webhooks": {
         "name": "Webhook 通知",
-        "configured": "至少配置了一个活动 Webhook;没有目的地，订阅，秘密或发送日志.",
-        "used": "成功实现明确的管理员webhook测试/重播;没有自动或访问者触发发送."
+        "configured": "至少配置了一个启用中的 Webhook；不采集目标地址、订阅事件、密钥或发送记录。",
+        "used": "管理员主动发起的 Webhook 测试或重放已成功；不采集自动发送或由访客触发的发送记录。"
       },
       "restore": {
         "name": "备份恢复",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "portable_backup": {
         "name": "便携备份导出与恢复",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "database_backup": {
         "name": "数据库备份",
-        "configured": "已启用已排定的数据库备份;没有时间表、文件名称或数据库内容。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "configured": "已启用定时数据库备份；不采集备份计划、文件名或数据库内容。",
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "s3_photo_storage": {
         "name": "S3 照片存储",
-        "configured": "S3是已配置的媒体后端，并存在所需的证书;没有发送值.",
-        "used": "成功管理媒体存储/接受上传到S3;没有桶，对象或大小."
+        "configured": "已将 S3 配置为媒体存储，并填写了所需凭据；不采集凭据的具体值。",
+        "used": "管理员通过 S3 成功保存媒体或完成上传；不采集存储桶、对象信息或文件大小。"
       },
       "s3_backups": {
         "name": "S3 备份存储",
         "configured": "已配置 S3 备份目标并指定存储桶；不记录存储桶名称或凭据。",
-        "used": "一个管理员开始备份到所配置的 S3 目的地或成功的 S3 测试上传; 本地输出绝不意味着 S3 使用。"
+        "used": "管理员已开始将备份保存到指定的 S3 位置，或成功完成 S3 测试上传；仅导出到本地不计为使用 S3。"
       },
       "analytics_dashboard": {
         "name": "统计面板",
         "configured": "统计面板功能已实际开启，仅记录是或否。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "feedback_moderation": {
         "name": "客户反馈审核",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "guest_management": {
         "name": "选片客户管理",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "同意此报告格式后，管理员成功执行过相关操作。仅记录是否使用，不记录操作人、历史、参数或次数。"
+        "used": "用户同意此报告格式后，系统会记录管理员是否成功使用此功能，但不会记录操作人、操作历史、参数或次数。"
       },
       "gallery_feedback_likes": {
         "name": "相册点赞",
@@ -274,34 +274,34 @@
       },
       "gallery_expiration": {
         "name": "相册到期设置",
-        "configured": "至少有一个相册配置了过期;没有日期，相册ID或计数."
+        "configured": "至少有一个相册设置了到期时间；不采集日期、相册 ID 或数量。"
       },
       "photo_xmp_export": {
         "name": "XMP 导出",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "一个管理员成功生成了 XMP 导出; 没有侧车、 文件名、 评分、 选择或计数。"
+        "used": "管理员已成功导出 XMP 文件；不采集附属文件、文件名、评分、选片结果或数量。"
       },
       "photo_replacement": {
         "name": "照片替换",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "管理员上传实际成功替换了照片; 没有文件名、 匹配值、 ID 或计数。"
+        "used": "管理员上传的照片已成功替换原照片；不采集文件名、匹配信息、ID 或数量。"
       },
       "photo_admin_marks": {
         "name": "摄影师标记",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "一个管理员成功保存了自己的照片标记;没有评级，颜色，照片或管理员身份."
+        "used": "管理员已成功保存照片标记；不采集评分、颜色、照片内容或管理员身份。"
       },
       "gallery_folders": {
         "name": "相册文件夹",
-        "configured": "适用的全局或相册类别被配置为文件夹;没有名称、内容、计数或访问者活动。"
+        "configured": "已将适用的全局分类或相册分类设置为文件夹；不采集名称、内容、数量或访客活动。"
       },
       "transfer_upload_links": {
         "name": "文件传输上传链接",
-        "configured": "PicTransfer被启用，非删除的传输允许未过期的上传;没有链接，令牌，日期，收件人或上传."
+        "configured": "已启用 PicTransfer，且至少有一个未删除的传输仍允许有效期内的上传；不采集链接、令牌、日期、收件人或上传内容。"
       },
       "workflow_automation_enabled": {
         "name": "自动化流程运行",
-        "configured": "启用了工作流程模块和至少一个工作流程;没有名称、图表、触发器、决定或运行。"
+        "configured": "已启用工作流功能，且至少有一个工作流处于启用状态；不采集名称、流程图、触发条件、决策或运行记录。"
       },
       "s3_auto_import": {
         "name": "S3 自动导入",
@@ -309,11 +309,11 @@
       },
       "gallery_capture_date_sort": {
         "name": "按拍摄时间排序",
-        "configured": "相册默认要按拍摄日期进行排序;没有拍摄日期, EXIF 或访客排序动作。"
+        "configured": "至少有一个相册默认按拍摄时间排序；不采集拍摄日期、EXIF 信息或访客的排序操作。"
       },
       "download_original_filenames": {
         "name": "下载保留原始文件名",
-        "configured": "启用了原始下载文件名开关; 没有读取或发送文件名或下载。"
+        "configured": "已启用下载时保留原文件名；不读取或发送文件名，也不记录下载行为。"
       },
       "gallery_downloads_restricted": {
         "name": "相册下载限制",
@@ -322,7 +322,7 @@
       "cms_content_editing": {
         "name": "内容页面编辑",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "管理员保存了自同意以来对 CMS 内部页面标题或正文的真正更改。 未更改的保存、 外部链接、 标志、 种子页面和页面视图不计数。 这不能衡量是否有人读取该页面。"
+        "used": "管理员在同意后对 CMS 内部页面的标题或正文进行了实际修改并保存。仅保存未修改的内容、修改外部链接或标志、使用预置页面以及浏览页面均不计入。此项不表示有人阅读了页面。"
       },
       "email_template_editing": {
         "name": "邮件模板编辑",
@@ -332,22 +332,22 @@
       "branding_editing": {
         "name": "品牌外观编辑",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "管理员更改了品牌设置、 主题或标志，因为同意。 阅读设置和未修改的保存不计数。 更改也可以还原默认; 这不是对当前设计的要求。"
+        "used": "管理员在同意后修改了品牌设置、主题或标志。查看设置或保存未修改的内容不计入；恢复默认设置也会记录为一次修改，但这不代表当前设计状态。"
       },
       "seo_editing": {
         "name": "搜索引擎配置编辑",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "一个管理员保存了自同意以来对允许的 SEO 设置的真正修改。默认、读取和未更改的保存不计数;没有收集规则、路径或搜索引擎活动。"
+        "used": "管理员在同意后实际修改并保存了允许统计的 SEO 设置。默认值、查看设置或保存未修改的内容均不计入；不采集规则、路径或搜索引擎活动。"
       },
       "category_editing": {
         "name": "照片分类编辑",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "自同意后创建、更改或删除一个类别。种子类别、读取和未修改的省略不计数，不保留名称、成员或标识符。"
+        "used": "管理员在同意后创建、修改或删除了分类。预置分类、查看分类或保存未修改的内容均不计入；不保留分类名称、关联内容或标识符。"
       },
       "email_template_delivery": {
         "name": "模板邮件发送",
         "configured": "内置功能可用，不代表已使用。",
-        "used": "SMTP 或配置的邮件网页库至少接受了一个真正的模板邮件，包括背景发送。 预览、 测试消息和无模板消息被排除在外。 接受不能证明收到或读取。 没有模板密钥、 收件人、 内容、 消息标识符、 发送时间或计数被存储在使用标记中。"
+        "used": "自同意后，至少有一封使用模板的邮件已被 SMTP 或已配置的邮件 Webhook 接收，包括后台发送。预览、测试邮件和未使用模板的邮件不计入。发送服务受理不代表邮件已送达或被阅读。使用记录不包含模板标识、收件人、邮件内容、消息 ID、发送时间或数量。"
       }
     },
     "auditTitle": "导出和删除收据",
@@ -357,12 +357,12 @@
     "noticeTitle": "帮助改进 PicPeak",
     "notice": "可选的使用报告帮助了解社区需要哪些功能；在您同意前不会发送。",
     "ignore": "忽略",
-    "ignoreHint": "如果你忽略了这一点，通知就不会再次出现——你仍然可以从Sets → 产品使用中加入.",
+    "ignoreHint": "忽略后将不再显示此提示；您仍可前往“设置 → 产品使用情况”加入。",
     "review": "审查参与",
     "cancel": "取消",
     "loading": "正在加载参与设置...",
     "failed": "操作无法完成。 请检查状态并再次尝试。",
-    "purpose": "使用参与实例的概括信息，帮助决定 PicPeak 功能、修复和维护的优先级。",
+    "purpose": "通过参与者提供的汇总信息，帮助确定 PicPeak 功能开发、问题修复和维护工作的优先级。",
     "consentTitle": "是否共享产品使用情况",
     "sectionFields": "报告的内容",
     "sectionExcluded": "从未包括的内容",
@@ -383,29 +383,29 @@
     "retry": "重试／到期时发送",
     "openUsagePortal": "打开报告中心",
     "portalReady": "在新标签中打开门户",
-    "transparency": "读取公众计划及隐私细节",
+    "transparency": "查看公开的数据格式和隐私说明",
     "linkCollector": "报告发送地点",
     "hash": "私人查询哈希",
     "lastReport": "最近接受的报告：{{date}}（UTC）",
-    "deliveryProblem": "发送需要注意。 收集在删除或身份冲突时停止。 使用重试或禁用参与来删除其数据。",
+    "deliveryProblem": "发送状态需要处理。删除或身份冲突期间会暂停数据收集。您可以重试，或关闭参与并删除相关数据。",
     "invalidCollectorUrl": "使用报告接收地址无效。请将 USAGE_COLLECTOR_URL 设置为不含路径、查询参数或凭证的 HTTPS 源地址，或移除该变量使用默认值。",
     "signingKeyUnreadable": "无法读取签名密钥，可能是 USAGE_ENCRYPTION_KEY 或备用 JWT_SECRET 已改变。报告发送和删除请求均无法签名；需恢复原加密配置，重试或关闭参与无法自行解决。",
     "schemaNotAccepted": "接收服务尚不支持此报告版本，因此拒绝了报告。重试不会改变版本；尚未完成注册，可放弃本地参与，待服务升级后重新加入。",
     "inspect": "查看实际共享的数据",
     "preview": "预览下一次报告",
-    "lastPacket": "最后接受的签名使用报告",
+    "lastPacket": "最近一次已接收的签名使用报告",
     "export": "下载所有已接受的使用报告",
-    "queued": "操作被保存用于重试，尚未确认已交付。",
+    "queued": "操作已保存，等待重试；尚未确认送达。",
     "feedbackTitle": "反馈与功能建议",
     "kind": "类型",
     "subject": "标题",
     "message": "您的消息",
-    "includeName": "包含此项目的名称",
+    "includeName": "在此反馈中附上姓名",
     "name": "显示名称",
     "saveName": "在本地记住这个名字",
     "saved": "偏好已保存，后续提交默认不显示姓名。",
-    "allowPublic": "我允许在审查之后在使用门户上公布这一案文并列入姓名。",
-    "allowMarketing": "我也允许PicPeak使用这个证明书，并包含主页营销的名称.",
+    "allowPublic": "我同意维护者审核后，在使用情况页面公开这段文字和附带的姓名。",
+    "allowMarketing": "我也允许 PicPeak 在首页宣传中使用这段评价和其中包含的姓名。",
     "sendFeedback": "提交反馈",
     "feedbackSent": "反馈已提交；公开需获得您的许可并通过维护者审核。",
     "states": {
@@ -417,9 +417,9 @@
     },
     "stateDetails": {
       "disabled": "无法收集或发送产品使用量。您可以在决定前查看细节。",
-      "activation_pending": "同意被保存。 当您使用 PicPeak 或选择重试时，注册将被重新测试。",
+      "activation_pending": "同意已保存。下次使用 PicPeak 或手动重试时，系统会重新尝试注册。",
       "active": "只收集披露的特征信号。当管理员使用 PicPeak 时，每日报告会运行。",
-      "deletion_pending": "收集和报告被停止。 签名证书只保留到完成认证的删除。 当收集器可以到达时重试。",
+      "deletion_pending": "数据收集和报告发送均已停止。仅保留完成身份验证删除请求所需的签名凭据。接收服务恢复可访问后，请重试。",
       "identity_conflict": "安装可能从备份恢复或被克隆，或报告序号与接收服务不一致。已停止发送。请先关闭并删除旧参与，再以新身份加入；同一身份其他副本已发送的数据也会一并删除。"
     },
     "kinds": {
@@ -431,18 +431,18 @@
     "abandon": "丢弃本地身份",
     "abandonExplanation": "没有原始加密配置，无法签署删除请求。若无法恢复，可放弃本地身份并删除本地标识和密钥，但接收服务不会确认删除。",
     "abandonExplanationUnregistered": "接收服务从未接受此次参与，因此无需删除远程数据。可放弃本地身份，之后随时重新加入。",
-    "abandonConfirm": "这将删除安装身份、 关键材料和每个本地标记。 收藏者不会被通知，并且会保存已经发送的报告，即未经证实的收件记录。 您可以随后再次加入。",
+    "abandonConfirm": "此操作将删除安装身份、密钥材料和所有本地标记。接收服务不会收到通知，也会继续保留已发送的报告；回执会标记为未确认。之后您可以重新加入。",
     "abandonConfirmUnregistered": "此操作将删除本地安装身份、密钥和本地标识。接收服务从未接受此次参与，因此无需删除远程数据。之后可重新加入。",
     "auditPreviousParticipation": "删除确认指的是较早的参与，而不是目前的参与。",
     "inventoryTitle": "两项总数统计",
-    "inventoryExplanation": "总数描述目前存储的数据库记录，而不是上传活动或唯一文件。缩略图和视频不包括在照片总数中。只有这两个数字离开安装。",
+    "inventoryExplanation": "统计的是当前数据库中的记录数量，不代表上传次数或文件去重结果。照片总数不含缩略图和视频。只有这两项总数会发送到站外。",
     "inventory": {
       "galleries": {
-        "name": "储存的相册",
-        "description": "包括草稿、闲置相册和存档相册在内的现有相册记录数量，不包括已删除的相册。安装、无分解或识别码的总数。"
+        "name": "相册记录数",
+        "description": "当前相册记录总数，包括草稿、未启用和已归档的相册，不包括已删除的相册。仅提供全站总数，不包含分类明细或标识符。"
       },
       "photos": {
-        "name": "存储的照片记录",
+        "name": "照片记录数",
         "description": "当前非视频照片记录数，包括 RAW、客户上传的照片和已归档相册中的记录。仅统计全站总数；不代表唯一文件数，也不统计缩略图、处理结果或照片内容。已删除记录不计入。"
       }
     },
@@ -465,7 +465,7 @@
     "inviteUser": "邀请用户",
     "createInvitation": "创建邀请",
     "email": "邮箱地址",
-    "emailPlaceholder": "用户@ example.com",
+    "emailPlaceholder": "user@example.com",
     "role": "角色",
     "selectRole": "选择一个角色",
     "sendInvitation": "发送邀请",
@@ -587,9 +587,9 @@
       "title": "邮件队列处理器",
       "running": "运行。",
       "stopped": "未运行在此实例中。 已排队的邮件会被写入数据库，但没有任何信息发送。",
-      "degraded": "运行中，但最后的通道无法发送 : {{error}}",
-      "lastRun": "最后传球 {{when}}",
-      "neverRan": "自此项目开始后就没运行过。",
+      "degraded": "正在运行，但最近一次发送失败：{{error}}",
+      "lastRun": "上次处理时间：{{when}}",
+      "neverRan": "此处理器尚未运行过。",
       "lastResult": "已发送 {{sent}} 封，失败 {{failed}} 封"
     }
   },
@@ -720,7 +720,7 @@
     "dashboard": "概览",
     "events": "摄影项目",
     "archives": "归档",
-    "transfers": "Pic 传输器",
+    "transfers": "文件传输",
     "messages": "消息",
     "settings": "设置",
     "systemHealth": "系统状态",
@@ -748,7 +748,7 @@
     "downloadAll": "全部下载",
     "expiresOn": "到期时间",
     "disableLink": "禁用链接",
-    "reactivate": "恢复活动(14天)",
+    "reactivate": "重新启用（14 天）",
     "reactivated": "链接重新激活",
     "disabled": "链接已禁用",
     "filesAdded": "已添加文件",
@@ -761,7 +761,7 @@
     "enableUploads": "启用上传链接",
     "uploadEnabled": "上传链接已启用",
     "noUploads": "客户端尚未上传文件。",
-    "uploadHint": "启用此选项可给客户端一个6个字符代码，以发送您的文件( logos 等)。",
+    "uploadHint": "启用后，客户可使用 6 位代码向您发送文件，例如品牌标志。",
     "createAndSend": "创建发送",
     "uploadedFiles": "上传的文件",
     "addFiles": "添加文件",
@@ -896,7 +896,7 @@
       "textLoaded": "已加载——审查和保存",
       "textNeedsArrays": "需要“ 节点” 和“ 尖端” 阵列",
       "textNeedsTrigger": "需要一个触发点",
-      "textHint": "作为 JSON 的整流 —— 复制它以共享或手交给 LLM, 或者粘贴一个流并将其加载到编辑器中。 导入后单击“ 清除布局 ”。",
+      "textHint": "完整流程以 JSON 格式显示，可复制分享或交给 AI 助手，也可粘贴其他流程并载入编辑器。导入后请点击“整理布局”。",
       "saved": "已保存的工作流程",
       "saveFailed": "无法保存",
       "badJson": "配置无效 JSON",
@@ -1022,6 +1022,12 @@
     "viewGallery": "查看相册",
     "downloadAll": "下载全部",
     "downloadError": "部分照片下载失败",
+    "downloadStarted": "已开始逐张下载 {{photoCount}} 张照片；如浏览器询问，请允许多个文件下载。",
+    "photoDownloadStarted": "已开始下载照片",
+    "photoDownloadFailed": "照片下载失败，请重试。",
+    "photoSaveFailed": "无法保存这张照片，请重试。",
+    "allDownloadsStarted": "已开始下载全部照片",
+    "allDownloadsFailed": "无法开始下载照片，请重试。",
     "selectPhotos": "选择照片",
     "cancelSelection": "取消选择",
     "selectAll": "全选",
@@ -1221,9 +1227,9 @@
     "uniqueVisitors": "独立访客数",
     "eventNamePlaceholder": "例如：李嘉欣约拍、春季外景写真",
     "welcomeMessagePlaceholder": "欢迎来到我们的特别日子!",
-    "hostEmailPlaceholder": "客户@ example.com",
+    "hostEmailPlaceholder": "customer@example.com",
     "adminEmailPlaceholder": "admin@example.com",
-    "adminEmailPickFromAdmins": "从管理员中选择 :",
+    "adminEmailPickFromAdmins": "从管理员中选择：",
     "adminEmailCustom": "自定义邮件",
     "accessAndSecurity": "访问安全",
     "enterPassword": "请输入密码",
@@ -1546,10 +1552,10 @@
       "filesRenamed_one": "已更新 {{count}} 个文件",
       "filesRenamed_other": "已更新 {{count}} 个文件",
       "newLink": "新的相册链接",
-      "currentName": "当前名称 :",
+      "currentName": "当前名称：",
       "newName": "新项目名称",
       "enterNewName": "输入新项目名称",
-      "newUrl": "新建 URL :",
+      "newUrl": "新建网址：",
       "checkingAvailability": "正在检查可用性...",
       "resendEmail": "以新相册链接重新发送邀请邮件",
       "emailTo": "发送更新后的相册访问邮件至",
@@ -1679,7 +1685,7 @@
       "maxUploadBatchSize": "最大上传批次大小 (MB)",
       "maxUploadBatchSizeHelp": "单次上传请求的大小上限；使用有请求大小限制的反向代理时，请相应降低此值。",
       "allowedFileTypes": "允许的文件类型",
-      "allowedFileTypesHelp": "逗号分隔的文件扩展列表，如 jpg, jpeg, png, webp。 适用于每个上传路径，包括宾客上传和块化( 大文件) API。 视频默认关闭 : 添加 mp4, mov 或 webm 来接受它们。",
+      "allowedFileTypesHelp": "使用逗号分隔文件扩展名，例如 jpg、jpeg、png、webp。此设置适用于所有上传入口，包括客户上传和大文件分块上传 API。视频默认关闭；添加 mp4、mov 或 webm 即可允许上传。",
       "featureToggles": "功能开关",
       "enableAnalytics": "启用分析跟踪",
       "enableRegistration": "允许管理员自行登记",
@@ -1850,8 +1856,12 @@
       "sent": "发送",
       "failed": "失败",
       "lastUpdate": "上次更新",
-      "emailProcessorStopped": "不运行——排队的邮件被写入，但没有寄出.",
-      "emailProcessorDegraded": "运行中，但最后的通道无法发送 : {{error}}"
+      "emailProcessorStopped": "未运行。待发送邮件会写入队列，但当前不会发送。",
+      "emailProcessorDegraded": "运行中，但最近一次发送失败：{{error}}",
+      "stuckEmailCount": "{{stuckCount}} 封邮件发送失败",
+      "stuckEmailWarning": "警告：{{stuckCount}} 封邮件发送失败：",
+      "stuckEmailHelp": "这些邮件已超过重试次数上限，系统不会自动继续发送。",
+      "pendingEmailProcessing": "待处理的 {{pendingCount}} 封邮件中，只有 {{processableCount}} 封会被处理。"
     },
     "photoDimensions": {
       "title": "图片尺寸",
@@ -1872,7 +1882,7 @@
       "recipients": "邮件收件人",
       "recipientsPlaceholder": "admin@example.com, other@example.com",
       "recipientsHelper": "以逗号分隔的邮件地址。 留空以发送到所有管理员用户。",
-      "lastNotified": "最后一次通知发送版本 : {{version}}",
+      "lastNotified": "上次发送更新通知的版本：{{version}}",
       "checkNow": "检查和通知",
       "sendTest": "发送测试邮件",
       "saved": "设置已保存",
@@ -2139,7 +2149,7 @@
       "title": "Webhook 通知",
       "subtitle": "相册发布、照片上传和项目归档等通知将通过 POST 发送至接收地址，请求头 X-PicPeak-Signature 包含 HMAC-SHA256 签名。",
       "piiNotice": "event.* 数据可能包含客户姓名、邮箱、电话，以及已保存的相册访问凭证。请仅配置您信任的接收服务。",
-      "copyNow": "现在复制这个签名秘密——它不会再被显示.",
+      "copyNow": "请立即复制此签名密钥；之后将不再显示。",
       "name": "名称",
       "url": "接收器 URL",
       "events": "订阅通知类型",
@@ -2266,7 +2276,7 @@
       },
       "messaging": {
         "title": "通讯",
-        "description": "与客户一起使用线条，附在相册上。邮件对大多数团队来说是真正好的——这是对想要所有东西都放在一个地方的录音室来说。",
+        "description": "可在 PicPeak 中围绕相册与客户沟通。多数团队使用邮件已足够；此功能适合希望把沟通集中在一处的工作室。",
         "sidebar": "消息"
       },
       "analytics": {
@@ -2323,7 +2333,7 @@
       "notEnrolled": "此账号尚未开启双重认证。",
       "setUp": "设置",
       "setupScanInstruction": "用您的认证器应用程序扫描此 QR 代码( 例如 Google 认证器, 1Password, Authy)。",
-      "manualEntry": "或手动输入此密钥 :",
+      "manualEntry": "或手动输入此密钥：",
       "qrAlt": "双要素设置 QR 代码",
       "enterCodeLabel": "从您的应用程序中输入6位数代码",
       "codePlaceholder": "123456",
@@ -2335,7 +2345,7 @@
       "regenerateHelp": "输入当前认证代码以生成一组新的恢复码。 您的旧代码将停止工作。",
       "regenerateConfirm": "重新生成",
       "disable": "禁用",
-      "disablePrompt": "输入当前认证或恢复码以禁用双重认证 :",
+      "disablePrompt": "请输入当前验证码或恢复码，以关闭双重验证：",
       "disableConfirmTitle": "关闭双重验证？",
       "disableConfirmMessage": "您的账户不再需要第二步的登录。 您可以随时重新登录。",
       "disableConfirmButton": "禁用",
@@ -2631,11 +2641,11 @@
     "cssInstructions": {
       "title": "如何使用自定义 CSS",
       "variables": "主题 CSS 变量",
-      "variablesDesc": "使用这些 CSS 变量来匹配您的主题预设 :",
+      "variablesDesc": "使用这些 CSS 变量匹配当前主题预设：",
       "layouts": "自定义相册布局",
-      "layoutsDesc": "带有这些选择器的目标相册元素 :",
+      "layoutsDesc": "使用以下选择器定位相册中的元素：",
       "glassEffect": "毛玻璃效果",
-      "glassEffectDesc": "创建现代玻璃效果 :",
+      "glassEffectDesc": "创建现代磨砂玻璃效果：",
       "tip": "提示",
       "tipText": "可在“设置 → CSS 模板”中使用 Apple Liquid Glass 等预设样式。"
     },
@@ -2803,7 +2813,7 @@
     "storageUsed": "已用存储",
     "totalPhotos": "照片总数",
     "storagePercent": "已使用 {{percent}}，容量上限 {{limit}}",
-    "storageSoftLimitConfigured": "配置限制 : {{limit}}",
+    "storageSoftLimitConfigured": "已配置容量上限：{{limit}}",
     "storageSoftLimitRecommended": "建议的限额: {{limit}}",
     "version": "版本",
     "archivedEvents": "已归档项目",
@@ -2824,7 +2834,7 @@
     "updates": {
       "available": "更新可用",
       "newVersion": "发现新版本 {{version}}",
-      "currentVersion": "当前 : {{version}}",
+      "currentVersion": "当前版本：{{version}}",
       "newFeatures": "新增功能：",
       "channel": "更新渠道：{{channel}}",
       "channelStable": "稳定",
@@ -2839,7 +2849,7 @@
         "title": "更新 PicPeak",
         "detectedEnv": "检测到的环境",
         "beforeUpdating": "更新前:",
-        "updateCommands": "更新命令 :",
+        "updateCommands": "更新命令：",
         "afterUpdating": "更新后:",
         "copyAllCommands": "复制全部命令",
         "completeChecklist": "更新前填写核对表",
@@ -3012,11 +3022,11 @@
       "rateStars": "评为 {{count}} 星",
       "markError": "保存标记失败",
       "yourMarkColor": "我的标记：{{color}}",
-      "yourMarkRating": "您的评分 : {{count}}",
+      "yourMarkRating": "您的评分：{{count}}",
       "rateStars_one": "评为 {{count}} 星",
       "rateStars_other": "评为 {{count}} 星",
-      "yourMarkRating_one": "您的评分 : {{count}}",
-      "yourMarkRating_other": "您的评分 : {{count}}"
+      "yourMarkRating_one": "您的评分：{{count}}",
+      "yourMarkRating_other": "您的评分：{{count}}"
     },
     "events": {
       "tabs": {
@@ -3107,16 +3117,16 @@
     },
     "analytics": "统计",
     "activities": {
-      "event_created": "创建新项目 : {{eventName}}",
+      "event_created": "已创建项目：{{eventName}}",
       "gallery_opened": "客户已打开“{{eventName}}”相册",
       "gallery_downloaded": "客户已下载“{{eventName}}”中的照片",
       "photos_uploaded": "已向“{{eventName}}”上传 {{count}} 张照片",
-      "event_archived": "项目存档 : {{eventName}}",
-      "archive_restored": "已恢复归档 : {{eventName}}",
-      "archive_deleted": "存档已删除 : {{eventName}}",
-      "archive_downloaded": "已下载归档 : {{eventName}}",
+      "event_archived": "项目已归档：{{eventName}}",
+      "archive_restored": "已恢复归档项目：{{eventName}}",
+      "archive_deleted": "已删除归档：{{eventName}}",
+      "archive_downloaded": "已下载归档：{{eventName}}",
       "email_config_updated": "邮件配置已更新",
-      "email_template_updated": "更新邮件模板 : {{template}}",
+      "email_template_updated": "已更新邮件模板：{{template}}",
       "branding_updated": "品牌设置已更新",
       "theme_updated": "主题设置已更新",
       "bulk_download": "已从“{{eventName}}”下载 {{count}} 张照片",
@@ -3138,25 +3148,25 @@
       "word_filter_added": "添加文字过滤器",
       "external_import_completed": "NAS 照片导入完成：新增 {{imported}} 张，跳过 {{skipped}} 张",
       "bulk_archive_completed": "批量归档已完成",
-      "event_activated": "项目已激活 : {{eventName}}",
-      "event_deactivated": "项目已失效 : {{eventName}}",
+      "event_activated": "项目已启用：{{eventName}}",
+      "event_deactivated": "项目已停用：{{eventName}}",
       "photo_deleted": "照片从此删除 {{eventName}}",
       "photos_bulk_deleted": "已从项目 {{eventName}} 中删除 {{count}} 张照片",
       "settings_updated": "更新设置",
-      "event_updated": "项目更新 : {{eventName}}",
-      "event_renamed": "重命名为项目 : {{eventName}}",
-      "event_deleted": "删除项目 : {{eventName}}",
+      "event_updated": "项目已更新：{{eventName}}",
+      "event_renamed": "项目已重命名：{{eventName}}",
+      "event_deleted": "项目已删除：{{eventName}}",
       "password_changed": "密码已更改",
-      "email_resent": "创建邮件 : {{eventName}}",
-      "category_created": "创建的类别 : {{categoryName}}",
-      "category_updated": "更新的类别 : {{categoryName}}",
-      "category_deleted": "删除的类别 : {{categoryName}}",
+      "email_resent": "已重新发送项目创建通知：{{eventName}}",
+      "category_created": "已创建分类：{{categoryName}}",
+      "category_updated": "已更新分类：{{categoryName}}",
+      "category_deleted": "已删除分类：{{categoryName}}",
       "general_settings_updated": "常规设置已更新",
       "favicon_uploaded": "网站图标已上传",
       "analytics_settings_updated": "更新分析设置",
-      "cms_page_updated": "CMS 页面更新 : {{page}}",
+      "cms_page_updated": "已更新内容页：{{page}}",
       "security_settings_updated": "安全设置已更新",
-      "password_reset": "密码重置 : {{eventName}}",
+      "password_reset": "已重置密码：{{eventName}}",
       "admin_logout": "管理员已退出：{{actorName}}",
       "system_activity": "系统操作：{{type}}",
       "unknown": "未知活动",
@@ -3330,7 +3340,7 @@
     "confirmPasswordPlaceholder": "确认您的密码",
     "passwordStrength": "密码强度",
     "requirements": {
-      "title": "密码要求 :",
+    "title": "密码要求：",
       "minLength": "至少12个字符",
       "uppercase": "至少一个大写字母",
       "lowercase": "至少一个小写字母",
@@ -3345,7 +3355,7 @@
     },
     "createAccount": "创建账户",
     "success": "账户创建了!",
-    "successMessage": "您的账户已成功创建。 您现在可以登录您的证书。",
+    "successMessage": "账号已创建成功。现在可以使用您的登录信息登录。",
     "redirecting": "重新定向登录 {{seconds}}...",
     "goToLogin": "转到登录",
     "contactAdminMessage": "请联系您的管理员请求新的邀请。",
@@ -3431,7 +3441,7 @@
     "testEmailSuccess": "测试已成功发送的邮件",
     "saveSmtpSettings": "保存 SMTP 设置",
     "testEmailSection": "测试邮件",
-    "beforeTesting": "测试前 :",
+    "beforeTesting": "测试前：",
     "saveSmtpFirst": "首先保存您的 SMTP 设置",
     "ensureFirewall": "确保您的防火墙允许外出 SMTP",
     "gmailAppPassword": "使用 Gmail 时，请填写专用应用密码。",
@@ -3454,12 +3464,12 @@
       "roundTripHint": "通过您的 SMTP 设置发送测试邮件到此邮箱，并证实它已经到达。 请先保存两个邮件。",
       "roundTripOk": "往返测试成功：邮件已发送至 {{recipient}}，耗时 {{seconds}} 秒。",
       "roundTripFailed": "往返测试失败。",
-      "poll": "检查一下",
+      "poll": "检查收件箱",
       "pollOk": "邮箱已检查：发现 {{count}} 封新邮件。",
       "pollDisabled": "收发邮件被关闭——在设置下启用 —— 特性。",
       "pollUnconfigured": "先保存到来的邮件设置。",
-      "pollBusy": "民意调查已经展开——马上再试一次。",
-      "pollFailed": "邮箱民意调查失败。",
+      "pollBusy": "正在检查收件箱，请稍后重试。",
+      "pollFailed": "检查收件箱失败。",
       "port": "端口",
       "security": "安全",
       "ssl": "SSL/TLS 系统",
@@ -3523,7 +3533,7 @@
       "pagination_one": "第 {{page}} 页，共 {{total}} 页 · {{count}} 封邮件",
       "pagination_other": "第 {{page}} 页，共 {{total}} 页 · {{count}} 封邮件"
     },
-    "commonSmtpSettings": "常见 SMTP 设置 :",
+    "commonSmtpSettings": "常用 SMTP 设置：",
     "editTemplate": "编辑模板",
     "templateName": "模板名称",
     "subjectLine": "主题行",
@@ -3537,7 +3547,7 @@
     "password": "密码",
     "enterPassword": "请输入密码",
     "ignoreSslErrors": "忽略 SSL/ TLS 证书错误",
-    "ignoreSslWarning": "警告: 证书验证失败，连接容易被中层人攻击。 只有在您信任 SMTP 服务器并了解安全影响时，才会启用此功能。",
+    "ignoreSslWarning": "警告：证书验证失败可能导致连接遭受中间人攻击。仅在信任 SMTP 服务器并了解相关安全风险时启用此选项。",
     "brandingTitle": "邮件品牌",
     "brandingDescription": "自定义邮件模板中使用的颜色。更改适用于页眉栏、按钮、链接和页脚背景。",
     "primaryColor": "主颜色",
@@ -3566,7 +3576,7 @@
     },
     "copiedFromLanguage": "复制内容来自 {{language}}",
     "noTranslation": "尚未翻译",
-    "noTranslationYet": "此语言还没有翻译。 要开始从已有语言复制 :",
+    "noTranslationYet": "此语言尚未完成翻译。开始翻译前，请先复制现有语言的内容：",
     "copyFrom": "复制自",
     "syncedFromBranding": "从 Branding 同步的邮件颜色。 单击 保存以应用。",
     "syncFromBranding": "从品牌同步",
@@ -3629,17 +3639,17 @@
     "englishVersion": "英语版本",
     "germanVersion": "德语版本",
     "editPage": "编辑 {{page}}",
-    "pageTitle": "页次 标题",
+    "pageTitle": "页面标题",
     "pageContent": "页面内容",
     "pageTitlePlaceholder": "输入页面标题...",
-    "lastUpdated": "上次更新 :",
+    "lastUpdated": "上次更新：",
     "pageUpdated": "页面已成功更新",
     "useExternalUrl": "使用外部 URL",
-    "useExternalUrlHelp": "将访问者重定向到外部页面，而不是显示内部内容。 内部标题和内容将保留为倒置。",
-    "externalUrl": "外部 URL 服务器",
+    "useExternalUrlHelp": "将访客重定向到外部页面，而不是显示站内内容。站内标题和内容仍会保留，作为备用内容。",
+    "externalUrl": "外部网址",
     "externalUrlPlaceholder": "https://example.com/impressum",
     "externalUrlInvalid": "必须是有效的 https:// URL",
-    "externalUrlActive": "外部 URL 活动——内部内容被保存，但不向访问者显示.",
+    "externalUrlActive": "外部网址已启用；站内内容会保留，但不会向访客显示。",
     "logoUploaded": "上传标志",
     "logoCleared": "标记已清除",
     "pageLogo": "页面标志",
@@ -3768,9 +3778,9 @@
       "title": "备份覆盖",
       "description": "显示下一个备份包含什么，跳过，或默默丢失。 数据库块确认倾置策略。 “ 拖动” 区域标记磁盘上存在的、 但不在备份配置中的子目录 —— 通常是一个没有匹配的备份_ paths 行运出的新特性的标志。",
       "refresh": "刷新",
-      "error": "无法加载覆盖报告 : {{message}}",
-      "generatedAt": "所生成的覆盖范围 : {{when}}",
-      "fallbackInUse": "备份_ paths 表格缺失。 行脚正在使用其遗留的硬编码回落。 迁移 108 可能没有运行 —— 检查服务器日志和重运行的迁移。",
+      "error": "无法加载覆盖报告：{{message}}",
+      "generatedAt": "覆盖率报告生成时间：{{when}}",
+      "fallbackInUse": "缺少 backup_paths 数据表。系统正在使用旧版内置回退逻辑。迁移 108 可能尚未执行；请检查服务器日志并重新运行数据库迁移。",
       "database": {
         "title": "数据库",
         "mode": "模式",
@@ -3882,8 +3892,8 @@
       },
       "lastSuccessful": "上次成功备份",
       "lastAttempt": "上次尝试",
-      "zombieRuns_one": "{{count}}  正在运行的备份 > 30min — 可能未完成而崩溃",
-      "zombieRuns_other": "{{count}}  正在运行的备份 > 30min — 可能未完成而崩溃",
+      "zombieRuns_one": "有 {{count}} 项备份任务已运行超过 30 分钟，可能已卡住或崩溃",
+      "zombieRuns_other": "有 {{count}} 项备份任务已运行超过 30 分钟，可能已卡住或崩溃",
       "status": {
         "completed": "已完成",
         "failed": "失败",
@@ -3967,7 +3977,7 @@
       },
       "messages": {
         "requiredFields": "请填写所有必填信息",
-        "connectionSuccess": "连接测试成功 !",
+        "connectionSuccess": "连接测试成功！",
         "connectionFailed": "连接测试失败",
         "invalidCron": "请输入一个有效的 cron 表达式( 5 字段)",
         "rsyncSshKeyNotPath": "SSH密钥必须是私有密钥文件的绝对路径(例如/app/data/sh/backup_ed25519),而不是密钥本身."
@@ -3991,18 +4001,20 @@
         "dateTime": "日期和时间",
         "type": "类型",
         "size": "大小",
-        "duration": "会期",
+        "duration": "耗时",
         "actions": "操作"
       },
       "details": {
-        "backupDetails": "备份细节",
+        "backupDetails": "备份详情",
         "destination": "目标",
         "started": "开始",
         "completed": "已完成",
-        "contentBackedUp": "内容备份",
-        "errorDetails": "错误细节",
-        "manifest": "标 题",
-        "otherFiles": "商业文件和其他",
+        "contentBackedUp": "已备份内容",
+        "photoProgress": "照片：{{photoCount}} / {{totalCount}}",
+        "archiveCount": "归档文件：{{archiveCount}}",
+        "errorDetails": "错误详情",
+        "manifest": "清单",
+        "otherFiles": "业务文档及其他文件",
         "totalFiles": "文件共计"
       },
       "pagination": {
@@ -4069,7 +4081,7 @@
           },
           "manifest": {
             "name": "声明 + 文件",
-            "description": "上传一个清单及其备份文件( 遗留格式)。"
+            "description": "上传清单文件及其备份文件（旧版格式）。"
           }
         },
         "configuration": {
@@ -4201,8 +4213,8 @@
       "S3_ENDPOINT_UNRESOLVED": "S3 端点主机名无法解析。",
       "S3_ENDPOINT_INVALID": "S3 端点不是一个有效的 URL。",
       "S3_APPROVAL_MISMATCH": "批准与配置的 S3 端点不符。 再次批准端点。",
-      "S3_CONFIG_INCOMPLETE": "端点、 桶和证书需要。 更改端点后，请再次输入密钥。",
-      "S3_CONNECTION_FAILED": "这些设置无法到达 S3 桶。 请检查端点、 桶和证书。"
+      "S3_CONFIG_INCOMPLETE": "请填写端点、存储桶和访问凭据。更改端点后，请重新输入密钥。",
+      "S3_CONNECTION_FAILED": "使用这些设置无法连接到 S3 存储桶。请检查端点、存储桶和访问凭据。"
     }
   },
   "cssTemplates": {
@@ -4211,11 +4223,11 @@
     "enableTemplate": "启用此模板",
     "enableHint": "创建项目时可以选择启用的模板",
     "cssContent": "CSS 内容",
-    "cssHint": "使用 .gallery- page 到相册的画框样式。 可用的变量: --gallery- bg, --gallery- text, --gallery- ACCent",
+    "cssHint": "使用 .gallery-page 限定样式作用范围。可用变量：--gallery-bg、--gallery-text、--gallery-accent。",
     "securityNotice": "安全通知",
     "securityText": "CSS被消毒以防止恶意代码. 外部 URL, @import, 和 JavaScript 表达式被屏蔽。",
     "resetToDefault": "重置为默认值",
-    "resetConfirm": "将本模板重置为默认吗 ? 您的更改将丢失。",
+    "resetConfirm": "确定将此模板恢复为默认值吗？现有更改将丢失。",
     "unsavedChanges": "未保存的更改",
     "saveTemplate": "保存模板",
     "lastUpdated": "上次更新",
@@ -4243,7 +4255,7 @@
     "currentPasswordPlaceholder": "输入当前密码",
     "newPasswordPlaceholder": "输入新密码",
     "confirmPasswordPlaceholder": "确认新密码",
-    "requirements": "密码要求 :",
+    "requirements": "密码要求：",
     "minLength": "至少6个字符长",
     "mustDiffer": "必须是与当前密码不同的",
     "success": "密码已成功更改",
@@ -4259,7 +4271,7 @@
   "mandatoryPasswordChange": {
     "title": "需要更改密码",
     "description": "出于安全考虑，您必须在访问管理员面板前更改密码。",
-    "success": "密码已成功更改 ! 您现在可以访问管理员面板。",
+    "success": "密码已成功更改！现在可以进入管理后台。",
     "minLength": "至少12个字符长",
     "mustContainUpperLower": "必须包含大写和小写字母",
     "mustContainNumbers": "必须包含数字",
@@ -4291,7 +4303,7 @@
     "characters": "个字符",
     "copyPassword": "复制密码",
     "use": "使用",
-    "pattern": "模式 :",
+    "pattern": "格式：",
     "patternDescription": "密码根据项目名称和日期生成。例如“Venue2024$August”，兼顾安全性与易记性。"
   },
   "feedback": {
@@ -4471,6 +4483,8 @@
     "showingPhotos": "照片总数",
     "withRatings": "有评分",
     "combineWith": "组合条件",
+  "and": "且",
+  "or": "或",
     "allPhotos": "全部照片",
     "anyRating": "任意评分",
     "oneStarPlus": "至少 1 星",
@@ -4485,7 +4499,7 @@
   },
   "setup": {
     "title": "欢迎使用 PicPeak",
-    "subtitle": "创建您的管理员账户以启动",
+    "subtitle": "创建管理员账号，开始使用 PicPeak",
     "tokenStepSubtitle": "请输入一次性初始化令牌",
     "accountStepSubtitle": "创建摄影师管理员账号",
     "usageSubtitle": "您准备如何使用 PicPeak？",
@@ -4755,7 +4769,7 @@
   "export": {
     "button": "导出",
     "success": "导出文件已开始下载",
-    "error": "导出失败 :",
+    "error": "导出失败：",
     "exportFiltered": "导出筛选结果",
     "hint": "选择照片或应用过滤器以导出",
     "exportSelected_one": "导出所选 {{count}} 张照片",
@@ -5287,7 +5301,7 @@
     "clone": "克隆",
     "create": "创建角色",
     "createTitle": "创建角色",
-    "editTitle": "编辑角色 : {{name}}",
+    "editTitle": "编辑角色：{{name}}",
     "superAdminLocked": "超级管理员总是持有每个权限，无法编辑。 它会随着特性的添加而自动获得新的权限。",
     "displayName": "显示名称",
     "displayNamePlaceholder": "例如，摄影师",

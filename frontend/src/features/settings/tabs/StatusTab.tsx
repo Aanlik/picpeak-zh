@@ -624,7 +624,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({
                     {systemStatus.emailQueue.pending}
                     {systemStatus.emailQueue.stuck > 0 && (
                       <span className="text-orange-600 text-xs ml-1">
-                        ({systemStatus.emailQueue.stuck} stuck)
+                        ({t('settings.systemStatus.stuckEmailCount', { stuckCount: systemStatus.emailQueue.stuck })})
                       </span>
                     )}
                   </span>
@@ -641,8 +641,14 @@ export const StatusTab: React.FC<StatusTabProps> = ({
               {systemStatus.emailQueue.stuck > 0 && (
                 <div className="mt-3 p-3 bg-orange-50 dark:bg-orange-900/30 rounded-md">
                   <p className="text-xs text-orange-800 dark:text-orange-200">
-                    <span className="font-semibold">Warning: {systemStatus.emailQueue.stuck} email(s) stuck:</span> These emails have exceeded retry limits and won&apos;t be processed automatically.
-                    Only {systemStatus.emailQueue.processable} {tAudit("ui.of")}{systemStatus.emailQueue.pending} pending emails will be processed.
+                    <span className="font-semibold">
+                      {t('settings.systemStatus.stuckEmailWarning', { stuckCount: systemStatus.emailQueue.stuck })}
+                    </span>{' '}
+                    {t('settings.systemStatus.stuckEmailHelp')}{' '}
+                    {t('settings.systemStatus.pendingEmailProcessing', {
+                      processableCount: systemStatus.emailQueue.processable,
+                      pendingCount: systemStatus.emailQueue.pending,
+                    })}
                   </p>
                 </div>
               )}

@@ -449,7 +449,7 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
       onPickResolution(ids);
       return;
     }
-    toast.info(t('gallery.downloading', { count: ids.length }));
+    toast.info(t('gallery.downloadStarted', { photoCount: ids.length }));
 
     try {
       await galleryService.downloadSelectedPhotos(slug, ids);

@@ -279,7 +279,7 @@ export const PhotoFilterPanel: React.FC<PhotoFilterPanelProps> = ({
                 }`}
                 disabled={isLoading}
               >
-                AND
+                {t('filter.and', 'AND')}
               </button>
               <button
                 type="button"
@@ -291,7 +291,7 @@ export const PhotoFilterPanel: React.FC<PhotoFilterPanelProps> = ({
                 }`}
                 disabled={isLoading}
               >
-                OR
+                {t('filter.or', 'OR')}
               </button>
             </div>
           </div>

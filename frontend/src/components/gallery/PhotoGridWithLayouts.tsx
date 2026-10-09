@@ -215,14 +215,14 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
     if (selectedPhotos.size === 0) return;
     const ids = Array.from(selectedPhotos);
 
-    // Resolution picker (#858): when the gallery offers a choice, hand off to
-    // the modal — it drives the job build and does the download itself.
+    // Resolution picker: the modal chooses a rendition, then starts one
+    // native download per selected photo.
     if (downloadChoices && downloadChoices.length > 1) {
       setResolutionPickerIds(ids);
       return;
     }
 
-    toastify.info(t('gallery.downloading', { count: ids.length }));
+    toastify.info(t('gallery.downloadStarted', { photoCount: ids.length }));
 
     try {
       await galleryService.downloadSelectedPhotos(slug, ids);

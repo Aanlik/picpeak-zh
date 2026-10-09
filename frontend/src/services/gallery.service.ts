@@ -39,14 +39,6 @@ function isIOS(): boolean {
   return navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1;
 }
 
-// Hard cap on the multi-file Web Share path (#557). iOS Safari's share
-// sheet starts to choke and silently fail beyond ~25–30 files in
-// practice; equally important, every File materialises as an in-memory
-// Blob before share() is invoked, so a 500-photo @ 10 MB selection
-// would buffer 5 GB on the device. Above this cap we fall through to
-// the existing server-side zip flow.
-const MAX_WEB_SHARE_FILES = 25;
-
 // Counts-only snapshot returned by GET /gallery/:slug/uploads/status.
 export interface UploadProcessingStatus {
   total: number;
@@ -311,36 +303,18 @@ export const galleryService = {
     window.URL.revokeObjectURL(url);
   },
 
-  // Download selected photos. On iOS with a small selection, route
-  // through Web Share so the files land directly in Photos via the
-  // share sheet's "Save N Images" action (#557, extending #531 to the
-  // multi-photo case). Above the cap, or anywhere else, fall through
-  // to the existing server-side zip flow.
-  async downloadSelectedPhotos(slug: string, photoIds: number[]): Promise<void> {
-    if (
-      isIOS() &&
-      photoIds.length > 0 &&
-      photoIds.length <= MAX_WEB_SHARE_FILES
-    ) {
-      const status = await this.trySaveMultipleToDevice(slug, photoIds);
-      // 'shared' = share() resolved; 'dismissed' = user closed the
-      // share sheet — both terminate the flow without touching the
-      // zip path. Only 'fallback' continues below.
-      if (status !== 'fallback') return;
+  // Trigger one native browser download per selected photo. These are
+  // same-origin navigations so the gallery's HttpOnly access cookie and the
+  // server's Content-Disposition filename, access checks, and rendition
+  // handling remain in force. Creating anchors directly from the click
+  // handler also gives Chrome/Edge the best chance to recognize them as
+  // user-initiated multiple downloads.
+  async downloadSelectedPhotos(slug: string, photoIds: number[], resolution?: string): Promise<void> {
+    for (const photoId of new Set(photoIds)) {
+      const query = resolution ? `?resolution=${encodeURIComponent(resolution)}` : '';
+      const href = withAdminPreview(`/api/gallery/${slug}/download/${photoId}${query}`);
+      this.triggerDirectDownload(href, `photo-${photoId}`);
     }
-
-    const response = await api.post(`/gallery/${slug}/download-selected`, { photo_ids: photoIds }, {
-      responseType: 'blob',
-    });
-
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${slug}-selected.zip`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
   },
 
   // ── Custom-resolution downloads (#858) ──────────────────────────────────
@@ -374,53 +348,6 @@ export const galleryService = {
     document.body.appendChild(link);
     link.click();
     link.remove();
-  },
-
-  // iOS-only Web Share path for a selection of photos.
-  //
-  // Returns:
-  //   'shared'    — navigator.share resolved; files are now in the OS share sheet
-  //   'dismissed' — user cancelled the share sheet (AbortError); do NOT fall back
-  //   'fallback'  — capability missing or unexpected failure; caller should
-  //                 use the server-side zip path instead
-  //
-  // Callers must gate by isIOS() + count <= MAX_WEB_SHARE_FILES before
-  // invoking this; the method does not re-check those conditions.
-  async trySaveMultipleToDevice(
-    slug: string,
-    photoIds: number[],
-  ): Promise<'shared' | 'dismissed' | 'fallback'> {
-    let fetched: Array<{ blob: Blob; serverFilename: string | null }>;
-    try {
-      // Parallel fetch — modern browsers cap at ~6 connections per origin
-      // on HTTP/1.1, unlimited on HTTP/2, so 25 concurrent requests is
-      // safe without an explicit semaphore. A single failed fetch
-      // collapses the whole selection back to the zip path; partial
-      // shares would leave the user wondering which photos were saved.
-      fetched = await Promise.all(photoIds.map((id) => this.fetchPhotoBlob(slug, id)));
-    } catch {
-      return 'fallback';
-    }
-
-    const files = fetched.map((entry, idx) => {
-      const name = entry.serverFilename || `photo-${photoIds[idx]}.jpg`;
-      return new File([entry.blob], name, { type: entry.blob.type || 'image/jpeg' });
-    });
-
-    const canShareFiles =
-      typeof navigator !== 'undefined' &&
-      typeof navigator.canShare === 'function' &&
-      navigator.canShare({ files });
-
-    if (!canShareFiles) return 'fallback';
-
-    try {
-      await navigator.share({ files });
-      return 'shared';
-    } catch (err) {
-      if ((err as DOMException)?.name === 'AbortError') return 'dismissed';
-      return 'fallback';
-    }
   },
 
   // Toggle photo visibility (client-only)

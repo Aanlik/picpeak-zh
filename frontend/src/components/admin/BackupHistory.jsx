@@ -355,13 +355,18 @@ export const BackupHistory = () => {
                                         <div className="flex items-center space-x-2">
                                           <Image className={`h-4 w-4 ${stats.photos_backed_up > 0 ? 'text-green-500' : 'text-neutral-300 dark:text-neutral-600'}`} />
                                           <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                                            Photos ({stats.photos_backed_up || 0} of {stats.total_photos || 0})
+                                            {t('backup.history.details.photoProgress', {
+                                              photoCount: stats.photos_backed_up || 0,
+                                              totalCount: stats.total_photos || 0,
+                                            })}
                                           </span>
                                         </div>
                                         <div className="flex items-center space-x-2">
                                           <FileArchive className={`h-4 w-4 ${stats.archives_backed_up > 0 ? 'text-green-500' : 'text-neutral-300 dark:text-neutral-600'}`} />
                                           <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                                            Archives ({stats.archives_backed_up || 0})
+                                            {t('backup.history.details.archiveCount', {
+                                              archiveCount: stats.archives_backed_up || 0,
+                                            })}
                                           </span>
                                         </div>
                                         <div className="flex items-center space-x-2">

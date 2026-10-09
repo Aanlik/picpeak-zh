@@ -185,7 +185,7 @@ export const GalleryStoryLayout: React.FC<GalleryStoryLayoutProps> = ({
       onPickResolution(ids);
       return;
     }
-    toast.info(t('gallery.downloading', { count: ids.length }));
+    toast.info(t('gallery.downloadStarted', { photoCount: ids.length }));
     try {
       await galleryService.downloadSelectedPhotos(slug, ids);
       analyticsService.trackGalleryEvent('bulk_download', { gallery: slug, photo_count: ids.length });

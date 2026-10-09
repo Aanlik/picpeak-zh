@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { galleryService } from '../services';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 export const useGalleryInfo = (slug?: string, token?: string, enabled: boolean = true) => {
   return useQuery({
@@ -46,6 +47,7 @@ export const useGalleryStats = (slug: string, enabled: boolean = true) => {
 };
 
 export const useDownloadPhoto = () => {
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: ({
       slug,
@@ -57,10 +59,10 @@ export const useDownloadPhoto = () => {
       filename: string;
     }) => galleryService.downloadPhoto(slug, photoId, filename),
     onSuccess: () => {
-      toast.success('Photo downloaded successfully');
+      toast.success(t('gallery.photoDownloadStarted'));
     },
     onError: () => {
-      toast.error('Failed to download photo');
+      toast.error(t('gallery.photoDownloadFailed'));
     },
   });
 };
@@ -78,6 +80,7 @@ export const useDownloadPhoto = () => {
 // to keep the two paths symmetrical; the file appearing in Downloads
 // is its own affordance.
 export const useSavePhotoToDevice = () => {
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: ({
       slug,
@@ -89,20 +92,21 @@ export const useSavePhotoToDevice = () => {
       filename: string;
     }) => galleryService.savePhotoToDevice(slug, photoId, filename),
     onError: () => {
-      toast.error('Failed to save photo');
+      toast.error(t('gallery.photoSaveFailed'));
     },
   });
 };
 
 export const useDownloadAllPhotos = () => {
+  const { t } = useTranslation();
   return useMutation({
     mutationFn: ({ slug, zipReady }: { slug: string; zipReady?: boolean }) =>
       galleryService.downloadAllPhotos(slug, zipReady),
     onSuccess: () => {
-      toast.success('Download started');
+      toast.success(t('gallery.allDownloadsStarted'));
     },
     onError: () => {
-      toast.error('Failed to download photos');
+      toast.error(t('gallery.allDownloadsFailed'));
     },
   });
 };
