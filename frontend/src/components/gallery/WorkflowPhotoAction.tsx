@@ -22,19 +22,21 @@ export function WorkflowPhotoAction({
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const guestIdentity = useGuestIdentityOptional();
-  const [selected, setSelected] = useState(photo.my_color_label === 'green');
+  const [selected, setSelected] = useState(photo.retouch_selected ?? photo.my_color_label === 'green');
   const [busy, setBusy] = useState(false);
+  const delivered = photo.retouch_state === 'delivered';
 
-  useEffect(() => setSelected(photo.my_color_label === 'green'), [photo.my_color_label]);
+  useEffect(() => setSelected(photo.retouch_selected ?? photo.my_color_label === 'green'), [photo.retouch_selected, photo.my_color_label]);
 
   const updateSelection = async (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     if (busy) return;
 
-    if (photo.retouch_state === 'delivered') {
+    if (delivered && !selected) {
       onRequestClick(event);
       return;
     }
+    if (delivered && selected && !window.confirm(t('photographyWorkflow.cancelDeliveredConfirm'))) return;
 
     setBusy(true);
     try {
@@ -45,7 +47,9 @@ export function WorkflowPhotoAction({
       });
       const nextSelected = !result?.removed;
       setSelected(nextSelected);
-      toast.success(t(nextSelected ? 'photographyWorkflow.selectionAdded' : 'photographyWorkflow.selectionRemoved'));
+      toast.success(t(nextSelected
+        ? 'photographyWorkflow.selectionAdded'
+        : delivered ? 'photographyWorkflow.deliveredSelectionRemoved' : 'photographyWorkflow.selectionRemoved'));
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['gallery-photos', slug] }),
         queryClient.invalidateQueries({ queryKey: ['gallery-retouch-workflow', slug] }),
@@ -61,9 +65,8 @@ export function WorkflowPhotoAction({
     }
   };
 
-  const delivered = photo.retouch_state === 'delivered';
   const label = delivered
-    ? t('retouchRequest.open')
+    ? selected ? t('photographyWorkflow.cancelSelection') : t('retouchRequest.open')
     : selected
       ? t('photographyWorkflow.selectedForRetouch')
       : t('photographyWorkflow.selectForRetouch');
@@ -75,17 +78,17 @@ export function WorkflowPhotoAction({
       onClick={updateSelection}
       disabled={busy}
       aria-label={description}
-      aria-pressed={delivered ? undefined : selected}
+      aria-pressed={delivered && !selected ? undefined : selected}
       title={description}
       className={`absolute bottom-2 right-2 z-[15] inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold shadow-md transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
-        delivered
+        delivered && !selected
           ? 'bg-amber-600 text-white hover:bg-amber-700'
           : selected
             ? 'bg-emerald-700 text-white hover:bg-emerald-800'
             : 'bg-white text-neutral-900 hover:bg-emerald-50'
       } ${busy ? 'cursor-wait opacity-80' : ''}`}
     >
-      {busy ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : delivered ? <ClipboardList className="h-4 w-4" aria-hidden="true" /> : selected ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
+      {busy ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : delivered && !selected ? <ClipboardList className="h-4 w-4" aria-hidden="true" /> : selected ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
       <span>{busy ? t('photographyWorkflow.selectionSubmitting') : label}</span>
     </button>
   );

@@ -51,6 +51,17 @@ export function PhotoRetouchRequests({ slug, photo }: {
       if (code === 'VERSION_CHANGED') void queryClient.invalidateQueries({ queryKey: ['gallery-retouch-workflow', slug] });
     },
   });
+  const cancelRequest = useMutation({
+    mutationFn: (requestId: number) => galleryService.cancelRetouchRequest(slug, requestId),
+    onSuccess: async () => {
+      toast.success(t('retouchRequest.cancelled'));
+      await queryClient.invalidateQueries({ queryKey: ['gallery-retouch-workflow', slug] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.status === 409 ? t('retouchRequest.cannotCancel') : t('retouchRequest.cancelFailed'));
+      void queryClient.invalidateQueries({ queryKey: ['gallery-retouch-workflow', slug] });
+    },
+  });
 
   if (!photo.retouch_workflow_enabled) return null;
   return <section className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-700" aria-label={t('retouchRequest.title')}>
@@ -60,6 +71,7 @@ export function PhotoRetouchRequests({ slug, photo }: {
         <p className="mt-1 text-xs text-neutral-500">
           {t(`photographyWorkflow.clientState.${photo.retouch_state || 'proof'}`)}{photo.retouch_state === 'delivered' && photo.retouch_version ? ` · V${photo.retouch_version}` : ''}
         </p>
+        {photo.retouch_selection_cancelled && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{t('photographyWorkflow.cancelledSelectionNote')}</p>}
       </div>
       <Button variant="outline" size="sm" onClick={() => setOpen((current) => !current)}>
         {open ? t('retouchRequest.closeForm') : t('retouchRequest.newRequest')}
@@ -84,14 +96,21 @@ export function PhotoRetouchRequests({ slug, photo }: {
     </form>}
     {ownRequests.length > 0 && <div className="mt-3 space-y-2">
       <p className="text-xs font-medium text-neutral-500">{t('retouchRequest.history')}</p>
-      {ownRequests.slice(0, 4).map((item) => <div key={item.id} className="rounded-md bg-neutral-50 p-2 text-sm dark:bg-neutral-800">
+      <div className="max-h-80 space-y-2 overflow-y-auto">
+      {ownRequests.map((item) => <div key={item.id} className="rounded-md bg-neutral-50 p-2 text-sm dark:bg-neutral-800">
         <div className="flex items-center justify-between gap-2 text-xs text-neutral-500">
           <span>{t(`photographyWorkflow.requestType.${item.request_type}`)}{item.base_version ? ` · V${item.base_version}` : ''}</span>
           <span>{t(`photographyWorkflow.requestState.${item.status}`)}</span>
         </div>
         <p className="mt-1 whitespace-pre-wrap">{item.customer_message}</p>
         {item.photographer_reply && <p className="mt-1 border-l-2 border-emerald-500 pl-2 text-neutral-600 dark:text-neutral-300">{item.photographer_reply}</p>}
+        {!['cancelled', 'completed', 'closed'].includes(item.status) && <div className="mt-2 flex justify-end">
+          <Button variant="outline" size="sm" disabled={cancelRequest.isPending} onClick={() => cancelRequest.mutate(item.id)}>
+            {cancelRequest.isPending ? t('retouchRequest.cancelling') : t('retouchRequest.cancel')}
+          </Button>
+        </div>}
       </div>)}
+      </div>
     </div>}
   </section>;
 }

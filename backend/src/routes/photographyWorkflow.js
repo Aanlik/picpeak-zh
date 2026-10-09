@@ -30,8 +30,8 @@ router.get('/:eventId/requests', (req, res, next) => parseId(req.params.eventId)
     const rows = await db('photo_retouch_requests as r')
       .join('photos as p', 'p.id', 'r.photo_id')
       .where('r.event_id', Number(req.params.eventId))
-      .select('r.id', 'r.photo_id', 'p.filename', 'r.request_type', 'r.base_version', 'r.customer_message', 'r.status', 'r.photographer_reply', 'r.created_at', 'r.updated_at')
-      .orderBy('r.created_at', 'desc').limit(200);
+      .select('r.id', 'r.photo_id', 'p.filename', 'p.original_filename', 'p.source_filename', 'r.request_type', 'r.base_version', 'r.target_version', 'r.delivery_folder', 'r.customer_message', 'r.status', 'r.photographer_reply', 'r.created_at', 'r.updated_at')
+      .orderBy('r.created_at', 'desc');
     res.json({ requests: rows });
   } catch {
     res.status(500).json({ error: '无法读取客户精修需求' });
@@ -93,7 +93,7 @@ router.patch('/:eventId/requests/:requestId', requirePermission('events.edit'), 
   return res.sendStatus(400);
 }, requireEventOwnership, async (req, res) => {
   if (!NO_EMAIL_MODE) return res.sendStatus(404);
-  const allowed = ['open', 'in_progress', 'waiting_customer', 'completed', 'closed'];
+  const allowed = ['open', 'in_progress', 'waiting_customer', 'completed', 'closed', 'cancelled'];
   const status = req.body?.status;
   const reply = typeof req.body?.photographer_reply === 'string' ? req.body.photographer_reply.trim().slice(0, 1000) : '';
   if (!allowed.includes(status)) return res.status(400).json({ error: '无效的需求状态' });

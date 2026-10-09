@@ -34,6 +34,13 @@ async function getProjectDetail(eventId) {
   return bridgeRequest(`/api/projects/${Number(eventId)}/detail`);
 }
 
+async function prepareVersionFolder(eventId, photoId, expectedCurrentVersion) {
+  return bridgeRequest(`/api/projects/${Number(eventId)}/photos/${Number(photoId)}/version-folder`, {
+    method: 'POST',
+    body: { expected_current_version: Number(expectedCurrentVersion) || 0 },
+  });
+}
+
 async function getPublicPhotoStates(eventId) {
   const result = await getProjectDetail(eventId);
   if (result.status !== 200 || !result.data || !Array.isArray(result.data.photos)) return result;
@@ -42,6 +49,7 @@ async function getPublicPhotoStates(eventId) {
   result.data.photos = result.data.photos.map((photo) => ({
     photo_id: Number(photo.photo_id),
     selected: Boolean(photo.selected),
+    selection_cancelled: Boolean(photo.selection_cancelled),
     delivered: Boolean(photo.delivered),
     current_version: Number(photo.current_version) || 0,
     added_during_editing: Boolean(photo.added_during_editing),
@@ -53,4 +61,4 @@ async function getPublicPhotoStates(eventId) {
   return result;
 }
 
-module.exports = { bridgeConfig, bridgeRequest, getProjectDetail, getPublicPhotoStates };
+module.exports = { bridgeConfig, bridgeRequest, getProjectDetail, getPublicPhotoStates, prepareVersionFolder };

@@ -54,7 +54,7 @@ export interface RetouchRequestSummary {
   request_type: 'revision' | 'additional';
   base_version: number | null;
   customer_message: string;
-  status: 'open' | 'moderation' | 'in_progress' | 'waiting_customer' | 'completed' | 'closed';
+  status: 'open' | 'moderation' | 'in_progress' | 'waiting_customer' | 'completed' | 'closed' | 'cancelled';
   photographer_reply: string | null;
   created_at: string;
   updated_at: string;
@@ -63,11 +63,12 @@ export interface RetouchRequestSummary {
 export interface RetouchWorkflowPhoto {
   photo_id: number;
   selected: boolean;
+  selection_cancelled?: boolean;
   delivered: boolean;
   current_version: number;
   added_during_editing: boolean;
   ready_for_editing: boolean;
-  state: 'proof' | 'selected' | 'editing' | 'delivered';
+  state: 'proof' | 'selected' | 'editing' | 'delivered' | 'cancelled';
 }
 
 export interface RetouchWorkflow {
@@ -109,6 +110,10 @@ export const galleryService = {
   }): Promise<{ request: RetouchRequestSummary; moderation_required: boolean }> {
     const response = await api.post(`/gallery/${slug}/photos/${photoId}/retouch-requests`, payload);
     return response.data;
+  },
+
+  async cancelRetouchRequest(slug: string, requestId: number): Promise<void> {
+    await api.delete(`/gallery/${slug}/retouch-requests/${requestId}`);
   },
 
   // Get gallery photos (requires auth)

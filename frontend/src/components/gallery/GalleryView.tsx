@@ -52,6 +52,7 @@ import { GALLERY_THEME_PRESETS } from '../../types/theme.types';
 import { useQueryClient } from '@tanstack/react-query';
 import { getDownloadableSelectedPhotoIds } from './downloadSelection';
 import { BatchFeedbackControls } from './BatchFeedbackControls';
+import { versionedRetouchUrl } from '../../utils/versionedRetouchUrl';
 
 interface GalleryViewProps {
   slug: string;
@@ -122,6 +123,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   const [showResolutionPicker, setShowResolutionPicker] = useState(false);
   const [resolutionPickerIds, setResolutionPickerIds] = useState<number[] | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [workflowFilter, setWorkflowFilter] = useState<'all' | 'proof' | 'selected' | 'editing' | 'delivered' | 'requests' | 'cancelled'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'size' | 'rating' | 'capture_date'>('date');
   const [sortDesc, setSortDesc] = useState(true);
   const [defaultSortApplied, setDefaultSortApplied] = useState(false);
@@ -210,21 +212,50 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     queryKey: ['gallery-retouch-workflow', slug],
     queryFn: () => galleryService.getRetouchWorkflow(slug),
     enabled: Boolean(data?.event?.id),
-    staleTime: 15000,
-    refetchInterval: 30000,
+    staleTime: 0,
+    refetchInterval: 15000,
     retry: false,
   });
   const retouchByPhotoId = useMemo(() => new Map((retouchWorkflow?.photos || []).map((photo) => [photo.photo_id, photo])), [retouchWorkflow?.photos]);
   const galleryPhotos = useMemo(() => (data?.photos || []).map((photo) => {
     const state = retouchByPhotoId.get(photo.id);
-    return retouchWorkflow?.enabled ? {
+    if (!retouchWorkflow?.enabled) return photo;
+    const version = state?.current_version || 0;
+    return {
       ...photo,
+      url: versionedRetouchUrl(photo.url, version) || photo.url,
+      thumbnail_url: versionedRetouchUrl(photo.thumbnail_url, version),
+      preview_url: versionedRetouchUrl(photo.preview_url, version),
+      hero_url: versionedRetouchUrl(photo.hero_url, version),
+      slideshow_url: versionedRetouchUrl(photo.slideshow_url, version),
       retouch_state: state?.state || 'proof',
-      retouch_version: state?.current_version || 0,
+      retouch_version: version,
+      retouch_selected: Boolean(state?.selected),
+      retouch_selection_cancelled: Boolean(state?.selection_cancelled),
       retouch_added_during_editing: Boolean(state?.added_during_editing),
       retouch_workflow_enabled: true,
-    } : photo;
+    };
   }), [data?.photos, retouchByPhotoId, retouchWorkflow?.enabled]);
+  const activeRequestPhotoIds = useMemo(() => new Set((retouchWorkflow?.requests || [])
+    .filter((request) => !['cancelled', 'completed', 'closed'].includes(request.status))
+    .map((request) => request.photo_id)), [retouchWorkflow?.requests]);
+  const workflowPhotoCounts = useMemo(() => ({
+    all: galleryPhotos.length,
+    proof: galleryPhotos.filter((photo) => photo.retouch_state === 'proof').length,
+    selected: galleryPhotos.filter((photo) => photo.retouch_state === 'selected').length,
+    editing: galleryPhotos.filter((photo) => photo.retouch_state === 'editing').length,
+    delivered: galleryPhotos.filter((photo) => photo.retouch_state === 'delivered').length,
+    requests: galleryPhotos.filter((photo) => activeRequestPhotoIds.has(photo.id)).length,
+    cancelled: galleryPhotos.filter((photo) => photo.retouch_selection_cancelled || photo.retouch_state === 'cancelled').length,
+  }), [galleryPhotos, activeRequestPhotoIds]);
+  const workflowSourcePhotos = useMemo(() => {
+    if (!retouchWorkflow?.enabled || workflowFilter === 'all') return galleryPhotos;
+    return galleryPhotos.filter((photo) => {
+      if (workflowFilter === 'requests') return activeRequestPhotoIds.has(photo.id);
+      if (workflowFilter === 'cancelled') return Boolean(photo.retouch_selection_cancelled || photo.retouch_state === 'cancelled');
+      return photo.retouch_state === workflowFilter;
+    });
+  }, [galleryPhotos, activeRequestPhotoIds, retouchWorkflow?.enabled, workflowFilter]);
   const { isSelectionMode, setIsSelectionMode, selectedPhotos, setSelectedPhotos } = useGallerySelection(galleryPhotos);
   
   // Set protection level when data is available
@@ -681,7 +712,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   }, [setSelectedPhotos]);
 
   const filteredPhotos = useGalleryFiltering({
-    sourcePhotos: galleryPhotos, categories: data?.categories, folderId: openFolder?.id ?? null,
+    sourcePhotos: workflowSourcePhotos, categories: data?.categories, folderId: openFolder?.id ?? null,
     selectedCategoryId, searchTerm, sortBy, sortDesc, watermarkEnabled, slug,
     activeFilters, activeColorFilters, mediaFilter, isGuestIdentityMode, myFeedbackPhotoIds,
     selectedPersonIds, peopleMatchAny,
@@ -1455,22 +1486,39 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
         )}
 
         {retouchWorkflow?.enabled && (
-          <section className="mt-4 flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30 sm:flex-row sm:items-center sm:justify-between" aria-label={t('photographyWorkflow.clientPanelTitle')}>
-            <div>
-              <h2 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">{t('photographyWorkflow.clientPanelTitle')}</h2>
-              <p className="mt-1 text-sm text-emerald-900/80 dark:text-emerald-100/80">{t('photographyWorkflow.clientPanelHelp')}</p>
+          <section className="mt-4 space-y-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30" aria-label={t('photographyWorkflow.clientPanelTitle')}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">{t('photographyWorkflow.clientPanelTitle')}</h2>
+                <p className="mt-1 text-sm text-emerald-900/80 dark:text-emerald-100/80">{t('photographyWorkflow.clientPanelHelp')}</p>
+              </div>
+              <Button
+                variant={isSelectionMode ? 'outline' : 'primary'}
+                size="sm"
+                onClick={() => {
+                  setIsSelectionMode((active) => !active);
+                  if (isSelectionMode) setSelectedPhotos(new Set());
+                }}
+                className="shrink-0"
+              >
+                {isSelectionMode ? t('gallery.cancelSelection') : t('photographyWorkflow.selectMultiple')}
+              </Button>
             </div>
-            <Button
-              variant={isSelectionMode ? 'outline' : 'primary'}
-              size="sm"
-              onClick={() => {
-                setIsSelectionMode((active) => !active);
-                if (isSelectionMode) setSelectedPhotos(new Set());
-              }}
-              className="shrink-0"
-            >
-              {isSelectionMode ? t('gallery.cancelSelection') : t('photographyWorkflow.selectMultiple')}
-            </Button>
+            <div className="flex flex-wrap gap-2" role="group" aria-label={t('photographyWorkflow.quickFilterTitle')}>
+              {(['all', 'proof', 'selected', 'editing', 'delivered', 'requests', 'cancelled'] as const).map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setWorkflowFilter(filter)}
+                  aria-pressed={workflowFilter === filter}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${workflowFilter === filter
+                    ? 'border-emerald-700 bg-emerald-700 text-white'
+                    : 'border-emerald-200 bg-white text-emerald-950 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-neutral-900 dark:text-emerald-100 dark:hover:bg-emerald-950'}`}
+                >
+                  {t(`photographyWorkflow.quickFilter.${filter}`)} ({workflowPhotoCounts[filter]})
+                </button>
+              ))}
+            </div>
           </section>
         )}
 

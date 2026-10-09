@@ -13,6 +13,7 @@ type PhotoState = {
   raw_matched: boolean;
   ready_for_editing: boolean;
   current_version: number;
+  next_version_folder?: string;
   delivered: boolean;
   error: boolean;
   error_message?: string | null;
@@ -22,8 +23,12 @@ type RequestItem = {
   id: number;
   photo_id: number;
   filename: string;
+  original_filename?: string | null;
+  source_filename?: string | null;
   request_type: 'revision' | 'additional';
   base_version: number | null;
+  target_version?: number | null;
+  delivery_folder?: string | null;
   customer_message: string;
   status: string;
   photographer_reply: string | null;
@@ -42,7 +47,7 @@ type Workflow = {
 };
 
 const stageValues = ['SELECTING', 'EDITING', 'DELIVERED', 'ARCHIVED'] as const;
-const requestStatuses = ['open', 'in_progress', 'waiting_customer', 'completed', 'closed'] as const;
+const requestStatuses = ['open', 'in_progress', 'waiting_customer', 'completed', 'closed', 'cancelled'] as const;
 const metricNames: Record<string, string> = {
   '客户已选': 'selected', '追加选片': 'additionalSelections', 'RAW已匹配': 'matched',
   '待精修': 'readyForEditing', '已精修': 'delivered', '已同步': 'synced',
@@ -169,22 +174,34 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
         <h4 className="font-medium">{t('photographyWorkflow.photoList')}</h4>
         <div className="max-h-64 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
           <table className="w-full text-left text-sm">
-            <thead className="sticky top-0 bg-neutral-50 dark:bg-neutral-900"><tr><th className="p-2">{t('photographyWorkflow.filename')}</th><th className="p-2">{t('photographyWorkflow.photoStatus')}</th><th className="p-2">{t('photographyWorkflow.version')}</th></tr></thead>
+            <thead className="sticky top-0 bg-neutral-50 dark:bg-neutral-900"><tr><th className="p-2">{t('photographyWorkflow.filename')}</th><th className="p-2">{t('photographyWorkflow.photoStatus')}</th><th className="p-2">{t('photographyWorkflow.version')}</th><th className="p-2">{t('photographyWorkflow.nextExportFolder')}</th></tr></thead>
             <tbody>{photos.map((photo) => <tr key={photo.photo_id} className="border-t border-neutral-200 dark:border-neutral-700">
               <td className="max-w-[15rem] truncate p-2" title={photo.error_message || photo.source_filename}>{photo.source_filename}{photo.error_message && <span className="block truncate text-xs text-red-600" title={photo.error_message}>{photo.error_message}</span>}</td>
-              <td className="p-2"><span>{photo.error ? t('photographyWorkflow.status.error') : photo.delivered ? t('photographyWorkflow.status.delivered') : photo.ready_for_editing ? t('photographyWorkflow.status.editing') : photo.selected ? t('photographyWorkflow.status.selected') : t('photographyWorkflow.status.proof')}</span>{photo.added_during_editing && <span className="ml-2 inline-block rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">{t('photographyWorkflow.status.additionalSelection')}</span>}{workflow?.stage === 'EDITING' && photo.cancelled && <span className="ml-2 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{t('photographyWorkflow.status.cancelled')}</span>}</td>
+              <td className="p-2"><span>{photo.error ? t('photographyWorkflow.status.error') : photo.cancelled ? t('photographyWorkflow.status.cancelled') : photo.delivered ? t('photographyWorkflow.status.delivered') : photo.ready_for_editing ? t('photographyWorkflow.status.editing') : photo.selected ? t('photographyWorkflow.status.selected') : t('photographyWorkflow.status.proof')}</span>{photo.added_during_editing && <span className="ml-2 inline-block rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">{t('photographyWorkflow.status.additionalSelection')}</span>}</td>
               <td className="p-2">{photo.current_version ? `V${photo.current_version}` : '—'}</td>
+              <td className="max-w-[18rem] truncate p-2 text-xs text-neutral-500" title={photo.next_version_folder}>{photo.next_version_folder || '—'}</td>
             </tr>)}
-              {!photos.length && <tr><td colSpan={3} className="p-4 text-center text-neutral-500">{t('photographyWorkflow.noPhotos')}</td></tr>}
+              {!photos.length && <tr><td colSpan={4} className="p-4 text-center text-neutral-500">{t('photographyWorkflow.noPhotos')}</td></tr>}
             </tbody>
           </table>
         </div>
       </section>
       <section className="space-y-3">
         <h4 className="font-medium">{t('photographyWorkflow.requestsTitle')} <span className="text-sm text-neutral-500">({requests.length})</span></h4>
-        {requests.length ? requests.map((request) => <div key={request.id} className="space-y-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
+        {requests.length ? requests.map((request) => {
+          const currentPhoto = photos.find((photo) => photo.photo_id === request.photo_id);
+          const photoName = request.source_filename || request.original_filename || request.filename;
+          const thumbnail = `/api/admin/photos/${eventId}/thumbnail/${request.photo_id}?retouch_v=${currentPhoto?.current_version || 0}`;
+          return <div key={request.id} className="space-y-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-sm font-medium">{request.filename} · {t(`photographyWorkflow.requestType.${request.request_type}`)}{request.base_version ? ` V${request.base_version}` : ''}</div>
+            <div className="flex min-w-0 items-center gap-3">
+              <img src={thumbnail} alt={t('photographyWorkflow.requestPhotoAlt', { name: photoName })} className="h-14 w-14 shrink-0 rounded object-cover" loading="lazy" />
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium" title={photoName}>{photoName}</div>
+                <div className="text-xs text-neutral-500">{t('photographyWorkflow.photoNumber', { id: request.photo_id })} · {t(`photographyWorkflow.requestType.${request.request_type}`)}{request.base_version ? ` V${request.base_version}` : ''}</div>
+                {request.target_version && request.delivery_folder && <div className="mt-1 max-w-[32rem] truncate text-xs text-emerald-700 dark:text-emerald-300" title={request.delivery_folder}>{t('photographyWorkflow.exportToVersion', { version: request.target_version })}：{request.delivery_folder}</div>}
+              </div>
+            </div>
             <select aria-label={t('photographyWorkflow.requestStatus')} value={request.status} onChange={(event) => void perform(() => api.patch(`/admin/photography-workflow/${eventId}/requests/${request.id}`, { status: event.target.value, photographer_reply: replies[request.id] || '' }))} className="rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900">
               {requestStatuses.map((status) => <option key={status} value={status}>{t(`photographyWorkflow.requestState.${status}`)}</option>)}
               {request.status === 'moderation' && <option value="moderation">{t('photographyWorkflow.requestState.moderation')}</option>}
@@ -195,7 +212,8 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
             <input value={replies[request.id] || ''} onChange={(event) => setReplies((old) => ({ ...old, [request.id]: event.target.value }))} maxLength={1000} placeholder={t('photographyWorkflow.replyPlaceholder')} className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
             <Button variant="outline" size="sm" disabled={busy} aria-label={t('photographyWorkflow.saveReply')} onClick={() => void perform(() => api.patch(`/admin/photography-workflow/${eventId}/requests/${request.id}`, { status: request.status === 'moderation' ? 'open' : request.status, photographer_reply: replies[request.id] || '' }))}><Save className="h-4 w-4" /></Button>
           </div>
-        </div>) : <p className="text-sm text-neutral-500">{t('photographyWorkflow.noRequests')}</p>}
+        </div>;
+        }) : <p className="text-sm text-neutral-500">{t('photographyWorkflow.noRequests')}</p>}
       </section>
     </>}
   </div></Card>;

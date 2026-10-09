@@ -5522,12 +5522,14 @@
     "cancelSelection": "Remove retouch selection",
     "selectionAdded": "Added to the retouch list",
     "selectionRemoved": "Removed from the retouch list",
+    "deliveredSelectionRemoved": "Retouching selection withdrawn. The delivered photo remains in the gallery.",
+    "cancelDeliveredConfirm": "This stops future automatic retouch uploads for this photo. The delivered version stays in the gallery. Continue?",
     "selectionFailed": "Could not update the selection. Try again.",
     "selectionSubmitting": "Submitting…",
     "notBound": "This PicPeak project is not connected to a RAW folder yet, so client retouch labels cannot prepare files for the editor.",
     "stepSelection": "Clients mark proofs as selected for retouching in the gallery.",
     "stepImport": "Bridge matches the RAW and prepares it in 03_SELECTED_RAW; open that NAS folder in PixCake.",
-    "stepExport": "Export the retouched JPG with the original filename stem to 04_FINAL; Bridge replaces the proof automatically.",
+    "stepExport": "Export the first retouch to 04_FINAL/V1. Revision requests create V2, V3, and later folders automatically. Export the JPG to the folder shown on the request; Bridge replaces the current proof.",
     "openBridge": "Open photographer workspace",
     "projectName": "Project name",
     "rawSubdir": "RAW folder relative to Camera, for example 2026/Portraits",
@@ -5543,6 +5545,7 @@
     "actionError": "The action failed. Check the PicPeak and Bridge connection.",
     "loading": "Loading project status…",
     "photoList": "Photo processing status",
+    "nextExportFolder": "Next export folder",
     "errorTitle": "Sync errors",
     "photographerStepsTitle": "Photographer handoff",
     "deliveryFolder": "NAS project folder",
@@ -5551,6 +5554,9 @@
     "version": "Version",
     "noPhotos": "No photo status has synced yet.",
     "requestsTitle": "Client revision and additional requests",
+    "requestPhotoAlt": "Photo for request: {{name}}",
+    "photoNumber": "Photo #{{id}}",
+    "exportToVersion": "Export to V{{version}}",
     "requestStatus": "Request status",
     "replyPlaceholder": "Optional update for the client",
     "saveReply": "Save reply",
@@ -5571,14 +5577,27 @@
       "in_progress": "In progress",
       "waiting_customer": "Waiting for client",
       "completed": "Completed",
-      "closed": "Closed"
+      "closed": "Closed",
+      "cancelled": "Withdrawn by client"
     },
     "clientState": {
       "proof": "Original proof",
       "selected": "Selected for retouching",
       "editing": "Retouching",
-      "delivered": "Retouched"
+      "delivered": "Retouched",
+      "cancelled": "Retouch selection withdrawn"
     },
+    "quickFilterTitle": "Filter photos by retouching stage",
+    "quickFilter": {
+      "all": "All",
+      "proof": "To select",
+      "selected": "Selected",
+      "editing": "Retouching",
+      "delivered": "Delivered",
+      "requests": "Open requests",
+      "cancelled": "Withdrawn"
+    },
+    "cancelledSelectionNote": "Retouch selection withdrawn. Delivered versions remain available in the gallery.",
     "clientAdditionalSelection": "Added later",
     "stage": {
       "SELECTING": "Client selection",
@@ -5589,7 +5608,7 @@
     "connected": "Sync service connected",
     "disconnected": "Sync service disconnected",
     "loadError": "Unable to load retouching progress.",
-    "help": "Additional selections are photos chosen after retouching or delivery begins. A revision is a new retouched export of the same photo. If a selection is cancelled during retouching, the RAW file stays in place until the photographer reviews it.",
+    "help": "Clients can add selections after retouching or delivery begins. Revisions use automatically created V-numbered folders. When a client withdraws a selection, Bridge stops future automatic uploads while retaining the RAW and any delivered version.",
     "metric": {
       "selected": "Selected",
       "additionalSelections": "Added selections",
@@ -5622,7 +5641,12 @@
     "versionChanged": "The delivered version changed. Refresh and submit the revision again.",
     "noVersion": "This photo has no retouched delivery yet, so a revision cannot be requested.",
     "identityRequired": "Complete client verification first.",
-    "history": "My requests"
+    "history": "My requests",
+    "cancel": "Withdraw request",
+    "cancelling": "Withdrawing…",
+    "cancelled": "Request withdrawn",
+    "cannotCancel": "This request is complete or already withdrawn and cannot be withdrawn again.",
+    "cancelFailed": "Could not withdraw the request. Try again later."
   },
   "nasFolder": {
     "titleOptional": "Link a NAS photo folder (optional)",

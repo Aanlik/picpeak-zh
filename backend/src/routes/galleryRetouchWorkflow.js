@@ -3,17 +3,18 @@ const router = express.Router();
 const { db } = require('../database/db');
 const { verifyGalleryAccess, denySlideshowToken } = require('../middleware/gallery');
 const { resolveGuest } = require('../middleware/guestAuth');
-const { blockHiddenGallery, guestBlockedByReveal } = require('../utils/revealMode');
+const { blockHiddenGallery } = require('../utils/revealMode');
 const { feedbackRateLimit, generateGuestIdentifier } = require('../middleware/feedbackRateLimit');
 const { noStoreCache } = require('../middleware/noStoreCache');
-const { sanitizeComment } = require('../utils/feedbackValidation');
 const feedbackService = require('../services/feedbackService');
+const { sanitizeComment } = require('../utils/feedbackValidation');
 const feedbackModeration = require('../services/feedbackModeration');
-const { getPublicPhotoStates } = require('../services/photographyWorkflowBridge');
+const { getPublicPhotoStates, prepareVersionFolder } = require('../services/photographyWorkflowBridge');
 const { isPhotoHiddenFromViewer } = require('../utils/photoVisibility');
 
 function customerStatus(photo) {
   if (photo.delivered) return 'delivered';
+  if (photo.selection_cancelled) return 'cancelled';
   if (photo.selected && photo.ready_for_editing) return 'editing';
   if (photo.selected) return 'selected';
   return 'proof';
@@ -35,6 +36,7 @@ router.get('/:slug/retouch-workflow', verifyGalleryAccess, resolveGuest, blockHi
       .map((photo) => ({
         photo_id: Number(photo.photo_id),
         selected: Boolean(photo.selected),
+        selection_cancelled: Boolean(photo.selection_cancelled),
         delivered: Boolean(photo.delivered),
         current_version: Number(photo.current_version) || 0,
         added_during_editing: Boolean(photo.added_during_editing),
@@ -44,7 +46,7 @@ router.get('/:slug/retouch-workflow', verifyGalleryAccess, resolveGuest, blockHi
     const requests = await db('photo_retouch_requests')
       .where({ event_id: req.event.id, guest_identifier: guestIdentifier })
       .select('id', 'photo_id', 'request_type', 'base_version', 'customer_message', 'status', 'photographer_reply', 'created_at', 'updated_at')
-      .orderBy('created_at', 'desc').limit(100);
+      .orderBy('created_at', 'desc');
     res.setHeader('Cache-Control', 'no-store');
     res.json({
       enabled: workflow.status === 200,
@@ -87,10 +89,12 @@ router.post('/:slug/photos/:photoId/retouch-requests',
 
       let baseVersion = null;
       let status = 'open';
+      let targetVersion = null;
+      let deliveryFolder = null;
+      const workflowPhoto = workflow.data.photos.find((item) => Number(item.photo_id) === photoId);
       if (requestType === 'revision') {
-        const current = workflow.data.photos.find((item) => Number(item.photo_id) === photoId);
-        if (!current?.delivered) return res.status(409).json({ error: 'A delivered retouched version is required before requesting a revision', code: 'NO_DELIVERED_VERSION' });
-        baseVersion = Number(current.current_version) || 1;
+        if (!workflowPhoto?.delivered) return res.status(409).json({ error: 'A delivered retouched version is required before requesting a revision', code: 'NO_DELIVERED_VERSION' });
+        baseVersion = Number(workflowPhoto.current_version) || 1;
         const requestedVersion = Number(req.body?.base_version);
         if (!Number.isSafeInteger(requestedVersion) || requestedVersion !== baseVersion) {
           return res.status(409).json({ error: 'The delivered version changed. Refresh the gallery and try again.', code: 'VERSION_CHANGED', current_version: baseVersion });
@@ -100,7 +104,35 @@ router.post('/:slug/photos/:photoId/retouch-requests',
       const moderation = await feedbackModeration.moderateText(message);
       if (moderation.blocked) return res.status(400).json({ error: 'This request contains text that is not allowed', code: 'REQUEST_BLOCKED' });
       if (!moderation.approved || settings.moderate_comments) status = 'moderation';
+      // A new edit of a delivered photo gets a dedicated Vn folder. The Bridge
+      // checks the version again while creating it, so a concurrent delivery
+      // cannot silently direct the photographer to a stale folder.
+      if (workflowPhoto?.delivered) {
+        const prepared = await prepareVersionFolder(event.id, photoId, workflowPhoto.current_version);
+        if (prepared.status === 409) return res.status(409).json({ error: 'The delivered version changed. Refresh and try again.', code: 'VERSION_CHANGED' });
+        if (prepared.status !== 200 || !prepared.data?.folder || !Number.isSafeInteger(Number(prepared.data?.version))) {
+          return res.status(503).json({ error: 'Unable to prepare the next retouch folder', code: 'VERSION_FOLDER_UNAVAILABLE' });
+        }
+        targetVersion = Number(prepared.data.version);
+        deliveryFolder = String(prepared.data.folder);
+      }
       const guestIdentifier = await generateGuestIdentifier(req);
+      // A request means the client wants this photo processed. Ensure the
+      // green selection exists (including after a previous withdrawal) so the
+      // Bridge can resume work instead of recording an unprocessable request.
+      if (status !== 'moderation') {
+        await feedbackService.submitFeedback(photoId, event.id, {
+          feedback_type: 'color_label',
+          color_label: 'green',
+          ensure_color_label: true,
+          identity_mode: settings.identity_mode,
+          guest_name: req.guest?.name,
+          guest_email: req.guest?.email,
+          guest_id: req.guest?.id ?? null,
+          ip_address: req.ip || req.connection.remoteAddress,
+          user_agent: (req.headers['user-agent'] || '').replace(/[<>&"']/g, '').substring(0, 255),
+        }, guestIdentifier);
+      }
       const [request] = await db('photo_retouch_requests').insert({
         event_id: event.id,
         photo_id: photoId,
@@ -110,11 +142,78 @@ router.post('/:slug/photos/:photoId/retouch-requests',
         base_version: baseVersion,
         customer_message: message,
         status,
+        target_version: targetVersion,
+        delivery_folder: deliveryFolder,
       }).returning(['id', 'photo_id', 'request_type', 'base_version', 'customer_message', 'status', 'photographer_reply', 'created_at', 'updated_at']);
       res.status(201).json({ request, moderation_required: status === 'moderation' });
     } catch (error) {
       require('../utils/logger').error('Gallery retouch request failed', { error: error.message });
       res.status(500).json({ error: 'Unable to submit retouch request' });
+    }
+  }
+);
+
+router.delete('/:slug/retouch-requests/:requestId',
+  verifyGalleryAccess,
+  denySlideshowToken,
+  blockHiddenGallery,
+  resolveGuest,
+  async (req, res) => {
+    try {
+      const requestId = Number(req.params.requestId);
+      if (!Number.isSafeInteger(requestId) || requestId < 1) return res.status(400).json({ error: 'Invalid request ID' });
+      if (req.accessLevel === 'hidden') return res.sendStatus(404);
+      const guestIdentifier = await generateGuestIdentifier(req);
+      const request = await db('photo_retouch_requests')
+        .where({ id: requestId, event_id: req.event.id, guest_identifier: guestIdentifier })
+        .first();
+      if (!request) return res.sendStatus(404);
+      const photo = await db('photos').where({ id: request.photo_id, event_id: req.event.id }).first();
+      if (!photo || isPhotoHiddenFromViewer(photo, req.accessLevel)) return res.sendStatus(404);
+      if (['cancelled', 'completed', 'closed'].includes(request.status)) {
+        return res.status(409).json({ error: 'This request can no longer be cancelled', code: 'REQUEST_NOT_CANCELLABLE' });
+      }
+      const settings = request.status === 'moderation' ? null : await feedbackService.getEventFeedbackSettings(req.event.id);
+      const updated = await db.transaction(async (trx) => {
+        const current = await trx('photo_retouch_requests')
+          .where({ id: requestId, event_id: req.event.id, guest_identifier: guestIdentifier })
+          .forUpdate().first();
+        if (!current || ['cancelled', 'completed', 'closed'].includes(current.status)) return null;
+        await trx('photo_retouch_requests').where({ id: requestId }).update({ status: 'cancelled', updated_at: new Date().toISOString() });
+        // Stop future version uploads when the customer cancels their last
+        // approved request. Keep the shared selection for any other active
+        // request; moderation-only requests never selected the photo.
+        if (settings) {
+          const remainingQuery = trx('photo_retouch_requests')
+            .where({ event_id: req.event.id, photo_id: current.photo_id })
+            .whereNot('id', requestId)
+            .whereNotIn('status', ['cancelled', 'completed', 'closed', 'moderation']);
+          if (settings.identity_mode !== 'shared') remainingQuery.where({ guest_identifier: guestIdentifier });
+          if (!(await remainingQuery.first('id'))) {
+            await feedbackService.removeColorLabel(current.photo_id, req.event.id, {
+              identity_mode: settings.identity_mode,
+              guest_id: req.guest?.id ?? null,
+              guest_identifier: guestIdentifier,
+            }, trx);
+          }
+        }
+        return trx('photo_retouch_requests').where({ id: requestId }).first();
+      });
+      if (!updated) return res.status(409).json({ error: 'This request can no longer be cancelled', code: 'REQUEST_NOT_CANCELLABLE' });
+      res.json({ request: {
+        id: updated.id,
+        photo_id: updated.photo_id,
+        request_type: updated.request_type,
+        base_version: updated.base_version,
+        customer_message: updated.customer_message,
+        status: updated.status,
+        photographer_reply: updated.photographer_reply,
+        created_at: updated.created_at,
+        updated_at: updated.updated_at,
+      } });
+    } catch (error) {
+      require('../utils/logger').error('Gallery retouch request cancellation failed', { error: error.message });
+      res.status(500).json({ error: 'Unable to cancel the retouch request' });
     }
   }
 );

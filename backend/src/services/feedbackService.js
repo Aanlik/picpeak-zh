@@ -331,6 +331,32 @@ class FeedbackService {
     return outcome;
   }
 
+  /** Remove the current customer's visible color label without touching
+   * moderated/hidden rows. Cancelling their last active retouch request uses
+   * this to stop the Bridge from processing a future version export. */
+  async removeColorLabel(photoId, eventId, { identity_mode, guest_id, guest_identifier }, executor = db) {
+    const remove = async (trx) => {
+      const query = trx('photo_feedback').where({
+        photo_id: photoId,
+        event_id: eventId,
+        feedback_type: 'color_label',
+        color_label: 'green',
+        is_hidden: false,
+      });
+      if (isSharedColorLabel(identity_mode, 'color_label')) {
+        query.where('guest_identifier', SHARED_COLOR_LABEL_IDENTITY);
+      } else if (guest_id) {
+        query.where('guest_id', guest_id);
+      } else {
+        query.where('guest_identifier', guest_identifier);
+      }
+      const removed = await query.delete();
+      if (removed) await this.updatePhotoFeedbackStats(photoId, trx);
+      return { removed: Number(removed) > 0 };
+    };
+    return executor === db ? db.transaction(remove) : remove(executor);
+  }
+
   /**
    * Rebuild photos.color_label_count for a whole event against the set the
    * given mode makes live (#1197).

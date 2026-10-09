@@ -5522,12 +5522,14 @@
     "cancelSelection": "取消精修选择",
     "selectionAdded": "已加入精修清单",
     "selectionRemoved": "已从精修清单移除",
+    "deliveredSelectionRemoved": "已撤回精修选择；已交付成片仍保留在相册中。",
+    "cancelDeliveredConfirm": "撤回后会停止这张照片后续的自动精修和返修流程；已交付成片仍保留在相册中。要继续吗？",
     "selectionFailed": "选片提交失败，请稍后重试。",
     "selectionSubmitting": "正在提交…",
     "notBound": "此 PicPeak 项目还没有绑定 RAW 目录，因此客户标记暂时不能生成精修素材。",
     "stepSelection": "客户在选片页面把照片标记为“选为精修”。",
     "stepImport": "Bridge 匹配 RAW 并放入 03_SELECTED_RAW；摄影师在像素蛋糕中打开这个 NAS 文件夹。",
-    "stepExport": "精修后将保留原文件主名的 JPG 导出到 04_FINAL；Bridge 会自动替换原 Proof。",
+    "stepExport": "首次精修导出到 04_FINAL/V1；返修需求会自动创建对应的 V2、V3 文件夹。按需求卡片显示的目录导出 JPG，Bridge 会自动替换原预览。",
     "openBridge": "打开摄影师工作台",
     "projectName": "项目名称",
     "rawSubdir": "Camera 下的 RAW 子目录，例如 2026/人像项目",
@@ -5543,6 +5545,7 @@
     "actionError": "操作失败，请检查 PicPeak 与同步服务连接。",
     "loading": "正在读取项目状态…",
     "photoList": "照片处理状态",
+    "nextExportFolder": "下次导出目录",
     "errorTitle": "同步异常",
     "photographerStepsTitle": "摄影师后期操作",
     "deliveryFolder": "NAS 项目目录",
@@ -5551,6 +5554,9 @@
     "version": "成片版本",
     "noPhotos": "还没有同步到照片状态。",
     "requestsTitle": "客户返修与新增需求",
+    "requestPhotoAlt": "需求对应照片：{{name}}",
+    "photoNumber": "照片编号 {{id}}",
+    "exportToVersion": "请导出到 V{{version}}",
     "requestStatus": "需求状态",
     "replyPlaceholder": "给客户的处理说明（可选）",
     "saveReply": "保存回复",
@@ -5571,13 +5577,26 @@
       "in_progress": "处理中",
       "waiting_customer": "等待客户确认",
       "completed": "已完成",
-      "closed": "已关闭"
+      "closed": "已关闭",
+      "cancelled": "客户已撤回"
     },
     "clientState": {
       "proof": "原始预览",
       "selected": "已选待精修",
       "editing": "精修中",
-      "delivered": "精修完成"
+      "delivered": "精修完成",
+      "cancelled": "已撤回精修选择"
+    },
+    "cancelledSelectionNote": "已撤回精修选择；已交付成片仍保留在相册中。",
+    "quickFilterTitle": "按精修进度筛选照片",
+    "quickFilter": {
+      "all": "全部",
+      "proof": "待选片",
+      "selected": "已选择",
+      "editing": "精修中",
+      "delivered": "已交付",
+      "requests": "有待处理需求",
+      "cancelled": "已撤回"
     },
     "clientAdditionalSelection": "后续追加",
     "stage": {
@@ -5589,7 +5608,7 @@
     "connected": "同步服务已连接",
     "disconnected": "同步服务连接中断",
     "loadError": "暂时无法读取精修进度。",
-    "help": "进入精修或交付阶段后，客户仍可追加选片。同一张照片再次导出精修成片即为返修。精修期间客户取消选择时，系统会保留正在处理的 RAW，等待摄影师确认。",
+    "help": "进入精修或交付阶段后，客户仍可追加选片。已交付照片可申请返修，摄影师按需求卡片导出到自动创建的 V 版本目录。客户撤回后，Bridge 停止后续自动上传并保留 RAW 与已交付成片。",
     "metric": {
       "selected": "已选照片",
       "additionalSelections": "追加选片",
@@ -5622,7 +5641,12 @@
     "versionChanged": "成片版本已更新，请刷新后重新提交返修。",
     "noVersion": "这张照片还没有精修成片，暂时不能申请返修。",
     "identityRequired": "请先完成客户身份验证。",
-    "history": "我的需求记录"
+    "history": "我的需求记录",
+    "cancel": "撤回需求",
+    "cancelling": "正在撤回…",
+    "cancelled": "已撤回需求",
+    "cannotCancel": "该需求已完成或已撤回，无法再次撤回。",
+    "cancelFailed": "撤回失败，请稍后重试。"
   },
   "nasFolder": {
     "titleOptional": "关联 NAS 照片文件夹（可选）",

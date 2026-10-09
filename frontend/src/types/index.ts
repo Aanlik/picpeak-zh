@@ -223,7 +223,9 @@ export interface Photo {
   // Present when the integrated Bridge workflow is bound to this gallery.
   // These guest-safe fields distinguish the original proof from delivered
   // retouched versions without changing the PicPeak photo identity.
-  retouch_state?: 'proof' | 'selected' | 'editing' | 'delivered';
+  retouch_state?: 'proof' | 'selected' | 'editing' | 'delivered' | 'cancelled';
+  retouch_selected?: boolean;
+  retouch_selection_cancelled?: boolean;
   retouch_version?: number;
   retouch_added_during_editing?: boolean;
   retouch_workflow_enabled?: boolean;
