@@ -5521,6 +5521,7 @@
     "actionError": "操作失败，请检查 PicPeak 与同步服务连接。",
     "loading": "正在读取项目状态…",
     "photoList": "照片处理状态",
+    "errorTitle": "同步异常",
     "photographerStepsTitle": "摄影师后期操作",
     "deliveryFolder": "NAS 项目目录",
     "filename": "原始文件名",

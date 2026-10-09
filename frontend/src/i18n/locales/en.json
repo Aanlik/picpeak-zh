@@ -5521,6 +5521,7 @@
     "actionError": "The action failed. Check the PicPeak and Bridge connection.",
     "loading": "Loading project status…",
     "photoList": "Photo processing status",
+    "errorTitle": "Sync errors",
     "photographerStepsTitle": "Photographer handoff",
     "deliveryFolder": "NAS project folder",
     "filename": "Original filename",

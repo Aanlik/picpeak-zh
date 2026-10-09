@@ -161,6 +161,10 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
         </ol>
         {workflow?.delivery_path && <p className="mt-2 break-all"><span className="font-medium">{t('photographyWorkflow.deliveryFolder')}：</span>{workflow.delivery_path}</p>}
       </div>
+      {!!workflow?.errors?.length && <details className="rounded-lg border border-red-200 px-3 py-2 dark:border-red-900">
+        <summary className="cursor-pointer text-sm font-medium text-red-700 dark:text-red-300">{t('photographyWorkflow.errorTitle')}（{workflow.errors.length}）</summary>
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-300">{workflow.errors.map((item, index) => <li key={`${item.created_at || 'error'}-${index}`}>{item.message}</li>)}</ul>
+      </details>}
       <section className="space-y-2">
         <h4 className="font-medium">{t('photographyWorkflow.photoList')}</h4>
         <div className="max-h-64 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
