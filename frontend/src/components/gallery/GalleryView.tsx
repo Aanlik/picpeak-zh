@@ -51,6 +51,7 @@ import type { Photo } from '../../types';
 import { GALLERY_THEME_PRESETS } from '../../types/theme.types';
 import { useQueryClient } from '@tanstack/react-query';
 import { getDownloadableSelectedPhotoIds } from './downloadSelection';
+import { BatchFeedbackControls } from './BatchFeedbackControls';
 
 interface GalleryViewProps {
   slug: string;
@@ -1431,6 +1432,18 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {isSelectionMode && selectedPhotos.size > 0 && feedbackEnabled && (
+          <div className="mt-4">
+            <BatchFeedbackControls
+              slug={slug}
+              photoIds={Array.from(selectedPhotos)}
+              colorLabelsEnabled={!!feedbackSettings?.allow_color_labels}
+              commentsEnabled={!!feedbackSettings?.allow_comments}
+              requireNameEmail={!!feedbackSettings?.require_name_email}
+            />
           </div>
         )}
 

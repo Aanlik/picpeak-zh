@@ -260,7 +260,7 @@ class FeedbackService {
    * design here — the tag is the photo's state, not a person's opinion — so
    * the admin feedback list shows a shared tag with no name against it.
    */
-  async submitSharedColorLabel(photoId, eventId, colorLabel, { ip_address, user_agent } = {}) {
+  async submitSharedColorLabel(photoId, eventId, colorLabel, { ip_address, user_agent, ensure = false } = {}) {
     const nowIso = () => new Date().toISOString();
     let outcome;
 
@@ -282,6 +282,10 @@ class FeedbackService {
       const existing = await sharedScope().first();
 
       if (existing && existing.color_label === colorLabel) {
+        if (ensure) {
+          outcome = { id: existing.id, exists: true, shared: true };
+          return;
+        }
         await sharedScope().delete();
         outcome = { removed: true, shared: true };
         return;
@@ -457,6 +461,7 @@ class FeedbackService {
         return await this.submitSharedColorLabel(photoId, eventId, color_label, {
           ip_address,
           user_agent,
+          ensure: feedbackData.ensure_color_label === true,
         });
       }
 
@@ -566,6 +571,9 @@ class FeedbackService {
             };
 
             if (existing[singleValueColumn] === submittedValue) {
+              if (feedbackData.ensure_color_label === true && feedback_type === 'color_label') {
+                return { id: existing.id, exists: true };
+              }
               await singleValueScope().delete();
               await this.updatePhotoFeedbackStats(photoId);
               return { removed: true };

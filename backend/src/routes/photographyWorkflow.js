@@ -21,8 +21,9 @@ router.get('/:eventId', (req, res, next) => /^\d+$/.test(req.params.eventId) ? n
     if (!response.ok) throw new Error('Bridge unavailable');
     const projects = await response.json();
     const project = projects.find(p => String(p.event_id) === req.params.eventId);
-    if (!project) return res.status(404).json({ error: '此项目尚未关联精修同步服务' });
-    res.json(project);
+    const bridgeUrl = process.env.PIXCAKE_BRIDGE_PUBLIC_URL || null;
+    if (!project) return res.json({ configured: false, bridge_url: bridgeUrl });
+    res.json({ ...project, configured: true, bridge_url: bridgeUrl });
   } catch { res.status(503).json({ error: '精修同步服务暂时不可用' }); }
 });
 module.exports = router;

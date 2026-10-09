@@ -60,8 +60,11 @@ export const PhotoComments: React.FC<PhotoCommentsProps> = ({
       setShowCommentForm(false);
       queryClient.invalidateQueries({ queryKey: ['photo-feedback', gallerySlug, photoId] });
       
-      if (response.message) {
-        toast.info(response.message);
+      if (response.moderation_required) {
+        toast.info(t(
+          'feedback.commentSubmittedForModeration',
+          'Your comment has been submitted for moderation'
+        ));
       } else {
         toast.success(t('feedback.commentSubmitted', 'Comment submitted'));
       }

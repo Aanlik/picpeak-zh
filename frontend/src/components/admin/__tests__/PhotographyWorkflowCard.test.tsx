@@ -13,9 +13,10 @@ describe('photography workflow summary', () => {
     expect(api.get).toHaveBeenCalledWith('/admin/photography-workflow/7');
   });
   it('explains an unlinked project without inventing zero progress', async () => {
-    vi.mocked(api.get).mockRejectedValue({ response: { data: { error: '此项目尚未关联精修同步服务' } } });
+    vi.mocked(api.get).mockResolvedValue({ data: { configured: false, bridge_url: 'http://192.168.1.12:8080' } });
     render(<PhotographyWorkflowCard eventId={8} />);
-    await waitFor(() => expect(screen.getByText('此项目尚未关联精修同步服务')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('This PicPeak project is not connected to a RAW folder yet, so client retouch labels cannot prepare files for the editor.')).toBeTruthy());
+    expect(screen.getByRole('link', { name: 'Open photographer workspace' }).getAttribute('href')).toBe('http://192.168.1.12:8080');
     expect(screen.queryByText('返修')).toBeNull();
   });
 });

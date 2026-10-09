@@ -62,9 +62,10 @@ async function getRateLimitSettings() {
  * reservations on PostgreSQL, including requests handled by other servers.
  * SQLite serializes writers; a busy/error response fails closed.
  */
-async function consumeFeedbackLimit(req, actionType) {
+async function consumeFeedbackLimit(req, actionType, cost = 1) {
   const eventId = req.event?.id;
   if (!eventId) throw new Error('Authenticated event context required');
+  if (!Number.isSafeInteger(cost) || cost < 1) throw new Error('Invalid feedback rate-limit cost');
   const settings = await getRateLimitSettings();
   const configured = settings[actionType] || DEFAULT_RATE_LIMITS[actionType];
   const fallback = DEFAULT_RATE_LIMITS[actionType] || { max: 100, window: 3600 };
@@ -93,12 +94,12 @@ async function consumeFeedbackLimit(req, actionType) {
         .where({ identifier: budget.identifier, event_id: eventId, action_type: actionType })
         .where('window_start', '>=', cutoff).sum('action_count as total').first();
       const used = Number(row?.total || 0);
-      if (used >= budget.max) return { limited: true, limit: limit.max, remaining: 0, window: limit.window };
-      if (budget.identifier === identifier) remaining = limit.max - used - 1;
+      if (used + cost > budget.max) return { limited: true, limit: limit.max, remaining: 0, window: limit.window };
+      if (budget.identifier === identifier) remaining = limit.max - used - cost;
     }
     await trx('feedback_rate_limits').insert(budgets.map(budget => ({
       identifier: budget.identifier, event_id: eventId, action_type: actionType,
-      action_count: 1, window_start: new Date()
+      action_count: cost, window_start: new Date()
     })));
     return { limited: false, limit: limit.max, remaining, window: limit.window };
   });
@@ -141,7 +142,7 @@ async function sweepStaleFeedbackRateLimits() {
 function feedbackRateLimit(actionType) {
   return async (req, res, next) => {
     try {
-      const status = await consumeFeedbackLimit(req, actionType);
+      const status = await consumeFeedbackLimit(req, actionType, req.feedbackRateLimitCost || 1);
       res.set({
         'X-RateLimit-Limit': status.limit,
         'X-RateLimit-Remaining': status.remaining,

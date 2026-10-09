@@ -13,8 +13,136 @@ const {
   validatePhotoId,
   validateFeedbackSubmission,
   checkValidation,
-  validateGuestRequirements
+  validateGuestRequirements,
+  sanitizeComment
 } = require('../utils/feedbackValidation');
+const validator = require('validator');
+
+// Batch proofing is one user action and shares the same access, identity,
+// visibility, moderation and rate-limit rules as the single-photo endpoint.
+// The caps keep a single request bounded while making ordinary selections
+// practical; comments are append-only, so their smaller cap is deliberate.
+router.post('/:slug/photos/batch-feedback',
+  verifyGalleryAccess,
+  denySlideshowToken,
+  blockHiddenGallery,
+  resolveGuest,
+  async (req, res) => {
+    try {
+      const event = req.event;
+      const settings = await feedbackService.getEventFeedbackSettings(event.id);
+      if (!settings.feedback_enabled) {
+        return res.status(403).json({ error: 'Feedback is not enabled for this event' });
+      }
+
+      const { photo_ids: photoIds, feedback_type: feedbackType } = req.body || {};
+      const maxPhotos = feedbackType === 'comment' ? 20 : 100;
+      if (!Array.isArray(photoIds) || photoIds.length < 1 || photoIds.length > maxPhotos ||
+          photoIds.some(id => !Number.isSafeInteger(id) || id < 1) ||
+          new Set(photoIds).size !== photoIds.length) {
+        return res.status(400).json({ error: 'Invalid photo selection' });
+      }
+      if (!['comment', 'color_label'].includes(feedbackType)) {
+        return res.status(400).json({ error: 'Invalid batch feedback type' });
+      }
+      if (feedbackType === 'color_label' && req.body.color_label !== 'green') {
+        return res.status(400).json({ error: 'Batch proofing only supports the green retouch label' });
+      }
+      if (feedbackType === 'comment') {
+        const comment = sanitizeComment(typeof req.body.comment_text === 'string' ? req.body.comment_text : '');
+        if (!comment || comment.length > 1000) {
+          return res.status(400).json({ error: 'Comment must be between 1 and 1000 characters' });
+        }
+        req.body.comment_text = comment;
+        if (req.body.guest_name != null) {
+          const guestName = String(req.body.guest_name).trim();
+          if (guestName.length > 100 || (guestName && !/^[\p{L}\p{M}\p{N} \-'.·]+$/u.test(guestName))) {
+            return res.status(400).json({ error: 'Guest name is invalid' });
+          }
+        }
+        if (req.body.guest_email && !validator.isEmail(String(req.body.guest_email).trim())) {
+          return res.status(400).json({ error: 'Invalid email address' });
+        }
+      }
+
+      if (settings.identity_mode === 'guest' && (!req.guest || req.guest.eventId !== event.id)) {
+        return res.status(401).json({ error: 'Guest identity required', code: 'GUEST_IDENTITY_REQUIRED' });
+      }
+      const guestIdentifier = await generateGuestIdentifier(req);
+      const typeAllowed = feedbackType === 'comment' ? settings.allow_comments : settings.allow_color_labels;
+      if (!typeAllowed) return res.status(403).json({ error: `${feedbackType} feedback is not enabled` });
+      if (settings.identity_mode !== 'guest') {
+        const guestValidation = await validateGuestRequirements(settings, req.body);
+        if (!guestValidation.valid) {
+          return res.status(400).json({ error: 'Guest information required', errors: guestValidation.errors });
+        }
+      }
+
+      const photos = await db('photos').where({ event_id: event.id }).whereIn('id', photoIds);
+      if (photos.length !== photoIds.length || photos.some(photo => isPhotoHiddenFromViewer(photo, req.accessLevel))) {
+        return res.status(404).json({ error: 'Photo not found' });
+      }
+
+      req.feedbackRateLimitCost = photoIds.length;
+      const limiter = feedbackRateLimit(feedbackType);
+      await limiter(req, res, (err) => { if (err) throw err; });
+      if (res.headersSent) return;
+
+      let approved = true;
+      if (feedbackType === 'comment') {
+        const reputation = await feedbackModeration.checkUserReputation(guestIdentifier, event.id);
+        const moderation = await feedbackModeration.moderateText(req.body.comment_text);
+        if (moderation.blocked) {
+          return res.status(400).json({ error: 'Your comment contains words that are not allowed here.', code: 'COMMENT_BLOCKED' });
+        }
+        approved = moderation.approved && (reputation.autoApprove || !settings.moderate_comments);
+      }
+
+      const payload = {
+        feedback_type: feedbackType,
+        color_label: feedbackType === 'color_label' ? 'green' : undefined,
+        // Batch marking is an ensure operation. Repeating it must never turn
+        // an already-selected photo back into an unselected photo.
+        ensure_color_label: feedbackType === 'color_label',
+        comment_text: feedbackType === 'comment' ? req.body.comment_text : undefined,
+        is_approved: approved,
+        identity_mode: settings.identity_mode,
+        guest_name: req.guest?.name ?? req.body.guest_name,
+        guest_email: req.guest?.email ?? req.body.guest_email,
+        guest_id: req.guest?.id ?? null,
+        ip_address: req.ip || req.connection.remoteAddress,
+        user_agent: (req.headers['user-agent'] || '').replace(/[<>&"']/g, '').substring(0, 255),
+        moderate_comments: settings.moderate_comments,
+      };
+      const applied = [];
+      const failed = [];
+      for (const photoId of photoIds) {
+        try {
+          const result = await feedbackService.submitFeedback(photoId, event.id, payload, guestIdentifier);
+          if (result?.guest_missing) failed.push(photoId);
+          else applied.push(photoId);
+        } catch (error) {
+          logger.error('Batch photo feedback failed', { eventId: event.id, photoId, error: error.message });
+          failed.push(photoId);
+        }
+      }
+      await logActivity(`guest_feedback_batch_${feedbackType}`, {
+        photo_ids: applied,
+        failed_photo_ids: failed,
+      }, event.id, { type: 'guest', id: guestIdentifier.substring(0, 16), name: req.guest?.name || req.body.guest_name || 'Anonymous' });
+
+      res.json({
+        success: failed.length === 0,
+        applied_count: applied.length,
+        failed_photo_ids: failed,
+        moderation_required: feedbackType === 'comment' && !approved,
+      });
+    } catch (error) {
+      logger.error('Error submitting batch photo feedback:', error);
+      res.status(500).json({ error: 'Failed to submit batch feedback' });
+    }
+  }
+);
 
 // Get feedback settings for a gallery
 router.get('/:slug/feedback-settings',
@@ -383,8 +511,9 @@ router.post('/:slug/photos/:photoId/feedback',
       res.json({
         success: true,
         ...result,
-        message: feedbackType === 'comment' && !feedbackData.is_approved ?
-          'Your comment has been submitted for moderation' : undefined
+        // The UI owns the localized message. Returning a structured status
+        // instead of English copy prevents API text from bypassing i18n.
+        moderation_required: feedbackType === 'comment' && feedbackData.is_approved === false
       });
     } catch (error) {
       logger.error('Error submitting feedback:', error);

@@ -276,6 +276,18 @@ class FeedbackService {
     return response.data;
   }
 
+  async submitBatchFeedback(slug: string, feedback: {
+    photo_ids: number[];
+    feedback_type: 'comment' | 'color_label';
+    color_label?: ColorLabel;
+    comment_text?: string;
+    guest_name?: string;
+    guest_email?: string;
+  }): Promise<{ success: boolean; applied_count: number; failed_photo_ids: number[]; moderation_required: boolean }> {
+    const response = await api.post(`/gallery/${slug}/photos/batch-feedback`, feedback);
+    return response.data;
+  }
+
   async getGalleryFeedbackSummary(slug: string) {
     const response = await api.get(`/gallery/${slug}/feedback-summary`);
     return response.data;
