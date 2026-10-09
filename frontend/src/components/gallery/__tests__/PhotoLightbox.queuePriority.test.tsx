@@ -6,13 +6,14 @@
  *  - the two neighbours are `prefetch`, so they never take a freed slot ahead
  *    of the image the guest is looking at
  */
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { Photo } from '../../../types';
 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string, d?: unknown) => (typeof d === 'string' ? d : k) }) }));
 vi.mock('../../../hooks/useDevToolsProtection', () => ({ useDevToolsProtection: () => undefined }));
-vi.mock('../../../hooks/useGallery', () => ({ useSavePhotoToDevice: () => ({ mutate: vi.fn(), isPending: false }) }));
+const { downloadPhoto } = vi.hoisted(() => ({ downloadPhoto: vi.fn() }));
+vi.mock('../../../hooks/useGallery', () => ({ useSavePhotoToDevice: () => ({ mutate: downloadPhoto, isPending: false }) }));
 vi.mock('../../../hooks/useFeedbackLimitModal', () => ({ useFeedbackLimitModal: () => ({ modal: null, handleError: () => false }) }));
 vi.mock('../../../contexts/GuestIdentityContext', () => ({ useGuestIdentityOptional: () => null }));
 vi.mock('../../../services/feedback.service', () => ({
@@ -50,5 +51,14 @@ describe('PhotoLightbox image queue priority', () => {
     expect(priorityOf('photo-1')).toBe('high');
     expect(priorityOf('photo-2')).toBe('prefetch');
     expect(priorityOf('photo-3')).toBe('prefetch');
+  });
+
+  it('does not download the open photo when D is pressed', () => {
+    downloadPhoto.mockClear();
+    render(<PhotoLightbox photos={photos} initialIndex={1} onClose={vi.fn()} slug="g" allowDownloads />);
+
+    fireEvent.keyDown(document, { key: 'd' });
+
+    expect(downloadPhoto).not.toHaveBeenCalled();
   });
 });

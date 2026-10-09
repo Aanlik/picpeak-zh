@@ -6,6 +6,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { differenceInDays, parseISO } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { toast as toastify } from 'react-toastify';
 
 import { Button } from '../common';
 import { GallerySkeleton } from './GallerySkeleton';
@@ -49,6 +50,7 @@ import { usePublicSettings } from '../../hooks/usePublicSettings';
 import type { Photo } from '../../types';
 import { GALLERY_THEME_PRESETS } from '../../types/theme.types';
 import { useQueryClient } from '@tanstack/react-query';
+import { getDownloadableSelectedPhotoIds } from './downloadSelection';
 
 interface GalleryViewProps {
   slug: string;
@@ -746,7 +748,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   };
 
   const handleDownloadSelected = async () => {
-    if (selectedPhotos.size === 0) return;
+    const selectedPhotoIds = getDownloadableSelectedPhotoIds(filteredPhotos, selectedPhotos);
+    if (selectedPhotoIds.length === 0) return;
 
     // Prevent downloads if gallery is expired or downloads disabled
     if (!allowDownloads) {
@@ -757,26 +760,22 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     // as the grid's own control, rather than silently downloading at the
     // gallery standard.
     if (downloadChoices.length > 1) {
-      setResolutionPickerIds(Array.from(selectedPhotos));
+      setResolutionPickerIds(selectedPhotoIds);
       return;
     }
 
-    const selectedPhotosList = filteredPhotos.filter(p => selectedPhotos.has(p.id));
-    
-    // Track bulk download
-    analyticsService.trackGalleryEvent('bulk_download', {
-      gallery: slug,
-      photo_count: selectedPhotos.size
-    });
-    
-    // Download each selected photo
-    for (const photo of selectedPhotosList) {
-      await galleryService.downloadPhoto(slug, photo.id, photo.filename);
+    toastify.info(t('gallery.downloading', { count: selectedPhotoIds.length }));
+    try {
+      await galleryService.downloadSelectedPhotos(slug, selectedPhotoIds);
+      analyticsService.trackGalleryEvent('bulk_download', {
+        gallery: slug,
+        photo_count: selectedPhotoIds.length,
+      });
+      setSelectedPhotos(new Set());
+      setIsSelectionMode(false);
+    } catch {
+      toastify.error(t('gallery.downloadError'));
     }
-    
-    // Clear selection after download
-    setSelectedPhotos(new Set());
-    setIsSelectionMode(false);
   };
 
   // "Download these N" (#1074) — the payoff of the people filter.

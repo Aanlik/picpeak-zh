@@ -268,12 +268,6 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
         case '_':
           handleZoomOut();
           break;
-        case 'd':
-        case 'D':
-          if (photoAllowsDownload) {
-            handleDownload();
-          }
-          break;
         default: {
           // Proofing shortcuts (#1044). Resolved from the event's keybind
           // scheme so 1/2/3 mean colours in colour-only mode and stars in
