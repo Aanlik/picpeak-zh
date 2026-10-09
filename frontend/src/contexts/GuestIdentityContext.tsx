@@ -4,7 +4,11 @@ import { guestsService, GuestIdentity } from '../services/guests.service';
 import {
   GUEST_IDENTITY_CLEARED_EVENT,
   clearGuestIdentity,
+  activateGuestRole,
+  getGuestRoles,
   getGuestIdentity,
+  removeGuestRole,
+  type SavedGuestRole,
   storeGuestIdentity,
 } from '../utils/guestIdentityStorage';
 
@@ -13,6 +17,7 @@ type IdentityMode = 'simple' | 'guest';
 interface GuestIdentityContextValue {
   slug: string;
   identity: GuestIdentity | null;
+  savedRoles: Array<{ guest: GuestIdentity }>;
   identityMode: IdentityMode;
   isRequired: boolean;            // true when mode='guest' AND no identity yet
   promptOpen: boolean;
@@ -35,6 +40,7 @@ interface GuestIdentityContextValue {
    * name and selections. This is the non-destructive way out.
    */
   signOut: () => void;
+  switchRole: (guestId: number) => void;
   /**
    * Used by feedback components. Returns the current identity, or opens the
    * prompt and waits until the user registers (or cancels, in which case it
@@ -58,6 +64,7 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const [identity, setIdentity] = useState<GuestIdentity | null>(() => getGuestIdentity(slug));
+  const [savedRoles, setSavedRoles] = useState<SavedGuestRole[]>(() => getGuestRoles(slug));
   const [promptOpen, setPromptOpen] = useState(false);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
 
@@ -68,6 +75,7 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
   // Rehydrate identity when slug changes.
   useEffect(() => {
     setIdentity(getGuestIdentity(slug));
+    setSavedRoles(getGuestRoles(slug));
   }, [slug]);
 
   // Keep tabs in step. The identity now lives in localStorage, which is shared
@@ -85,6 +93,7 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
     const adopt = () => {
       const next = getGuestIdentity(slug);
       setIdentity(next);
+      setSavedRoles(getGuestRoles(slug));
       if (next) {
         // A caller may be parked on the prompt waiting for ensureIdentity().
         // Another tab just answered the question, so complete them exactly as
@@ -233,6 +242,7 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
       const response = await guestsService.registerGuest(slug, { name, email });
       storeGuestIdentity(slug, response.guest, response.token);
       setIdentity(response.guest);
+      setSavedRoles(getGuestRoles(slug));
       setPromptOpen(false);
       // Resolve pending ensureIdentity() promises.
       pendingResolvers.current.forEach((r) => r(response.guest));
@@ -255,6 +265,7 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
       const response = await guestsService.verifyRecoveryCode(slug, email, code);
       storeGuestIdentity(slug, response.guest, response.token);
       setIdentity(response.guest);
+      setSavedRoles(getGuestRoles(slug));
       setPromptOpen(false);
       setRecoveryOpen(false);
       pendingResolvers.current.forEach((r) => r(response.guest));
@@ -273,13 +284,26 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
     } catch {
       // Best-effort. Clear local state regardless.
     }
+    if (identity) removeGuestRole(slug, identity.id);
     clearGuestIdentity(slug);
     setIdentity(null);
+    setSavedRoles(getGuestRoles(slug));
   }, [slug, identity]);
 
   const signOut = useCallback((): void => {
     clearGuestIdentity(slug);
     setIdentity(null);
+  }, [slug]);
+
+  const switchRole = useCallback((guestId: number): void => {
+    const next = activateGuestRole(slug, guestId);
+    if (!next) return;
+    setIdentity(next);
+    setSavedRoles(getGuestRoles(slug));
+    setPromptOpen(false);
+    pendingResolvers.current.forEach((r) => r(next));
+    pendingResolvers.current = [];
+    pendingRejecters.current = [];
   }, [slug]);
 
   const ensureIdentity = useCallback(async (): Promise<GuestIdentity> => {
@@ -320,6 +344,7 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
     () => ({
       slug,
       identity,
+      savedRoles: savedRoles.map(({ guest }) => ({ guest })),
       identityMode,
       isRequired,
       promptOpen,
@@ -333,11 +358,13 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
       recoverVerify,
       forget,
       signOut,
+      switchRole,
       ensureIdentity,
     }),
     [
       slug,
       identity,
+      savedRoles,
       identityMode,
       isRequired,
       promptOpen,
@@ -351,6 +378,7 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
       recoverVerify,
       forget,
       signOut,
+      switchRole,
       ensureIdentity,
     ]
   );

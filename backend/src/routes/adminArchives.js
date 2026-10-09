@@ -16,6 +16,7 @@ const { sanitizeForZipEntry } = require('../utils/filenameSanitizer');
 const { getPagination } = require('../utils/routeHelpers');
 const { ALLOWED_MEDIA_TYPES, ALLOWED_VIDEO_TYPES } = require('../utils/fileSecurityUtils');
 const { toIso } = require('../utils/dateNormalize');
+const { restoreWorkflowStage } = require('../services/photographyWorkflowBridge');
 const router = express.Router();
 
 /**
@@ -605,6 +606,11 @@ router.post('/:id/restore', adminAuth, requirePermission('archives.restore'), re
         archived_at: null,
         expires_at: thirtyDaysFromNow.toISOString() // Reset expiration - works on both DBs
       });
+
+    const workflowRestore = await restoreWorkflowStage(archive.id).catch(() => null);
+    if (workflowRestore && workflowRestore.status !== 200 && workflowRestore.status !== 404) {
+      logger.warn(`Bridge workflow state restore failed for event ${archive.id}: HTTP ${workflowRestore.status}`);
+    }
 
     // Log activity
     await db('activity_logs').insert({

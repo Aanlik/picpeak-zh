@@ -1120,12 +1120,15 @@
       "emailPlaceholder": "you@example.com",
       "submit": "Continue",
       "returningHint": "Been here before? Your earlier picks are still saved.",
-      "recoverPicks": "Get them back"
+      "recoverPicks": "Get them back",
+      "savedRoles": "Saved pickers",
+      "currentRole": "Current"
     },
     "footer": {
       "forgetMeConfirm": "Your name and selections will be removed from this gallery.",
       "forgetMe": "Forget me ({{name}})",
       "notYou": "Not you?",
+      "managePickers": "Switch/add picker",
       "socials": "Social media"
     },
     "photosCount_one": "{{count}} photo",
@@ -5523,6 +5526,14 @@
     "selectionAdded": "Added to the retouch list",
     "selectionRemoved": "Removed from the retouch list",
     "deliveredSelectionRemoved": "Retouching selection withdrawn. The delivered photo remains in the gallery.",
+    "withdrawTitle": "Withdraw this retouch selection",
+    "withdrawDescription": "Choose what to do with the retouched photo that was already delivered.",
+    "deleteDeliveredOption": "Delete the retouched photo, restore the proof, and return it to selection",
+    "keepDeliveredOption": "Keep the retouched photo and return it to selection",
+    "deliveredDeleted": "The retouched photo was deleted and the proof restored. It is back in selection.",
+    "deliveredKept": "The retouched photo was kept and returned to selection.",
+    "keptForOtherParticipant": "Another picker still has this photo selected for retouching.",
+    "withdrawFailed": "The withdrawal could not be completed. Ask the photographer to check the project.",
     "cancelDeliveredConfirm": "This stops future automatic retouch uploads for this photo. The delivered version stays in the gallery. Continue?",
     "selectionFailed": "Could not update the selection. Try again.",
     "selectionSubmitting": "Submitting…",

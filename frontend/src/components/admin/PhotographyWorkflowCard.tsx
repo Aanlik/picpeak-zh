@@ -191,13 +191,13 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
       <section className="space-y-2">
         <h4 className="font-medium">{t('photographyWorkflow.photoList')}</h4>
         <div className="max-h-64 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
-          <table className="w-full text-left text-sm">
+          <table className="w-full min-w-[900px] table-fixed text-left text-sm">
             <thead className="sticky top-0 bg-neutral-50 dark:bg-neutral-900"><tr><th className="p-2">{t('photographyWorkflow.filename')}</th><th className="p-2">{t('photographyWorkflow.photoStatus')}</th><th className="p-2">{t('photographyWorkflow.version')}</th><th className="p-2">{t('photographyWorkflow.nextExportFolder')}</th></tr></thead>
             <tbody>{photos.map((photo) => <tr key={photo.photo_id} className="border-t border-neutral-200 dark:border-neutral-700">
-              <td className="max-w-[15rem] truncate p-2" title={photo.error_message || photo.source_filename}>{photo.source_filename}{photo.error_message && <span className="block truncate text-xs text-red-600" title={photo.error_message}>{photo.error_message}</span>}</td>
+              <td className="w-[28%] truncate p-2" title={photo.error_message || photo.source_filename}>{photo.source_filename}{photo.error_message && <span className="block truncate text-xs text-red-600" title={photo.error_message}>{photo.error_message}</span>}</td>
               <td className="p-2"><span>{photo.error ? t('photographyWorkflow.status.error') : photo.cancelled ? t('photographyWorkflow.status.cancelled') : photo.delivered ? t('photographyWorkflow.status.delivered') : photo.ready_for_editing ? t('photographyWorkflow.status.editing') : photo.selected ? t('photographyWorkflow.status.selected') : t('photographyWorkflow.status.proof')}</span>{photo.added_during_editing && <span className="ml-2 inline-block rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">{t('photographyWorkflow.status.additionalSelection')}</span>}</td>
               <td className="p-2">{photo.current_version ? `V${photo.current_version}` : '—'}</td>
-              <td className="max-w-[18rem] truncate p-2 text-xs text-neutral-500" title={photo.next_version_folder}>{photo.next_version_folder || '—'}</td>
+              <td className="w-[34%] truncate p-2 text-xs text-neutral-500" title={photo.next_version_folder}>{photo.next_version_folder || '—'}</td>
             </tr>)}
               {!photos.length && <tr><td colSpan={4} className="p-4 text-center text-neutral-500">{t('photographyWorkflow.noPhotos')}</td></tr>}
             </tbody>

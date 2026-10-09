@@ -39,6 +39,9 @@ vi.mock('../../../contexts/GuestIdentityContext', () => ({
     closePrompt,
     register,
     openRecovery,
+    savedRoles: [],
+    identity: null,
+    switchRole: vi.fn(),
   }),
 }));
 

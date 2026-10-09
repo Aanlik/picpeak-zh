@@ -30,16 +30,18 @@ router.post('/:eventId/upload', verifyGalleryAccess, denySlideshowToken, async (
       return res.status(409).json(photoCapError(photoCap));
     }
 
-    // Ensure temp upload directory exists
+    // Guest uploads run as the application user in the combined NAS image.
+    // /tmp/uploads may have been created by an earlier root entrypoint with
+    // mode 0755, making it unwritable after the process drops privileges.
     const fs = require('fs');
-    const tempUploadDir = '/tmp/uploads/';
-    if (!fs.existsSync(tempUploadDir)) {
-      try {
-        fs.mkdirSync(tempUploadDir, { recursive: true, mode: 0o755 });
-        logger.info('Created temp upload directory:', tempUploadDir);
-      } catch (mkdirErr) {
-        return errorResponse(res, mkdirErr, 500, 'Server configuration error: unable to create upload directory');
-      }
+    const { getStoragePath } = require('../../config/storage');
+    const tempUploadDir = require('path').join(getStoragePath(), 'temp', 'guest-uploads');
+    try {
+      fs.mkdirSync(tempUploadDir, { recursive: true, mode: 0o700 });
+      fs.accessSync(tempUploadDir, fs.constants.W_OK);
+    } catch (mkdirErr) {
+      logger.error('Guest upload staging directory is not writable', { path: tempUploadDir, error: mkdirErr.message });
+      return errorResponse(res, mkdirErr, 500, '服务器无法写入访客上传目录，请检查应用存储目录权限');
     }
 
     // Import multer and photo processing

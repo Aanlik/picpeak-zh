@@ -13,6 +13,15 @@ import { useInputMode } from '../../hooks/useInputMode';
 import type { Photo } from '../../types';
 import { WorkflowPhotoAction } from './WorkflowPhotoAction';
 
+// Shared across mounted photo tiles so a mouse drag can apply the selection
+// state chosen on the first tile to every tile the pointer crosses.
+let dragSelectionTarget: boolean | null = null;
+const dragSelectionAppliedPhotoIds = new Set<number>();
+const endPhotoSelectionDrag = () => {
+  dragSelectionTarget = null;
+  dragSelectionAppliedPhotoIds.clear();
+};
+
 export interface PhotoCardFeedbackOptions {
   allowLikes?: boolean;
   allowFavorites?: boolean;
@@ -272,6 +281,12 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
   const actionIconClass = actionVariant === 'dark' ? 'w-5 h-5 text-white' : 'w-5 h-5 text-neutral-800';
 
   const handlePhotoClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isSelectionMode) {
+      e.preventDefault();
+      e.stopPropagation();
+      onToggleSelect();
+      return;
+    }
     if (isTouchDevice && !overlayVisible && !isSelectionMode) {
       e.preventDefault();
       e.stopPropagation();
@@ -388,8 +403,44 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
       ref={setContainerRef}
       className={className}
       style={lazy ? { ...style, opacity: !inView && fadeInWhenVisible ? 0 : 1 } : style}
-      onClick={handlePhotoClick}
       {...containerProps}
+      onClick={handlePhotoClick}
+      onPointerDown={(event) => {
+        if (isSelectionMode && event.pointerType === 'mouse' && event.button === 0) {
+          dragSelectionTarget = !isSelected;
+          dragSelectionAppliedPhotoIds.clear();
+          // Let the initial tile's click handler apply its toggle once. The
+          // drag path only applies the same target state to crossed tiles.
+          dragSelectionAppliedPhotoIds.add(photo.id);
+          window.addEventListener('pointerup', endPhotoSelectionDrag, { once: true });
+          window.addEventListener('pointercancel', endPhotoSelectionDrag, { once: true });
+        }
+        containerProps?.onPointerDown?.(event);
+      }}
+      onPointerEnter={(event) => {
+        if (
+          isSelectionMode && event.pointerType === 'mouse' && (event.buttons & 1) === 1 &&
+          dragSelectionTarget !== null && !dragSelectionAppliedPhotoIds.has(photo.id)
+        ) {
+          dragSelectionAppliedPhotoIds.add(photo.id);
+          if (isSelected !== dragSelectionTarget) onToggleSelect();
+        }
+        containerProps?.onPointerEnter?.(event);
+      }}
+      onPointerMove={(event) => {
+        if (
+          isSelectionMode && event.pointerType === 'mouse' && (event.buttons & 1) === 1 &&
+          dragSelectionTarget !== null && !dragSelectionAppliedPhotoIds.has(photo.id)
+        ) {
+          dragSelectionAppliedPhotoIds.add(photo.id);
+          if (isSelected !== dragSelectionTarget) onToggleSelect();
+        }
+        containerProps?.onPointerMove?.(event);
+      }}
+      onPointerUp={(event) => {
+        endPhotoSelectionDrag();
+        containerProps?.onPointerUp?.(event);
+      }}
     >
       {inView && tile ? (
         <>

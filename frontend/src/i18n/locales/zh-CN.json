@@ -1120,12 +1120,15 @@
       "emailPlaceholder": "you@example.com",
       "submit": "继续",
       "returningHint": "您之前的选片记录仍然保留",
-      "recoverPicks": "恢复之前的选片"
+      "recoverPicks": "恢复之前的选片",
+      "savedRoles": "已有选片人",
+      "currentRole": "当前"
     },
     "footer": {
       "forgetMeConfirm": "这将移除您在该相册中的姓名和选片记录",
       "forgetMe": "移除我的记录（{{name}}）",
       "notYou": "不是您本人？",
+      "managePickers": "切换/新增选片人",
       "socials": "社交媒体"
     },
     "photosCount_one": "{{count}} 张照片",
@@ -5523,6 +5526,14 @@
     "selectionAdded": "已加入精修清单",
     "selectionRemoved": "已从精修清单移除",
     "deliveredSelectionRemoved": "已撤回精修选择；已交付成片仍保留在相册中。",
+    "withdrawTitle": "撤回这张照片的精修选择",
+    "withdrawDescription": "请选择如何处理已经交付的精修照片。",
+    "deleteDeliveredOption": "删除精修成片，恢复原片并退回待选片",
+    "keepDeliveredOption": "保留精修成片，退回待选片",
+    "deliveredDeleted": "已删除精修成片并恢复原片，这张照片已退回待选片。",
+    "deliveredKept": "已保留精修成片并退回待选片。",
+    "keptForOtherParticipant": "其他选片人仍保留了这张照片的精修选择。",
+    "withdrawFailed": "撤回未完成，请联系摄影师检查项目状态。",
     "cancelDeliveredConfirm": "撤回后会停止这张照片后续的自动精修和返修流程；已交付成片仍保留在相册中。要继续吗？",
     "selectionFailed": "选片提交失败，请稍后重试。",
     "selectionSubmitting": "正在提交…",

@@ -5,7 +5,7 @@ const profilePath = require.resolve('../../src/utils/communicationProfile');
 function load(value) { process.env.NO_EMAIL_MODE = value; delete require.cache[profilePath]; return require(profilePath); }
 test('nested profile projection retains photos and original values', () => {
   const p = load('true'); const input = { flags: { messaging: true, galleries: true }, settings: { require_name_email: true, identity_mode: 'guest' }, photos: [{ id: 1 }] };
-  const result = p.project(input); assert.deepEqual(result.flags, { messaging: false, galleries: true }); assert.deepEqual(result.settings, { require_name_email: false, identity_mode: 'simple' }); assert.equal(input.flags.messaging, true); assert.deepEqual(result.photos, input.photos);
+  const result = p.project(input); assert.deepEqual(result.flags, { messaging: false, galleries: true }); assert.deepEqual(result.settings, { require_name_email: false, identity_mode: 'guest' }); assert.equal(input.flags.messaging, true); assert.deepEqual(result.photos, input.photos);
 });
 test('email endpoint blocked', () => {
   const p = load('true'); let status; let called = false; p.middleware({ path: '/admin/email/send' }, { status(v) { status = v; return this; }, json() {} }, () => { called = true; }); assert.equal(status, 409); assert.equal(called, false);

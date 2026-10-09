@@ -78,6 +78,13 @@ async function getUseOriginalFilenames() {
  * never populated).
  */
 function pickRawDownloadName(photo, useOriginal) {
+  const bridgeName = photo && typeof photo.original_filename === 'string'
+    ? photo.original_filename.replace(/\.__bridge_[a-f0-9]{64}(?=\.[^.]+$)/i, '')
+    : null;
+  // Bridge's marker is only for upload reconciliation. Never expose it in a
+  // customer download, even when the global original-filename preference is
+  // disabled for ordinary uploads.
+  if (bridgeName && bridgeName !== photo.original_filename) return bridgeName;
   if (useOriginal && photo && photo.original_filename) {
     return photo.original_filename;
   }

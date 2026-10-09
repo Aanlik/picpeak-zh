@@ -294,4 +294,30 @@ describe('PhotoCard overlay hit-testing (#1263)', () => {
     fireEvent.click(container.querySelector('.tile')!);
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  it('toggles a photo instead of opening its preview in batch-selection mode', () => {
+    const onClick = vi.fn();
+    const onToggleSelect = vi.fn();
+    const { container } = renderCard({ isSelectionMode: true, onClick, onToggleSelect });
+    fireEvent.click(container.querySelector('.tile')!);
+    expect(onToggleSelect).toHaveBeenCalledTimes(1);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('selects tiles crossed by a mouse drag in batch-selection mode', () => {
+    const onToggleFirst = vi.fn();
+    const onToggleSecond = vi.fn();
+    const first = renderCard({ isSelectionMode: true, onToggleSelect: onToggleFirst });
+    const second = renderCard({ isSelectionMode: true, onToggleSelect: onToggleSecond, photo: { ...PHOTO, id: 8 } as Photo });
+    const firstTile = first.container.querySelector('.tile')!;
+    const secondTile = second.container.querySelector('.tile')!;
+    const down = Object.assign(new Event('pointerdown', { bubbles: true }), { pointerType: 'mouse', button: 0 });
+    const move = Object.assign(new Event('pointermove', { bubbles: true }), { pointerType: 'mouse', buttons: 1 });
+    act(() => {
+      firstTile.dispatchEvent(down);
+      secondTile.dispatchEvent(move);
+    });
+    expect(onToggleSecond).toHaveBeenCalledTimes(1);
+    window.dispatchEvent(new Event('pointerup'));
+  });
 });

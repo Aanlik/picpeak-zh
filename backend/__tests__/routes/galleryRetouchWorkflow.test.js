@@ -65,14 +65,14 @@ describe('gallery retouch workflow and client requests', () => {
     expect(result.body.photos).toEqual([expect.objectContaining({ photo_id: visiblePhoto, state: 'delivered', current_version: 2 })]);
   });
 
-  it('shows a withdrawn selection while keeping the delivered result available', async () => {
+  it('returns a kept delivered image to the proof queue without marking it as a revision request', async () => {
     global.fetch = jest.fn(async () => ({
       status: 200,
       json: async () => ({ event_id: eventId, photos: [bridgePhoto(visiblePhoto, true, true)] }),
     }));
     const result = await get(`/api/gallery/${slug}/retouch-workflow`);
     expect(result.status).toBe(200);
-    expect(result.body.photos[0]).toMatchObject({ state: 'delivered', selection_cancelled: true, delivered: true });
+    expect(result.body.photos[0]).toMatchObject({ state: 'proof', selection_cancelled: false, delivered: true });
     global.fetch = jest.fn(async (url) => ({
       status: 200,
       json: async () => String(url).includes('/version-folder')

@@ -27,6 +27,12 @@ import type { GuestIdentity } from '../services/guests.service';
 
 const TOKEN_KEY_PREFIX = 'guest_token_';
 const IDENTITY_KEY_PREFIX = 'guest_identity_';
+const ROLES_KEY_PREFIX = 'guest_roles_';
+
+export interface SavedGuestRole {
+  guest: GuestIdentity;
+  token: string;
+}
 
 /** Same-tab counterpart to the native cross-tab `storage` event. */
 export const GUEST_IDENTITY_CLEARED_EVENT = 'picpeak:guest-identity-cleared';
@@ -241,6 +247,7 @@ export function storeGuestIdentity(slug: string, identity: GuestIdentity, token:
   const storage = getStorage();
   if (!storage || !slug) return;
   const identityRaw = JSON.stringify(identity);
+  saveGuestRole(slug, identity, token);
 
   if (writePair(storage, slug, identityRaw, token)) {
     // A fresh registration supersedes anything the secondary store holds.
@@ -271,6 +278,60 @@ export function storeGuestIdentity(slug: string, identity: GuestIdentity, token:
   // Otherwise no store will take it. The identity lasts as long as this page
   // does, which is strictly better than rejecting a registration the server
   // has already completed.
+}
+
+function saveGuestRole(slug: string, identity: GuestIdentity, token: string): void {
+  const storage = getStorage();
+  if (!storage || !slug) return;
+  try {
+    const key = `${ROLES_KEY_PREFIX}${slug}`;
+    const current = JSON.parse(storage.getItem(key) || '[]') as SavedGuestRole[];
+    const roles = Array.isArray(current) ? current.filter((role) => role?.guest?.id !== identity.id) : [];
+    roles.push({ guest: identity, token });
+    storage.setItem(key, JSON.stringify(roles.slice(-10)));
+  } catch {
+    // Active identity remains usable even if the browser cannot keep role history.
+  }
+}
+
+export function getGuestRoles(slug: string): SavedGuestRole[] {
+  const storage = getStorage();
+  if (!storage || !slug) return [];
+  try {
+    const saved = JSON.parse(storage.getItem(`${ROLES_KEY_PREFIX}${slug}`) || '[]') as SavedGuestRole[];
+    const roles = Array.isArray(saved)
+      ? saved.filter((role) => role?.guest && typeof role.token === 'string' && !isExpired(role.token))
+      : [];
+    const active = getGuestToken(slug);
+    const profile = getGuestIdentity(slug);
+    if (active && profile && !roles.some((role) => role.guest.id === profile.id)) {
+      roles.push({ guest: profile, token: active });
+      storage.setItem(`${ROLES_KEY_PREFIX}${slug}`, JSON.stringify(roles.slice(-10)));
+    }
+    return roles;
+  } catch {
+    return [];
+  }
+}
+
+export function activateGuestRole(slug: string, guestId: number): GuestIdentity | null {
+  const role = getGuestRoles(slug).find((item) => item.guest.id === guestId);
+  const storage = getStorage();
+  if (!role || !storage || !writePair(storage, slug, JSON.stringify(role.guest), role.token)) return null;
+  if (isBrowser) {
+    try { window.dispatchEvent(new CustomEvent(GUEST_IDENTITY_CLEARED_EVENT, { detail: { slug } })); } catch { /* optional browser event */ }
+  }
+  return role.guest;
+}
+
+export function removeGuestRole(slug: string, guestId: number): void {
+  const storage = getStorage();
+  if (!storage || !slug) return;
+  try {
+    const key = `${ROLES_KEY_PREFIX}${slug}`;
+    const roles = JSON.parse(storage.getItem(key) || '[]') as SavedGuestRole[];
+    storage.setItem(key, JSON.stringify(Array.isArray(roles) ? roles.filter((role) => role.guest?.id !== guestId) : []));
+  } catch { /* best-effort role cleanup */ }
 }
 
 export function getGuestToken(slug?: string | null): string | null {

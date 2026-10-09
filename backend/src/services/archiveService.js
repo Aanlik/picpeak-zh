@@ -13,10 +13,24 @@ const { getStorage } = require('./storage');
 const { resolvePhotoStorageKey } = require('./photoResolver');
 const { getUseOriginalFilenames } = require('./downloadFilenameService');
 const { createArchiveStreamGuard } = require('../utils/archiveStreamGuard');
+const { bridgeConfig, getProjectDetail, setWorkflowStage } = require('./photographyWorkflowBridge');
 const {
   sanitizeForZipEntry,
   uniquifyZipNames,
 } = require('../utils/filenameSanitizer');
+
+function filterDeliveredPhotoEntries(event, photos, deliveredPhotoIds, entries) {
+  if (!deliveredPhotoIds) return entries;
+  const keys = new Set();
+  for (const photo of photos) {
+    if (!deliveredPhotoIds.has(Number(photo.id))) continue;
+    try {
+      const key = resolvePhotoStorageKey(event, photo);
+      if (key) keys.add(key);
+    } catch { /* external references are not stored in PicPeak */ }
+  }
+  return entries.filter((entry) => keys.has(entry.key));
+}
 
 async function archiveEvent(event) {
   const storage = getStorage();
@@ -28,6 +42,20 @@ async function archiveEvent(event) {
   const tmpArchive = path.join(tmpDir, `${crypto.randomBytes(4).toString('hex')}-${archiveName}`);
 
   try {
+    // A Bridge-managed project archives only its current delivered images.
+    // Original RAW/Proof assets remain in the photographer's NAS project tree;
+    // they must not inflate the customer download archive.
+    let deliveredPhotoIds = null;
+    if (bridgeConfig()) {
+      const workflow = await getProjectDetail(event.id);
+      if (workflow.status === 200 && Array.isArray(workflow.data?.photos)) {
+        deliveredPhotoIds = new Set(workflow.data.photos
+          .filter((photo) => photo.delivered)
+          .map((photo) => Number(photo.photo_id)));
+      } else if (workflow.status !== 404) {
+        throw new Error(`无法读取精修交付状态，已停止归档以避免打包错误内容（${workflow.status}）`);
+      }
+    }
     // Photos manifest — the gallery filenames are renamed on upload, so
     // `original_filename` (and category linkage) can't be derived from the
     // extracted files alone. Persisting a manifest inside the archive lets a
@@ -35,7 +63,7 @@ async function archiveEvent(event) {
     // filename for archives produced before this lands (see restore path).
     let photosManifestEntry = null;
     try {
-      const manifestRows = await db('photos')
+      let manifestQuery = db('photos')
         .leftJoin('photo_categories', 'photos.category_id', 'photo_categories.id')
         .where('photos.event_id', event.id)
         .select(
@@ -52,6 +80,12 @@ async function archiveEvent(event) {
           'photos.uploaded_at',
           'photo_categories.name as category_name',
         );
+      if (deliveredPhotoIds) {
+        manifestQuery = deliveredPhotoIds.size
+          ? manifestQuery.whereIn('photos.id', [...deliveredPhotoIds])
+          : manifestQuery.whereRaw('1 = 0');
+      }
+      const manifestRows = await manifestQuery;
       if (manifestRows.length > 0) {
         photosManifestEntry = {
           name: 'photos_manifest.json',
@@ -97,7 +131,11 @@ async function archiveEvent(event) {
 
     // Stream every photo (and any other content under events/active/{slug}/) into
     // the zip directly from the storage backend.
-    const photoEntries = await storage.list(eventPrefix);
+    let photoEntries = await storage.list(eventPrefix);
+    if (deliveredPhotoIds) {
+      const eventPhotos = await db('photos').where('event_id', event.id).select('*');
+      photoEntries = filterDeliveredPhotoEntries(event, eventPhotos, deliveredPhotoIds, photoEntries);
+    }
 
     // #493: optionally rename zip entries to use original camera filenames.
     // Build a Map<storage_key, original_filename> from the photos table so we
@@ -175,6 +213,13 @@ async function archiveEvent(event) {
 
     // Upload the finalized zip to the storage backend.
     await storage.putFromFile(archiveRelKey, tmpArchive, { contentType: 'application/zip' });
+
+    if (deliveredPhotoIds) {
+      const stageResult = await setWorkflowStage(event.id, 'ARCHIVED').catch(() => null);
+      if (stageResult?.status !== 200) {
+        logger.warn(`Bridge project ${event.id} could not be marked ARCHIVED (status ${stageResult?.status || 'unavailable'})`);
+      }
+    }
 
     logger.info(`Archive created: ${archiveName} (${totalBytes} bytes)`);
 
@@ -328,4 +373,4 @@ function convertToCSV(data) {
   return [csvHeaders, ...csvRows].join('\n');
 }
 
-module.exports = { archiveEvent };
+module.exports = { archiveEvent, filterDeliveredPhotoEntries };

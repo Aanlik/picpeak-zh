@@ -15,6 +15,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   __resetStorageResolutionForTests,
   clearGuestIdentity,
+  activateGuestRole,
+  getGuestRoles,
   getGuestIdentity,
   getGuestToken,
   storeGuestIdentity,
@@ -67,6 +69,17 @@ describe('guest identity persistence (#1265)', () => {
     expect(getGuestToken(SLUG)).toBe(TOKEN);
     expect(getGuestToken('other-gallery')).toBe('other.token');
     expect(getGuestIdentity('other-gallery')).toMatchObject({ id: 7 });
+  });
+
+  it('keeps named picker roles and switches the active feedback identity', () => {
+    const second = { ...IDENTITY, id: 43, name: 'Leo', email: null };
+    const secondToken = tokenExpiringIn(3600);
+    storeGuestIdentity(SLUG, IDENTITY as never, TOKEN);
+    storeGuestIdentity(SLUG, second as never, secondToken);
+
+    expect(getGuestRoles(SLUG).map(({ guest }) => guest.name)).toEqual(['Tina', 'Leo']);
+    expect(activateGuestRole(SLUG, 42)).toMatchObject({ id: 42, name: 'Tina' });
+    expect(getGuestToken(SLUG)).toBe(TOKEN);
   });
 
   describe('migration from the pre-#1265 sessionStorage location', () => {

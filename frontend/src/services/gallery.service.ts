@@ -116,6 +116,18 @@ export const galleryService = {
     await api.delete(`/gallery/${slug}/retouch-requests/${requestId}`);
   },
 
+  async withdrawRetouchSelection(slug: string, photoId: number, deleteDelivered: boolean): Promise<{
+    success: boolean;
+    deleted?: boolean;
+    kept_for_other_participant?: boolean;
+    current_version?: number;
+  }> {
+    const response = await api.post(`/gallery/${slug}/photos/${photoId}/withdraw-selection`, {
+      delete_delivered: deleteDelivered,
+    });
+    return response.data;
+  },
+
   // Get gallery photos (requires auth)
   async getGalleryPhotos(
     slug: string,

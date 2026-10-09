@@ -835,9 +835,9 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
                   <button
                     type="button"
                     className="text-xs text-muted-theme hover:text-theme transition-colors"
-                    onClick={() => guestIdentity.signOut()}
+                    onClick={() => guestIdentity.openPrompt()}
                   >
-                    {t('gallery.footer.notYou', 'Not you?')}
+                    {t('gallery.footer.managePickers', '切换/新增选片人')}
                   </button>
                 </>
               )}

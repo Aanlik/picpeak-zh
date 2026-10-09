@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocalizedDate } from '../hooks/useLocalizedDate';
 import { usePublicSettings } from '../hooks/usePublicSettings';
 
-import { Card, CardContent, Input, Button, ReCaptcha, CMSContentBlock, PoweredBy } from '../components/common';
+import { Card, CardContent, Input, Button, ReCaptcha, PoweredBy } from '../components/common';
 import { useGalleryAuth, useTheme } from '../contexts';
 import { useGalleryInfo } from '../hooks/useGallery';
 import { GalleryView } from '../components/gallery';
@@ -344,16 +344,20 @@ export const GalleryPage: React.FC = () => {
     return <PasswordChangeRequiredNotice reason="session" />;
   }
 
-  // Gallery missing / archived / expired-link / unresolvable identifier all
-  // collapse into the customisable "gallery-not-found" CMS page (#324).
-  // Admins can edit the title, body, and logo from the CMS Pages tab; the
-  // seeded default copy is intentionally generic so any of those reasons
-  // reads correctly.
+  // A missing/expired gallery is a customer-facing state, so use the active
+  // locale here instead of the English-only CMS seed content.
   if (
     (identifierError && !resolvedSlug && !isResolvingIdentifier) ||
     infoError
   ) {
-    return <CMSContentBlock slug="gallery-not-found" />;
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6 text-center" style={{ backgroundColor: 'var(--color-background, #fafafa)' }}>
+        <div className="max-w-md">
+          <h1 className="text-2xl font-semibold text-theme">{t('errors.galleryNotFound', 'Gallery Not Found')}</h1>
+          <p className="mt-3 text-muted-theme">{t('errors.galleryNotFoundMessage', 'This gallery does not exist or has been removed.')}</p>
+        </div>
+      </div>
+    );
   }
 
   // Show expired state

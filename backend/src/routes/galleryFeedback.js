@@ -17,7 +17,7 @@ const {
   sanitizeComment
 } = require('../utils/feedbackValidation');
 const validator = require('validator');
-const { getPublicPhotoStates } = require('../services/photographyWorkflowBridge');
+const { getPublicPhotoStates, triggerWorkflowSync } = require('../services/photographyWorkflowBridge');
 const { NO_EMAIL_MODE } = require('../utils/communicationProfile');
 
 async function workflowSelectionIsEnabled(eventId) {
@@ -147,6 +147,7 @@ router.post('/:slug/photos/batch-feedback',
         failed_photo_ids: failed,
         moderation_required: feedbackType === 'comment' && !approved,
       });
+      if (feedbackType === 'color_label' && applied.length) void triggerWorkflowSync(event.id);
     } catch (error) {
       logger.error('Error submitting batch photo feedback:', error);
       res.status(500).json({ error: 'Failed to submit batch feedback' });
@@ -529,6 +530,7 @@ router.post('/:slug/photos/:photoId/feedback',
         // instead of English copy prevents API text from bypassing i18n.
         moderation_required: feedbackType === 'comment' && feedbackData.is_approved === false
       });
+      if (feedbackType === 'color_label') void triggerWorkflowSync(event.id);
     } catch (error) {
       logger.error('Error submitting feedback:', error);
       res.status(500).json({ error: 'Failed to submit feedback' });

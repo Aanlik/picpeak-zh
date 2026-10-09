@@ -6,6 +6,7 @@ import { useGuestIdentity } from '../../contexts/GuestIdentityContext';
 
 interface GuestNamePromptModalProps {
   requireEmail?: boolean;
+  hideEmail?: boolean;
   allowCancel?: boolean;
   onCancel?: () => void;
 }
@@ -20,11 +21,12 @@ interface GuestNamePromptModalProps {
  */
 export const GuestNamePromptModal: React.FC<GuestNamePromptModalProps> = ({
   requireEmail = false,
+  hideEmail = false,
   allowCancel = true,
   onCancel,
 }) => {
   const { t } = useTranslation();
-  const { promptOpen, closePrompt, register, openRecovery } = useGuestIdentity();
+  const { promptOpen, closePrompt, register, openRecovery, savedRoles, identity, switchRole } = useGuestIdentity();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -106,19 +108,35 @@ export const GuestNamePromptModal: React.FC<GuestNamePromptModalProps> = ({
             required
             maxLength={100}
           />
-          <Input
-            type="email"
-            label={
-              requireEmail
+          {!hideEmail && <Input
+              type="email"
+              label={requireEmail
                 ? t('gallery.guestPrompt.emailLabelRequired', 'Email')
-                : t('gallery.guestPrompt.emailLabel', 'Email (optional)')
-            }
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={errors.email}
-            placeholder={t('gallery.guestPrompt.emailPlaceholder', 'you@example.com')}
-            maxLength={255}
-          />
+                : t('gallery.guestPrompt.emailLabel', 'Email (optional)')}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={errors.email}
+              placeholder={t('gallery.guestPrompt.emailPlaceholder', 'you@example.com')}
+              maxLength={255}
+            />}
+
+          {savedRoles.length > 0 && (
+            <div className="space-y-2 rounded-lg border border-surface p-3">
+              <p className="text-sm font-medium text-theme">{t('gallery.guestPrompt.savedRoles', '已有选片人')}</p>
+              <div className="flex flex-wrap gap-2">
+                {savedRoles.map(({ guest }) => (
+                  <Button
+                    key={guest.id}
+                    type="button"
+                    variant={identity?.id === guest.id ? 'primary' : 'outline'}
+                    size="sm"
+                    disabled={submitting || identity?.id === guest.id}
+                    onClick={() => switchRole(guest.id)}
+                  >{guest.name}{identity?.id === guest.id ? ` · ${t('gallery.guestPrompt.currentRole', '当前')}` : ''}</Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {submitError && (
             <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded px-3 py-2">
@@ -157,7 +175,7 @@ export const GuestNamePromptModal: React.FC<GuestNamePromptModalProps> = ({
               this block would render dark grey on a dark surface. The rest of
               the modal uses text-theme / text-muted-theme for exactly this
               reason. */}
-          <div
+          {!hideEmail && <div
             className="pt-3 mt-1 border-t text-center"
             style={{ borderColor: 'var(--color-surface-border, #e5e5e5)' }}
           >
@@ -177,7 +195,7 @@ export const GuestNamePromptModal: React.FC<GuestNamePromptModalProps> = ({
             >
               {t('gallery.guestPrompt.recoverPicks', 'Get them back')}
             </button>
-          </div>
+          </div>}
         </form>
       </div>
     </div>

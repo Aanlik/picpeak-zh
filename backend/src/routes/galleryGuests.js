@@ -7,6 +7,7 @@ const { verifyGalleryAccess } = require('../middleware/gallery');
 const { resolveGuest, requireGuest, signGuestToken } = require('../middleware/guestAuth');
 const feedbackService = require('../services/feedbackService');
 const guestRecovery = require('../services/guestRecoveryService');
+const { NO_EMAIL_MODE } = require('../utils/communicationProfile');
 
 const MAX_NAME_LEN = 100;
 const MAX_EMAIL_LEN = 255;
@@ -79,7 +80,7 @@ router.post('/:slug/guest', verifyGalleryAccess, async (req, res) => {
     if (email && !EMAIL_REGEX.test(email)) {
       return res.status(400).json({ error: 'Invalid email format', field: 'email' });
     }
-    if (settings.require_name_email && !email) {
+    if (!NO_EMAIL_MODE && settings.require_name_email && !email) {
       return res.status(400).json({ error: 'Email is required', field: 'email' });
     }
 

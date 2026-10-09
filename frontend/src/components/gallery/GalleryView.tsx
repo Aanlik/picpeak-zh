@@ -208,6 +208,18 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   // Fetch photos WITHOUT filter (always get all photos, filter on frontend)
   // This ensures counts are always calculated from the full dataset
   const { data, isLoading, error, refetch } = useGalleryPhotos(slug, 'all', guestId);
+  const { data: feedbackSettings } = useQuery({
+    queryKey: ['gallery-feedback-settings', event.id],
+    queryFn: async () => {
+      try {
+        return await feedbackService.getGalleryFeedbackSettings(slug);
+      } catch (error) {
+        console.error('Error fetching feedback settings:', error);
+        return { feedback_enabled: false };
+      }
+    },
+    enabled: !!event.id,
+  });
   const { data: retouchWorkflow } = useQuery<RetouchWorkflow>({
     queryKey: ['gallery-retouch-workflow', slug],
     queryFn: () => galleryService.getRetouchWorkflow(slug),
@@ -216,6 +228,13 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     refetchInterval: 15000,
     retry: false,
   });
+  // In a retouch workflow, a green marker is a process action rather than a
+  // gallery filter. Clear legacy filter state and keep it from hiding stage
+  // results while the workflow controls are active.
+  useEffect(() => {
+    if (retouchWorkflow?.enabled && activeColorFilters.length > 0) setActiveColorFilters([]);
+  }, [retouchWorkflow?.enabled, activeColorFilters.length]);
+  const effectiveColorFilters = retouchWorkflow?.enabled ? [] : activeColorFilters;
   const retouchByPhotoId = useMemo(() => new Map((retouchWorkflow?.photos || []).map((photo) => [photo.photo_id, photo])), [retouchWorkflow?.photos]);
   const galleryPhotos = useMemo(() => (data?.photos || []).map((photo) => {
     const state = retouchByPhotoId.get(photo.id);
@@ -230,12 +249,14 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
       slideshow_url: versionedRetouchUrl(photo.slideshow_url, version),
       retouch_state: state?.state || 'proof',
       retouch_version: version,
-      retouch_selected: Boolean(state?.selected),
+      retouch_selected: feedbackSettings?.identity_mode === 'shared'
+        ? Boolean(state?.selected)
+        : photo.my_color_label === 'green',
       retouch_selection_cancelled: Boolean(state?.selection_cancelled),
       retouch_added_during_editing: Boolean(state?.added_during_editing),
       retouch_workflow_enabled: true,
     };
-  }), [data?.photos, retouchByPhotoId, retouchWorkflow?.enabled]);
+  }), [data?.photos, retouchByPhotoId, retouchWorkflow?.enabled, feedbackSettings?.identity_mode]);
   const activeRequestPhotoIds = useMemo(() => new Set((retouchWorkflow?.requests || [])
     .filter((request) => !['cancelled', 'completed', 'closed'].includes(request.status))
     .map((request) => request.photo_id)), [retouchWorkflow?.requests]);
@@ -246,13 +267,13 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     editing: galleryPhotos.filter((photo) => photo.retouch_state === 'editing').length,
     delivered: galleryPhotos.filter((photo) => photo.retouch_state === 'delivered').length,
     requests: galleryPhotos.filter((photo) => activeRequestPhotoIds.has(photo.id)).length,
-    cancelled: galleryPhotos.filter((photo) => photo.retouch_selection_cancelled || photo.retouch_state === 'cancelled').length,
+    cancelled: galleryPhotos.filter((photo) => photo.retouch_state === 'cancelled').length,
   }), [galleryPhotos, activeRequestPhotoIds]);
   const workflowSourcePhotos = useMemo(() => {
     if (!retouchWorkflow?.enabled || workflowFilter === 'all') return galleryPhotos;
     return galleryPhotos.filter((photo) => {
       if (workflowFilter === 'requests') return activeRequestPhotoIds.has(photo.id);
-      if (workflowFilter === 'cancelled') return Boolean(photo.retouch_selection_cancelled || photo.retouch_state === 'cancelled');
+      if (workflowFilter === 'cancelled') return photo.retouch_state === 'cancelled';
       return photo.retouch_state === workflowFilter;
     });
   }, [galleryPhotos, activeRequestPhotoIds, retouchWorkflow?.enabled, workflowFilter]);
@@ -362,22 +383,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   }, []);
 
   const { data: settingsData } = usePublicSettings();
-
-  // Fetch feedback settings
-  const { data: feedbackSettings } = useQuery({
-    queryKey: ['gallery-feedback-settings', event.id],
-    queryFn: async () => {
-      try {
-        // Use public endpoint to get feedback settings
-        return await feedbackService.getGalleryFeedbackSettings(slug);
-      } catch (error) {
-        console.error('Error fetching feedback settings:', error);
-        // If endpoint doesn't exist or returns error, default to disabled
-        return { feedback_enabled: false };
-      }
-    },
-    enabled: !!event.id,
-  });
 
   // People in this gallery (#1074).
   //
@@ -714,7 +719,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   const filteredPhotos = useGalleryFiltering({
     sourcePhotos: workflowSourcePhotos, categories: data?.categories, folderId: openFolder?.id ?? null,
     selectedCategoryId, searchTerm, sortBy, sortDesc, watermarkEnabled, slug,
-    activeFilters, activeColorFilters, mediaFilter, isGuestIdentityMode, myFeedbackPhotoIds,
+    activeFilters, activeColorFilters: effectiveColorFilters, mediaFilter, isGuestIdentityMode, myFeedbackPhotoIds,
     selectedPersonIds, peopleMatchAny,
   });
 
@@ -1241,6 +1246,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
             // from my-feedback, not the photo rows (#538) — refresh it too
             // so e.g. a cleared rating (#884) leaves the Rated filter.
             queryClient.invalidateQueries({ queryKey: ['my-feedback', slug] });
+            queryClient.invalidateQueries({ queryKey: ['photo-feedback', slug] });
+            queryClient.invalidateQueries({ queryKey: ['gallery-retouch-workflow', slug] });
           }}
           heroPhotoOverride={staticHeroPhoto}
           feedbackEnabled={feedbackEnabled}
@@ -1317,7 +1324,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   return (
     <GuestIdentityProvider slug={slug} identityMode={identityMode}>
     <>
-      <GuestNamePromptModal requireEmail={!!feedbackSettings?.require_name_email} />
+      <GuestNamePromptModal requireEmail={false} hideEmail />
       <GuestRecoveryModal />
       {/* Sidebar for non-grid layouts */}
       {showSidebar ? (
@@ -1359,8 +1366,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
           likeCount={likeCount}
           favoriteCount={favoriteCount}
           ratedCount={ratedCount}
-          colorLabelsEnabled={!!feedbackSettings?.allow_color_labels}
-          activeColorFilters={activeColorFilters}
+          colorLabelsEnabled={Boolean(feedbackSettings?.allow_color_labels && !retouchWorkflow?.enabled)}
+          activeColorFilters={effectiveColorFilters}
           onColorFilterChange={handleColorFilterToggle}
           colorLabelCounts={colorLabelCounts}
         />
@@ -1564,8 +1571,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
             mediaFilter={mediaFilter}
             onMediaFilterChange={setMediaFilter}
             showMediaFilter={showMediaFilter}
-            colorLabelsEnabled={!!feedbackSettings?.allow_color_labels}
-            activeColorFilters={activeColorFilters}
+            colorLabelsEnabled={Boolean(feedbackSettings?.allow_color_labels && !retouchWorkflow?.enabled)}
+            activeColorFilters={effectiveColorFilters}
             onColorFilterChange={handleColorFilterToggle}
             colorLabelCounts={colorLabelCounts}
           />
@@ -1699,6 +1706,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
               // from my-feedback, not the photo rows (#538) — refresh it too
               // so e.g. a cleared rating (#884) leaves the Rated filter.
               queryClient.invalidateQueries({ queryKey: ['my-feedback', slug] });
+              queryClient.invalidateQueries({ queryKey: ['photo-feedback', slug] });
+              queryClient.invalidateQueries({ queryKey: ['gallery-retouch-workflow', slug] });
             }}
             heroPhotoOverride={staticHeroPhoto}
             feedbackEnabled={feedbackEnabled}

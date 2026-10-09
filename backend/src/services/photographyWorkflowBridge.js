@@ -41,6 +41,25 @@ async function prepareVersionFolder(eventId, photoId, expectedCurrentVersion) {
   });
 }
 
+async function withdrawPhotoSelection(eventId, photoId, deleteDelivered) {
+  return bridgeRequest(`/api/projects/${Number(eventId)}/photos/${Number(photoId)}/withdraw`, {
+    method: 'POST',
+    body: { delete_delivered: Boolean(deleteDelivered) },
+  });
+}
+
+async function triggerWorkflowSync(eventId) {
+  return bridgeRequest(`/api/projects/${Number(eventId)}/sync`, { method: 'POST', body: {} });
+}
+
+async function setWorkflowStage(eventId, stage) {
+  return bridgeRequest(`/api/projects/${Number(eventId)}/stage`, { method: 'POST', body: { stage } });
+}
+
+async function restoreWorkflowStage(eventId) {
+  return bridgeRequest(`/api/projects/${Number(eventId)}/restore`, { method: 'POST', body: {} });
+}
+
 async function getPublicPhotoStates(eventId) {
   const result = await getProjectDetail(eventId);
   if (result.status !== 200 || !result.data || !Array.isArray(result.data.photos)) return result;
@@ -61,4 +80,8 @@ async function getPublicPhotoStates(eventId) {
   return result;
 }
 
-module.exports = { bridgeConfig, bridgeRequest, getProjectDetail, getPublicPhotoStates, prepareVersionFolder };
+module.exports = {
+  bridgeConfig, bridgeRequest, getProjectDetail, getPublicPhotoStates,
+  prepareVersionFolder, withdrawPhotoSelection, triggerWorkflowSync,
+  setWorkflowStage, restoreWorkflowStage,
+};

@@ -9,10 +9,16 @@ const { noStoreCache } = require('../middleware/noStoreCache');
 const feedbackService = require('../services/feedbackService');
 const { sanitizeComment } = require('../utils/feedbackValidation');
 const feedbackModeration = require('../services/feedbackModeration');
-const { getPublicPhotoStates, prepareVersionFolder } = require('../services/photographyWorkflowBridge');
+const {
+  getPublicPhotoStates, prepareVersionFolder, withdrawPhotoSelection,
+  triggerWorkflowSync,
+} = require('../services/photographyWorkflowBridge');
 const { isPhotoHiddenFromViewer } = require('../utils/photoVisibility');
 
 function customerStatus(photo) {
+  // A delivered image that its customer kept is back in the proofing queue;
+  // the photo bytes stay retouched, but it is no longer an active RAW task.
+  if (photo.selection_cancelled && photo.delivered) return 'proof';
   if (photo.delivered) return 'delivered';
   if (photo.selection_cancelled) return 'cancelled';
   if (photo.selected && photo.ready_for_editing) return 'editing';
@@ -36,7 +42,10 @@ router.get('/:slug/retouch-workflow', verifyGalleryAccess, resolveGuest, blockHi
       .map((photo) => ({
         photo_id: Number(photo.photo_id),
         selected: Boolean(photo.selected),
-        selection_cancelled: Boolean(photo.selection_cancelled),
+        // A kept delivered image is intentionally back in the proof queue.
+        // The internal flag still protects Bridge from processing its RAW,
+        // but it should not present as a cancelled/revision-only customer state.
+        selection_cancelled: Boolean(photo.selection_cancelled && !photo.delivered),
         delivered: Boolean(photo.delivered),
         current_version: Number(photo.current_version) || 0,
         added_during_editing: Boolean(photo.added_during_editing),
@@ -59,6 +68,88 @@ router.get('/:slug/retouch-workflow', verifyGalleryAccess, resolveGuest, blockHi
     res.status(500).json({ error: 'Unable to load retouch status' });
   }
 });
+
+router.post('/:slug/photos/:photoId/withdraw-selection',
+  verifyGalleryAccess,
+  denySlideshowToken,
+  blockHiddenGallery,
+  resolveGuest,
+  async (req, res) => {
+    try {
+      const event = req.event;
+      const photoId = Number(req.params.photoId);
+      if (!Number.isSafeInteger(photoId) || photoId < 1) return res.status(400).json({ error: 'Invalid photo ID' });
+      const photo = await db('photos').where({ id: photoId, event_id: event.id }).first();
+      if (!photo || isPhotoHiddenFromViewer(photo, req.accessLevel)) return res.sendStatus(404);
+      const deleteDelivered = req.body?.delete_delivered;
+      if (typeof deleteDelivered !== 'boolean') return res.status(400).json({ error: 'Please choose whether to delete the delivered image' });
+
+      const settings = await feedbackService.getEventFeedbackSettings(event.id);
+      if (settings.identity_mode === 'guest' && (!req.guest || req.guest.eventId !== event.id)) {
+        return res.status(401).json({ error: 'Guest identity required', code: 'GUEST_IDENTITY_REQUIRED' });
+      }
+      const guestIdentifier = await generateGuestIdentifier(req);
+      const workflow = await getPublicPhotoStates(event.id);
+      if (workflow.status !== 200) return res.status(503).json({ error: 'Retouch workflow is not connected' });
+      const workflowPhoto = workflow.data.photos.find((item) => Number(item.photo_id) === photoId);
+      if (!workflowPhoto?.delivered) return res.status(409).json({ error: 'A delivered retouched version is required', code: 'NO_DELIVERED_VERSION' });
+
+      const labels = await db('photo_feedback')
+        .where({ photo_id: photoId, event_id: event.id, feedback_type: 'color_label', color_label: 'green', is_hidden: false })
+        .select('guest_id', 'guest_identifier');
+      const shared = settings.identity_mode === 'shared';
+      const ownsSelection = shared || labels.some((label) => req.guest?.id
+        ? Number(label.guest_id) === Number(req.guest.id)
+        : label.guest_identifier === guestIdentifier);
+      if (!ownsSelection) return res.status(409).json({ error: 'This participant has not selected the photo', code: 'SELECTION_NOT_OWNED' });
+
+      const anotherParticipantSelected = !shared && labels.some((label) => req.guest?.id
+        ? Number(label.guest_id) !== Number(req.guest.id)
+        : label.guest_identifier !== guestIdentifier);
+      const remove = await feedbackService.removeColorLabel(photoId, event.id, {
+        identity_mode: settings.identity_mode,
+        guest_id: req.guest?.id ?? null,
+        guest_identifier: guestIdentifier,
+      });
+      if (!remove.removed) return res.status(409).json({ error: 'The selection has already changed', code: 'SELECTION_CHANGED' });
+
+      // One participant cannot cancel another participant's active pick.
+      if (anotherParticipantSelected) {
+        const openRequests = db('photo_retouch_requests')
+          .where({ event_id: event.id, photo_id: photoId })
+          .whereNotIn('status', ['cancelled', 'completed', 'closed']);
+        if (!shared) openRequests.where({ guest_identifier: guestIdentifier });
+        await openRequests.update({ status: 'cancelled', updated_at: new Date().toISOString() });
+        await triggerWorkflowSync(event.id);
+        return res.json({ success: true, kept_for_other_participant: true });
+      }
+
+      const withdrawn = await withdrawPhotoSelection(event.id, photoId, deleteDelivered);
+      if (withdrawn.status !== 200) {
+        // Keep PicPeak selection and RAW task consistent if the Bridge could
+        // not safely restore the proof or remove the NAS RAW association.
+        await feedbackService.submitFeedback(photoId, event.id, {
+          feedback_type: 'color_label', color_label: 'green', ensure_color_label: true,
+          identity_mode: settings.identity_mode, guest_name: req.guest?.name,
+          guest_email: req.guest?.email, guest_id: req.guest?.id ?? null,
+          ip_address: req.ip || req.connection.remoteAddress,
+          user_agent: (req.headers['user-agent'] || '').replace(/[<>&"']/g, '').substring(0, 255),
+        }, guestIdentifier).catch(() => {});
+        return res.status(503).json({ error: withdrawn.data?.detail || 'Unable to update the retouch workflow', code: 'WITHDRAW_FAILED' });
+      }
+      const openRequests = db('photo_retouch_requests')
+        .where({ event_id: event.id, photo_id: photoId })
+        .whereNotIn('status', ['cancelled', 'completed', 'closed']);
+      if (!shared) openRequests.where({ guest_identifier: guestIdentifier });
+      await openRequests.update({ status: 'cancelled', updated_at: new Date().toISOString() });
+      await triggerWorkflowSync(event.id);
+      res.json({ success: true, deleted: deleteDelivered, current_version: withdrawn.data?.current_version || 0 });
+    } catch (error) {
+      require('../utils/logger').error('Gallery retouch withdrawal failed', { error: error.message });
+      res.status(500).json({ error: 'Unable to withdraw this retouch selection' });
+    }
+  }
+);
 
 router.post('/:slug/photos/:photoId/retouch-requests',
   verifyGalleryAccess,
@@ -145,6 +236,7 @@ router.post('/:slug/photos/:photoId/retouch-requests',
         target_version: targetVersion,
         delivery_folder: deliveryFolder,
       }).returning(['id', 'photo_id', 'request_type', 'base_version', 'customer_message', 'status', 'photographer_reply', 'created_at', 'updated_at']);
+      await triggerWorkflowSync(event.id);
       res.status(201).json({ request, moderation_required: status === 'moderation' });
     } catch (error) {
       require('../utils/logger').error('Gallery retouch request failed', { error: error.message });
@@ -200,6 +292,7 @@ router.delete('/:slug/retouch-requests/:requestId',
         return trx('photo_retouch_requests').where({ id: requestId }).first();
       });
       if (!updated) return res.status(409).json({ error: 'This request can no longer be cancelled', code: 'REQUEST_NOT_CANCELLABLE' });
+      await triggerWorkflowSync(req.event.id);
       res.json({ request: {
         id: updated.id,
         photo_id: updated.photo_id,
