@@ -18,11 +18,20 @@ describe('photography workflow summary', () => {
   it('explains an unlinked project without inventing zero progress', async () => {
     vi.mocked(api.get).mockImplementation(async (url: string) => url.endsWith('/requests')
       ? { data: { requests: [] } } as any
-      : { data: { configured: false } } as any);
+      : { data: { configured: false, auto_bind_available: true, suggested_raw_subdir: 'Camera/26-10-04' } } as any);
     render(<PhotographyWorkflowCard eventId={8} />);
     await waitFor(() => expect(screen.getByText('This PicPeak project is not connected to a RAW folder yet, so client retouch labels cannot prepare files for the editor.')).toBeTruthy());
-    expect(screen.getByRole('button', { name: 'Connect project' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Connect project folder automatically' })).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Open photographer workspace' })).toBeNull();
     expect(screen.queryByText('Revisions')).toBeNull();
+  });
+
+  it('explains when this project does not have its own writable NAS delivery mount', async () => {
+    vi.mocked(api.get).mockImplementation(async (url: string) => url.endsWith('/requests')
+      ? { data: { requests: [] } } as any
+      : { data: { configured: false, auto_bind_mount_missing: true, suggested_raw_subdir: 'Camera/26-10-04' } } as any);
+    render(<PhotographyWorkflowCard eventId={9} />);
+    await waitFor(() => expect(screen.getByText(/First add Camera\/26-10-04\/PixCakeDelivery as a separate writable Bridge mount/)).toBeTruthy());
+    expect(screen.queryByRole('button', { name: 'Connect project folder automatically' })).toBeNull();
   });
 });

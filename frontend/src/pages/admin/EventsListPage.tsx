@@ -182,7 +182,7 @@ export const EventsListPage: React.FC = () => {
   // Delete mutation
   const deleteMutation = useMutationWithToast({
     mutationFn: eventsService.deleteEvent,
-    invalidateKeys: [['admin-events'], ['admin-dashboard-stats']],
+    invalidateKeys: [['admin-events'], ['admin-dashboard-stats'], ['storage-info']],
     successMessage: t('toast.deleteSuccess'),
     errorMessage: () => t('toast.deleteError'),
   });
@@ -214,6 +214,7 @@ export const EventsListPage: React.FC = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
       queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['storage-info'] });
       setSelectedEvents([]);
       bulkDeleteModal.close();
 

@@ -3,6 +3,7 @@ import { motion, useInView } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { AuthenticatedImage } from '../../../common';
 import { ColorLabelBadge } from '../../ColorLabelBadge';
+import { WorkflowStatusBadge } from '../../WorkflowStatusBadge';
 import type { Photo } from '../../../../types';
 import { lightboxImageUrl } from '../../imageTiers';
 
@@ -103,11 +104,11 @@ export const StoryPhotoCard: React.FC<StoryPhotoCardProps> = ({
         )}
       </a>
 
-      {/* Colour label (#1044) — same badge every layout uses. */}
-      <ColorLabelBadge
+      <WorkflowStatusBadge photo={photo} />
+      {!photo.retouch_workflow_enabled && <ColorLabelBadge
         colorLabel={photo.my_color_label}
         otherColorLabels={photo.other_color_labels}
-      />
+      />}
 
       {/* Overlay */}
       <div className="story-photo-card-overlay" />

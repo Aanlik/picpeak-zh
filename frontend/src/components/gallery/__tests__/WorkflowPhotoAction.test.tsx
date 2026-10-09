@@ -86,4 +86,26 @@ describe('customer retouch workflow photo actions', () => {
 
     expect(await screen.findByRole('button', { name: 'photographyWorkflow.selectForRetouch' })).toBeInTheDocument();
   });
+
+  it('shows the workflow stage instead of a green color-label badge on workflow photos', async () => {
+    const item = photo({ retouch_state: 'selected', retouch_selected: true, my_color_label: 'green' });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={queryClient}>
+      <PhotoCard
+        photo={item}
+        isSelected={false}
+        isSelectionMode={false}
+        onClick={vi.fn()}
+        onDownload={vi.fn()}
+        onToggleSelect={vi.fn()}
+        className="photo-card relative"
+        overlayBaseClassName="absolute inset-0"
+        imageProps={{ src: item.url, alt: item.filename }}
+        slug="gallery"
+      />
+    </QueryClientProvider>);
+
+    expect(await screen.findByLabelText('photographyWorkflow.clientState.selected')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'feedback.markedAs' })).not.toBeInTheDocument();
+  });
 });

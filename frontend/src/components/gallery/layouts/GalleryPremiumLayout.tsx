@@ -11,6 +11,7 @@ import Captions from 'yet-another-react-lightbox/plugins/captions';
 import 'yet-another-react-lightbox/styles.css';
 import 'yet-another-react-lightbox/plugins/thumbnails.css';
 import { ColorLabelBadge } from '../ColorLabelBadge';
+import { WorkflowStatusBadge } from '../WorkflowStatusBadge';
 import 'yet-another-react-lightbox/plugins/captions.css';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Check, Star, MessageSquare, Package, LogOut, ListChecks, X } from 'lucide-react';
@@ -122,11 +123,11 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         slug={slug}
       />
 
-      {/* Colour label (#1044) — same badge every layout uses. */}
-      <ColorLabelBadge
+      <WorkflowStatusBadge photo={photo} />
+      {!photo.retouch_workflow_enabled && <ColorLabelBadge
         colorLabel={photo.my_color_label}
         otherColorLabels={photo.other_color_labels}
-      />
+      />}
 
       {/* Overlay Gradient */}
       <div className="gallery-premium-photo-overlay" />

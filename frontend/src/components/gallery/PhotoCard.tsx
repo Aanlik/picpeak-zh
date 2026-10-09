@@ -7,6 +7,7 @@ import { thumbnailUrlForTile } from './imageTiers';
 import { FeedbackIdentityModal } from './FeedbackIdentityModal';
 import { feedbackService } from '../../services/feedback.service';
 import { ColorLabelBadge } from './ColorLabelBadge';
+import { WorkflowStatusBadge } from './WorkflowStatusBadge';
 import { useGuestIdentityOptional } from '../../contexts/GuestIdentityContext';
 import { useInputMode } from '../../hooks/useInputMode';
 import type { Photo } from '../../types';
@@ -394,19 +395,15 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
         <>
           <AuthenticatedImage {...imageProps} src={tileSrc} />
 
-          {photo.retouch_workflow_enabled && photo.retouch_state && (
-            <span className="absolute top-2 right-2 z-[2] rounded-full bg-black/70 px-2 py-1 text-[10px] font-medium text-white shadow" aria-label={`${tAudit(`photographyWorkflow.clientState.${photo.retouch_state}`)}${photo.retouch_added_during_editing ? ` · ${tAudit('photographyWorkflow.clientAdditionalSelection')}` : ''}`}>
-              {tAudit(`photographyWorkflow.clientState.${photo.retouch_state}`)}{photo.retouch_state === 'delivered' && photo.retouch_version ? ` · V${photo.retouch_version}` : ''}{photo.retouch_added_during_editing ? ` · ${tAudit('photographyWorkflow.clientAdditionalSelection')}` : ''}
-            </span>
-          )}
+          <WorkflowStatusBadge photo={photo} />
 
           {/* The guest's own colour label (#1044) — visible without hovering
               or opening anything, which is the point: the client watches
               their selection progress across the grid. */}
-          <ColorLabelBadge
+          {!photo.retouch_workflow_enabled && <ColorLabelBadge
             colorLabel={photo.my_color_label}
             otherColorLabels={photo.other_color_labels}
-          />
+          />}
 
           {photo.retouch_workflow_enabled && slug && !isSelectionMode && (
             <WorkflowPhotoAction

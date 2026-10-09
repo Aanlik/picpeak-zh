@@ -120,6 +120,19 @@ describe('external import: photo cap and walk bounds', () => {
     expect(result.truncated).toBe(false);
   });
 
+  it('does not re-import PixCakeDelivery files nested in the referenced shoot folder', async () => {
+    await touch('shoot/DSC001.JPG');
+    await touch('shoot/PixCakeDelivery/event-7/04_FINAL/V1/DSC001.JPG');
+    await touch('shoot/PixCakeDelivery/event-7/04_FINAL/V1/DSC002.JPG');
+    const eventId = await seedEvent();
+
+    const result = await importExternalFolder({ eventId, externalPath: 'shoot', recursive: true });
+    const photos = await db('photos').where({ event_id: eventId });
+
+    expect(result.imported).toBe(1);
+    expect(photos.map((photo) => photo.external_relpath)).toEqual([path.join('shoot', 'DSC001.JPG')]);
+  });
+
   it('stops the walk at its depth bound and reports it', async () => {
     const deep = Array.from({ length: 20 }, (_, i) => `d${i}`).join('/');
     await touch('deep/top.jpg');

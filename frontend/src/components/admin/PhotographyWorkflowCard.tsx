@@ -36,6 +36,10 @@ type RequestItem = {
 };
 type Workflow = {
   configured?: boolean;
+  auto_bind_available?: boolean;
+  auto_bind_mount_missing?: boolean;
+  suggested_raw_subdir?: string | null;
+  project_name?: string;
   event_id?: number;
   name?: string;
   stage?: string;
@@ -72,6 +76,10 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
         api.get<{ requests: RequestItem[] }>(`/admin/photography-workflow/${eventId}/requests`),
       ]);
       setWorkflow(statusResult.data);
+      if (!statusResult.data.configured) {
+        setProjectName((current) => current || statusResult.data.project_name || '');
+        setRawSubdir((current) => current || statusResult.data.suggested_raw_subdir || '');
+      }
       setRequests(requestResult.data.requests || []);
       setReplies(Object.fromEntries((requestResult.data.requests || []).map((item) => [item.id, item.photographer_reply || ''])));
       setError('');
@@ -110,6 +118,8 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
     });
   };
 
+  const autoBind = () => void perform(() => api.post(`/admin/photography-workflow/${eventId}/auto-bind`, {}));
+
   const isBound = Boolean(workflow?.configured);
   const photos = workflow?.photos || [];
   return <Card><div className="p-6 space-y-5">
@@ -146,12 +156,20 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
     {error && <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
     {workflow?.configured === false && !loading && <div className="space-y-3">
       <p className="text-sm text-neutral-600 dark:text-neutral-300">{t('photographyWorkflow.notBound')}</p>
-      <form onSubmit={bind} className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-        <input required maxLength={120} value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder={t('photographyWorkflow.projectName')} aria-label={t('photographyWorkflow.projectName')} className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
-        <input required maxLength={500} value={rawSubdir} onChange={(event) => setRawSubdir(event.target.value)} placeholder={t('photographyWorkflow.rawSubdir')} aria-label={t('photographyWorkflow.rawSubdir')} className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
-        <Button type="submit" disabled={busy || !projectName.trim() || !rawSubdir.trim()}>{t('photographyWorkflow.bindProject')}</Button>
-      </form>
-      <p className="text-xs text-neutral-500">{t('photographyWorkflow.bindHelp')}</p>
+      {workflow.auto_bind_available && <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
+        <p className="text-sm text-emerald-950 dark:text-emerald-100">{t('photographyWorkflow.autoMountDescription', { path: workflow.suggested_raw_subdir })}</p>
+        <Button className="mt-3" disabled={busy} onClick={autoBind}>{t('photographyWorkflow.autoMount')}</Button>
+      </div>}
+      {workflow.auto_bind_mount_missing && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">{t('photographyWorkflow.autoMountNotReady', { path: workflow.suggested_raw_subdir })}</p>}
+      {workflow.auto_bind_available && <details className="rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
+        <summary className="cursor-pointer text-sm">{t('photographyWorkflow.manualBind')}</summary>
+        <form onSubmit={bind} className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+          <input required maxLength={120} value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder={t('photographyWorkflow.projectName')} aria-label={t('photographyWorkflow.projectName')} className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+          <input required maxLength={500} value={rawSubdir} onChange={(event) => setRawSubdir(event.target.value)} placeholder={t('photographyWorkflow.rawSubdir')} aria-label={t('photographyWorkflow.rawSubdir')} className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+          <Button type="submit" disabled={busy || !projectName.trim() || !rawSubdir.trim()}>{t('photographyWorkflow.bindProject')}</Button>
+        </form>
+        <p className="mt-2 text-xs text-neutral-500">{t('photographyWorkflow.bindHelp')}</p>
+      </details>}
     </div>}
 
     {isBound && <>

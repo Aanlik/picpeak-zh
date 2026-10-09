@@ -222,7 +222,8 @@ async function startWatching(event) {
     // folder that was just imported.
     ignoreInitial: true,
     persistent: true,
-    ignored: (p) => path.basename(p).startsWith('.'),
+    ignored: (p) => path.basename(p).startsWith('.')
+      || path.relative(absPath, p).split(path.sep).some((part) => part.toLocaleLowerCase() === 'pixcakedelivery'),
     usePolling: USE_POLLING,
     interval: POLL_INTERVAL_MS,
     binaryInterval: POLL_INTERVAL_MS,

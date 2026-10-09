@@ -119,6 +119,10 @@ async function walkDir(dir, baseDir, budget = { entries: MAX_WALK_ENTRIES, trunc
     if (e.isSymbolicLink()) continue;
     const full = path.join(dir, e.name);
     if (e.isDirectory()) {
+      // Project finals and selected RAW copies live beside the referenced
+      // camera files. They are delivered through Bridge replacement and must
+      // never be re-imported as new proofs when the folder watcher rescans.
+      if (e.name.toLocaleLowerCase() === 'pixcakedelivery') continue;
       results.push(...await walkDir(full, baseDir, budget, depth + 1));
     } else if (e.isFile()) {
       const ext = path.extname(e.name).toLowerCase();

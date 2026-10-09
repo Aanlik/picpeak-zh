@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Download, Maximize2, Play, Pause, Heart, Mes
 import { useTheme } from '../../../contexts/ThemeContext';
 import { AuthenticatedImage, Button } from '../../common';
 import { ColorLabelBadge } from '../ColorLabelBadge';
+import { WorkflowStatusBadge } from '../WorkflowStatusBadge';
 import type { BaseGalleryLayoutProps } from './BaseGalleryLayout';
 import { FeedbackIdentityModal } from '../../gallery/FeedbackIdentityModal';
 import { feedbackService } from '../../../services/feedback.service';
@@ -97,11 +98,12 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
             is the only corner this layout leaves free — top-left carries the
             counter and category chips, top-right the play/fullscreen buttons,
             and both sides the prev/next controls. */}
-        <ColorLabelBadge
+        <WorkflowStatusBadge photo={currentPhoto} position="top-14 left-4" />
+        {!currentPhoto.retouch_workflow_enabled && <ColorLabelBadge
           colorLabel={currentPhoto.my_color_label}
           otherColorLabels={currentPhoto.other_color_labels}
           position="bottom-4 left-4"
-        />
+        />}
 
         {/* Navigation Controls */}
         <div className="absolute inset-0 flex items-center justify-between p-4">
@@ -273,12 +275,13 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                     photo at a time, so it is the only place a label can
                     actually be scanned (#1189). Small variant: these tiles are
                     80px, where the grid-sized dots cover most of the image. */}
-                <ColorLabelBadge
+                <WorkflowStatusBadge photo={photo} position="top-1 left-1" compact />
+                {!photo.retouch_workflow_enabled && <ColorLabelBadge
                   colorLabel={photo.my_color_label}
                   otherColorLabels={photo.other_color_labels}
                   size="sm"
                   position="top-1 left-1"
-                />
+                />}
               </button>
             ))}
           </div>
