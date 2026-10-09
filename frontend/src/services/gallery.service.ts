@@ -48,6 +48,35 @@ export interface UploadProcessingStatus {
   failed: number;
 }
 
+export interface RetouchRequestSummary {
+  id: number;
+  photo_id: number;
+  request_type: 'revision' | 'additional';
+  base_version: number | null;
+  customer_message: string;
+  status: 'open' | 'moderation' | 'in_progress' | 'waiting_customer' | 'completed' | 'closed';
+  photographer_reply: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RetouchWorkflowPhoto {
+  photo_id: number;
+  selected: boolean;
+  delivered: boolean;
+  current_version: number;
+  added_during_editing: boolean;
+  ready_for_editing: boolean;
+  state: 'proof' | 'selected' | 'editing' | 'delivered';
+}
+
+export interface RetouchWorkflow {
+  enabled: boolean;
+  bridge_available: boolean;
+  photos: RetouchWorkflowPhoto[];
+  requests: RetouchRequestSummary[];
+}
+
 export const galleryService = {
   // Verify share token
   async verifyToken(slug: string, token: string): Promise<{ valid: boolean }> {
@@ -64,6 +93,22 @@ export const galleryService = {
       ...data,
       requires_password: normalizeRequirePassword((data as any)?.requires_password, true),
     };
+  },
+
+  async getRetouchWorkflow(slug: string): Promise<RetouchWorkflow> {
+    const response = await api.get<RetouchWorkflow>(`/gallery/${slug}/retouch-workflow`);
+    return response.data;
+  },
+
+  async submitRetouchRequest(slug: string, photoId: number, payload: {
+    request_type: 'revision' | 'additional';
+    base_version?: number;
+    message: string;
+    guest_name?: string;
+    guest_email?: string;
+  }): Promise<{ request: RetouchRequestSummary; moderation_required: boolean }> {
+    const response = await api.post(`/gallery/${slug}/photos/${photoId}/retouch-requests`, payload);
+    return response.data;
   },
 
   // Get gallery photos (requires auth)

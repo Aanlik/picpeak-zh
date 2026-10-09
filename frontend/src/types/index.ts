@@ -220,6 +220,13 @@ export interface Photo {
   // galleries where feedback isn't shared between guests.
   color_label_count?: number;
   my_color_label?: string | null;
+  // Present when the integrated Bridge workflow is bound to this gallery.
+  // These guest-safe fields distinguish the original proof from delivered
+  // retouched versions without changing the PicPeak photo identity.
+  retouch_state?: 'proof' | 'selected' | 'editing' | 'delivered';
+  retouch_version?: number;
+  retouch_added_during_editing?: boolean;
+  retouch_workflow_enabled?: boolean;
   // Distinct colours OTHER viewers gave this photo (#1178). The lightbox has
   // always shown these as per-colour tallies; without this field the grid
   // could only ever render the viewer's own label, so a colour set by someone

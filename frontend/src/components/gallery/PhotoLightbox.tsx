@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDevToolsProtection } from '../../hooks/useDevToolsProtection';
-import { X, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, Minimize2, MessageSquare, Heart, Star } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, Minimize2, MessageSquare, Heart, Star, ClipboardList } from 'lucide-react';
 import type { Photo, GalleryPerson } from '../../types';
 import { useSavePhotoToDevice } from '../../hooks/useGallery';
 import { AuthenticatedImage } from '../common';
@@ -15,6 +15,7 @@ import { FeedbackIdentityModal } from './FeedbackIdentityModal';
 import { VideoPlayer } from './VideoPlayer';
 import { useGuestIdentityOptional } from '../../contexts/GuestIdentityContext';
 import { useFeedbackLimitModal } from '../../hooks/useFeedbackLimitModal';
+import { PhotoRetouchRequests } from './PhotoRetouchRequests';
 
 interface PhotoLightboxProps {
   photos: Photo[];
@@ -906,6 +907,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
           <div className="text-white min-w-0">
             <p className="text-sm opacity-75">
               {currentIndex + 1} / {photos.length}
+              {currentPhoto.retouch_workflow_enabled && currentPhoto.retouch_state && <span className="ml-2 text-emerald-300">· {tAudit(`photographyWorkflow.clientState.${currentPhoto.retouch_state}`)}{currentPhoto.retouch_state === 'delivered' && currentPhoto.retouch_version ? ` V${currentPhoto.retouch_version}` : ''}{currentPhoto.retouch_added_during_editing ? ` · ${tAudit('photographyWorkflow.clientAdditionalSelection')}` : ''}</span>}
             </p>
             {/* #508 — original camera filename next to the counter when
                 the admin has flipped the matching toggle. Falls back to
@@ -1071,7 +1073,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                 own dedicated toolbar buttons above, so this panel toggle
                 only has work to do when comments (#518) or the emoji
                 reaction bar (#839) live inside the panel. */}
-            {feedbackEnabled && (feedbackSettings?.allow_comments || feedbackSettings?.allow_reactions) && (
+            {feedbackEnabled && (feedbackSettings?.allow_comments || feedbackSettings?.allow_reactions || (currentPhoto.retouch_workflow_enabled && feedbackSettings?.allow_comments)) && (
               <button
                 onClick={() => {
                   setShowFeedback(!showFeedback);
@@ -1086,6 +1088,17 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                     {(currentPhoto.comment_count ?? 0) > 0 ? currentPhoto.comment_count ?? 0 : '★'}
                   </span>
                 )}
+              </button>
+            )}
+            {feedbackEnabled && currentPhoto.retouch_workflow_enabled && feedbackSettings?.allow_comments && (
+              <button
+                type="button"
+                onClick={() => setShowFeedback(true)}
+                className="p-2 bg-emerald-700 hover:bg-emerald-600 rounded-full transition-colors"
+                aria-label={tAudit('retouchRequest.open')}
+                title={tAudit('retouchRequest.open')}
+              >
+                <ClipboardList className="w-5 h-5 text-white" />
               </button>
             )}
           </div>
@@ -1280,6 +1293,11 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
             </button>
           </div>
           <div className="p-4 flex-1 overflow-y-auto">
+            {feedbackEnabled && feedbackSettings?.allow_comments && currentPhoto.retouch_workflow_enabled && (
+              <div className="mb-4">
+                <PhotoRetouchRequests slug={slug} photo={currentPhoto} requireNameEmail={!!feedbackSettings?.require_name_email} />
+              </div>
+            )}
             <PhotoFeedback
               photoId={String(currentPhoto.id)}
               gallerySlug={slug}

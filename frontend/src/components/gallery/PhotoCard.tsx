@@ -393,6 +393,12 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
         <>
           <AuthenticatedImage {...imageProps} src={tileSrc} />
 
+          {photo.retouch_workflow_enabled && photo.retouch_state && (
+            <span className="absolute top-2 right-2 z-[2] rounded-full bg-black/70 px-2 py-1 text-[10px] font-medium text-white shadow" aria-label={`${tAudit(`photographyWorkflow.clientState.${photo.retouch_state}`)}${photo.retouch_added_during_editing ? ` · ${tAudit('photographyWorkflow.clientAdditionalSelection')}` : ''}`}>
+              {tAudit(`photographyWorkflow.clientState.${photo.retouch_state}`)}{photo.retouch_state === 'delivered' && photo.retouch_version ? ` · V${photo.retouch_version}` : ''}{photo.retouch_added_during_editing ? ` · ${tAudit('photographyWorkflow.clientAdditionalSelection')}` : ''}
+            </span>
+          )}
+
           {/* The guest's own colour label (#1044) — visible without hovering
               or opening anything, which is the point: the client watches
               their selection progress across the grid. */}

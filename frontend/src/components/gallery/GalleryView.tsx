@@ -42,7 +42,7 @@ import type { FilterType, FeedbackFilterType } from './GalleryFilter';
 import { analyticsService } from '../../services/analytics.service';
 import { useDevToolsProtection } from '../../hooks/useDevToolsProtection';
 import { Upload, Menu, Eye, EyeOff, Shield, X, Download, ChevronLeft } from 'lucide-react';
-import { galleryService } from '../../services/gallery.service';
+import { galleryService, type RetouchWorkflow } from '../../services/gallery.service';
 import { feedbackService, type ColorLabel } from '../../services/feedback.service';
 import { useWatermarkSettings } from '../../hooks/useWatermarkSettings';
 import { useGalleryCustomCss } from '../../hooks/useGalleryCustomCss';
@@ -206,7 +206,26 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   // Fetch photos WITHOUT filter (always get all photos, filter on frontend)
   // This ensures counts are always calculated from the full dataset
   const { data, isLoading, error, refetch } = useGalleryPhotos(slug, 'all', guestId);
-  const { isSelectionMode, setIsSelectionMode, selectedPhotos, setSelectedPhotos } = useGallerySelection(data?.photos);
+  const { data: retouchWorkflow } = useQuery<RetouchWorkflow>({
+    queryKey: ['gallery-retouch-workflow', slug],
+    queryFn: () => galleryService.getRetouchWorkflow(slug),
+    enabled: Boolean(data?.event?.id),
+    staleTime: 15000,
+    refetchInterval: 30000,
+    retry: false,
+  });
+  const retouchByPhotoId = useMemo(() => new Map((retouchWorkflow?.photos || []).map((photo) => [photo.photo_id, photo])), [retouchWorkflow?.photos]);
+  const galleryPhotos = useMemo(() => (data?.photos || []).map((photo) => {
+    const state = retouchByPhotoId.get(photo.id);
+    return retouchWorkflow?.enabled ? {
+      ...photo,
+      retouch_state: state?.state || 'proof',
+      retouch_version: state?.current_version || 0,
+      retouch_added_during_editing: Boolean(state?.added_during_editing),
+      retouch_workflow_enabled: true,
+    } : photo;
+  }), [data?.photos, retouchByPhotoId, retouchWorkflow?.enabled]);
+  const { isSelectionMode, setIsSelectionMode, selectedPhotos, setSelectedPhotos } = useGallerySelection(galleryPhotos);
   
   // Set protection level when data is available
   useEffect(() => {
@@ -358,8 +377,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   );
 
   const tiles = useMemo(
-    () => folderTiles(data?.categories, data?.photos),
-    [data?.categories, data?.photos]
+    () => folderTiles(data?.categories, galleryPhotos),
+    [data?.categories, galleryPhotos]
   );
 
   // Photos the current view is allowed to show, before any user-applied filter.
@@ -367,8 +386,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   // the category counts: scoping those by the person filter would zero out
   // every other face the moment one is picked.
   const scopedPhotos = useMemo(
-    () => photosInScope(data?.photos, data?.categories, openFolder?.id ?? null),
-    [data?.photos, data?.categories, openFolder]
+    () => photosInScope(galleryPhotos, data?.categories, openFolder?.id ?? null),
+    [galleryPhotos, data?.categories, openFolder]
   );
 
   const people = useMemo(() => peopleInScope(allPeople, scopedPhotos), [allPeople, scopedPhotos]);
@@ -496,31 +515,31 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   const [defaultHeroPhoto, setDefaultHeroPhoto] = useState<Photo | null>(null);
 
   useEffect(() => {
-    if (!defaultHeroPhoto && data?.photos && activeFilters.length === 0) {
+    if (!defaultHeroPhoto && galleryPhotos.length && activeFilters.length === 0) {
       let hero: Photo | null = null;
       const heroId = data?.event?.hero_photo_id || null;
       if (heroId) {
-        hero = data.photos.find(p => p.id === heroId) || null;
+        hero = galleryPhotos.find(p => p.id === heroId) || null;
       }
-      if (!hero && data.photos.length > 0) {
-        const firstPhoto = data.photos.find(p => resolveMediaType(p) === 'photo');
-        hero = firstPhoto || data.photos[0];
+      if (!hero && galleryPhotos.length > 0) {
+        const firstPhoto = galleryPhotos.find(p => resolveMediaType(p) === 'photo');
+        hero = firstPhoto || galleryPhotos[0];
       }
       if (hero) {
         setDefaultHeroPhoto(hero);
         setStaticHeroPhoto(hero);
       }
     }
-  }, [data?.photos, data?.event?.hero_photo_id, activeFilters, defaultHeroPhoto]);
+  }, [galleryPhotos, data?.event?.hero_photo_id, activeFilters, defaultHeroPhoto]);
 
   // Switch hero photo when a category with its own hero image is selected
   useEffect(() => {
-    if (!data?.photos || !defaultHeroPhoto) return;
+    if (!galleryPhotos.length || !defaultHeroPhoto) return;
 
     if (selectedCategoryId) {
-      const category = (data.categories || []).find(c => c.id === selectedCategoryId);
+      const category = (data?.categories || []).find(c => c.id === selectedCategoryId);
       if (category?.hero_photo_id) {
-        const categoryHero = data.photos.find(p => p.id === category.hero_photo_id);
+        const categoryHero = galleryPhotos.find(p => p.id === category.hero_photo_id);
         if (categoryHero) {
           setStaticHeroPhoto(categoryHero);
           return;
@@ -529,7 +548,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     }
     // No category selected or category has no hero — revert to default
     setStaticHeroPhoto(defaultHeroPhoto);
-  }, [selectedCategoryId, data?.categories, data?.photos, defaultHeroPhoto]);
+  }, [selectedCategoryId, data?.categories, galleryPhotos, defaultHeroPhoto]);
 
   // Apply theme when settings are loaded
   useEffect(() => {
@@ -614,11 +633,11 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
 
   // Client visibility stats
   const visibleCount = useMemo(() => {
-    if (!isClient || !data?.photos) return 0;
-    return data.photos.filter(p => p.visibility !== 'hidden').length;
-  }, [isClient, data?.photos]);
+    if (!isClient || !galleryPhotos.length) return 0;
+    return galleryPhotos.filter(p => p.visibility !== 'hidden').length;
+  }, [isClient, galleryPhotos]);
 
-  const totalCount = data?.photos?.length || 0;
+  const totalCount = galleryPhotos.length;
 
   // Calculate days until expiration (null means never expires)
   const daysUntilExpiration = event.expires_at
@@ -662,7 +681,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   }, [setSelectedPhotos]);
 
   const filteredPhotos = useGalleryFiltering({
-    sourcePhotos: data?.photos, categories: data?.categories, folderId: openFolder?.id ?? null,
+    sourcePhotos: galleryPhotos, categories: data?.categories, folderId: openFolder?.id ?? null,
     selectedCategoryId, searchTerm, sortBy, sortDesc, watermarkEnabled, slug,
     activeFilters, activeColorFilters, mediaFilter, isGuestIdentityMode, myFeedbackPhotoIds,
     selectedPersonIds, peopleMatchAny,
@@ -743,7 +762,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     // Track download all action
     analyticsService.trackGalleryEvent('bulk_download', {
       gallery: slug,
-      photo_count: data?.photos.length || 0,
+      photo_count: galleryPhotos.length,
       is_download_all: true
     });
   };
@@ -1171,7 +1190,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
           suppressEmptyState={rootIsFoldersOnly}
           // Event-wide, so a layout's own Download All neither skips foldered
           // photos nor truncates at the 500-id cap (#1160).
-          eventPhotoCount={data?.photos?.length || 0}
+          eventPhotoCount={galleryPhotos.length}
           // Withheld when any category opts out of downloads (#640): the
           // whole-gallery route serves a prebuilt zip that contains EVERY event
           // photo with no per-category filter (gallery.js's own note on
@@ -1295,7 +1314,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
           // Download All hits /download-all, which is event-wide — labelling or
           // disabling it from the scoped count would show 0 on a folder-only
           // root and refuse a perfectly valid download (#1160).
-          downloadAllTotal={data?.photos?.length || 0}
+          downloadAllTotal={galleryPhotos.length}
           isMobile={isMobile}
           galleryLayout={theme.galleryLayout}
           allowUploads={data?.event?.allow_user_uploads || event?.allow_user_uploads || false}

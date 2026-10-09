@@ -853,6 +853,7 @@ app.use('/api/admin/external-media', require('./src/routes/adminExternalMedia'))
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/gallery', require('./src/routes/galleryFeedback'));
 app.use('/api/gallery', require('./src/routes/galleryGuests'));
+app.use('/api/gallery', require('./src/routes/galleryRetouchWorkflow'));
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/auth', adminAuthRoutes);
 app.use('/api/admin/system', require('./src/routes/adminSystem'));

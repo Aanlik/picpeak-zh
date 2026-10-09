@@ -1,29 +1,114 @@
-// Read-only internal proxy. Photography business state remains in Bridge.
+// PicPeak admin proxy for the private Bridge workflow API. The browser only
+// talks to PicPeak; the Bridge password remains server-side.
 const express = require('express');
 const { requireEventOwnership } = require('../middleware/ownership');
 const { adminAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
 const { NO_EMAIL_MODE } = require('../utils/communicationProfile');
+const { db, logActivity } = require('../database/db');
+const { bridgeRequest, getProjectDetail } = require('../services/photographyWorkflowBridge');
+
 const router = express.Router();
 router.use(adminAuth, requirePermission('events.view'));
-router.get('/:eventId', (req, res, next) => /^\d+$/.test(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
+
+function parseId(value) {
+  return /^\d+$/.test(String(value)) && Number(value) > 0;
+}
+
+router.get('/:eventId', (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
   if (!NO_EMAIL_MODE) return res.sendStatus(404);
-  if (!/^\d+$/.test(req.params.eventId)) return res.sendStatus(400);
-  const base = process.env.PIXCAKE_BRIDGE_URL;
-  const password = process.env.PIXCAKE_BRIDGE_PASSWORD;
-  if (!base || !password) return res.status(503).json({ error: '尚未连接精修同步服务' });
-  try {
-    const response = await fetch(new URL('/api/projects', base), {
-      headers: { Authorization: 'Basic ' + Buffer.from('admin:' + password).toString('base64') },
-      signal: AbortSignal.timeout(5000),
-      redirect: 'error',
-    });
-    if (!response.ok) throw new Error('Bridge unavailable');
-    const projects = await response.json();
-    const project = projects.find(p => String(p.event_id) === req.params.eventId);
-    const bridgeUrl = process.env.PIXCAKE_BRIDGE_PUBLIC_URL || null;
-    if (!project) return res.json({ configured: false, bridge_url: bridgeUrl });
-    res.json({ ...project, configured: true, bridge_url: bridgeUrl });
-  } catch { res.status(503).json({ error: '精修同步服务暂时不可用' }); }
+  const result = await getProjectDetail(req.params.eventId);
+  if (!result.configured) return res.status(503).json({ error: '尚未连接精修同步服务' });
+  if (result.status === 404) return res.json({ configured: false });
+  if (result.status !== 200) return res.status(503).json({ error: '精修同步服务暂时不可用' });
+  res.json({ ...result.data, configured: true });
 });
+
+router.get('/:eventId/requests', (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
+  if (!NO_EMAIL_MODE) return res.sendStatus(404);
+  try {
+    const rows = await db('photo_retouch_requests as r')
+      .join('photos as p', 'p.id', 'r.photo_id')
+      .where('r.event_id', Number(req.params.eventId))
+      .select('r.id', 'r.photo_id', 'p.filename', 'r.request_type', 'r.base_version', 'r.customer_message', 'r.status', 'r.photographer_reply', 'r.created_at', 'r.updated_at')
+      .orderBy('r.created_at', 'desc').limit(200);
+    res.json({ requests: rows });
+  } catch {
+    res.status(500).json({ error: '无法读取客户精修需求' });
+  }
+});
+
+router.post('/:eventId/bind', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
+  if (!NO_EMAIL_MODE) return res.sendStatus(404);
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  const rawSubdir = typeof req.body?.raw_subdir === 'string' ? req.body.raw_subdir.trim() : '';
+  if (!name || name.length > 120 || !rawSubdir || rawSubdir.length > 500) return res.status(400).json({ error: '请填写项目名称和 Camera 内 RAW 子目录' });
+  const result = await bridgeRequest('/projects', {
+    method: 'POST', form: true,
+    body: { name, event_id: Number(req.params.eventId), raw_subdir: rawSubdir },
+  });
+  if (!result.configured) return res.status(503).json({ error: '尚未连接精修同步服务' });
+  if (result.status !== 303) return res.status(503).json({ error: 'Bridge 暂时无法绑定项目' });
+  const location = new URL(result.location || '/', 'http://bridge.local');
+  const setupError = location.searchParams.get('setup_error');
+  if (setupError) return res.status(400).json({ error: setupError });
+  const detail = await getProjectDetail(req.params.eventId);
+  if (detail.status !== 200) return res.status(503).json({ error: '项目已绑定，但暂时无法读取同步状态' });
+  res.status(201).json({ ...detail.data, configured: true });
+});
+
+router.post('/:eventId/stage', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
+  if (!NO_EMAIL_MODE) return res.sendStatus(404);
+  const result = await bridgeRequest(`/api/projects/${Number(req.params.eventId)}/stage`, { method: 'POST', body: { stage: req.body?.stage } });
+  if (result.status !== 200) return res.status(result.status === 400 ? 400 : 503).json({ error: '无法更新项目阶段' });
+  res.json(result.data);
+});
+
+router.post('/:eventId/sync', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
+  if (!NO_EMAIL_MODE) return res.sendStatus(404);
+  const result = await bridgeRequest(`/api/projects/${Number(req.params.eventId)}/sync`, { method: 'POST', body: {} });
+  if (result.status !== 200) return res.status(503).json({ error: '无法立即同步项目' });
+  res.json(result.data);
+});
+
+router.post('/:eventId/rescan', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
+  if (!NO_EMAIL_MODE) return res.sendStatus(404);
+  const result = await bridgeRequest(`/api/projects/${Number(req.params.eventId)}/rescan`, { method: 'POST', body: {} });
+  if (result.status !== 200) return res.status(503).json({ error: '无法重新扫描项目目录' });
+  res.json(result.data);
+});
+
+router.post('/:eventId/retry', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
+  if (!NO_EMAIL_MODE) return res.sendStatus(404);
+  const result = await bridgeRequest(`/api/projects/${Number(req.params.eventId)}/retry`, {
+    method: 'POST', body: { confirm_unknown: req.body?.confirm_unknown === true },
+  });
+  if (result.status === 409) return res.status(409).json(result.data?.detail || result.data || { code: 'UNKNOWN_CONFIRMATION_REQUIRED' });
+  if (result.status !== 200) return res.status(503).json({ error: '无法重试失败任务' });
+  res.json(result.data);
+});
+
+router.patch('/:eventId/requests/:requestId', requirePermission('events.edit'), (req, res, next) => {
+  if (parseId(req.params.eventId) && parseId(req.params.requestId)) return next();
+  return res.sendStatus(400);
+}, requireEventOwnership, async (req, res) => {
+  if (!NO_EMAIL_MODE) return res.sendStatus(404);
+  const allowed = ['open', 'in_progress', 'waiting_customer', 'completed', 'closed'];
+  const status = req.body?.status;
+  const reply = typeof req.body?.photographer_reply === 'string' ? req.body.photographer_reply.trim().slice(0, 1000) : '';
+  if (!allowed.includes(status)) return res.status(400).json({ error: '无效的需求状态' });
+  const id = Number(req.params.requestId);
+  const eventId = Number(req.params.eventId);
+  const request = await db('photo_retouch_requests').where({ id, event_id: eventId }).first();
+  if (!request) return res.sendStatus(404);
+  await db('photo_retouch_requests').where({ id, event_id: eventId }).update({
+    status,
+    photographer_reply: reply || null,
+    updated_at: new Date(),
+  });
+  await logActivity('photo_retouch_request_updated', { request_id: id, status }, eventId, { type: 'admin', id: req.admin.id, name: req.admin.username || 'admin' });
+  const updated = await db('photo_retouch_requests').where({ id }).first();
+  res.json({ request: updated });
+});
+
 module.exports = router;
