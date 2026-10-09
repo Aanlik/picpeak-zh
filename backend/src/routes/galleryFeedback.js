@@ -17,6 +17,13 @@ const {
   sanitizeComment
 } = require('../utils/feedbackValidation');
 const validator = require('validator');
+const { getPublicPhotoStates } = require('../services/photographyWorkflowBridge');
+const { NO_EMAIL_MODE } = require('../utils/communicationProfile');
+
+async function workflowSelectionIsEnabled(eventId) {
+  const workflow = await getPublicPhotoStates(eventId);
+  return workflow.status === 200;
+}
 
 // Batch proofing is one user action and shares the same access, identity,
 // visibility, moderation and rate-limit rules as the single-photo endpoint.
@@ -31,10 +38,6 @@ router.post('/:slug/photos/batch-feedback',
     try {
       const event = req.event;
       const settings = await feedbackService.getEventFeedbackSettings(event.id);
-      if (!settings.feedback_enabled) {
-        return res.status(403).json({ error: 'Feedback is not enabled for this event' });
-      }
-
       const { photo_ids: photoIds, feedback_type: feedbackType } = req.body || {};
       const maxPhotos = feedbackType === 'comment' ? 20 : 100;
       if (!Array.isArray(photoIds) || photoIds.length < 1 || photoIds.length > maxPhotos ||
@@ -47,6 +50,13 @@ router.post('/:slug/photos/batch-feedback',
       }
       if (feedbackType === 'color_label' && req.body.color_label !== 'green') {
         return res.status(400).json({ error: 'Batch proofing only supports the green retouch label' });
+      }
+      const workflowSelection = feedbackType === 'color_label' && req.body.color_label === 'green' &&
+        (!settings.feedback_enabled || !settings.allow_color_labels)
+        ? await workflowSelectionIsEnabled(event.id)
+        : false;
+      if (!settings.feedback_enabled && !workflowSelection) {
+        return res.status(403).json({ error: 'Feedback is not enabled for this event' });
       }
       if (feedbackType === 'comment') {
         const comment = sanitizeComment(typeof req.body.comment_text === 'string' ? req.body.comment_text : '');
@@ -69,9 +79,9 @@ router.post('/:slug/photos/batch-feedback',
         return res.status(401).json({ error: 'Guest identity required', code: 'GUEST_IDENTITY_REQUIRED' });
       }
       const guestIdentifier = await generateGuestIdentifier(req);
-      const typeAllowed = feedbackType === 'comment' ? settings.allow_comments : settings.allow_color_labels;
+      const typeAllowed = feedbackType === 'comment' ? settings.allow_comments : settings.allow_color_labels || workflowSelection;
       if (!typeAllowed) return res.status(403).json({ error: `${feedbackType} feedback is not enabled` });
-      if (settings.identity_mode !== 'guest') {
+      if (settings.identity_mode !== 'guest' && !workflowSelection && !NO_EMAIL_MODE) {
         const guestValidation = await validateGuestRequirements(settings, req.body);
         if (!guestValidation.valid) {
           return res.status(400).json({ error: 'Guest information required', errors: guestValidation.errors });
@@ -340,8 +350,13 @@ router.post('/:slug/photos/:photoId/feedback',
 
       // Get feedback settings first so we can enforce identity_mode.
       const settings = await feedbackService.getEventFeedbackSettings(event.id);
+      const feedbackType = req.body.feedback_type;
+      const isWorkflowSelection = feedbackType === 'color_label' && req.body.color_label === 'green';
+      const workflowSelection = isWorkflowSelection && (!settings.feedback_enabled || !settings.allow_color_labels)
+        ? await workflowSelectionIsEnabled(event.id)
+        : false;
 
-      if (!settings.feedback_enabled) {
+      if (!settings.feedback_enabled && !workflowSelection) {
         return res.status(403).json({ error: 'Feedback is not enabled for this event' });
       }
 
@@ -360,14 +375,13 @@ router.post('/:slug/photos/:photoId/feedback',
       const guestIdentifier = await generateGuestIdentifier(req);
 
       // Check if specific feedback type is allowed
-      const feedbackType = req.body.feedback_type;
       const typeAllowed = {
         rating: settings.allow_ratings,
         like: settings.allow_likes,
         comment: settings.allow_comments,
         favorite: settings.allow_favorites,
         reaction: settings.allow_reactions,
-        color_label: settings.allow_color_labels
+        color_label: settings.allow_color_labels || workflowSelection
       };
 
       if (!typeAllowed[feedbackType]) {
@@ -387,7 +401,7 @@ router.post('/:slug/photos/:photoId/feedback',
 
       // Validate guest requirements only in simple mode. In guest mode, the
       // identity is already provided via the token and verified above.
-      if (settings.identity_mode !== 'guest') {
+      if (settings.identity_mode !== 'guest' && !workflowSelection && !NO_EMAIL_MODE) {
         const guestValidation = await validateGuestRequirements(settings, req.body);
         if (!guestValidation.valid) {
           return res.status(400).json({

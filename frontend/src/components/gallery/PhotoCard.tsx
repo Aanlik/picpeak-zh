@@ -10,6 +10,7 @@ import { ColorLabelBadge } from './ColorLabelBadge';
 import { useGuestIdentityOptional } from '../../contexts/GuestIdentityContext';
 import { useInputMode } from '../../hooks/useInputMode';
 import type { Photo } from '../../types';
+import { WorkflowPhotoAction } from './WorkflowPhotoAction';
 
 export interface PhotoCardFeedbackOptions {
   allowLikes?: boolean;
@@ -406,6 +407,18 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
             colorLabel={photo.my_color_label}
             otherColorLabels={photo.other_color_labels}
           />
+
+          {photo.retouch_workflow_enabled && slug && !isSelectionMode && (
+            <WorkflowPhotoAction
+              photo={photo}
+              slug={slug}
+              onFeedbackChange={onFeedbackChange}
+              onRequestClick={(event) => {
+                if (onQuickComment) onQuickComment();
+                else onClick(event);
+              }}
+            />
+          )}
 
           {beforeOverlay}
 

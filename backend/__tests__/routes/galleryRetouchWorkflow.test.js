@@ -72,6 +72,15 @@ describe('gallery retouch workflow and client requests', () => {
     expect(listed.body.requests[0].customer_message).toBe('请把肤色调暖一些');
   });
 
+  it('accepts workflow requests without enabling general comments or collecting email', async () => {
+    await db('event_feedback_settings').where({ event_id: eventId }).update({ feedback_enabled: false, allow_comments: false });
+    const submitted = await post(`/api/gallery/${slug}/photos/${visiblePhoto}/retouch-requests`)
+      .send({ request_type: 'additional', message: '请再导出一个偏暖色版本' });
+    expect(submitted.status).toBe(201);
+    expect(submitted.body.request).toMatchObject({ request_type: 'additional', status: 'open' });
+    await db('event_feedback_settings').where({ event_id: eventId }).update({ feedback_enabled: true, allow_comments: true });
+  });
+
   it('rejects stale revisions, revisions before delivery, and hidden photos', async () => {
     expect((await post(`/api/gallery/${slug}/photos/${visiblePhoto}/retouch-requests`).send({ request_type: 'revision', base_version: 1, message: '改一下' })).status).toBe(409);
     global.fetch = jest.fn(async () => ({ status: 200, json: async () => ({ photos: [bridgePhoto(visiblePhoto, false)] }) }));

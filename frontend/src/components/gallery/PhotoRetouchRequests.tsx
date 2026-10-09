@@ -5,23 +5,18 @@ import { toast } from 'react-toastify';
 import { Button } from '../common';
 import { galleryService } from '../../services/gallery.service';
 import type { Photo } from '../../types';
+import { useGuestIdentityOptional } from '../../contexts/GuestIdentityContext';
 
-export function PhotoRetouchRequests({
-  slug,
-  photo,
-  requireNameEmail = false,
-}: {
+export function PhotoRetouchRequests({ slug, photo }: {
   slug: string;
   photo: Photo;
-  requireNameEmail?: boolean;
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<'revision' | 'additional'>(photo.retouch_state === 'delivered' ? 'revision' : 'additional');
   const [message, setMessage] = useState('');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const guestIdentity = useGuestIdentityOptional();
   const workflow = useQuery({
     queryKey: ['gallery-retouch-workflow', slug],
     queryFn: () => galleryService.getRetouchWorkflow(slug),
@@ -32,18 +27,21 @@ export function PhotoRetouchRequests({
   });
   const ownRequests = useMemo(() => (workflow.data?.requests || []).filter((item) => item.photo_id === photo.id), [workflow.data?.requests, photo.id]);
   const submit = useMutation({
-    mutationFn: () => galleryService.submitRetouchRequest(slug, photo.id, {
-      request_type: kind,
-      ...(kind === 'revision' ? { base_version: photo.retouch_version || 1 } : {}),
-      message,
-      ...(requireNameEmail ? { guest_name: name, guest_email: email } : {}),
-    }),
+    mutationFn: async () => {
+      if (guestIdentity?.identityMode === 'guest') await guestIdentity.ensureIdentity();
+      return galleryService.submitRetouchRequest(slug, photo.id, {
+        request_type: kind,
+        ...(kind === 'revision' ? { base_version: photo.retouch_version || 1 } : {}),
+        message,
+      });
+    },
     onSuccess: async (result) => {
       setMessage('');
       toast.success(result.moderation_required ? t('retouchRequest.moderation') : t('retouchRequest.submitted'));
       await queryClient.invalidateQueries({ queryKey: ['gallery-retouch-workflow', slug] });
     },
     onError: (error: any) => {
+      if (error?.message === 'user_cancelled') return;
       const code = error?.response?.data?.code;
       const key = code === 'VERSION_CHANGED' ? 'retouchRequest.versionChanged'
         : code === 'NO_DELIVERED_VERSION' ? 'retouchRequest.noVersion'
@@ -80,10 +78,6 @@ export function PhotoRetouchRequests({
         <span>{t('retouchRequest.message')}</span>
         <textarea required maxLength={1000} rows={3} value={message} onChange={(event) => setMessage(event.target.value)} placeholder={t('retouchRequest.messageHint')} className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900" />
       </label>
-      {requireNameEmail && <div className="grid gap-2 sm:grid-cols-2">
-        <input required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} placeholder={t('retouchRequest.name')} className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
-        <input required type="email" maxLength={255} value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t('retouchRequest.email')} className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
-      </div>}
       <Button type="submit" disabled={submit.isPending || !message.trim() || (kind === 'revision' && photo.retouch_state !== 'delivered')}>
         {submit.isPending ? t('retouchRequest.submitting') : t('retouchRequest.submit')}
       </Button>

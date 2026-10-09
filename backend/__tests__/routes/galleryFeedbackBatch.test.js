@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'gallery-feedback-batch-secret';
+process.env.PIXCAKE_BRIDGE_URL = 'http://127.0.0.1:8080';
+process.env.PIXCAKE_BRIDGE_PASSWORD = 'batch-test-bridge-password';
 
 describe('batch gallery feedback', () => {
   let db; let cleanup; let app; let eventId; let photoIds;
@@ -73,6 +75,36 @@ describe('batch gallery feedback', () => {
     for (const photoId of body.photo_ids) {
       const labels = await db('photo_feedback').where({ photo_id: photoId, event_id: eventId, feedback_type: 'color_label', color_label: 'green', is_hidden: false });
       expect(labels).toHaveLength(1);
+    }
+  });
+
+  it('allows workflow selection when generic feedback and color labels are disabled, but only while Bridge is bound', async () => {
+    await db('photo_feedback').where({ event_id: eventId, feedback_type: 'color_label' }).delete();
+    await db('event_feedback_settings').where({ event_id: eventId }).update({ feedback_enabled: false, allow_color_labels: false });
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn(async () => ({
+      status: 200,
+      json: async () => ({ event_id: eventId, photos: photoIds.slice(0, 2).map((photo_id) => ({ photo_id })) }),
+    }));
+    try {
+      const selected = await post({ photo_ids: [photoIds[0]], feedback_type: 'color_label', color_label: 'green' });
+      expect(selected.status).toBe(200);
+      expect(await db('photo_feedback').where({ photo_id: photoIds[0], event_id: eventId, feedback_type: 'color_label', color_label: 'green' })).toHaveLength(1);
+
+      const singleSelected = await request.agent(app)
+        .post(`/api/gallery/${slug}/photos/${photoIds[1]}/feedback`)
+        .set('Authorization', `Bearer ${token()}`)
+        .send({ feedback_type: 'color_label', color_label: 'green' });
+      expect(singleSelected.status).toBe(200);
+      expect(await db('photo_feedback').where({ photo_id: photoIds[1], event_id: eventId, feedback_type: 'color_label', color_label: 'green' })).toHaveLength(1);
+
+      global.fetch = jest.fn(async () => ({ status: 404, json: async () => ({}) }));
+      const unbound = await post({ photo_ids: [photoIds[2]], feedback_type: 'color_label', color_label: 'green' });
+      expect(unbound.status).toBe(403);
+      expect(await db('photo_feedback').where({ photo_id: photoIds[2], feedback_type: 'color_label' })).toHaveLength(0);
+    } finally {
+      global.fetch = originalFetch;
+      await db('event_feedback_settings').where({ event_id: eventId }).update({ feedback_enabled: true, allow_color_labels: true });
     }
   });
 

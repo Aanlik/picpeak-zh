@@ -334,7 +334,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
     let mounted = true;
     (async () => {
       try {
-        if (!feedbackSettings?.feedback_enabled || !currentPhoto) return;
+        if (!currentPhoto || (!feedbackSettings?.feedback_enabled && !currentPhoto.retouch_workflow_enabled)) return;
         const data = await feedbackService.getPhotoFeedback(slug, String(currentPhoto.id));
         if (!mounted) return;
         setMyLiked(!!data.my_feedback.liked);
@@ -349,7 +349,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
       }
     })();
     return () => { mounted = false; };
-  }, [slug, currentPhoto?.id, feedbackSettings?.feedback_enabled]);
+  }, [slug, currentPhoto?.id, currentPhoto?.retouch_workflow_enabled, feedbackSettings?.feedback_enabled]);
 
   const submitLike = async () => {
     // Guest identity mode: ensure we have a per-person guest token. The
@@ -468,7 +468,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
    * expresses as submitting the current colour again.
    */
   const submitColorLabel = async (color: ColorLabel | null) => {
-    if (!feedbackSettings?.allow_color_labels) return;
+    if (!feedbackSettings?.allow_color_labels && !currentPhoto.retouch_workflow_enabled) return;
     // Clearing means re-submitting the current colour — the backend toggles
     // a repeat submission off. With nothing set there is nothing to clear.
     const value = color ?? myColorLabel;
@@ -524,7 +524,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
   // Refreshed on every render (see the ref's declaration above): the keydown
   // listener reads current settings and handlers without being re-registered.
   proofingRef.current = {
-    feedbackEnabled: !!feedbackEnabled && !!feedbackSettings?.feedback_enabled,
+    feedbackEnabled: (!!feedbackEnabled && !!feedbackSettings?.feedback_enabled) || !!currentPhoto.retouch_workflow_enabled,
     allowColorLabels: !!feedbackSettings?.allow_color_labels,
     allowRatings: !!feedbackSettings?.allow_ratings,
     keybindMode,
@@ -1051,7 +1051,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
             {/* Inline color labels (#1044). In the toolbar rather than the
                 feedback panel: the whole point is a fast keyboard/click
                 proofing pass, which a panel toggle would interrupt. */}
-            {feedbackEnabled && feedbackSettings?.allow_color_labels && (
+            {((feedbackEnabled && feedbackSettings?.allow_color_labels) || currentPhoto.retouch_workflow_enabled) && (
               <div className="flex items-center gap-1 ml-1">
                 <PhotoColorLabels
                   photoId={String(currentPhoto.id)}
@@ -1059,7 +1059,8 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                   myColorLabel={myColorLabel}
                   colorLabelCounts={feedbackSettings?.show_feedback_to_guests ? colorLabelCounts : {}}
                   isEnabled
-                  requireNameEmail={!!feedbackSettings?.require_name_email}
+                  requireNameEmail={!currentPhoto.retouch_workflow_enabled && !!feedbackSettings?.require_name_email}
+                  workflowOnly={!!currentPhoto.retouch_workflow_enabled}
                   shortcutHints={colorShortcutHints(keybindMode)}
                   onColorLabelChange={(label) => {
                     setMyColorLabel(label);
@@ -1090,7 +1091,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                 )}
               </button>
             )}
-            {feedbackEnabled && currentPhoto.retouch_workflow_enabled && feedbackSettings?.allow_comments && (
+            {currentPhoto.retouch_workflow_enabled && (
               <button
                 type="button"
                 onClick={() => setShowFeedback(true)}
@@ -1293,20 +1294,22 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
             </button>
           </div>
           <div className="p-4 flex-1 overflow-y-auto">
-            {feedbackEnabled && feedbackSettings?.allow_comments && currentPhoto.retouch_workflow_enabled && (
+            {currentPhoto.retouch_workflow_enabled && (
               <div className="mb-4">
-                <PhotoRetouchRequests slug={slug} photo={currentPhoto} requireNameEmail={!!feedbackSettings?.require_name_email} />
+                <PhotoRetouchRequests slug={slug} photo={currentPhoto} />
               </div>
             )}
-            <PhotoFeedback
-              photoId={String(currentPhoto.id)}
-              gallerySlug={slug}
-              showComments={true}
-              className="space-y-4"
-              onFeedbackUpdate={() => {
-                if (onFeedbackChange) onFeedbackChange();
-              }}
-            />
+            {feedbackEnabled && feedbackSettings?.feedback_enabled && feedbackSettings?.allow_comments && (
+              <PhotoFeedback
+                photoId={String(currentPhoto.id)}
+                gallerySlug={slug}
+                showComments={true}
+                className="space-y-4"
+                onFeedbackUpdate={() => {
+                  if (onFeedbackChange) onFeedbackChange();
+                }}
+              />
+            )}
           </div>
         </div>
       )}

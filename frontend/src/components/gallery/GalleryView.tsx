@@ -1454,14 +1454,34 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
           </div>
         )}
 
-        {isSelectionMode && selectedPhotos.size > 0 && feedbackEnabled && (
+        {retouchWorkflow?.enabled && (
+          <section className="mt-4 flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30 sm:flex-row sm:items-center sm:justify-between" aria-label={t('photographyWorkflow.clientPanelTitle')}>
+            <div>
+              <h2 className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">{t('photographyWorkflow.clientPanelTitle')}</h2>
+              <p className="mt-1 text-sm text-emerald-900/80 dark:text-emerald-100/80">{t('photographyWorkflow.clientPanelHelp')}</p>
+            </div>
+            <Button
+              variant={isSelectionMode ? 'outline' : 'primary'}
+              size="sm"
+              onClick={() => {
+                setIsSelectionMode((active) => !active);
+                if (isSelectionMode) setSelectedPhotos(new Set());
+              }}
+              className="shrink-0"
+            >
+              {isSelectionMode ? t('gallery.cancelSelection') : t('photographyWorkflow.selectMultiple')}
+            </Button>
+          </section>
+        )}
+
+        {isSelectionMode && selectedPhotos.size > 0 && (feedbackEnabled || retouchWorkflow?.enabled) && (
           <div className="mt-4">
             <BatchFeedbackControls
               slug={slug}
               photoIds={Array.from(selectedPhotos)}
-              colorLabelsEnabled={!!feedbackSettings?.allow_color_labels}
-              commentsEnabled={!!feedbackSettings?.allow_comments}
-              requireNameEmail={!!feedbackSettings?.require_name_email}
+              colorLabelsEnabled={Boolean(feedbackSettings?.allow_color_labels || retouchWorkflow?.enabled)}
+              commentsEnabled={Boolean(feedbackEnabled && feedbackSettings?.allow_comments)}
+              requireNameEmail={false}
             />
           </div>
         )}

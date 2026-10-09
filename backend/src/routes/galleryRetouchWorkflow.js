@@ -6,7 +6,7 @@ const { resolveGuest } = require('../middleware/guestAuth');
 const { blockHiddenGallery, guestBlockedByReveal } = require('../utils/revealMode');
 const { feedbackRateLimit, generateGuestIdentifier } = require('../middleware/feedbackRateLimit');
 const { noStoreCache } = require('../middleware/noStoreCache');
-const { validateGuestRequirements, sanitizeComment } = require('../utils/feedbackValidation');
+const { sanitizeComment } = require('../utils/feedbackValidation');
 const feedbackService = require('../services/feedbackService');
 const feedbackModeration = require('../services/feedbackModeration');
 const { getPublicPhotoStates } = require('../services/photographyWorkflowBridge');
@@ -68,9 +68,6 @@ router.post('/:slug/photos/:photoId/retouch-requests',
     try {
       const event = req.event;
       const settings = await feedbackService.getEventFeedbackSettings(event.id);
-      if (!settings.feedback_enabled || !settings.allow_comments) {
-        return res.status(403).json({ error: 'Retouch requests are not enabled for this gallery' });
-      }
       const photoId = Number(req.params.photoId);
       if (!Number.isSafeInteger(photoId) || photoId < 1) return res.status(400).json({ error: 'Invalid photo ID' });
       const photo = await db('photos').where({ id: photoId, event_id: event.id }).first();
@@ -85,11 +82,6 @@ router.post('/:slug/photos/:photoId/retouch-requests',
       if (settings.identity_mode === 'guest' && (!req.guest || req.guest.eventId !== event.id)) {
         return res.status(401).json({ error: 'Guest identity required', code: 'GUEST_IDENTITY_REQUIRED' });
       }
-      if (settings.identity_mode !== 'guest') {
-        const validation = await validateGuestRequirements(settings, req.body || {});
-        if (!validation.valid) return res.status(400).json({ error: 'Guest information required', errors: validation.errors });
-      }
-
       const workflow = await getPublicPhotoStates(event.id);
       if (workflow.status !== 200) return res.status(503).json({ error: 'Retouch workflow is not connected' });
 

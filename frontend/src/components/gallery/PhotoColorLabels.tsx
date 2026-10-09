@@ -20,6 +20,8 @@ interface PhotoColorLabelsProps {
   colorLabelCounts?: Partial<Record<ColorLabel, number>>;
   isEnabled: boolean;
   requireNameEmail?: boolean;
+  /** Show only the workflow's green selection action with studio language. */
+  workflowOnly?: boolean;
   /** Keyboard hint to show under each swatch, e.g. { green: '1' }. */
   shortcutHints?: Partial<Record<ColorLabel, string>>;
   onColorLabelChange?: (label: ColorLabel | null) => void;
@@ -38,6 +40,7 @@ export const PhotoColorLabels: React.FC<PhotoColorLabelsProps> = ({
   colorLabelCounts = {},
   isEnabled,
   requireNameEmail = false,
+  workflowOnly = false,
   shortcutHints = {},
   onColorLabelChange
 }) => {
@@ -115,7 +118,7 @@ export const PhotoColorLabels: React.FC<PhotoColorLabelsProps> = ({
     }
 
     // Simple mode: legacy inline prompt flow.
-    if (requireNameEmail && !savedIdentity) {
+    if (requireNameEmail && !workflowOnly && !savedIdentity) {
       setPendingColor(color);
       setShowIdentityModal(true);
     } else {
@@ -144,7 +147,7 @@ export const PhotoColorLabels: React.FC<PhotoColorLabelsProps> = ({
         role="group"
         aria-label={t('feedback.colorLabelsTitle', 'Color labels')}
       >
-        {COLOR_LABELS.map((color) => {
+        {(workflowOnly ? ['green' as const] : COLOR_LABELS).map((color) => {
           const count = colorLabelCounts[color] || 0;
           const isMine = myColorLabel === color;
           const swatch = COLOR_LABEL_SWATCHES[color];
@@ -164,19 +167,25 @@ export const PhotoColorLabels: React.FC<PhotoColorLabelsProps> = ({
               // The colour is the only visual difference between these five
               // buttons, so the name has to carry it for anyone who can't
               // distinguish them.
-              aria-label={isMine
-                ? t('feedback.removeColorLabel', 'Remove {{color}} label', { color: colorName(color) })
-                : t('feedback.setColorLabel', 'Mark as {{color}}', { color: colorName(color) })}
-              title={shortcut
-                ? `${colorName(color)} (${shortcut})`
-                : colorName(color)}
+              aria-label={workflowOnly
+                ? (isMine ? t('photographyWorkflow.cancelSelection') : t('photographyWorkflow.selectForRetouch'))
+                : isMine
+                  ? t('feedback.removeColorLabel', 'Remove {{color}} label', { color: colorName(color) })
+                  : t('feedback.setColorLabel', 'Mark as {{color}}', { color: colorName(color) })}
+              title={workflowOnly
+                ? (isMine ? t('photographyWorkflow.cancelSelection') : t('photographyWorkflow.selectForRetouch'))
+                : shortcut
+                  ? `${colorName(color)} (${shortcut})`
+                  : colorName(color)}
             >
               <span
                 className="w-4 h-4 rounded-full border shrink-0"
                 style={{ backgroundColor: swatch.fill, borderColor: swatch.ring }}
                 aria-hidden="true"
               />
-              {shortcut && (
+              {workflowOnly ? (
+                <span className="font-medium">{isMine ? t('photographyWorkflow.selectedForRetouch') : t('photographyWorkflow.selectForRetouch')}</span>
+              ) : shortcut && (
                 <span className="text-[10px] font-semibold opacity-70 leading-none" aria-hidden="true">
                   {shortcut}
                 </span>
