@@ -71,10 +71,11 @@ bash scripts/sync-upstream-zh.sh --merge --exclude-retired
    `replaces_photo_id`、替换响应 `photo.id`。若变化，修改独立 Bridge 适配并测试，
    不把 Bridge 同步逻辑加入 PicPeak。
 
-自动提醒工作流每周检查官方 stable 新 SHA，并用最新上游英文语言包运行中文
-差异检查。每个 SHA 只创建一次跟进 Issue。提醒不是自动升级；它不会绕过测试
-把新代码部署到 NAS。Fork 的默认分支必须是 `zh-stable`，并启用 GitHub Actions
-和 Issues，否则定时任务不会运行。
+本 Fork 不配置定时上游检查、更新提醒或自动合并，避免无人审阅的上游变更进入
+生产。需要检查更新时，由维护者手动执行上面的 `git fetch upstream stable` 和
+`--plan`；确认同步方式后再合并、补翻译、运行 CI、构建并验收镜像。
+PicPeak 管理首页和侧栏也不再查询或显示官方版本更新提示；当前版本号与发布说明
+链接仍保留。部署更新必须使用本 Fork 发布并锁定的镜像版本。
 
 ## CI 和本地验证
 
