@@ -406,15 +406,16 @@ module.exports = (router) => {
       }, {});
 
       // Add photo counts to events and convert dates
-      const eventsWithCounts = await Promise.all(events.map(async (event) => ({
-        ...event,
-        photo_count: photoCountMap[event.id] || 0,
-        // Convert Unix timestamps to ISO strings
-        created_at: event.created_at ? new Date(event.created_at).toISOString() : null,
-        expires_at: event.expires_at ? new Date(event.expires_at).toISOString() : null,
-        archived_at: event.archived_at ? new Date(event.archived_at).toISOString() : null
-      })).map(async (event) => {
-        const mapped = mapEventForApi(event);
+      const eventsWithCounts = await Promise.all(events.map(async (event) => {
+        const eventWithCounts = {
+          ...event,
+          photo_count: photoCountMap[event.id] || 0,
+          // Convert Unix timestamps to ISO strings
+          created_at: event.created_at ? new Date(event.created_at).toISOString() : null,
+          expires_at: event.expires_at ? new Date(event.expires_at).toISOString() : null,
+          archived_at: event.archived_at ? new Date(event.archived_at).toISOString() : null
+        };
+        const mapped = mapEventForApi(eventWithCounts);
         if (mapped.share_link) mapped.share_link = await resolveShareLinkUrl(mapped.share_link);
         return withoutForeignEventSecrets(mapped, req.admin);
       }));

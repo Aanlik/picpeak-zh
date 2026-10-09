@@ -98,7 +98,7 @@ describe('admin events CRUD endpoints (smoke)', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.id).toBeDefined();
-      expect(res.body.slug).toContain('wedding-smoke-wedding');
+      expect(res.body.slug).toBe('smoke-wedding-2026-09-01');
       expect(typeof res.body.share_link).toBe('string');
       expect(res.body.is_draft).toBe(true);
 
@@ -124,7 +124,7 @@ describe('admin events CRUD endpoints (smoke)', () => {
       // timer: slip the colliding row in the instant that existence SELECT is
       // issued — the route then spends a bcrypt hash before its own INSERT.
       const { slugify } = require('../../src/utils/slug');
-      const collidingSlug = `wedding-${slugify('Race Wedding')}-2026-09-02`;
+      const collidingSlug = `${slugify('Race Wedding')}-2026-09-02`;
       let injected = null;
       const onQuery = (q) => {
         if (injected) return;
@@ -177,7 +177,9 @@ describe('admin events CRUD endpoints (smoke)', () => {
       expect(res.status).toBe(200);
       expect(res.body.events).toHaveLength(2);
       expect(res.body.pagination).toMatchObject({ page: 1, total: 2, totalPages: 1 });
+      expect(res.body.events.map((ev) => ev.event_name).sort()).toEqual(['Alpha', 'Beta']);
       for (const ev of res.body.events) {
+        expect(Number.isInteger(ev.id)).toBe(true);
         expect(ev.photo_count).toBe(0);
       }
     });

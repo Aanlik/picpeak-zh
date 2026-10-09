@@ -4,21 +4,32 @@ import { normalizeRequirePassword } from '../utils/accessControl';
 import { toBoolean } from '../utils/parsers';
 
 const normalizeEvent = (event: Event): Event => {
-  const legacyHostName = (event as any)?.host_name;
-  const legacyHostEmail = (event as any)?.host_email;
+  const raw = event as Event & Record<string, unknown>;
+  const rawId = raw.id ?? raw.event_id ?? raw.eventId;
+  const id = typeof rawId === 'number' ? rawId : Number(rawId);
+  const rawName = raw.event_name ?? raw.eventName ?? raw.name ?? raw.title;
+  if (!Number.isInteger(id) || id <= 0 || typeof rawName !== 'string' || !rawName.trim()) {
+    throw new Error('The project list returned an incomplete project record.');
+  }
 
-  const customerName = event.customer_name ?? legacyHostName ?? undefined;
-  const customerEmail = event.customer_email ?? legacyHostEmail ?? '';
+  const legacyHostName = raw.host_name as string | undefined;
+  const legacyHostEmail = raw.host_email as string | undefined;
+
+  const customerName = (raw.customer_name as string | undefined) ?? legacyHostName;
+  const customerEmail = (raw.customer_email as string | undefined) ?? legacyHostEmail ?? '';
 
   return {
-    ...event,
+    ...raw,
+    id,
+    event_name: rawName.trim(),
+    photo_count: Number(raw.photo_count ?? raw.photoCount ?? 0) || 0,
     customer_name: customerName,
     customer_email: customerEmail,
-    require_password: normalizeRequirePassword((event as any)?.require_password, true),
+    require_password: normalizeRequirePassword(raw.require_password, true),
     // SQLite hands these back as 0/1, so a strict `=== false` consumer reads
     // an inactive gallery as active (the #1028 class). Coerced once here with
     // the same default the backend's parseBooleanInput uses.
-    is_active: toBoolean((event as any)?.is_active, true),
+    is_active: toBoolean(raw.is_active, true),
   };
 };
 
