@@ -56,7 +56,7 @@ jobs:
           context: .
           file: Dockerfile
           platforms: linux/amd64
-          tags: picpeak-pixcake:3.134.1-zh.22-bridge.0.1.10
+          tags: picpeak-pixcake:3.134.1-zh.23-bridge.0.1.11
           load: true
           cache-from: type=gha,scope=unified
           cache-to: type=gha,mode=max,scope=unified
@@ -64,12 +64,12 @@ jobs:
       - run: uv sync --directory bridge --frozen --python 3.12 --extra test
       - name: Container boot and restart
         env:
-          STACK_IMAGE: picpeak-pixcake:3.134.1-zh.22-bridge.0.1.10
+          STACK_IMAGE: picpeak-pixcake:3.134.1-zh.23-bridge.0.1.11
         run: bridge/docker/integrated/smoke.sh
       - name: Real PicPeak and Bridge end-to-end
         run: |
           mkdir -p /tmp/pixcake-fixture/proofs/shoot
-          docker run -d --name pixcake-unified-e2e -p 127.0.0.1:19300:3000 -e PORT=3000 -e EXTERNAL_MEDIA_ROOT=/external-media -v /tmp/pixcake-fixture/proofs:/external-media:ro picpeak-pixcake:3.134.1-zh.22-bridge.0.1.10
+          docker run -d --name pixcake-unified-e2e -p 127.0.0.1:19300:3000 -e PORT=3000 -e EXTERNAL_MEDIA_ROOT=/external-media -v /tmp/pixcake-fixture/proofs:/external-media:ro picpeak-pixcake:3.134.1-zh.23-bridge.0.1.11
           uv run --directory bridge python scripts/integration.py --container pixcake-unified-e2e --root /tmp/pixcake-fixture --count 100 --report integration-report.json
       - name: Mobile browser downloads
         run: |
@@ -85,6 +85,6 @@ jobs:
         run: |
           echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
           owner=$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
-          target="ghcr.io/$owner/picpeak-pixcake:3.134.1-zh.22-bridge.0.1.10"
-          docker tag picpeak-pixcake:3.134.1-zh.22-bridge.0.1.10 "$target"
+          target="ghcr.io/$owner/picpeak-pixcake:3.134.1-zh.23-bridge.0.1.11"
+          docker tag picpeak-pixcake:3.134.1-zh.23-bridge.0.1.11 "$target"
           docker push "$target"

@@ -10,6 +10,11 @@
 <body>
 <h1>精修同步工作台</h1><p>客户选片 → 待精修 RAW → 像素蛋糕 → 成片交付</p>
 
+{% if maintenance_reason %}
+<section role="alert" class="bad">
+<h2>精修同步已暂停</h2><p>{{ maintenance_reason }}</p><p>请先核对项目恢复结果，再由管理员解除暂停。</p>
+</section>
+{% endif %}
 <section>
 <h2>摄影师怎么接手客户选片</h2>
 <p>完成一次绑定后，Bridge 会持续同步客户的“选为精修”标记。像素蛋糕不需要 API：摄影师从 NAS 网络共享目录打开素材，导出成片到指定文件夹即可。</p>

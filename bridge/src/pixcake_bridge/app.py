@@ -45,10 +45,18 @@ def create_app(config=None, client=None, start_workers=True):
         db_engine, sessions = database(cfg.database_url)
         api = client or PicPeak(cfg.base_url, cfg.token)
         from .state_backup import restore_state
+        from .project_state import recover_detachments
+        recover_detachments(cfg, sessions)
         journal = cfg.projects_file.parent / 'restore-state.json'
         if journal.exists():
             restore_state(json.loads(journal.read_text()), cfg, sessions, journal=False)
         engine = Engine(cfg, sessions, api)
+        block = cfg.projects_file.parent / 'restore-block.json'
+        if block.exists():
+            saved_block = json.loads(block.read_text())
+            engine.maintenance_token = saved_block['token']
+            engine.maintenance_until = float('inf')
+            engine.maintenance_reason = saved_block['reason']
         app.state.engine, app.state.config = engine, cfg
         tasks = []
         async def watch():
@@ -137,6 +145,7 @@ def create_app(config=None, client=None, start_workers=True):
             project_setup_ready=cfg.raw_root.is_dir() and (any(cfg.delivery_root_for(eid).is_dir() for eid in {p.event_id for p in cfg.projects}) if cfg.projects else cfg.delivery_root.is_dir()),
             delivery_host_root=cfg.delivery_host_root,
             setup_error=request.query_params.get("setup_error", ""),
+            maintenance_reason=request.app.state.engine.maintenance_reason,
         )
 
     @app.get("/api/projects", dependencies=[Depends(authorize)])
@@ -231,7 +240,7 @@ def create_app(config=None, client=None, start_workers=True):
             "delivery_path": delivery_path,
             "summary": entry["summary"],
             "photos": photos,
-            "errors": [{"message": error.message, "created_at": error.created.isoformat() if error.created else None} for error in entry["errors"]],
+            "errors": [{"message": error.message, "created_at": error.created.isoformat() if error.created else None} for error in entry["errors"]] + ([{"message": engine.maintenance_reason, "created_at": None}] if engine.maintenance_reason else []),
         }
 
     @app.post("/api/projects/{event_id}/stage", dependencies=[Depends(authorize)])
@@ -345,7 +354,12 @@ def create_app(config=None, client=None, start_workers=True):
         async with engine.lock:
             if engine.maintenance_until > time.monotonic():
                 raise HTTPException(409, '已有备份或恢复任务')
-            state = export_state(engine.config, engine.sessions)
+            from .project_state import recover_detachments
+            recover_detachments(engine.config, engine.sessions)
+            try:
+                state = export_state(engine.config, engine.sessions)
+            except ValueError as error:
+                raise HTTPException(409, str(error)) from error
             engine.maintenance_token = str(uuid.uuid4())
             engine.maintenance_until = time.monotonic() + 1800
             return {"token": engine.maintenance_token, "state": state}
@@ -357,7 +371,8 @@ def create_app(config=None, client=None, start_workers=True):
         async with engine.lock:
             if payload.get('token') != engine.maintenance_token or engine.maintenance_until <= time.monotonic():
                 raise HTTPException(409, '备份同步锁已过期')
-            engine.maintenance_until = time.monotonic() + 1800
+            if not engine.maintenance_reason:
+                engine.maintenance_until = time.monotonic() + 1800
         return {"success": True}
 
     @app.post("/api/state/release", dependencies=[Depends(authorize)])
@@ -367,10 +382,33 @@ def create_app(config=None, client=None, start_workers=True):
         async with engine.lock:
             if payload.get('token') != engine.maintenance_token:
                 raise HTTPException(409, '备份任务标识不匹配')
+            (engine.config.projects_file.parent / 'restore-block.json').unlink(missing_ok=True)
+            engine.maintenance_reason = None
             engine.maintenance_until = 0
             engine.maintenance_token = None
             engine.wake.set()
         return {"success": True}
+
+    @app.post("/api/state/block", dependencies=[Depends(authorize)])
+    async def block_checkpoint(request: Request):
+        from .state_backup import atomic_json
+        engine = request.app.state.engine
+        payload = await request.json()
+        async with engine.lock:
+            if not engine.maintenance_token or payload.get('token') != engine.maintenance_token:
+                raise HTTPException(409, '备份任务标识不匹配')
+            reason = str(payload.get('reason') or '恢复状态不完整，请人工核对')[:1000]
+            atomic_json(engine.config.projects_file.parent / 'restore-block.json', {'token': engine.maintenance_token, 'reason': reason})
+            engine.maintenance_until = float('inf')
+            engine.maintenance_reason = reason
+        return {"success": True}
+
+    @app.get("/api/state/status", dependencies=[Depends(authorize)])
+    async def checkpoint_status(request: Request):
+        engine = request.app.state.engine
+        # The recovery token is available only to authenticated LAN operators.
+        return {"blocked": bool(engine.maintenance_reason), "reason": engine.maintenance_reason,
+                "token": engine.maintenance_token if engine.maintenance_reason else None}
 
     @app.post("/api/state/restore", dependencies=[Depends(authorize)])
     async def restore_checkpoint(request: Request):
@@ -395,28 +433,8 @@ def create_app(config=None, client=None, start_workers=True):
         cfg = engine.config
         async with engine.lock:
             engine.require_writable()
-            current = [p for p in cfg.projects if p.event_id != event_id]
-            payload = [{"name": p.name, "event_id": p.event_id, "raw": str(p.raw), "selected": str(p.selected), "final": str(p.final), "history": str(p.history)} for p in current]
-            cfg.projects_file.parent.mkdir(parents=True, exist_ok=True)
-            with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=cfg.projects_file.parent, delete=False) as file:
-                json.dump(payload, file, ensure_ascii=False, indent=2)
-                file.flush()
-                os.fsync(file.fileno())
-                temporary = Path(file.name)
-            temporary.replace(cfg.projects_file)
-            cfg.projects = current
-            # Never delete project files: detach only the automation binding.
-            with engine.sessions() as session:
-                project = session.scalar(select(Project).where(Project.event_id == event_id))
-                if project:
-                    ids = select(Photo.id).where(Photo.project_id == project.id)
-                    session.query(Delivery).filter(Delivery.photo_pk.in_(ids)).delete(synchronize_session=False)
-                    session.query(Withdrawal).filter(Withdrawal.photo_pk.in_(ids)).delete(synchronize_session=False)
-                    session.query(Photo).filter(Photo.project_id == project.id).delete(synchronize_session=False)
-                    session.query(Error).filter(Error.project_id == project.id).delete(synchronize_session=False)
-                    session.query(SyncRun).filter(SyncRun.project_id == project.id).delete(synchronize_session=False)
-                    session.delete(project)
-                    session.commit()
+            from .project_state import detach_project
+            detach_project(cfg, engine.sessions, event_id)
         return {"success": True}
 
     @app.post("/projects", dependencies=[Depends(authorize)])

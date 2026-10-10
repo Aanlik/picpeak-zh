@@ -255,3 +255,53 @@ def test_authenticated_checkpoint_pauses_sync_and_restores_state(tmp_path):
         assert client.post('/api/state/release', json={'token':saved['token']}).status_code == 200
         assert client.post('/api/projects/7/stage', json={'stage':'EDITING'}).status_code == 200
     db.dispose()
+
+
+def test_failed_restore_pause_survives_restart_and_requires_authenticated_release(tmp_path):
+    engine, remote, cfg, db = setup(tmp_path)
+    cfg.projects_file = tmp_path / 'projects.json'
+    db.dispose()
+    with TestClient(create_app(cfg, remote, start_workers=False)) as client:
+        client.auth = ('admin', cfg.admin_password)
+        checkpoint = client.post('/api/state/checkpoint', json={}).json()
+        assert client.post('/api/state/block', json={'token': 'wrong'}).status_code == 409
+        assert client.post('/api/state/block', json={'token': checkpoint['token'], 'reason': '恢复失败'}).status_code == 200
+        assert client.post('/api/state/renew', json={'token': checkpoint['token']}).status_code == 200
+        assert client.app.state.engine.maintenance_until == float('inf')
+    with TestClient(create_app(cfg, remote, start_workers=False)) as client:
+        assert client.get('/api/state/status').status_code == 401
+        client.auth = ('admin', cfg.admin_password)
+        assert client.get('/api/state/status').json() == {'blocked': True, 'reason': '恢复失败', 'token': checkpoint['token']}
+        assert '精修同步已暂停' in client.get('/').text
+        assert any(error['message'] == '恢复失败' for error in client.get('/api/projects/7/detail').json()['errors'])
+        assert client.post('/api/projects/7/sync', json={}).status_code == 503
+        assert client.post('/api/state/checkpoint', json={}).status_code == 409
+        assert client.post('/api/state/release', json={'token': 'wrong'}).status_code == 409
+        assert (tmp_path / 'restore-block.json').exists()
+        assert client.post('/api/state/release', json={'token': checkpoint['token']}).status_code == 200
+        assert not (tmp_path / 'restore-block.json').exists()
+        assert client.post('/api/projects/7/sync', json={}).status_code == 200
+    db.dispose()
+
+
+def test_checkpoint_repairs_interrupted_unbind_and_restart_cleans_orphans(tmp_path, monkeypatch):
+    from pixcake_bridge import project_state
+    engine, remote, cfg, db = setup(tmp_path)
+    cfg.projects_file = tmp_path / 'projects.json'
+    db.dispose()
+    with TestClient(create_app(cfg, remote, start_workers=False), raise_server_exceptions=False) as client:
+        client.auth = ('admin', cfg.admin_password)
+        assert client.post('/api/projects/7/sync', json={}).status_code == 200
+        with monkeypatch.context() as patch:
+            patch.setattr(project_state, 'delete_project_rows', lambda *args: (_ for _ in ()).throw(RuntimeError('commit failed')))
+            assert client.delete('/api/projects/7').status_code == 500
+        assert (tmp_path / 'unbind-state.json').exists()
+    with TestClient(create_app(cfg, remote, start_workers=False)) as client:
+        client.auth = ('admin', cfg.admin_password)
+        assert not (tmp_path / 'unbind-state.json').exists()
+        saved = client.post('/api/state/checkpoint', json={}).json()
+        assert saved['state']['projects'] == []
+        assert saved['state']['tables']['projects'] == []
+        assert client.post('/api/state/restore', json=saved).status_code == 200
+        assert client.post('/api/state/release', json={'token': saved['token']}).status_code == 200
+    assert (tmp_path / '01_RAW' / 'DSC00001.ARW').exists()

@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-image=${STACK_IMAGE:-picpeak-pixcake:3.134.1-zh.22-bridge.0.1.10}
+image=${STACK_IMAGE:-picpeak-pixcake:3.134.1-zh.23-bridge.0.1.11}
 name=picpeak-integrated-smoke
 cleanup() { docker rm -fv "$name" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
@@ -18,6 +18,16 @@ docker exec "$name" supervisorctl -c /opt/integrated/supervisord.conf status
 docker exec "$name" supervisorctl -c /opt/integrated/supervisord.conf signal KILL bridge
 sleep 8
 docker exec "$name" /opt/bridge/venv/bin/python /opt/integrated/health.py
+docker exec -i "$name" /opt/bridge/venv/bin/python - <<'PYTHON'
+import base64, json, urllib.request
+headers = {'Authorization': 'Basic ' + base64.b64encode(b'admin:integration-fixture-password').decode(), 'Content-Type': 'application/json'}
+def call(path, body=None):
+    request = urllib.request.Request('http://127.0.0.1:8080/api/state/' + path, headers=headers,
+                                    data=json.dumps(body).encode() if body is not None else None)
+    return json.load(urllib.request.urlopen(request, timeout=5))
+saved = call('checkpoint', {})
+assert call('block', {'token': saved['token'], 'reason': '恢复暂停重启验证'})['success']
+PYTHON
 docker restart "$name" >/dev/null
 ready=false
 for attempt in $(seq 1 60); do
@@ -26,7 +36,19 @@ for attempt in $(seq 1 60); do
 done
 [ "$ready" = true ]
 docker exec "$name" /opt/bridge/venv/bin/python -c 'from pathlib import Path; assert Path("/bridge-data/restart-proof").read_text() == "persisted"'
-echo 'Integrated two-service boot, Python 3.12, state, process recovery and container restart passed.'
+docker exec -i "$name" /opt/bridge/venv/bin/python - <<'PYTHON'
+import base64, json, urllib.request
+headers = {'Authorization': 'Basic ' + base64.b64encode(b'admin:integration-fixture-password').decode(), 'Content-Type': 'application/json'}
+def call(path, body=None):
+    request = urllib.request.Request('http://127.0.0.1:8080/api/state/' + path, headers=headers,
+                                    data=json.dumps(body).encode() if body is not None else None)
+    return json.load(urllib.request.urlopen(request, timeout=5))
+status = call('status')
+assert status['blocked'] and status['reason'] == '恢复暂停重启验证'
+assert call('release', {'token': status['token']})['success']
+assert not call('status')['blocked']
+PYTHON
+echo 'Integrated two-service boot, Python 3.12, state, process recovery, persistent recovery pause and container restart passed.'
 cleanup
 docker run -d --platform linux/amd64 --name "$name" "$image" >/dev/null
 ready=false

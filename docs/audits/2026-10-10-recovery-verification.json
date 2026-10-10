@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-10",
+  "resolved_findings": [
+    "R01",
+    "R02"
+  ],
+  "backend": {
+    "numPassedTestSuites": 335,
+    "numPassedTests": 3099,
+    "numPendingTestSuites": 4,
+    "numPendingTests": 28,
+    "success": true
+  },
+  "final_backend_regression_passed": 9,
+  "bridge_passed": 98,
+  "image": "picpeak-pixcake:3.134.1-zh.23-bridge.0.1.11",
+  "nas_deployed": false,
+  "physical_mobile_tested": false,
+  "mobile_browser_stats": {
+    "startTime": "2026-10-10T12:41:31.292Z",
+    "duration": 6486.913,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "container_smoke_passed": true,
+  "persistent_pause_container_restart_passed": true,
+  "integration_report": "2026-10-10-recovery-fixes-integration.json",
+  "image_sha256": "07a1d3e82d6ce7953be6c3e55881fb19d945b471962464c9d0ef876f82541b66",
+  "image_bytes": 245380096
+}

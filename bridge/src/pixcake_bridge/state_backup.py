@@ -26,6 +26,8 @@ def export_state(config, sessions):
             tables[table.name] = [{key: value.isoformat() if isinstance(value, datetime) else value
                                   for key, value in dict(row).items()}
                                  for row in session.execute(select(table)).mappings()]
+    if {row['event_id'] for row in tables['projects']} != {p.event_id for p in config.projects}:
+        raise ValueError('项目配置与数据库不一致，不能生成精修状态备份')
     return {'version': 1, 'projects': [{key: str(getattr(p, key)) if key in {'raw', 'selected', 'final', 'history'} else getattr(p, key)
                                      for key in ('name', 'event_id', 'raw', 'selected', 'final', 'history')} for p in config.projects],
             'tables': tables}

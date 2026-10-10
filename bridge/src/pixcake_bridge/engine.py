@@ -20,6 +20,7 @@ class Engine:
         self.lock = asyncio.Lock()
         self.maintenance_until = 0
         self.maintenance_token = None
+        self.maintenance_reason = None
         self.stability = Stability(config.stable_seconds)
         self.wake = asyncio.Event()
         self.rebase_layout_paths()

@@ -1,0 +1,21 @@
+{
+  "proof_count": 100,
+  "selected_initial": 50,
+  "added": 5,
+  "cancelled_selecting": 2,
+  "cancelled_editing_raw_preserved": true,
+  "deliveries": 54,
+  "revision_version": 2,
+  "raw_sha256_unchanged": 100,
+  "photo_id_feedback_sort_share_preserved": true,
+  "restart_duplicate_uploads": 0,
+  "withdraw_keep_reselect_preserved": true,
+  "withdraw_delete_restored_proof": true,
+  "archive_restore_progress": true,
+  "picpeak_archive_restore_identity_preserved": true,
+  "guest_share_path": "/gallery/pixcake-e2e-61bb3b/a68692dd9828e1952b05d2185dd1f5c9",
+  "event_id": 1,
+  "slug": "pixcake-e2e-61bb3b",
+  "fixture_root": "/private/tmp/picpeak-recovery-release",
+  "tested_at": "2026-10-10T12:41:30Z"
+}

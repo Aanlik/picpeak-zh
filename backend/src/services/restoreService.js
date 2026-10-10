@@ -302,11 +302,13 @@ class RestoreService {
 
     this.isRunning = true;
     this.restoreLog = [];
+    this.preRestoreBackupPath = null; // Never reuse a safety backup from an earlier run.
     this.preservedMetaSnapshot = [];  // reset per run
     const startTime = new Date();
     let restoreRun = null;
     let workflowCheckpoint = null;
-    let workflowApplied = false;
+    let workflowCompleted = false;
+    let workflowRecoverySafe = true;
 
     try {
       // Validate options
@@ -434,6 +436,9 @@ class RestoreService {
         localBackupPath = await this.downloadFromS3(options.source, manifest, options);
       }
 
+      // Once database replacement begins, resuming Bridge requires either
+      // a complete joint restore or a complete joint rollback.
+      if (workflowCheckpoint) workflowRecoverySafe = false;
       // Step 6: Perform the actual restore based on type
       let restoreResult;
       // Set by the full/database branches; acted on after step 7c so the
@@ -467,10 +472,7 @@ class RestoreService {
 
       if (!verification.isValid) {
         this.log('error', 'Post-restore verification failed', { errors: verification.errors });
-        // Attempt rollback
-        if (this.preRestoreBackupPath) {
-          await this.attemptRollback(this.preRestoreBackupPath);
-        }
+        // The catch below performs the joint rollback once.
         throw new Error(`Post-restore verification failed: ${verification.errors.join(', ')}`);
       }
 
@@ -621,7 +623,6 @@ class RestoreService {
 
       if (workflowCheckpoint) {
         await workflowBackup.restore(manifest.metadata.workflow_state, workflowCheckpoint);
-        workflowApplied = true;
       }
       // Step 8: Clean up temporary files
       if (localBackupPath !== options.source) {
@@ -661,6 +662,7 @@ class RestoreService {
         result: restoreResult
       });
 
+      workflowCompleted = true;
       return {
         success: true,
         duration: durationSeconds,
@@ -684,6 +686,7 @@ class RestoreService {
       let rollbackAttempted = false;
       let rollbackSucceeded = false;
       let rollbackError = null;
+      let workflowRollbackError = null;
       if (this.preRestoreBackupPath) {
         rollbackAttempted = true;
         try {
@@ -703,6 +706,16 @@ class RestoreService {
           'Destination may be in a partial state. Verify restored files and the database before retrying.');
       }
 
+      if (workflowCheckpoint && rollbackSucceeded) {
+        try {
+          await workflowBackup.restore(workflowCheckpoint.state, workflowCheckpoint);
+          workflowRecoverySafe = true;
+        } catch (workflowError) {
+          workflowRollbackError = workflowError.message;
+          this.log('error', `精修状态回滚失败，同步将保持暂停：${workflowError.message}`);
+        }
+      }
+
       // Update restore run record. We persist BOTH the original
       // restore failure AND the rollback status so the admin can tell
       // from a single SQL query which scenario they're in:
@@ -710,11 +723,12 @@ class RestoreService {
       //   - rollback failed   → partial state, admin must inspect before next attempt
       //   - rollback skipped  → user opted out via skipPreBackup; same as above
       if (restoreRun) {
-        const failureMessage = rollbackAttempted
+        let failureMessage = rollbackAttempted
           ? (rollbackSucceeded
             ? `${error.message} (rolled back successfully to pre-restore state)`
             : `${error.message} | ROLLBACK ALSO FAILED: ${rollbackError} — destination is in a partial state, inspect before retrying`)
           : `${error.message} (no pre-restore backup available — destination may be partial)`;
+        if (workflowRollbackError) failureMessage += ` | 精修状态回滚失败：${workflowRollbackError}；同步保持暂停`;
         await db('restore_runs').where('id', restoreRun.id).update({
           completed_at: new Date(),
           status: 'failed',
@@ -728,8 +742,12 @@ class RestoreService {
 
     } finally {
       if (workflowCheckpoint) {
-        if (!workflowApplied) await workflowBackup.restore(workflowCheckpoint.state, workflowCheckpoint).catch(error => this.log('error', error.message));
-        await workflowBackup.release(workflowCheckpoint).catch(error => this.log('error', error.message));
+        if (workflowCompleted || workflowRecoverySafe) {
+          await workflowBackup.release(workflowCheckpoint).catch(error => this.log('error', error.message));
+        } else {
+          await workflowBackup.hold(workflowCheckpoint, '项目恢复或回滚不完整，请核对 PicPeak 与精修状态后手动解除暂停')
+            .catch(error => this.log('error', `保持同步暂停失败：${error.message}`));
+        }
       }
       this.isRunning = false;
       this.currentProgress = null;

@@ -28,4 +28,9 @@ async function restore(state, checkpoint) {
   const result = await bridgeRequest('/api/state/restore', { method: 'POST', body: { state, token: checkpoint.token } });
   if (result.status !== 200) throw new Error(`精修状态恢复失败（HTTP ${result.status}），请保留备份并检查挂载配置`);
 }
-module.exports = { checkpoint, release, restore };
+async function hold(checkpoint, reason) {
+  const result = await bridgeRequest('/api/state/block', { method: 'POST', body: { token: checkpoint.token, reason } });
+  if (result.status !== 200) throw new Error('无法持久化恢复暂停，请保持服务停止并人工核对');
+  clearInterval(checkpoint.timer);
+}
+module.exports = { checkpoint, release, restore, hold };

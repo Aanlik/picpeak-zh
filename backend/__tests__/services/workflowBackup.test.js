@@ -20,3 +20,11 @@ it('passes the checkpoint token through restore and releases the pause', async (
   expect(mockBridge.bridgeRequest).toHaveBeenCalledWith('/api/state/restore', { method: 'POST', body: saved });
   await backup.release(saved);
 });
+
+it('persists an incomplete restore pause before stopping lease renewal', async () => {
+  mockBridge.bridgeRequest.mockResolvedValue({ status: 200 });
+  const saved = { token: 'checkpoint', timer: setInterval(() => {}, 60000) };
+  await backup.hold(saved, '恢复未完成');
+  expect(mockBridge.bridgeRequest).toHaveBeenCalledWith('/api/state/block', { method: 'POST', body: { token: 'checkpoint', reason: '恢复未完成' } });
+  clearInterval(saved.timer);
+});
