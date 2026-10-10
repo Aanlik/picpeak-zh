@@ -1,3 +1,4 @@
+const workflowBackup = require('./workflowBackup');
 const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
@@ -1239,6 +1240,7 @@ async function runBackupInternal(isManual = false) {
   isRunning = true;
   const startTime = new Date();
   let runId = null;
+  let workflowCheckpoint = null;
 
   try {
     const config = await resolveConfigWithFallback();
@@ -1279,7 +1281,11 @@ async function runBackupInternal(isManual = false) {
     // is reused at manifest-build time below so we don't pay a second
     // `getDatabaseBackupInfo()` round-trip — see `ensureDatabaseDumpForBackup`
     // for the full rationale.
-    const verifiedDatabaseInfo = await ensureDatabaseDumpForBackup(config);
+    workflowCheckpoint = await workflowBackup.checkpoint();
+    const verifiedDatabaseInfo = await ensureDatabaseDumpForBackup(workflowCheckpoint ? { ...config, backup_database_inline_dump: true } : config);
+    // Both checkpoints now describe one stopped Bridge. PicPeak's durable
+    // outboxes replay customer changes received during the DB dump.
+    const workflowState = workflowCheckpoint?.state;
 
     // Pass the full config so the walker can evaluate any feature_flag
     // gates declared in the backup_paths table (e.g. `events/archived`
@@ -1301,6 +1307,8 @@ async function runBackupInternal(isManual = false) {
       throw new Error(`Unknown backup destination type: ${config.backup_destination_type}`);
     }
 
+    await workflowBackup.release(workflowCheckpoint);
+    workflowCheckpoint = null;
     const endTime = new Date();
     const durationSeconds = Math.round((endTime - startTime) / 1000);
 
@@ -1342,6 +1350,7 @@ async function runBackupInternal(isManual = false) {
         parentBackupId: previousBackup ? previousBackup.manifest_id : null,
         format: config.backup_manifest_format || 'json',
         customMetadata: {
+          ...(workflowState ? { workflow_state: workflowState } : {}),
           backup_run_id: runId,
           destination_type: destinationType,
           retentionDays: config.backup_retention_days || 30,
@@ -1376,6 +1385,7 @@ async function runBackupInternal(isManual = false) {
       }
     } catch (error) {
       logger.error('Failed to generate backup manifest:', error);
+      if (workflowState) throw new Error('精修状态备份清单写入失败，不能将本次备份视为完整备份');
     }
 
     // Per-Stage-B-path stats — bucket the actually-backed-up files
@@ -1434,6 +1444,7 @@ async function runBackupInternal(isManual = false) {
     }
 
   } finally {
+    await workflowBackup.release(workflowCheckpoint).catch(error => logger.error(error.message));
     isRunning = false;
   }
 }

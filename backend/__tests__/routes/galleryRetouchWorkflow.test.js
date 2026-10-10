@@ -131,4 +131,36 @@ describe('gallery retouch workflow and client requests', () => {
     expect(result.body.photos).toEqual([]);
     expect(result.body.requests).toEqual([]);
   });
+  it('queues one withdrawal when two participants withdraw concurrently', async () => {
+    const crypto = require('crypto');
+    await db('photos').where({ id: visiblePhoto }).update({ visibility: 'public' });
+    await db('event_feedback_settings').where({ event_id: eventId }).update({ identity_mode: 'simple' });
+    await db('photo_feedback').where({ photo_id: visiblePhoto }).delete();
+    await db('workflow_withdrawal_intents').where({ photo_id: visiblePhoto }).delete();
+    const cookies = [];
+    for (const subject of ['a'.repeat(32), 'b'.repeat(32)]) {
+      const identifier = crypto.createHmac('sha256', process.env.JWT_SECRET).update(`feedback:${eventId}:${subject}`).digest('hex');
+      await db('feedback_identity_adoptions').insert({ subject, event_id: eventId, adopted_at: new Date().toISOString() }).onConflict(['subject', 'event_id']).ignore();
+      await db('photo_feedback').insert({ photo_id: visiblePhoto, event_id: eventId, feedback_type: 'color_label', color_label: 'green', guest_identifier: identifier, is_hidden: false });
+      cookies.push('picpeak_feedback=' + jwt.sign({ type: 'feedback' }, process.env.JWT_SECRET, { subject, issuer: 'picpeak-feedback', expiresIn: '1h' }));
+    }
+    let count = 0; let release;
+    const barrier = new Promise(resolve => { release = resolve; });
+    global.fetch = jest.fn(async url => {
+      if (String(url).endsWith('/detail')) {
+        if (++count === 2) release();
+        await barrier;
+        return { status: 200, json: async () => ({ event_id: eventId, photos: [bridgePhoto(visiblePhoto)] }) };
+      }
+      return { status: 202, json: async () => ({ processing: true }) };
+    });
+    const results = await Promise.all(cookies.map(cookie => request(app)
+      .post(`/api/gallery/${slug}/photos/${visiblePhoto}/withdraw-selection`)
+      .set('Authorization', `Bearer ${token()}`).set('Cookie', cookie).send({ delete_delivered: true })));
+    expect(results.every(result => result.status === 200)).toBe(true);
+    expect(results.filter(result => result.body.kept_for_other_participant)).toHaveLength(1);
+    expect(await db('photo_feedback').where({ photo_id: visiblePhoto, color_label: 'green' })).toHaveLength(0);
+    expect(await db('workflow_withdrawal_intents').where({ photo_id: visiblePhoto })).toHaveLength(1);
+  });
+
 });

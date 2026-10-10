@@ -728,7 +728,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
       <footer className="gallery-footer mt-8 sm:mt-12 py-6 sm:py-8 border-t border-surface">
         <div className="container text-center px-4">
           <p className="text-xs sm:text-sm text-muted-theme">
-            {brandingSettings?.footer_text || `© ${new Date().getFullYear()}${brandingSettings?.company_name ? ` ${brandingSettings.company_name}` : ''}. All rights reserved.`}
+            {brandingSettings?.footer_text || `© ${new Date().getFullYear()}${brandingSettings?.company_name ? ` ${brandingSettings.company_name}` : ''}. ${t('gallery.allRightsReserved')}.`}
             <PoweredBy inline />
           </p>
           {brandingSettings?.company_name && brandingSettings?.company_tagline && (

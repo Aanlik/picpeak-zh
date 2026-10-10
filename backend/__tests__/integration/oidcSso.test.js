@@ -96,14 +96,14 @@ describe('OIDC SSO (#798)', () => {
   }
 
   it('JIT-provisions an unknown user and establishes an admin session', async () => {
-    idp.setNextUser({ sub: 'sub-jit-1', email: 'jit@example.com', email_verified: true });
+    idp.setNextUser({ sub: 'sub-jit-1', preferred_username: '摄影师', email: undefined });
     const res = await ssoRoundTrip();
 
     expect(res.headers.location).toBe('http://localhost:5199/admin/dashboard');
     const adminCookie = (res.headers['set-cookie'] || []).find((c) => c.startsWith('admin_token='));
     expect(adminCookie).toBeTruthy();
 
-    const row = await db('admin_users').where({ email: 'jit@example.com' }).first();
+    const row = await db('admin_users').where({ external_subject: 'sub-jit-1' }).first();
     expect(row).toBeTruthy();
     expect(row.auth_provider).toBe('oidc');
     expect(row.external_subject).toBe('sub-jit-1');
@@ -130,7 +130,7 @@ describe('OIDC SSO (#798)', () => {
     expect(byId.external_subject).toBe('sub-jit-1');
   });
 
-  it('links an existing local admin one-time via VERIFIED email and stamps the sub', async () => {
+  it('does not link an existing local admin even with a verified matching email', async () => {
     const role = await db('roles').where({ name: 'admin' }).first();
     const [localId] = await db('admin_users').insert({
       username: 'local-admin',
@@ -148,7 +148,9 @@ describe('OIDC SSO (#798)', () => {
     expect(res.headers.location).toBe('http://localhost:5199/admin/dashboard');
 
     const row = await db('admin_users').where({ id: localId }).first();
-    expect(row.external_subject).toBe('sub-local-1');
+    expect(row.external_subject).toBeNull();
+    const provisioned = await db('admin_users').where({ external_subject: 'sub-local-1' }).first();
+    expect(provisioned.id).not.toBe(localId);
     expect(row.auth_provider).toBe('local'); // password keeps working
   });
 
@@ -170,7 +172,7 @@ describe('OIDC SSO (#798)', () => {
     // insert fails and the flow must land on an error, never on the
     // victim's session.
     const res = await ssoRoundTrip();
-    expect(res.headers.location).toMatch(/sso_error=/);
+    expect(res.headers.location).toBe('http://localhost:5199/admin/dashboard');
 
     const victim = await db('admin_users').where({ email: 'victim@example.com' }).first();
     expect(victim.external_subject).toBeNull();
@@ -233,7 +235,7 @@ describe('OIDC SSO (#798)', () => {
 
     const res = await request(app)
       .post('/api/auth/admin/login')
-      .send({ username: row.email, password: 'KnownPass123' });
+      .send({ username: row.username, password: 'KnownPass123' });
     expect(res.status).toBe(401);
   });
 
@@ -250,7 +252,7 @@ describe('OIDC SSO (#798)', () => {
     idp.emailViaUserinfoOnly = false;
 
     expect(res.headers.location).toBe('http://localhost:5199/admin/dashboard');
-    const row = await db('admin_users').where({ email: 'userinfo@example.com' }).first();
+    const row = await db('admin_users').where({ external_subject: 'sub-userinfo' }).first();
     expect(row).toBeTruthy();
     expect(row.external_subject).toBe('sub-userinfo');
   });
@@ -284,7 +286,7 @@ describe('OIDC SSO (#798)', () => {
 
       // A NEW row bound to issuer B — the issuer-A admin is untouched and
       // its role was not inherited.
-      const collider = await db('admin_users').where({ email: 'colliding@example.com' }).first();
+      const collider = await db('admin_users').where({ external_subject: 'sub-jit-1', external_issuer: idp2.issuer }).first();
       expect(collider).toBeTruthy();
       expect(collider.id).not.toBe(agentCookies.jitAdminId);
       expect(collider.external_issuer).toBe(idp2.issuer);

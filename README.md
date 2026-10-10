@@ -30,7 +30,7 @@ Camera/拍摄项目/
 
 ## 镜像与端口
 
-当前固定标签：`picpeak-pixcake:3.134.1-zh.21-bridge.0.1.9`。禁止使用 `latest` 作为生产更新来源。
+当前固定标签：`picpeak-pixcake:3.134.1-zh.22-bridge.0.1.10`。禁止使用 `latest` 作为生产更新来源。
 
 统一镜像内有两个独立进程：PicPeak 提供网页；Bridge 只监听容器内 `127.0.0.1:8080`，由 PicPeak 后台访问，不发布 Bridge 端口。PicPeak 与 Bridge 保持各自的数据卷和数据库，以便迁移、备份与故障隔离。合并仓库和镜像不代表数据库已合并。
 
@@ -56,6 +56,16 @@ docker compose -f compose.yaml -f compose.nas-camera.yaml up -d
 
 跨设备访问使用 PicPeak 设置中的客户访问地址。局域网以外需要独立可匿名访问的 HTTPS 入口，FN Connect 未登录客户访问尚未完成现场验证，不能视为可用方案。穿透或 DDNS 只对外提供 PicPeak 网页，Bridge 无需公网。
 
+## 下载与备份说明
+
+手机多选下载会显示逐张下载列表，每个文件单独点击保存，保留原文件名，不打包 ZIP。Safari 由浏览器处理保存确认；微信内无法保存时，请从菜单选择在浏览器打开。列表里的“已发起下载”表示已请求下载，不能替代设备实际保存结果。桌面仍可直接发起多个文件下载。
+
+后台生成的新完整备份会在清单内保存 Bridge 项目配置、精修阶段、版本、交付哈希、撤回任务和异常状态。备份过程中暂停 Bridge 同步，并持续续期；Bridge 不可用或状态清单写入失败时，不把备份标记为完整。完整或数据库恢复会同时恢复这份精修状态，且拒绝越界或重叠的目录。旧备份不包含这份状态，不能凭旧备份恢复 Bridge 进度。
+
+NAS 原片、外部样片及 `PixCakeDelivery` 文件仍需由 NAS 单独备份；状态清单不复制外部照片、原片或历史成片，也不包含运行环境的 API 令牌。建议同时保留 `/data`、`/bridge-data` 和挂载配置的卷备份。
+
+标准分离目录会从 `01_RAW` 的相邻 `02_PROOF` 读取撤回所需的原样片；两种格式的原目录都保持只读。文件监听器不会因文件被移除而自动删除照片记录，项目和照片的删除通过后台操作完成。
+
 ## 已有安装升级
 
 升级前停止旧容器并备份两个卷：PicPeak 的 `/data`、Bridge 的 `/bridge-data`，同时备份 `.env`、挂载配置与交付目录。**保留原数据卷名称**，不同 Compose 项目名会产生新卷，误接空卷会表现为重新初始化。
@@ -73,7 +83,7 @@ docker compose -f compose.yaml -f compose.nas-camera.yaml up -d
 不能在 NAS 构建时，在另一台 Docker 主机运行构建并导出，再使用 NAS 的镜像导入功能：
 
 ```sh
-docker save picpeak-pixcake:3.134.1-zh.21-bridge.0.1.9 -o picpeak-pixcake.tar
+docker save picpeak-pixcake:3.134.1-zh.22-bridge.0.1.10 -o picpeak-pixcake.tar
 # 导入完成后，使用相同固定标签与原数据卷重建容器
 ```
 
@@ -92,10 +102,10 @@ npm --prefix frontend run build:check
 SKIP_S3_TESTS=true npm --prefix backend test -- --runInBand
 uv run --directory bridge pytest -q
 ./scripts/build-unified.sh
-STACK_IMAGE=picpeak-pixcake:3.134.1-zh.21-bridge.0.1.9 bridge/docker/integrated/smoke.sh
+STACK_IMAGE=picpeak-pixcake:3.134.1-zh.22-bridge.0.1.10 bridge/docker/integrated/smoke.sh
 ```
 
-S3 用例需要另行提供对象存储测试环境，默认本地卷部署不依赖 S3。真实容器 E2E 使用 `bridge/scripts/integration.py`，必须是专用、全新、名称以 `pixcake-` 开头的测试容器；不能对生产实例运行。统一 CI 执行前后端、中文键/插值/复数检查、Bridge 测试、容器重启和 100 张照片 E2E，全部通过后才允许 main 手动发布固定标签镜像。
+S3 用例需要另行提供对象存储测试环境，默认本地卷部署不依赖 S3。真实容器 E2E 使用 `bridge/scripts/integration.py`，必须是专用、全新、名称以 `pixcake-` 开头的测试容器；不能对生产实例运行。统一 CI 执行前后端、中文键/插值/复数检查、Bridge 测试、Python 依赖扫描、容器重启、100 张照片 E2E 和手机浏览器下载测试，全部通过后才允许 main 手动发布固定标签镜像。
 
 ## 维护与限制
 

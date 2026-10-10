@@ -13,6 +13,12 @@ async function deleteEventCascade(eventId, adminContext) {
     throw err;
   }
 
+  if (event.is_archiving) {
+    const error = new Error('项目正在归档，请稍后再删除');
+    error.status = 409;
+    throw error;
+  }
+
   // Responsive tiers (#1095 / #492) live in the top-level thumbnails/ and
   // previews/ directories, not under the event folder the filesystem sweep
   // below removes, and their keys are derived from the photo rows — which the
@@ -146,6 +152,7 @@ async function deleteEventCascade(eventId, adminContext) {
   }
 
   await db.transaction(async (trx) => {
+      await require('../../services/photographyWorkflowBridge').persistUnbindIntent(eventId, trx);
     // 1. Delete activity logs (audit trail) — and the per-admin bell
     // dismissals that point at them (migration 239). On PostgreSQL the FK
     // cascade removes them with the activity rows, so nothing is deleted

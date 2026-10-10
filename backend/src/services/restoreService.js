@@ -1,3 +1,4 @@
+const workflowBackup = require('./workflowBackup');
 const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
@@ -304,6 +305,8 @@ class RestoreService {
     this.preservedMetaSnapshot = [];  // reset per run
     const startTime = new Date();
     let restoreRun = null;
+    let workflowCheckpoint = null;
+    let workflowApplied = false;
 
     try {
       // Validate options
@@ -383,6 +386,10 @@ class RestoreService {
         };
       }
 
+      if (['full', 'database'].includes(options.restoreType) && manifest.metadata?.workflow_state) {
+        workflowCheckpoint = await workflowBackup.checkpoint();
+        if (!workflowCheckpoint) throw new Error('该备份包含精修状态，请先配置 Bridge 后恢复');
+      }
       // Step 4: Create pre-restore backup (unless explicitly skipped)
       if (!options.skipPreBackup) {
         this.updateProgress('Creating pre-restore safety backup...');
@@ -612,6 +619,10 @@ class RestoreService {
         this.log('warn', 'Skipping face requeue — post-restore migrations did not complete, so photo paths may be unconverted');
       }
 
+      if (workflowCheckpoint) {
+        await workflowBackup.restore(manifest.metadata.workflow_state, workflowCheckpoint);
+        workflowApplied = true;
+      }
       // Step 8: Clean up temporary files
       if (localBackupPath !== options.source) {
         await fs.unlink(localBackupPath).catch(err =>
@@ -716,6 +727,10 @@ class RestoreService {
       throw error;
 
     } finally {
+      if (workflowCheckpoint) {
+        if (!workflowApplied) await workflowBackup.restore(workflowCheckpoint.state, workflowCheckpoint).catch(error => this.log('error', error.message));
+        await workflowBackup.release(workflowCheckpoint).catch(error => this.log('error', error.message));
+      }
       this.isRunning = false;
       this.currentProgress = null;
 

@@ -1,3 +1,4 @@
+import { MobileDownloadQueue } from './MobileDownloadQueue';
 import { useGalleryFiltering, resolveMediaType } from './hooks/useGalleryFiltering';
 import { useGalleryUpload } from './hooks/useGalleryUpload';
 import { useGallerySelection } from './hooks/useGallerySelection';
@@ -1020,6 +1021,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
         )}
 
         {/* Download size picker (#858) — "download all", or a selection. */}
+        <MobileDownloadQueue />
         {(showResolutionPicker || resolutionPickerIds) && (
           <DownloadResolutionModal
             slug={slug}
@@ -1250,6 +1252,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
         {uploadProcessingNotice}
 
         {/* Download size picker (#858) — "download all", or a selection. */}
+        <MobileDownloadQueue />
         {(showResolutionPicker || resolutionPickerIds) && (
           <DownloadResolutionModal
             slug={slug}
@@ -1707,6 +1710,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
         {uploadProcessingNotice}
 
         {/* Download size picker (#858) — "download all", or a selection. */}
+        <MobileDownloadQueue />
         {(showResolutionPicker || resolutionPickerIds) && (
           <DownloadResolutionModal
             slug={slug}

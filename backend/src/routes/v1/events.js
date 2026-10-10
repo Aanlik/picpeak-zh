@@ -368,6 +368,11 @@ router.post(
         return res.status(404).json({ error: 'Event not found' });
       }
 
+      if (event.is_archived || event.is_archiving) {
+        await fs.unlink(tempPath).catch(() => {});
+        return res.status(409).json({ error: '项目已归档或正在归档，不能上传照片' });
+      }
+
       // Optional category assignment, mirroring the admin upload route
       // (adminPhotos.js). Multipart form field `category_id`. If the
       // category looks up to a "collage" slug, the photo's `type` flips

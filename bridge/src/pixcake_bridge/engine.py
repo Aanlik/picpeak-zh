@@ -1,4 +1,5 @@
 import asyncio
+import time
 import uuid
 import json
 from collections import Counter
@@ -17,6 +18,8 @@ class Engine:
     def __init__(self, config, sessions, client):
         self.config, self.sessions, self.client = config, sessions, client
         self.lock = asyncio.Lock()
+        self.maintenance_until = 0
+        self.maintenance_token = None
         self.stability = Stability(config.stable_seconds)
         self.wake = asyncio.Event()
         self.rebase_layout_paths()
@@ -61,7 +64,12 @@ class Engine:
                         task.snapshot = rebased(task.snapshot)
             s.commit()
 
+    def require_writable(self):
+        if self.maintenance_until > time.monotonic():
+            raise ValueError("正在备份或恢复精修状态，请稍后重试")
+
     def set_stage(self, event_id, stage):
+        self.require_writable()
         if stage not in STAGES:
             raise ValueError("无效阶段")
         with self.sessions() as s:
@@ -73,12 +81,13 @@ class Engine:
             elif stage != "ARCHIVED":
                 p.previous_stage = None
             p.stage = stage
-            if stage in {"EDITING", "DELIVERED", "ARCHIVED"}:
+            if stage in {"EDITING", "DELIVERED"}:
                 p.has_entered_editing = True
             s.commit()
         self.wake.set()
 
     def restore_stage(self, event_id):
+        self.require_writable()
         with self.sessions() as s:
             p = s.scalar(select(Project).where(Project.event_id == event_id))
             if p is None:
@@ -112,6 +121,7 @@ class Engine:
         return folder
 
     def prepare_next_version_folder(self, event_id, photo_id, expected_current_version=None):
+        self.require_writable()
         cfg = next((item for item in self.config.projects if item.event_id == event_id), None)
         if cfg is None:
             raise ValueError("项目尚未绑定")
@@ -143,18 +153,20 @@ class Engine:
 
     async def sync(self, event_id=None):
         async with self.lock:
+            if self.maintenance_until > time.monotonic():
+                return
             for cfg in self.config.projects:
                 if event_id is not None and cfg.event_id != event_id:
                     continue
                 with self.sessions() as s:
                     project = s.scalar(select(Project).where(Project.event_id == cfg.event_id))
-                    await self.resume_withdrawals(cfg, s, project)
                     if project.stage == "ARCHIVED":
                         continue
+                    withdrawal_failed = await self.resume_withdrawals(cfg, s, project)
                     run = SyncRun(project_id=project.id)
                     s.add(run)
                     s.commit()
-                    failed = False
+                    failed = withdrawal_failed
                     try:
                         # Use a complete, unfiltered snapshot: filtering green
                         # would hide cancellations. Fetch all pages before any
@@ -274,6 +286,7 @@ class Engine:
         photo.raw_hash = None
 
     def queue_withdraw(self, event_id, photo_id, delete_delivered, operation_id=None):
+        self.require_writable()
         with self.sessions() as s:
             project = s.scalar(select(Project).where(Project.event_id == event_id))
             photo = s.scalar(select(Photo).where(Photo.project_id == project.id, Photo.photo_id == photo_id)) if project else None
@@ -305,6 +318,8 @@ class Engine:
             cfg = next(item for item in self.config.projects if item.event_id == event_id)
             with self.sessions() as s:
                 project = s.scalar(select(Project).where(Project.event_id == event_id))
+                if project.stage == "ARCHIVED":
+                    return {"processing": True, "deleted": bool(delete_delivered)}
                 await self.resume_withdrawals(cfg, s, project)
                 photo = s.scalar(select(Photo).where(Photo.project_id == project.id, Photo.photo_id == photo_id))
                 task = s.scalar(select(Withdrawal).where(Withdrawal.photo_pk == photo.id))
@@ -313,6 +328,7 @@ class Engine:
                 return {"deleted": bool(delete_delivered), "current_version": self.current_version(s, photo)}
 
     async def resume_withdrawals(self, cfg, s, project):
+        failed = False
         tasks = list(s.scalars(select(Withdrawal).join(Photo).where(Photo.project_id == project.id, Withdrawal.state != "SUCCESS")))
         for task in tasks:
             photo = s.get(Photo, task.photo_pk)
@@ -325,8 +341,9 @@ class Engine:
                             raise ValueError("待精修 RAW 副本已变更，拒绝自动删除")
                 if task.delete_delivered:
                     if not task.snapshot:
-                        proof_index = await asyncio.to_thread(index_files, cfg.raw, FINAL_EXTENSIONS, {"PixCakeDelivery"})
-                        proof = match_raw(photo.source_filename, proof_index, cfg.raw)
+                        proof_root = cfg.proof_root
+                        proof_index = await asyncio.to_thread(index_files, proof_root, FINAL_EXTENSIONS, {"PixCakeDelivery"})
+                        proof = match_raw(photo.source_filename, proof_index, proof_root)
                         directory = cfg.history / str(photo.photo_id)
                         if directory.is_symlink():
                             raise ValueError("历史目录不能为符号链接")
@@ -391,9 +408,12 @@ class Engine:
                         safe_file(file, cfg.history)
                         file.unlink()
             except Exception as exc:
+                failed = True
                 task.error, task.updated = str(exc), now()
                 self.record_error(s, project, f"照片 {photo.photo_id} 撤回待处理: {exc}")
                 s.commit()
+
+        return failed
 
     async def finals(self, s, cfg, project, counts, remote_ids):
         failed = False
@@ -539,6 +559,7 @@ class Engine:
                 p.unlink()
 
     def retry(self, event_id):
+        self.require_writable()
         with self.sessions() as s:
             photo_ids = select(Photo.id).join(Project).where(Project.event_id == event_id)
             for delivery in s.scalars(select(Delivery).where(Delivery.photo_pk.in_(photo_ids), Delivery.state.in_(["FAILED", "UNKNOWN"]))):

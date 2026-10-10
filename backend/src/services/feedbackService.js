@@ -238,6 +238,12 @@ class FeedbackService {
     await db.transaction(async (trx) => {
       await trx('photos').where({ id: photoId }).forUpdate().first();
 
+      if (await trx.schema.hasTable('workflow_withdrawal_intents') && await trx('workflow_withdrawal_intents').where({ photo_id: photoId }).first()) {
+        const error = new Error('撤回任务仍在处理中，请稍后重新选片');
+        error.code = 'WITHDRAW_PENDING';
+        throw error;
+      }
+
       // Visible rows only, like every other single-value path (#1150): a
       // hidden tag is an admin's hidden record, and a guest writing over it
       // must create a fresh visible row rather than quietly unhide it.
@@ -302,6 +308,44 @@ class FeedbackService {
   /** Remove the current customer's visible color label without touching
    * hidden rows. Cancelling their last active retouch request uses
    * this to stop the Bridge from processing a future version export. */
+  async submitIndividualColorLabel(photoId, eventId, colorLabel, data, identifier) {
+    return db.transaction(async (trx) => {
+      if (data.guest_id) {
+        const guest = await trx('gallery_guests').where({ id: data.guest_id }).forShare().first();
+        if (!guest || guest.is_deleted) return { guest_missing: true };
+      }
+      await trx('photos').where({ id: photoId, event_id: eventId }).forUpdate().first();
+      if (await trx.schema.hasTable('workflow_withdrawal_intents') && await trx('workflow_withdrawal_intents').where({ photo_id: photoId }).first()) {
+        const error = new Error('撤回任务仍在处理中，请稍后重新选片');
+        error.code = 'WITHDRAW_PENDING';
+        throw error;
+      }
+      const scope = () => {
+        const q = trx('photo_feedback').where({ photo_id: photoId, event_id: eventId, feedback_type: 'color_label', is_hidden: false });
+        return data.guest_id ? q.where('guest_id', data.guest_id) : q.where('guest_identifier', identifier);
+      };
+      const existing = await scope().first();
+      if (existing?.color_label === colorLabel && data.ensure_color_label === true) return { id: existing.id, exists: true };
+      await scope().delete();
+      if (existing?.color_label === colorLabel) {
+        await this.updatePhotoFeedbackStats(photoId, trx);
+        return { removed: true };
+      }
+      if (existing) {
+        await trx('photo_feedback').insert({ ...existing, color_label: colorLabel, updated_at: new Date() });
+        await this.updatePhotoFeedbackStats(photoId, trx);
+        return { id: existing.id, updated: true };
+      }
+      const [row] = await trx('photo_feedback').insert({
+        photo_id: photoId, event_id: eventId, feedback_type: 'color_label', color_label: colorLabel,
+        guest_identifier: identifier, guest_id: data.guest_id || null, guest_name: data.guest_name || null,
+        ip_address: data.ip_address, user_agent: data.user_agent, is_hidden: false,
+      }).returning('id');
+      await this.updatePhotoFeedbackStats(photoId, trx);
+      return { id: row?.id || row, created: !existing, updated: Boolean(existing) };
+    });
+  }
+
   async removeColorLabel(photoId, eventId, { identity_mode, guest_id, guest_identifier }, executor = db) {
     const remove = async (trx) => {
       const query = trx('photo_feedback').where({
@@ -467,6 +511,8 @@ class FeedbackService {
         throw new Error('Reserved guest identifier');
       }
 
+      if (feedback_type === 'color_label') return await this.submitIndividualColorLabel(photoId, eventId, color_label, feedbackData, guestIdentifier);
+
       // Rating 0 clears the guest's rating (#884). Only the explicit zero
       // sentinel (0, or "0" from callers that skip the route validator's
       // toInt) triggers the destructive path — malformed input (undefined,
@@ -498,7 +544,9 @@ class FeedbackService {
         const existing = await duplicateQuery.first();
 
         if (existing) {
-          // Rating 0 clears the guest's rating (#884) — delete rather
+          if (feedback_type === 'color_label') return await this.submitIndividualColorLabel(photoId, eventId, color_label, feedbackData, guestIdentifier);
+
+      // Rating 0 clears the guest's rating (#884) — delete rather
           // than store 0, which would drag the photo's average down and
           // still count in total_ratings. Delete the full guest-scoped
           // set, not existing.id: the check-then-insert above can race

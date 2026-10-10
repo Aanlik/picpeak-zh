@@ -40,7 +40,7 @@ PicPeak 管理项目、照片、客户选片、评论、分享访问与媒体呈
 
 ## 部署版本
 
-版本标签应体现本项目自己的版本，不再承诺与 PicPeak 官方版本保持对应。生产环境禁止使用可变的 `latest`、`main` 或 `stable` 标签。NAS 的部署、目录映射和升级步骤以 [Bridge 一体化部署说明](https://github.com/Aanlik/pixcake-bridge/blob/main/README.md) 为准。
+版本标签应体现本项目自己的版本，不再承诺与 PicPeak 官方版本保持对应。生产环境禁止使用可变的 `latest`、`main` 或 `stable` 标签。NAS 的部署、目录映射和升级步骤以 [本项目部署说明](../README.md) 为准。
 
 ## 翻译质量基线
 

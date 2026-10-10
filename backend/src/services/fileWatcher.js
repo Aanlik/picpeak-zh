@@ -94,7 +94,8 @@ async function findExistingPhoto(eventId, basename, relativePath) {
     .where(function() {
       this.where('filename', basename)
         .orWhere('source_filename', basename)
-        .orWhere('path', relativePath);
+        .orWhere('path', relativePath)
+        .orWhere('path', path.posix.join('events/active', relativePath.split(path.sep).join('/')));
     })
     .first();
 }
@@ -123,7 +124,7 @@ async function processNewPhoto(filePath) {
 
   // Find the event
   const event = await db('events').where({ slug: eventSlug, is_active: formatBoolean(true) }).first();
-  if (!event) return;
+  if (!event || event.is_archived || event.is_archiving) return;
 
   // Get file stats
   const stats = await fs.stat(filePath);
@@ -206,15 +207,15 @@ async function removePhoto(filePath) {
   // Look up event before deleting to invalidate zip cache
   const photo = await db('photos').where({ path: relativePath }).first();
 
-  // Remove from database
-  await db('photos').where({ path: relativePath }).delete();
-
+  // The database is authoritative. Archive/replacement cleanup emits the
+  // same unlink events as a manual file deletion, sometimes after restore.
+  // Deleting a row here loses comments, identity and workflow history.
+  // Actual deletion is performed by the authenticated project/photo routes.
   if (photo) {
     downloadZipService.invalidate(photo.event_id);
-
+    logger.info(`Watched file removed; retained photo metadata: ${relativePath}`);
   }
 
-  logger.info(`Removed photo: ${relativePath}`);
 }
 
-module.exports = { stopFileWatcher, startFileWatcher, findExistingPhoto };
+module.exports = { stopFileWatcher, startFileWatcher, findExistingPhoto, removePhoto };

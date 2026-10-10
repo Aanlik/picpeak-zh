@@ -109,7 +109,10 @@ describe('OIDC role mapping + login policy (#798 phase 2)', () => {
   }
 
   async function roleOf(email) {
-    const row = await db('admin_users').where({ email }).first();
+    const subjectByEmail = { 'mapped@example.com': 'sub-map-1', 'multi@example.com': 'sub-multi', 'unmapped@example.com': 'sub-unmapped-jit', 'proto@example.com': 'sub-proto', 'flat@example.com': 'sub-flat' };
+    const row = subjectByEmail[email]
+      ? await db('admin_users').where({ external_subject: subjectByEmail[email] }).first()
+      : await db('admin_users').where({ email }).first();
     const role = await db('roles').where({ id: row.role_id }).first();
     return role.name;
   }
@@ -211,7 +214,7 @@ describe('OIDC role mapping + login policy (#798 phase 2)', () => {
   it('never demotes the last active super_admin', async () => {
     // Make the SSO admin the ONLY active super_admin.
     const superRole = await db('roles').where({ name: 'super_admin' }).first();
-    const ssoAdmin = await db('admin_users').where({ email: 'mapped@example.com' }).first();
+    const ssoAdmin = await db('admin_users').where({ external_subject: 'sub-map-1' }).first();
     await db('admin_users').where({ role_id: superRole.id }).update({ is_active: 0 });
     await db('admin_users').where({ id: ssoAdmin.id }).update({ role_id: superRole.id, is_active: 1 });
 
@@ -251,6 +254,8 @@ describe('OIDC role mapping + login policy (#798 phase 2)', () => {
     // sync applies to it.
     const [localId] = await db('admin_users').insert({
       username: 'local-super',
+      external_subject: 'sub-local-super',
+      external_issuer: idp.issuer,
       email: 'local-super@example.com',
       password_hash: await bcrypt.hash('LocalSuper123', 4),
       role_id: superRole.id,
@@ -263,7 +268,7 @@ describe('OIDC role mapping + login policy (#798 phase 2)', () => {
     // The only OTHER active super is OIDC-owned (root goes inactive) — the
     // plain last-super guard would allow the demotion, the break-glass
     // guard must not.
-    const ssoAdmin = await db('admin_users').where({ email: 'mapped@example.com' }).first();
+    const ssoAdmin = await db('admin_users').where({ external_subject: 'sub-map-1' }).first();
     await db('admin_users').where({ id: ssoAdmin.id }).update({ role_id: superRole.id });
     await db('admin_users').where({ email: 'root@example.com' }).update({ is_active: 0 });
 

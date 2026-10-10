@@ -183,7 +183,7 @@ CMD ["./wait-for-db.sh", "node", "--max-http-header-size=32768", "server.js"]
 
 FROM python:3.12.14-alpine AS bridge-python
 FROM picpeak AS integrated
-ARG STACK_VERSION=3.134.1-zh.21-bridge.0.1.9
+ARG STACK_VERSION=3.134.1-zh.22-bridge.0.1.10
 LABEL org.opencontainers.image.title="PicPeak 简体中文 + PixCake Bridge" \
       org.opencontainers.image.source="https://github.com/Aanlik/picpeak-zh" \
       org.opencontainers.image.version=${STACK_VERSION}

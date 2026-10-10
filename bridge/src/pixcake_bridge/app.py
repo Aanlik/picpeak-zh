@@ -1,10 +1,10 @@
 import asyncio
 import json
 import os
-import re
 import secrets
 import tempfile
 import uuid
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlencode, urlparse
@@ -44,6 +44,10 @@ def create_app(config=None, client=None, start_workers=True):
         cfg = config or Config.load()
         db_engine, sessions = database(cfg.database_url)
         api = client or PicPeak(cfg.base_url, cfg.token)
+        from .state_backup import restore_state
+        journal = cfg.projects_file.parent / 'restore-state.json'
+        if journal.exists():
+            restore_state(json.loads(journal.read_text()), cfg, sessions, journal=False)
         engine = Engine(cfg, sessions, api)
         app.state.engine, app.state.config = engine, cfg
         tasks = []
@@ -80,6 +84,9 @@ def create_app(config=None, client=None, start_workers=True):
         if not (correct_user and correct_pass):
             raise HTTPException(401, "登录失败", headers={"WWW-Authenticate": "Basic"})
         if request.method not in {"GET", "HEAD"}:
+            engine = request.app.state.engine
+            if engine.maintenance_until > time.monotonic() and not request.url.path.startswith('/api/state/'):
+                raise HTTPException(503, '正在备份或恢复精修状态，请稍后重试')
             origin = request.headers.get("origin")
             if origin and urlparse(origin).netloc != request.headers.get("host"):
                 raise HTTPException(403, "请求来源无效")
@@ -93,6 +100,7 @@ def create_app(config=None, client=None, start_workers=True):
             for p in s.scalars(select(Project).where(Project.event_id.in_(configured))):
                 photos = list(s.scalars(select(Photo).where(Photo.project_id == p.id).order_by(Photo.photo_id)))
                 deliveries = list(s.scalars(select(Delivery).join(Photo).where(Photo.project_id == p.id)))
+                withdrawals = list(s.scalars(select(Withdrawal).join(Photo).where(Photo.project_id == p.id, Withdrawal.state != "SUCCESS")))
                 summary = {
                     "客户已选": sum(x.selected for x in photos),
                     "追加选片": sum(x.selected and x.added_during_editing for x in photos),
@@ -102,7 +110,7 @@ def create_app(config=None, client=None, start_workers=True):
                     "已同步": sum(bool(x.delivery_hash) for x in photos),
                     "返修": max(0, sum(x.state == "SUCCESS" for x in deliveries) - len({x.photo_pk for x in deliveries if x.state == "SUCCESS"})),
                     "取消待确认": sum(x.cancelled and bool(x.selected_path) for x in photos),
-                    "异常": sum(bool(x.error) for x in photos) + sum(x.state in {"FAILED", "UNKNOWN"} for x in deliveries),
+                    "异常": sum(bool(x.error) for x in photos) + sum(x.state in {"FAILED", "UNKNOWN"} for x in deliveries) + sum(bool(x.error) or x.state in {"UNKNOWN", "UPLOADING"} for x in withdrawals),
                 }
                 project_config = next((c for c in engine.config.projects if c.event_id == p.event_id), None)
                 host_root = engine.config.delivery_host_root_for(p.event_id)
@@ -311,21 +319,104 @@ def create_app(config=None, client=None, start_workers=True):
             payload = await request.json()
         except Exception:
             payload = {}
-        with engine.sessions() as session:
-            project = session.scalar(select(Project).where(Project.event_id == event_id))
-            unknown = list(session.scalars(
-                select(Delivery).join(Photo).where(Photo.project_id == project.id, Delivery.state == "UNKNOWN")
-            ))
-            unknown += list(session.scalars(select(Withdrawal).join(Photo).where(Photo.project_id == project.id, Withdrawal.state.in_(["UNKNOWN", "UPLOADING"]))))
-        if unknown and payload.get("confirm_unknown") is not True:
-            raise HTTPException(409, detail={
-                "error": "PicPeak 中核对这些照片的结果后，才能重试未知任务",
-                "code": "UNKNOWN_CONFIRMATION_REQUIRED",
-                "count": len(unknown),
-            })
         async with engine.lock:
+            with engine.sessions() as session:
+                project = session.scalar(select(Project).where(Project.event_id == event_id))
+                if project is None:
+                    raise HTTPException(404, "项目不存在")
+                unknown = list(session.scalars(
+                    select(Delivery).join(Photo).where(Photo.project_id == project.id, Delivery.state == "UNKNOWN")
+                ))
+                unknown += list(session.scalars(select(Withdrawal).join(Photo).where(Photo.project_id == project.id, Withdrawal.state.in_(["UNKNOWN", "UPLOADING"]))))
+            if unknown and payload.get("confirm_unknown") is not True:
+                raise HTTPException(409, detail={
+                    "error": "PicPeak 中核对这些照片的结果后，才能重试未知任务",
+                    "code": "UNKNOWN_CONFIRMATION_REQUIRED",
+                    "count": len(unknown),
+                })
             engine.retry(event_id)
         await engine.sync(event_id)
+        return {"success": True}
+
+    @app.post("/api/state/checkpoint", dependencies=[Depends(authorize)])
+    async def checkpoint(request: Request):
+        from .state_backup import export_state
+        engine = request.app.state.engine
+        async with engine.lock:
+            if engine.maintenance_until > time.monotonic():
+                raise HTTPException(409, '已有备份或恢复任务')
+            state = export_state(engine.config, engine.sessions)
+            engine.maintenance_token = str(uuid.uuid4())
+            engine.maintenance_until = time.monotonic() + 1800
+            return {"token": engine.maintenance_token, "state": state}
+
+    @app.post("/api/state/renew", dependencies=[Depends(authorize)])
+    async def renew_checkpoint(request: Request):
+        engine = request.app.state.engine
+        payload = await request.json()
+        async with engine.lock:
+            if payload.get('token') != engine.maintenance_token or engine.maintenance_until <= time.monotonic():
+                raise HTTPException(409, '备份同步锁已过期')
+            engine.maintenance_until = time.monotonic() + 1800
+        return {"success": True}
+
+    @app.post("/api/state/release", dependencies=[Depends(authorize)])
+    async def release_checkpoint(request: Request):
+        engine = request.app.state.engine
+        payload = await request.json()
+        async with engine.lock:
+            if payload.get('token') != engine.maintenance_token:
+                raise HTTPException(409, '备份任务标识不匹配')
+            engine.maintenance_until = 0
+            engine.maintenance_token = None
+            engine.wake.set()
+        return {"success": True}
+
+    @app.post("/api/state/restore", dependencies=[Depends(authorize)])
+    async def restore_checkpoint(request: Request):
+        from .state_backup import restore_state
+        engine = request.app.state.engine
+        body = await request.body()
+        if len(body) > 100 * 1024 * 1024:
+            raise HTTPException(413, '状态备份超过大小限制')
+        payload = json.loads(body)
+        async with engine.lock:
+            if engine.maintenance_until <= time.monotonic() or payload.get('token') != engine.maintenance_token:
+                raise HTTPException(409, '必须先暂停同步并建立恢复检查点')
+            try:
+                restore_state(payload['state'], engine.config, engine.sessions)
+            except (ValueError, KeyError, TypeError) as error:
+                raise HTTPException(400, str(error)) from error
+        return {"success": True}
+
+    @app.delete("/api/projects/{event_id}", dependencies=[Depends(authorize)])
+    async def unbind_project(request: Request, event_id: int):
+        engine = request.app.state.engine
+        cfg = engine.config
+        async with engine.lock:
+            engine.require_writable()
+            current = [p for p in cfg.projects if p.event_id != event_id]
+            payload = [{"name": p.name, "event_id": p.event_id, "raw": str(p.raw), "selected": str(p.selected), "final": str(p.final), "history": str(p.history)} for p in current]
+            cfg.projects_file.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=cfg.projects_file.parent, delete=False) as file:
+                json.dump(payload, file, ensure_ascii=False, indent=2)
+                file.flush()
+                os.fsync(file.fileno())
+                temporary = Path(file.name)
+            temporary.replace(cfg.projects_file)
+            cfg.projects = current
+            # Never delete project files: detach only the automation binding.
+            with engine.sessions() as session:
+                project = session.scalar(select(Project).where(Project.event_id == event_id))
+                if project:
+                    ids = select(Photo.id).where(Photo.project_id == project.id)
+                    session.query(Delivery).filter(Delivery.photo_pk.in_(ids)).delete(synchronize_session=False)
+                    session.query(Withdrawal).filter(Withdrawal.photo_pk.in_(ids)).delete(synchronize_session=False)
+                    session.query(Photo).filter(Photo.project_id == project.id).delete(synchronize_session=False)
+                    session.query(Error).filter(Error.project_id == project.id).delete(synchronize_session=False)
+                    session.query(SyncRun).filter(SyncRun.project_id == project.id).delete(synchronize_session=False)
+                    session.delete(project)
+                    session.commit()
         return {"success": True}
 
     @app.post("/projects", dependencies=[Depends(authorize)])
@@ -379,7 +470,6 @@ def create_app(config=None, client=None, start_workers=True):
         if not delivery_root.is_dir() or delivery_root.is_symlink():
             return setup_error("此项目的 PixCakeDelivery 挂载不可用，请检查 NAS Compose 路径")
 
-        slug = re.sub(r"[^A-Za-z0-9_\-\u4e00-\u9fff]+", "-", name).strip("-")[:48] or "project"
         # A project is already scoped to its own PixCakeDelivery mount. Put
         # workflow folders directly in that mount; repeating the event name
         # here created an unnecessary second project directory.
@@ -406,6 +496,7 @@ def create_app(config=None, client=None, start_workers=True):
             # binding that would otherwise remain permanently disconnected.
             await engine.client.photos(event_id)
             async with engine.lock:
+                engine.require_writable()
                 if any(p.event_id == event_id for p in cfg.projects):
                     return setup_error("这个 PicPeak 项目已经绑定")
                 if any(p.selected.resolve() == project.selected.resolve() or p.final.resolve() == project.final.resolve() or p.history.resolve() == project.history.resolve() for p in cfg.projects):

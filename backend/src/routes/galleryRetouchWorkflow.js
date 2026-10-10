@@ -95,27 +95,24 @@ router.post('/:slug/photos/:photoId/withdraw-selection',
       const workflowPhoto = workflow.data.photos.find((item) => Number(item.photo_id) === photoId);
       if (!workflowPhoto?.delivered) return res.status(409).json({ error: 'A delivered retouched version is required', code: 'NO_DELIVERED_VERSION' });
 
-      const labels = await db('photo_feedback')
-        .where({ photo_id: photoId, event_id: event.id, feedback_type: 'color_label', color_label: 'green', is_hidden: false })
-        .select('guest_id', 'guest_identifier');
       const shared = settings.identity_mode === 'shared';
-      const ownsSelection = shared || labels.some((label) => req.guest?.id
-        ? Number(label.guest_id) === Number(req.guest.id)
-        : label.guest_identifier === guestIdentifier);
-      if (!ownsSelection) return res.status(409).json({ error: 'This participant has not selected the photo', code: 'SELECTION_NOT_OWNED' });
-
-      const anotherParticipantSelected = !shared && labels.some((label) => req.guest?.id
-        ? Number(label.guest_id) !== Number(req.guest.id)
-        : label.guest_identifier !== guestIdentifier);
       const remove = await db.transaction(async (trx) => {
+        // All feedback writers lock this same row; decide from live labels.
+        await trx('photos').where({ id: photoId, event_id: event.id }).forUpdate().first();
         const result = await feedbackService.removeColorLabel(photoId, event.id, {
           identity_mode: settings.identity_mode,
           guest_id: req.guest?.id ?? null,
           guest_identifier: guestIdentifier,
         }, trx);
-        if (result.removed && !anotherParticipantSelected) await persistWithdrawalIntent(event.id, photoId, deleteDelivered, trx);
+        const remaining = await trx('photo_feedback').where({
+          photo_id: photoId, event_id: event.id, feedback_type: 'color_label',
+          color_label: 'green', is_hidden: false,
+        }).first();
+        result.anotherParticipantSelected = Boolean(remaining);
+        if (result.removed && !remaining) await persistWithdrawalIntent(event.id, photoId, deleteDelivered, trx);
         return result;
       });
+      const anotherParticipantSelected = remove.anotherParticipantSelected;
       if (!remove.removed) return res.status(409).json({ error: 'The selection has already changed', code: 'SELECTION_CHANGED' });
 
       // One participant cannot cancel another participant's active pick.

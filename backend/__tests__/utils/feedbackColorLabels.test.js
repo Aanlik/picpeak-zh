@@ -135,6 +135,10 @@ describe('colour label submission (#1044)', () => {
   });
 
   it('scopes per guest_id when present — two token-guests on one device stay independent', async () => {
+    await db('gallery_guests').insert([
+      { id: 101, event_id: eventId, name: '客户甲', identifier: 'test-guest-101' },
+      { id: 102, event_id: eventId, name: '客户乙', identifier: 'test-guest-102' },
+    ]);
     const first = await label(photoIds[1], 'green', { guestIdentifier: GUEST_A, guestId: 101 });
     const second = await label(photoIds[1], 'blue', { guestIdentifier: GUEST_A, guestId: 102 });
     expect(first.created).toBe(true);

@@ -192,3 +192,66 @@ def test_legacy_project_folder_is_moved_to_scoped_mount_without_overwrite(tmp_pa
     assert str(mount / "04_FINAL") in cfg.projects_file.read_text()
     assert not legacy.exists()
     db.dispose()
+
+
+def test_unbind_is_idempotent_and_preserves_camera_and_delivery_files(tmp_path):
+    engine, remote, cfg, db = setup(tmp_path)
+    cfg.projects_file = tmp_path / 'projects.json'
+    original = cfg.projects[0].raw / 'DSC00001.ARW'
+    final = cfg.projects[0].final / 'DSC00001.JPG'
+    final.write_bytes(b'final')
+    with TestClient(create_app(cfg, remote, start_workers=False)) as client:
+        client.auth = ('admin', cfg.admin_password)
+        assert client.delete('/api/projects/7').status_code == 200
+        assert client.delete('/api/projects/7').status_code == 200
+        assert client.get('/api/projects').json() == []
+        assert cfg.projects_file.read_text() == '[]'
+        assert original.read_bytes() == b'RAW-1'
+        assert final.read_bytes() == b'final'
+    db.dispose()
+
+
+async def test_retry_rechecks_unknown_after_waiting_for_sync_lock(tmp_path):
+    import asyncio
+    import httpx
+    engine, remote, cfg, db = setup(tmp_path)
+    await engine.sync()
+    with engine.sessions() as s:
+        photo = s.scalar(select(Photo))
+        s.add(Delivery(photo_pk=photo.id, sha256='a'*64, marker='m', snapshot=str(tmp_path/'snapshot.jpg'), state='UPLOADING'))
+        s.commit()
+    app = create_app(cfg, remote, start_workers=False)
+    app.state.engine, app.state.config = engine, cfg
+    async def no_sync(*args):
+        pass
+    engine.sync = no_sync
+    await engine.lock.acquire()
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test', auth=('admin', cfg.admin_password)) as client:
+        pending = asyncio.create_task(client.post('/api/projects/7/retry', json={'confirm_unknown': False}))
+        await asyncio.sleep(.02)
+        assert not pending.done()
+        with engine.sessions() as s:
+            s.scalar(select(Delivery)).state = 'UNKNOWN'
+            s.commit()
+        engine.lock.release()
+        response = await pending
+        assert response.status_code == 409
+    with engine.sessions() as s:
+        assert s.scalar(select(Delivery)).state == 'UNKNOWN'
+    db.dispose()
+
+
+def test_authenticated_checkpoint_pauses_sync_and_restores_state(tmp_path):
+    engine, remote, cfg, db = setup(tmp_path)
+    cfg.projects_file = tmp_path / 'projects.json'
+    with TestClient(create_app(cfg, remote, start_workers=False)) as client:
+        assert client.post('/api/state/checkpoint', json={}).status_code == 401
+        client.auth = ('admin', cfg.admin_password)
+        saved = client.post('/api/state/checkpoint', json={}).json()
+        assert saved['state']['version'] == 1
+        assert client.post('/api/projects/7/stage', json={'stage':'EDITING'}).status_code == 503
+        assert client.post('/api/state/restore', json={'token':'wrong', 'state':saved['state']}).status_code == 409
+        assert client.post('/api/state/restore', json=saved).status_code == 200
+        assert client.post('/api/state/release', json={'token':saved['token']}).status_code == 200
+        assert client.post('/api/projects/7/stage', json={'stage':'EDITING'}).status_code == 200
+    db.dispose()

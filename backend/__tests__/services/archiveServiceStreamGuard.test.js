@@ -128,6 +128,27 @@ describe('archiveService storage reads', () => {
     expect(open.size).toBe(0);
     const row = await db('events').where({ id: event.id }).first();
     expect(Boolean(row.is_archived)).toBe(false);
+    expect(Boolean(row.is_archiving)).toBe(false);
     expect(mockStorage.putFromFile).not.toHaveBeenCalledWith(`events/archived/${SLUG}-fail.zip`, expect.any(String), expect.anything());
   });
+  it('blocks concurrent photo mutations until the archive snapshot and cleanup finish', async () => {
+    const event = await makeEvent(`${SLUG}-writes`, 1);
+    const photo = await db('photos').where({ event_id: event.id }).first();
+    let started; let release;
+    const entered = new Promise(resolve => { started = resolve; });
+    const barrier = new Promise(resolve => { release = resolve; });
+    const read = mockStorage.get.getMockImplementation();
+    mockStorage.get.mockImplementationOnce(async key => { started(); await barrier; return read(key); });
+    const pending = archiveEvent(event);
+    await entered;
+    await expect(db('photos').where({ id: photo.id }).update({ filename: 'changed.jpg' })).rejects.toThrow('archive in progress');
+    await expect(db('photos').where({ id: photo.id }).delete()).rejects.toThrow('archive in progress');
+    await expect(db('photos').insert({ event_id: event.id, filename: 'new.jpg', path: 'new.jpg', type: 'individual' })).rejects.toThrow('archive in progress');
+    release();
+    await pending;
+    const saved = await db('events').where({ id: event.id }).first();
+    expect(Boolean(saved.is_archived)).toBe(true);
+    expect(Boolean(saved.is_archiving)).toBe(false);
+  });
+
 });

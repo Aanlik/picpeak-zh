@@ -336,7 +336,7 @@
     "viewGallery": "查看相册",
     "downloadAll": "下载全部",
     "downloadError": "部分照片下载失败",
-    "downloadStarted": "已开始逐张下载 {{photoCount}} 张照片；如浏览器询问，请允许多个文件下载。",
+    "downloadStarted": "请在浏览器中确认下载 {{photoCount}} 张照片。",
     "photoDownloadStarted": "已开始下载照片",
     "photoDownloadFailed": "照片下载失败，请重试。",
     "photoSaveFailed": "无法保存这张照片，请重试。",
@@ -485,7 +485,8 @@
     "preparingProgress_other": "已打包 {{count}} 张照片",
     "videoFormatUnsupported": "当前浏览器不支持该视频格式，请下载后观看",
     "videoLoadFailed": "视频加载失败",
-    "batchSelect": "批量选择"
+    "batchSelect": "批量选择",
+    "selectPhoto": "选择 {{filename}}"
   },
   "categories": {
     "title": "照片分类",
@@ -2834,11 +2835,6 @@
     "message": "目前进行定时维护，以改善服务状况，不久后恢复上网.",
     "urgentMatters": "有关紧急事项，请联系"
   },
-  "migrationBanner": {
-    "title": "PicPeak 的图像注册已经移动",
-    "body": "更新您的嵌入式编译器( yml) 以拉出 {{newPath}}  ——老路径不再更新.",
-    "link": "查看迁移说明"
-  },
   "passwordChange": {
     "title": "更改密码",
     "currentPassword": "当前密码",
@@ -3666,5 +3662,11 @@
     "createButton": "创建账号",
     "creating": "正在创建…",
     "createError": "创建账号失败，请检查填写内容和账号权限。"
+  },
+  "mobileDownload": {
+    "title": "下载已选照片",
+    "instructions": "请逐张点击保存，浏览器可能要求确认。在微信内无法保存时，请从右上角菜单选择在浏览器打开。下载保留原文件名，不打包。",
+    "file": "第 {{number}} 张照片",
+    "opened": "已发起下载"
   }
 }

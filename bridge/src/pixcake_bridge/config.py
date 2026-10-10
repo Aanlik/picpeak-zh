@@ -15,6 +15,18 @@ class ProjectConfig:
     final: Path
     history: Path
 
+    @property
+    def proof_root(self):
+        # Standard project layout keeps camera RAW and client proofs separate.
+        # NAS folder references may contain both, in which case raw is also
+        # the immutable proof root. Never read a rendered delivery as a proof.
+        sibling = self.raw.parent / '02_PROOF'
+        if self.raw.name == '01_RAW' and sibling.exists():
+            if sibling.is_symlink() or not sibling.is_dir():
+                raise ValueError('样片目录不能是符号链接或普通文件')
+            return sibling
+        return self.raw
+
     def validate(self):
         if self.event_id < 1 or not self.name.strip():
             raise ValueError("项目名称和 event_id 无效")
@@ -102,7 +114,7 @@ class Config:
                     source_has_data = any(source.iterdir()) if source.is_dir() else True
                     destination_has_data = any(destination.iterdir()) if destination.is_dir() else True
                     if source_has_data and destination_has_data:
-                        raise ValueError(f"新旧交付目录均有文件，需先人工检查冲突：{name}")
+                        raise ValueError(f"新旧交付目录均有文件，需先人工检查冲突：{source.name}")
             for source, destination in moves:
                 if not source.exists():
                     continue

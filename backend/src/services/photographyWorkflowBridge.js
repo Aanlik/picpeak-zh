@@ -121,8 +121,29 @@ async function restoreWorkflowStage(eventId) {
   return queueStage(eventId, 'RESTORE');
 }
 
+async function persistUnbindIntent(eventId, executor = db) {
+  if (!bridgeConfig()) return;
+  await executor('workflow_unbind_intents').insert({ event_id: Number(eventId) }).onConflict('event_id').ignore();
+}
+
+async function flushUnbindIntents() {
+  for (const intent of await db('workflow_unbind_intents').select('*')) {
+    const result = await bridgeRequest(`/api/projects/${intent.event_id}`, { method: 'DELETE' });
+    if ([200, 404].includes(result.status)) await db('workflow_unbind_intents').where({ event_id: intent.event_id }).delete();
+    else await db('workflow_unbind_intents').where({ event_id: intent.event_id }).update({ error: `HTTP ${result.status}` });
+  }
+}
+
+async function recoverInterruptedArchives() {
+  for (const event of await db('events').where({ is_archiving: true }).select('id', 'is_archived')) {
+    await db('events').where({ id: event.id }).update({ is_archiving: false });
+    if (!event.is_archived && bridgeConfig()) await restoreWorkflowStage(event.id);
+  }
+}
+
 async function flushWorkflowIntents() {
   if (!bridgeConfig()) return;
+  await flushUnbindIntents();
   for (const intent of await db('workflow_stage_intents').select('*')) await flushStage(intent.event_id);
   for (const intent of await db('workflow_withdrawal_intents').select('*')) await flushWithdrawal(intent);
 }
@@ -164,6 +185,7 @@ async function getPublicPhotoStates(eventId) {
 }
 
 module.exports = {
+  bridgeRequest, persistUnbindIntent, recoverInterruptedArchives,
   bridgeConfig, bridgeRequest, getProjectDetail, getPublicPhotoStates,
   prepareVersionFolder, withdrawPhotoSelection, persistWithdrawalIntent, triggerWorkflowSync,
   setWorkflowStage, restoreWorkflowStage, flushWorkflowIntents, startWorkflowReconciler,

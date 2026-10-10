@@ -10,7 +10,7 @@ const { getStorage } = require('./storage');
 const { resolvePhotoStorageKey } = require('./photoResolver');
 const { getUseOriginalFilenames } = require('./downloadFilenameService');
 const { createArchiveStreamGuard } = require('../utils/archiveStreamGuard');
-const { bridgeConfig, getProjectDetail, setWorkflowStage } = require('./photographyWorkflowBridge');
+const { bridgeConfig, getProjectDetail, setWorkflowStage, restoreWorkflowStage } = require('./photographyWorkflowBridge');
 const {
   sanitizeForZipEntry,
   uniquifyZipNames,
@@ -38,7 +38,22 @@ async function archiveEvent(event) {
   const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'picpeak-archive-'));
   const tmpArchive = path.join(tmpDir, `${crypto.randomBytes(4).toString('hex')}-${archiveName}`);
 
+  let frozen = false;
+  let claimed = false;
   try {
+    if (bridgeConfig()) {
+      const detail = await getProjectDetail(event.id);
+      if (detail.status === 200) {
+        const paused = await setWorkflowStage(event.id, 'ARCHIVED');
+        if (paused.status !== 200) throw new Error('无法暂停精修同步，已停止归档');
+        frozen = true;
+      } else if (detail.status !== 404) throw new Error('无法确认精修同步状态，已停止归档');
+    }
+    // DB serialization closes the gap between a pending replacement and the
+    // snapshot. Photo writes are rejected by the database until cleanup ends.
+    const changed = await db('events').where({ id: event.id, is_archiving: false, is_archived: false }).update({ is_archiving: true });
+    if (changed !== 1) throw new Error('项目已归档或正在归档');
+    claimed = true;
     // A Bridge-managed project archives only its current delivered images.
     // Original RAW/Proof assets remain in the photographer's NAS project tree;
     // they must not inflate the customer download archive.
@@ -59,11 +74,14 @@ async function archiveEvent(event) {
     // future restore round-trip recover those fields. Falls back to bare
     // filename for archives produced before this lands (see restore path).
     let photosManifestEntry = null;
+    let manifestRows = [];
     try {
       let manifestQuery = db('photos')
         .leftJoin('photo_categories', 'photos.category_id', 'photo_categories.id')
         .where('photos.event_id', event.id)
         .select(
+          'photos.id',
+          'photos.source_filename',
           'photos.filename',
           'photos.original_filename',
           'photos.type',
@@ -82,7 +100,7 @@ async function archiveEvent(event) {
           ? manifestQuery.whereIn('photos.id', [...deliveredPhotoIds])
           : manifestQuery.whereRaw('1 = 0');
       }
-      const manifestRows = await manifestQuery;
+      manifestRows = await manifestQuery;
       if (manifestRows.length > 0) {
         photosManifestEntry = {
           name: 'photos_manifest.json',
@@ -137,6 +155,17 @@ async function archiveEvent(event) {
       return `${folder}${sanitizeForZipEntry(originalBase)}`;
     });
     const dedupedNames = uniquifyZipNames(photoNames);
+    const allPhotos = await db('photos').where('event_id', event.id).select('*');
+    const namesById = new Map();
+    const entryIndexes = new Map(photoEntries.map((entry, index) => [entry.key, index]));
+    for (const photo of allPhotos) {
+      let key;
+      try { key = resolvePhotoStorageKey(event, photo); } catch { continue; }
+      const index = entryIndexes.get(key);
+      if (index !== undefined) namesById.set(Number(photo.id), dedupedNames[index]);
+    }
+    if (photosManifestEntry) photosManifestEntry.buffer = Buffer.from(JSON.stringify(
+      manifestRows.map(row => ({ ...row, zip_entry: namesById.get(Number(row.id)) || null })), null, 2));
 
     let totalBytes = 0;
     await new Promise((resolve, reject) => {
@@ -232,6 +261,7 @@ async function archiveEvent(event) {
       }
     }
 
+    await db('events').where({ id: event.id }).update({ is_archiving: false });
     // Purge face data (#1074). photo_faces cascades off photos, but archiving
     // does NOT delete the photo rows — and event_people hangs off the event,
     // which also survives. So neither would go without an explicit purge, and
@@ -262,9 +292,12 @@ async function archiveEvent(event) {
     }
 
   } catch (error) {
+    const current = await db('events').where({ id: event.id }).first();
+    if (frozen && !current?.is_archived && (claimed || !current?.is_archiving)) await restoreWorkflowStage(event.id).catch(() => {});
     logger.error(`Error archiving event ${event.slug}:`, error);
     throw error;
   } finally {
+    if (claimed) await db('events').where({ id: event.id }).update({ is_archiving: false });
     await fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
   }
 }

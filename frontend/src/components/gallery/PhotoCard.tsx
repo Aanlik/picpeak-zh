@@ -542,7 +542,7 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
           {/* Selection Checkbox (visible on hover or when selected) */}
           <button
             type="button"
-            aria-label={`Select ${photo.filename}`}
+            aria-label={tAudit('gallery.selectPhoto', { filename: photo.original_filename || photo.filename })}
             role="checkbox"
             aria-checked={isSelected}
             data-testid={checkboxTestId ? `gallery-photo-checkbox-${photo.id}` : undefined}

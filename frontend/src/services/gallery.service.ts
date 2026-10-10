@@ -1,3 +1,4 @@
+import { MOBILE_DOWNLOAD_EVENT } from '../utils/mobileDownloads';
 import type { AxiosResponse } from 'axios';
 import { api } from '../config/api';
 import type {
@@ -277,7 +278,10 @@ export const galleryService = {
         responseType: 'blob',
       });
       return readResponse(response);
-    } catch {
+    } catch (error) {
+      const status = (error as { response?: { status?: number } }).response?.status;
+      // Never turn an authorization/rate-limit/server failure into a preview download.
+      if (status !== 404) throw error;
       // Fallback: view endpoint when /download isn't available (e.g.
       // the original is missing and only a derivative remains). The
       // view endpoint doesn't emit a download-oriented Content-Disposition,
@@ -293,14 +297,14 @@ export const galleryService = {
   // anchor. Extracted from downloadPhoto so the share-fallback path
   // can reuse it without re-fetching the blob.
   triggerBrowserDownload(blob: Blob, filename: string): void {
-    const url = window.URL.createObjectURL(new Blob([blob]));
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', filename);
     document.body.appendChild(link);
     link.click();
     link.remove();
-    window.URL.revokeObjectURL(url);
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
   },
 
   // Trigger a browser-native download by navigating a hidden anchor at
@@ -354,7 +358,7 @@ export const galleryService = {
     document.body.appendChild(link);
     link.click();
     link.remove();
-    window.URL.revokeObjectURL(url);
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
   },
 
   // Trigger one native browser download per selected photo. These are
@@ -364,7 +368,15 @@ export const galleryService = {
   // handler also gives Chrome/Edge the best chance to recognize them as
   // user-initiated multiple downloads.
   async downloadSelectedPhotos(slug: string, photoIds: number[], resolution?: string): Promise<void> {
-    for (const photoId of new Set(photoIds)) {
+    const uniqueIds = [...new Set(photoIds)];
+    if (uniqueIds.length > 1 && (isIOS() || /Android|MicroMessenger/i.test(navigator.userAgent))) {
+      const query = resolution ? `?resolution=${encodeURIComponent(resolution)}` : '';
+      window.dispatchEvent(new CustomEvent(MOBILE_DOWNLOAD_EVENT, { detail: uniqueIds.map(photoId => ({
+        photoId, href: withAdminPreview(`/api/gallery/${slug}/download/${photoId}${query}`),
+      })) }));
+      return;
+    }
+    for (const photoId of uniqueIds) {
       const query = resolution ? `?resolution=${encodeURIComponent(resolution)}` : '';
       const href = withAdminPreview(`/api/gallery/${slug}/download/${photoId}${query}`);
       this.triggerDirectDownload(href, `photo-${photoId}`);

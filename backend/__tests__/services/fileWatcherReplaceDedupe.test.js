@@ -27,7 +27,7 @@ process.env.TEST_DATABASE_PATH = path.join(
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'watcher-dedupe-test-secret';
 
 const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
-const { findExistingPhoto } = require('../../src/services/fileWatcher');
+const { findExistingPhoto, removePhoto } = require('../../src/services/fileWatcher');
 
 const EVENT_SLUG = 'watcher-dedupe-event';
 const WATCHED_BASENAME = 'IMG_1234.JPG';
@@ -168,4 +168,15 @@ describe('fileWatcher existence check (#1226)', () => {
     await db('photos').where({ event_id: otherId }).del();
     await db('events').where({ id: otherId }).del();
   });
+  it('recognises restored storage-relative paths without importing duplicate records', async () => {
+    const id = await addPhoto({ filename: 'old-canonical.jpg', source_filename: 'camera-name.jpg', path: `events/active/${WATCHED_RELPATH}` });
+    const found = await findExistingPhoto(eventId, WATCHED_BASENAME, WATCHED_RELPATH);
+    expect(found.id).toBe(id);
+  });
+  it('retains photo identity when archive cleanup produces a delayed unlink', async () => {
+    const id = await addPhoto({ filename: WATCHED_BASENAME, path: WATCHED_RELPATH });
+    await removePhoto(path.join(process.env.STORAGE_PATH, 'events/active', WATCHED_RELPATH));
+    expect(await db('photos').where({ id }).first()).toBeTruthy();
+  });
+
 });

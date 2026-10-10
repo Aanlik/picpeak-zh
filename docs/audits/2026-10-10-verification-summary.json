@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-10",
+  "branch": "dev",
+  "backend": {
+    "numPassedTestSuites": 334,
+    "numPassedTests": 3093,
+    "numPendingTestSuites": 4,
+    "numPendingTests": 28,
+    "success": true
+  },
+  "frontend_passed": 600,
+  "bridge_passed": 93,
+  "mobile_browser_passed": 3,
+  "physical_mobile_tested": false,
+  "nas_deployed": false,
+  "image": "picpeak-pixcake:3.134.1-zh.22-bridge.0.1.10"
+}

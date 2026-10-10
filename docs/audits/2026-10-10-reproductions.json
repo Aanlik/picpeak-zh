@@ -1,0 +1,18 @@
+{
+  "archive_before_editing": {
+    "stage": "SELECTING",
+    "has_entered_editing": true,
+    "cancelled_raw_still_exists": true
+  },
+  "failed_withdrawal": {
+    "task_state": "PENDING",
+    "task_error": "RAW 未找到",
+    "summary_errors": 0,
+    "visible_error_log_entries": 0,
+    "photo_error": true
+  },
+  "retry_race": {
+    "http_status_without_confirmation": 200,
+    "unknown_state_reset_to": "PENDING"
+  }
+}

@@ -495,4 +495,24 @@ describe('archive restore restores categories (flat archives included)', () => {
       .toBeFalsy();
   });
 
+  it('preserves photo identity when ZIP names use the original camera filename', async () => {
+    const manifest = [{ filename: 'stored_9f8e7d.jpg', original_filename: 'DSC_4242.jpg', source_filename: 'DSC_4242.jpg', type: 'individual', category_name: null }];
+    const archivePath = await writeArchive('original-name.zip', {
+      'individual/DSC_4242.jpg': PIXEL,
+      'photos_manifest.json': JSON.stringify(manifest),
+    });
+    const eventId = await seedArchivedEvent(archivePath, 'original-name');
+    const [inserted] = await db('photos').insert({ event_id: eventId, filename: manifest[0].filename,
+      original_filename: 'DSC_4242.jpg', source_filename: 'DSC_4242.jpg',
+      path: 'events/active/original-name/individual/stored_9f8e7d.jpg', type: 'individual', size_bytes: PIXEL.length,
+    }).returning('id');
+    const photoId = inserted.id || inserted;
+    const response = await request(app).post(`/admin/archives/${eventId}/restore`);
+    expect(response.status).toBe(200);
+    const rows = await db('photos').where({ event_id: eventId });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: photoId, filename: manifest[0].filename, source_filename: 'DSC_4242.jpg' });
+    expect(fs.existsSync(path.join(storagePath, rows[0].path))).toBe(true);
+  });
+
 });

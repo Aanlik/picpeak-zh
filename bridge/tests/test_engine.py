@@ -334,3 +334,51 @@ async def test_changed_final_cannot_bypass_unknown_upload(tmp_path):
         await engine.sync()
     assert len(client.uploads) == 1
     db.dispose()
+
+async def test_archive_restore_before_editing_does_not_protect_cancelled_raw(tmp_path):
+    engine, client, cfg, db = setup(tmp_path)
+    await engine.sync()
+    engine.set_stage(7, "ARCHIVED")
+    engine.restore_stage(7)
+    client.rows[0]["color_label"] = None
+    await engine.sync()
+    assert not (cfg.projects[0].selected / "DSC00001.ARW").exists()
+    with engine.sessions() as session:
+        assert not session.scalar(select(Project)).has_entered_editing
+    db.dispose()
+
+
+async def test_archived_project_does_not_process_pending_withdrawals(tmp_path):
+    from pixcake_bridge.models import Withdrawal
+    engine, client, cfg, db = setup(tmp_path)
+    await engine.sync()
+    with engine.sessions() as s:
+        photo = s.scalar(select(Photo))
+        photo.delivery_hash = 'a' * 64
+        s.commit()
+    engine.queue_withdraw(7, 1, True)
+    engine.set_stage(7, 'ARCHIVED')
+    await engine.sync()
+    with engine.sessions() as s:
+        task = s.scalar(select(Withdrawal))
+        assert task.state == 'PENDING' and task.error is None
+    assert not client.uploads
+    assert (cfg.projects[0].selected/'DSC00001.ARW').exists()
+    db.dispose()
+
+
+async def test_withdraw_restores_immutable_proof_from_separate_standard_folder(tmp_path):
+    engine, client, cfg, db = setup(tmp_path)
+    proof_root = tmp_path / '02_PROOF'; proof_root.mkdir()
+    proof = proof_root / 'DSC00001.JPG'; proof.write_bytes(b'original proof')
+    await engine.sync()
+    final = cfg.projects[0].final / 'V1' / 'DSC00001.JPG'
+    final.write_bytes(b'retouched')
+    await engine.sync(); await engine.sync()
+    client.rows[0]['color_label'] = None
+    await engine.withdraw_photo(7, 1, True)
+    assert client.uploads[-1] == (1, sha256(proof))
+    assert not final.exists()
+    assert proof.read_bytes() == b'original proof'
+    assert (cfg.projects[0].raw/'DSC00001.ARW').read_bytes() == b'RAW-1'
+    db.dispose()

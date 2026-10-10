@@ -80,3 +80,20 @@ def test_integrated_delivery_must_be_writable():
     cfg['services']['picpeak']['volumes'][1]['read_only'] = True
     with pytest.raises(ValueError):
         preflight.validate(cfg)
+
+
+def test_legacy_layout_conflict_reports_folder_and_preserves_files(tmp_path):
+    from pixcake_bridge.config import Config, ProjectConfig
+    import pytest
+    raw = tmp_path / 'camera'; raw.mkdir()
+    root = tmp_path / 'delivery'; root.mkdir()
+    legacy = root / 'event-7-旧项目'
+    old = legacy / '03_SELECTED_RAW'; old.mkdir(parents=True)
+    new = root / '03_SELECTED_RAW'; new.mkdir()
+    (old / 'old.ARW').write_bytes(b'old')
+    (new / 'new.ARW').write_bytes(b'new')
+    cfg = Config(delivery_root=root, projects_file=tmp_path/'projects.json', projects=[ProjectConfig('旧项目',7,raw,old,legacy/'04_FINAL',legacy/'05_HISTORY')])
+    with pytest.raises(ValueError, match='03_SELECTED_RAW'):
+        cfg.migrate_legacy_delivery_layout()
+    assert (old/'old.ARW').read_bytes() == b'old'
+    assert (new/'new.ARW').read_bytes() == b'new'

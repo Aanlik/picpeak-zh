@@ -116,6 +116,7 @@ router.post('/:slug/photos/batch-feedback',
           if (result?.guest_missing) failed.push(photoId);
           else applied.push(photoId);
         } catch (error) {
+      if (error.code === 'WITHDRAW_PENDING') return res.status(409).json({ error: error.message, code: error.code });
           logger.error('Batch photo feedback failed', { eventId: event.id, photoId, error: error.message });
           failed.push(photoId);
         }
@@ -132,6 +133,7 @@ router.post('/:slug/photos/batch-feedback',
       });
       if (feedbackType === 'color_label' && applied.length) void triggerWorkflowSync(event.id);
     } catch (error) {
+      if (error.code === 'WITHDRAW_PENDING') return res.status(409).json({ error: error.message, code: error.code });
       logger.error('Error submitting batch photo feedback:', error);
       res.status(500).json({ error: 'Failed to submit batch feedback' });
     }
@@ -169,6 +171,7 @@ router.get('/:slug/feedback-settings',
 
       res.json(guestSettings);
     } catch (error) {
+      if (error.code === 'WITHDRAW_PENDING') return res.status(409).json({ error: error.message, code: error.code });
       logger.error('Error getting feedback settings:', error);
       res.status(500).json({ error: 'Failed to get feedback settings' });
     }
@@ -309,6 +312,7 @@ router.get('/:slug/photos/:photoId/feedback',
         }
       });
     } catch (error) {
+      if (error.code === 'WITHDRAW_PENDING') return res.status(409).json({ error: error.message, code: error.code });
       logger.error('Error getting photo feedback:', error);
       res.status(500).json({ error: 'Failed to get feedback' });
     }
@@ -473,6 +477,7 @@ router.post('/:slug/photos/:photoId/feedback',
       });
       if (feedbackType === 'color_label') void triggerWorkflowSync(event.id);
     } catch (error) {
+      if (error.code === 'WITHDRAW_PENDING') return res.status(409).json({ error: error.message, code: error.code });
       logger.error('Error submitting feedback:', error);
       res.status(500).json({ error: 'Failed to submit feedback' });
     }
@@ -536,6 +541,7 @@ router.get('/:slug/feedback-summary',
         summary: guestSummary
       });
     } catch (error) {
+      if (error.code === 'WITHDRAW_PENDING') return res.status(409).json({ error: error.message, code: error.code });
       logger.error('Error getting feedback summary:', error);
       res.status(500).json({ error: 'Failed to get feedback summary' });
     }
@@ -606,6 +612,7 @@ router.get('/:slug/my-feedback',
       // the running counts can be derived client-side from this array.
       res.json(myFeedback);
     } catch (error) {
+      if (error.code === 'WITHDRAW_PENDING') return res.status(409).json({ error: error.message, code: error.code });
       logger.error('Error getting user feedback:', error);
       res.status(500).json({ error: 'Failed to get your feedback' });
     }

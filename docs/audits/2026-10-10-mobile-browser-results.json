@@ -1,0 +1,213 @@
+{
+  "config": {
+    "configFile": "/Users/alink/Documents/ChatGPT/PicPeak_zh/playwright.downloads.config.ts",
+    "rootDir": "/Users/alink/Documents/ChatGPT/PicPeak_zh/tests/mobile-downloads",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "docs/audits/2026-10-10-mobile-browser-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/alink/Documents/ChatGPT/PicPeak_zh/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "iPhone Safari (WebKit)",
+        "name": "iPhone Safari (WebKit)",
+        "testDir": "/Users/alink/Documents/ChatGPT/PicPeak_zh/tests/mobile-downloads",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/alink/Documents/ChatGPT/PicPeak_zh/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "Android Chrome",
+        "name": "Android Chrome",
+        "testDir": "/Users/alink/Documents/ChatGPT/PicPeak_zh/tests/mobile-downloads",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/alink/Documents/ChatGPT/PicPeak_zh/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "WeChat UA (Chromium simulation)",
+        "name": "WeChat UA (Chromium simulation)",
+        "testDir": "/Users/alink/Documents/ChatGPT/PicPeak_zh/tests/mobile-downloads",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.57.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "downloads.spec.ts",
+      "file": "downloads.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "mobile customer selects multiple photos and saves each original filename",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "iPhone Safari (WebKit)",
+              "projectName": "iPhone Safari (WebKit)",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2092,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-10T09:24:07.024Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6e21fe7132a631b5f5c4-c70654d1a74c4c30309c",
+          "file": "downloads.spec.ts",
+          "line": 6,
+          "column": 5
+        },
+        {
+          "title": "mobile customer selects multiple photos and saves each original filename",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "Android Chrome",
+              "projectName": "Android Chrome",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1358,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-10T09:24:10.058Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6e21fe7132a631b5f5c4-6b814dff41250fb216e7",
+          "file": "downloads.spec.ts",
+          "line": 6,
+          "column": 5
+        },
+        {
+          "title": "mobile customer selects multiple photos and saves each original filename",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "WeChat UA (Chromium simulation)",
+              "projectName": "WeChat UA (Chromium simulation)",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1230,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-10T09:24:12.006Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6e21fe7132a631b5f5c4-f9c1b3afb763d11c30d3",
+          "file": "downloads.spec.ts",
+          "line": 6,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-10T09:24:06.793Z",
+    "duration": 6549.648999999999,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

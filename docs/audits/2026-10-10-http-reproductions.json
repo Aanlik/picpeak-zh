@@ -1,0 +1,34 @@
+{
+  "multi_customer": {
+    "responses": [
+      {
+        "success": true,
+        "kept_for_other_participant": true
+      },
+      {
+        "success": true,
+        "kept_for_other_participant": true
+      }
+    ],
+    "activeSelections": 0,
+    "withdrawalIntents": 0
+  },
+  "archive_restore": {
+    "status": 200,
+    "beforeId": 18,
+    "photos": [
+      {
+        "id": 18,
+        "filename": "stored_9f8e7d.jpg",
+        "source_filename": "DSC_4242.jpg",
+        "path": "events/active/audit-retained-original/individual/stored_9f8e7d.jpg"
+      },
+      {
+        "id": 19,
+        "filename": "DSC_4242.jpg",
+        "source_filename": null,
+        "path": "events/active/audit-retained-original/individual/DSC_4242.jpg"
+      }
+    ]
+  }
+}

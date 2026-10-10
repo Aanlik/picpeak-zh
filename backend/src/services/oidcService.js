@@ -550,19 +550,14 @@ async function syncAdminRole(admin, mappedRole) {
  *      guarantees sub uniqueness WITHIN an issuer — a lookup on sub alone
  *      would let a user of a newly-configured IdP inherit an old IdP's
  *      admin account on a subject collision.
- *   2. email match against an UNLINKED admin, only if email_verified === true
- *      → one-time link (stamps issuer+subject; auth_provider unchanged so
- *      a local password keeps working).
- *   3. JIT provisioning when oidc_autoprovision is on (requires an email
- *      claim; role = oidc_default_role; unusable random password).
+ *   2. New identities require explicit provisioning permission. Usernames
+ *      derive from preferred_username and a stable issuer/subject suffix.
  *
  * Errors carry a `code` the route maps to a redirect error key.
  */
 async function resolveAdminFromClaims(claims) {
   const sub = claims.sub;
   const iss = claims.iss;
-  const email = typeof claims.email === 'string' ? claims.email.trim().toLowerCase() : null;
-  const emailVerified = claims.email_verified === true;
 
   if (!sub || !iss) {
     const err = new Error('ID token has no sub/iss claim');
@@ -600,63 +595,17 @@ async function resolveAdminFromClaims(claims) {
     return syncAdminRole(bySub, mappedRole);
   }
 
-  // 2. One-time email link — verified emails only, and only onto rows that
-  //    have no binding yet (a different identity on the row means a
-  //    different IdP identity already owns it).
-  if (email && emailVerified) {
-    const byEmail = await db('admin_users')
-      .where('email', email)
-      .whereNull('external_subject')
-      .first();
-    if (byEmail) {
-      if (!byEmail.is_active) {
-        const err = new Error('Admin account is deactivated');
-        err.code = 'OIDC_INACTIVE';
-        throw err;
-      }
-      // Claim atomically: two concurrent first-time callbacks with the same
-      // email but DIFFERENT subjects must not both authenticate as this
-      // admin — the conditional update lets exactly one win.
-      const claimed = await db('admin_users')
-        .where('id', byEmail.id)
-        .whereNull('external_subject')
-        .update({
-          external_issuer: iss,
-          external_subject: sub,
-          updated_at: new Date(),
-        });
-      if (claimed !== 1) {
-        // Lost the race. If the winner was this very identity (double-click,
-        // parallel tabs), the binding lookup now succeeds; anything else is
-        // an unbound identity again and must not proceed as this admin.
-        const rebound = await db('admin_users')
-          .where('external_issuer', iss)
-          .where('external_subject', sub)
-          .first();
-        if (rebound && rebound.is_active) return syncAdminRole(rebound, mappedRole);
-        const err = new Error('Account link raced with another sign-in — try again');
-        err.code = 'OIDC_BAD_CLAIMS';
-        throw err;
-      }
-      logger.info('OIDC: linked existing admin to IdP subject', {
-        adminId: byEmail.id,
-        sub,
-      });
-      return syncAdminRole({ ...byEmail, external_issuer: iss, external_subject: sub }, mappedRole);
-    }
-  }
-
+  // Never infer account ownership from an email or display name.
+  // Existing accounts require an explicit issuer/subject binding.
   // 3. JIT provisioning.
   if (!cfg.autoprovision) {
     const err = new Error('No matching admin account and auto-provisioning is disabled');
     err.code = 'OIDC_NOT_PROVISIONED';
     throw err;
   }
-  if (!email) {
-    const err = new Error('IdP supplied no email claim — cannot provision an account');
-    err.code = 'OIDC_NO_EMAIL';
-    throw err;
-  }
+  const preferred = typeof claims.preferred_username === 'string' ? claims.preferred_username.normalize('NFKC').trim() : '';
+  const suffix = crypto.createHash('sha256').update(`${iss}\0${sub}`).digest('hex').slice(0, 16);
+  const username = `${preferred.replace(/[^\p{L}\p{N}_.-]/gu, '').slice(0, 40) || 'sso'}-${suffix}`;
 
   // Mapped role wins over the static default — the default only catches
   // users with no mapped IdP role while non-strict mapping is on.
@@ -673,8 +622,9 @@ async function resolveAdminFromClaims(claims) {
 
   const inserted = await db('admin_users')
     .insert({
-      username: email,
-      email,
+      username,
+      // Compatibility column for pre-existing database schemas, never used for login or linking.
+      email: `${username}@local.invalid`,
       password_hash: passwordHash,
       role_id: role.id,
       is_active: formatBoolean(true),

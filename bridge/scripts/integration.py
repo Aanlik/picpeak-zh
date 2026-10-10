@@ -67,6 +67,10 @@ async def main(args):
     for i in range(1, args.count + 1):
         Image.new("RGB", (64, 48), (i % 255, 80, 180)).save(proof / f"DSC{i:05}.JPG")
         (raw / f"DSC{i:05}.ARW").write_bytes(b"SYNTHETIC RAW TEST FIXTURE\x00" + str(i).encode())
+    immutable_proofs = root / '02_PROOF'
+    immutable_proofs.mkdir()
+    for file in proof.iterdir():
+        (immutable_proofs / file.name).write_bytes(file.read_bytes())
     before = {p.name: sha256(p) for p in raw.iterdir()}
     async with httpx.AsyncClient(base_url=args.url, timeout=180, headers={"Origin": args.url}) as admin:
         status = (await admin.get("/api/setup/status")).json()
@@ -197,17 +201,15 @@ async def main(args):
             assert retained.selected and retained.delivery_hash
             assert engine.current_version(s, retained) == 1
         # Delete delivery and restore the immutable Proof via the real API.
-        # This fixture normally separates RAW/Proof roots; place a single
-        # Proof next to RAW to exercise the NAS shared-project lookup.
-        proof_copy = raw / "DSC00006.JPG"
-        proof_copy.write_bytes((proof / proof_copy.name).read_bytes())
+        # The standard RAW/Proof split must restore without putting JPGs
+        # in the camera RAW folder.
+        proof_copy = immutable_proofs / "DSC00006.JPG"
         await mark(6, None)
         await engine.withdraw_photo(eid, photo_id(6), True)
         assert not (final / "DSC00006.JPG").exists()
         restored_path = fixture_db_query(args.container, "SELECT path FROM photos WHERE id=" + str(photo_id(6)))[0]["path"]
         restored_hash = docker("exec", args.container, "sha256sum", "/data/storage/events/active/" + restored_path).split()[0]
         assert restored_hash == sha256(proof_copy)
-        proof_copy.unlink()
         await mark(6)
         await engine.sync()
         with sessions() as s:
@@ -219,8 +221,29 @@ async def main(args):
         with sessions() as s:
             unchanged = s.scalar(select(Photo).where(Photo.photo_id == photo_id(4)))
             assert engine.current_version(s, unchanged) == 2
+        # Restore must preserve retained photo IDs even when ZIP entries use
+        # original names, including the Bridge's replacement marker names.
+        prior_count = len(await api.photos(eid))
+        prior_photo = fixture_db_photo()
+        prior_feedback = fixture_db_query(args.container, "SELECT id,photo_id,feedback_type FROM photo_feedback WHERE photo_id=" + str(photo_id(4)) + " ORDER BY id")
+        async with httpx.AsyncClient(base_url=args.url, cookies=admin.cookies, headers={"Origin": args.url}, timeout=180) as operator:
+            setting = await operator.put("/api/admin/settings/general", json={"general_use_original_filenames_for_downloads": True})
+            assert setting.status_code == 200
+            archived = await operator.post(f"/api/admin/events/{eid}/archive")
+            assert archived.status_code == 200, archived.text
+            blocked = await operator.post(f"/api/v1/events/{eid}/photos", headers={"Authorization": "Bearer " + bridge_token.json()["token"]}, files={"photo": ("blocked.JPG", (proof / "DSC00004.JPG").read_bytes(), "image/jpeg")})
+            assert blocked.status_code in {400, 409}, blocked.text
+            restored = await operator.post(f"/api/admin/archives/{eid}/restore")
+            assert restored.status_code == 200, restored.text
+        assert len(await api.photos(eid)) == prior_count
+        assert fixture_db_photo() == prior_photo
+        assert fixture_db_query(args.container, "SELECT id,photo_id,feedback_type FROM photo_feedback WHERE photo_id=" + str(photo_id(4)) + " ORDER BY id") == prior_feedback
+        restored_photo = fixture_db_query(args.container, "SELECT path FROM photos WHERE id=" + str(photo_id(4)))[0]
+        path = restored_photo['path']
+        stored = "/data/storage/" + path if path.startswith('events/') else "/data/storage/events/active/" + path
+        assert docker("exec", args.container, "test", "-f", stored) == ""
         assert {p.name: sha256(p) for p in raw.iterdir()} == before
-        report = {"proof_count": args.count, "selected_initial": 50, "added": 5, "cancelled_selecting": 2, "cancelled_editing_raw_preserved": True, "deliveries": 54, "revision_version": revision["version"], "raw_sha256_unchanged": args.count, "photo_id_feedback_sort_share_preserved": True, "restart_duplicate_uploads": 0, "withdraw_keep_reselect_preserved": True, "withdraw_delete_restored_proof": True, "archive_restore_progress": True, "guest_share_path": share_path, "event_id": eid, "slug": slug, "fixture_root": str(root), "tested_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        report = {"proof_count": args.count, "selected_initial": 50, "added": 5, "cancelled_selecting": 2, "cancelled_editing_raw_preserved": True, "deliveries": 54, "revision_version": revision["version"], "raw_sha256_unchanged": args.count, "photo_id_feedback_sort_share_preserved": True, "restart_duplicate_uploads": 0, "withdraw_keep_reselect_preserved": True, "withdraw_delete_restored_proof": True, "archive_restore_progress": True, "picpeak_archive_restore_identity_preserved": True, "guest_share_path": share_path, "event_id": eid, "slug": slug, "fixture_root": str(root), "tested_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
         # Credentials deliberately excluded; this report is safe to publish.
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
