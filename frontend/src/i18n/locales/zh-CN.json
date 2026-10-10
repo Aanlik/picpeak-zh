@@ -932,7 +932,12 @@
       "birthdayFun": "欢庆风格",
       "corporateTimeline": "时间线",
       "artisticMosaic": "艺术拼贴",
-      "custom": "自定义主题"
+      "custom": "自定义主题",
+      "darkClassic": "深色经典",
+      "darkElegant": "深色典雅",
+      "darkModern": "深色现代",
+      "galleryPremium": "典藏大图（测试版）",
+      "galleryStory": "影像叙事（测试版）"
     },
     "galleryLayouts": {
       "grid": "网格",
@@ -945,7 +950,20 @@
       "hero": "大图封面",
       "custom": "自定义"
     },
-    "publishEvent": "发布项目"
+    "publishEvent": "发布项目",
+    "themePresetDescriptions": {
+      "default": "清爽规整的网格布局",
+      "elegantWedding": "以封面大图和时间线呈现的典雅布局",
+      "modernMasonry": "瀑布流布局，可按列或整齐行排列",
+      "birthdayFun": "色彩活泼、带动态效果的轮播布局",
+      "corporateTimeline": "按时间顺序排列的专业布局",
+      "artisticMosaic": "由不同尺寸照片组成的创意拼贴",
+      "darkClassic": "深色背景，搭配绿色点缀",
+      "darkElegant": "深色背景，搭配金色点缀",
+      "darkModern": "深色背景，搭配蓝色点缀",
+      "galleryPremium": "浅色典雅风格，采用衬线字体和瀑布流布局",
+      "galleryStory": "带金色点缀和场景分区的电影感深色风格"
+    }
   },
   "settings": {
     "title": "系统设置",
@@ -3472,7 +3490,10 @@
     "uploadFailedFile": "{{name}}：上传失败，请重试",
     "sampleCeremony": "仪式",
     "sampleReception": "宴会",
-    "samplePortraits": "人像"
+    "samplePortraits": "人像",
+    "sampleStudio": "您的摄影工作室",
+    "sampleParty": "派对",
+    "layoutSuffix": "布局"
   },
   "photographyWorkflow": {
     "title": "选片与精修进度",

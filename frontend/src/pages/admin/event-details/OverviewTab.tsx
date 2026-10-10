@@ -89,6 +89,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       {/* Left Column - Main Details */}
       <div className="space-y-6">
+        {/* Keep the photography workflow immediately visible when a project opens. */}
+        {PHOTO_WORKFLOW_MODE && <PhotographyWorkflowCard eventId={event.id} />}
+
         {/* Event Information */}
         <EventInformationCard
           event={event}
@@ -106,8 +109,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           daysUntilExpiration={daysUntilExpiration}
           onRevealNow={onRevealNow}
         />
-
-        {PHOTO_WORKFLOW_MODE && <PhotographyWorkflowCard eventId={event.id} />}
 
         {/* Share Link */}
         <ShareLinkCard event={event} setShowPasswordReset={setShowPasswordReset} passwordVersion={passwordVersion} />

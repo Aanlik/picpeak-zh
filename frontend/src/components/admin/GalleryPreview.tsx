@@ -32,7 +32,7 @@ const generateMockPhotos = (count: number) => {
     thumbnail_url: '',
     type: i % 3 === 0 ? 'collage' : 'individual',
     category_id: (i % 4) + 1,
-    category_name: ['Ceremony', 'Reception', 'Portraits', 'Party'][i % 4],
+    category_key: ['sampleCeremony', 'sampleReception', 'samplePortraits', 'sampleParty'][i % 4],
     category_slug: ['ceremony', 'reception', 'portraits', 'party'][i % 4],
     size: Math.floor(Math.random() * 5000000) + 1000000,
     uploaded_at: new Date().toISOString(),
@@ -55,8 +55,8 @@ const PreviewPhoto: React.FC<{
     </div>
     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
       <p className="text-white text-xs truncate">{photo.filename}</p>
-      {photo.category_name && (
-        <p className="text-white/70 text-[10px]">{photo.category_name}</p>
+      {photo.category_key && (
+        <p className="text-white/70 text-[10px]">{tAudit(`ui.${photo.category_key}`)}</p>
       )}
     </div>
     {photo.type === 'collage' && (
@@ -80,11 +80,12 @@ export const GalleryPreview: React.FC<GalleryPreviewProps> = ({
   
   // Use the provided layoutType or fallback to theme's gallery layout
   const activeLayout = layoutType || theme.galleryLayout || 'grid';
+  const activeLayoutName = t(`events.galleryLayouts.${activeLayout}`, { defaultValue: activeLayout });
 
   const displayMode = branding?.logo_display_mode || 'logo_and_text';
   const showLogo = displayMode === 'logo_only' || displayMode === 'logo_and_text';
   const showText = displayMode === 'text_only' || displayMode === 'logo_and_text';
-  const brandName = branding?.company_name?.trim() || 'Your Studio';
+  const brandName = branding?.company_name?.trim() || tAudit('ui.sampleStudio');
   const brandTagline = branding?.company_tagline?.trim() || '';
   // Theme-aware logo with symmetric fallback — mirror the live surfaces
   // so the preview reflects what the gallery will actually show.
@@ -334,7 +335,7 @@ export const GalleryPreview: React.FC<GalleryPreviewProps> = ({
       {/* Layout info bar */}
       <div className="px-4 py-1 border-b text-xs text-neutral-500 flex justify-between" style={{ borderColor: theme.primaryColor ? `${theme.primaryColor}20` : '#e5e7eb' }}>
         <span>{tAudit("ui.galleryPreview")}</span>
-        <span className="capitalize">{isHeroHeader ? `Hero + ${activeLayout}` : isMinimalHeader ? `Minimal + ${activeLayout}` : isNoHeader ? `No header + ${activeLayout}` : `${activeLayout} layout`}</span>
+        <span>{isHeroHeader ? `${t('branding.headerStyleOptions.hero')} + ${activeLayoutName}` : isMinimalHeader ? `${t('branding.headerStyleOptions.minimal')} + ${activeLayoutName}` : isNoHeader ? `${t('branding.headerStyleOptions.none')} + ${activeLayoutName}` : `${activeLayoutName} ${tAudit('ui.layoutSuffix')}`}</span>
       </div>
 
       {/* Preview Content */}

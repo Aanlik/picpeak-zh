@@ -132,12 +132,15 @@ export const GalleryPage: React.FC = () => {
 
   const { data: settingsData, isLoading: isLoadingSettings } = usePublicSettings();
 
-  // Set language from admin settings when on login page
+  // Apply the photographer's guest language throughout the customer gallery.
+  // A returning guest can already have an authenticated session in this
+  // browser, so limiting this to the login page leaves that gallery in the
+  // browser's previously detected language (often English).
   React.useEffect(() => {
-    if (!isAuthenticated && settingsData?.default_language) {
+    if (settingsData?.default_language && i18n.language !== settingsData.default_language) {
       i18n.changeLanguage(settingsData.default_language);
     }
-  }, [settingsData, isAuthenticated, i18n]);
+  }, [settingsData?.default_language, i18n]);
 
   // Apply theme for gallery (both login page and authenticated view)
   React.useEffect(() => {

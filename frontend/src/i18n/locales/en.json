@@ -932,7 +932,12 @@
       "birthdayFun": "Celebration",
       "corporateTimeline": "Timeline",
       "artisticMosaic": "Artistic mosaic",
-      "custom": "Custom theme"
+      "custom": "Custom theme",
+      "darkClassic": "Dark classic",
+      "darkElegant": "Dark elegant",
+      "darkModern": "Dark modern",
+      "galleryPremium": "Gallery Premium (Beta)",
+      "galleryStory": "Gallery Story (Beta)"
     },
     "galleryLayouts": {
       "grid": "Grid",
@@ -945,7 +950,20 @@
       "hero": "Hero image",
       "custom": "Custom"
     },
-    "publishEvent": "Publish project"
+    "publishEvent": "Publish project",
+    "themePresetDescriptions": {
+      "default": "A clean, organized grid layout",
+      "elegantWedding": "An elegant hero image and timeline layout",
+      "modernMasonry": "Masonry arranged in columns or justified rows",
+      "birthdayFun": "A colorful carousel with playful motion",
+      "corporateTimeline": "A professional chronological layout",
+      "artisticMosaic": "A creative mosaic with varied photo sizes",
+      "darkClassic": "A dark theme with green accents",
+      "darkElegant": "A dark theme with gold accents",
+      "darkModern": "A dark theme with blue accents",
+      "galleryPremium": "An elegant light theme with serif typography and masonry layout",
+      "galleryStory": "A cinematic dark theme with gold accents and scene-based sections"
+    }
   },
   "settings": {
     "title": "System Settings",
@@ -3472,7 +3490,10 @@
     "uploadFailedFile": "{{name}}: Upload failed",
     "sampleCeremony": "Ceremony",
     "sampleReception": "Reception",
-    "samplePortraits": "Portraits"
+    "samplePortraits": "Portraits",
+    "sampleStudio": "Your Studio",
+    "sampleParty": "Party",
+    "layoutSuffix": "layout"
   },
   "photographyWorkflow": {
     "title": "Photo selection and retouching progress",

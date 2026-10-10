@@ -52,7 +52,7 @@ export const ThemeDisplay: React.FC<ThemeDisplayProps> = ({
         const preset = Object.entries(GALLERY_THEME_PRESETS).find(([key]) => key === theme);
         if (preset) {
           themeConfig = preset[1].config;
-          themeName = preset[1].name;
+          themeName = t(`events.themePresets.${preset[0]}`, { defaultValue: preset[1].name });
         }
       }
     } catch (e) {
@@ -64,7 +64,7 @@ export const ThemeDisplay: React.FC<ThemeDisplayProps> = ({
   
   // If we have a preset name, use its display name
   if (presetName && GALLERY_THEME_PRESETS[presetName]) {
-    themeName = GALLERY_THEME_PRESETS[presetName].name;
+    themeName = t(`events.themePresets.${presetName}`, { defaultValue: GALLERY_THEME_PRESETS[presetName].name });
   }
   
   if (!themeConfig) {

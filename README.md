@@ -30,7 +30,7 @@ Camera/拍摄项目/
 
 ## 镜像与端口
 
-当前固定标签：`picpeak-pixcake:3.134.1-zh.25-bridge.0.1.12`。禁止使用 `latest` 作为生产更新来源。
+当前固定标签：`picpeak-pixcake:3.134.1-zh.26-bridge.0.1.12`。禁止使用 `latest` 作为生产更新来源。
 
 统一镜像内有两个独立进程：PicPeak 提供网页；Bridge 只监听容器内 `127.0.0.1:8080`，由 PicPeak 后台访问，不发布 Bridge 端口。PicPeak 与 Bridge 保持各自的数据卷和数据库，以便迁移、备份与故障隔离。合并仓库和镜像不代表数据库已合并。
 
@@ -89,7 +89,7 @@ docker compose -f compose.yaml -f compose.nas-camera.yaml up -d
 不能在 NAS 构建时，在另一台 Docker 主机运行构建并导出，再使用 NAS 的镜像导入功能：
 
 ```sh
-docker save picpeak-pixcake:3.134.1-zh.25-bridge.0.1.12 -o picpeak-pixcake.tar
+docker save picpeak-pixcake:3.134.1-zh.26-bridge.0.1.12 -o picpeak-pixcake.tar
 # 导入完成后，使用相同固定标签与原数据卷重建容器
 ```
 
@@ -108,7 +108,7 @@ npm --prefix frontend run build:check
 SKIP_S3_TESTS=true npm --prefix backend test -- --runInBand
 uv run --directory bridge pytest -q
 ./scripts/build-unified.sh
-STACK_IMAGE=picpeak-pixcake:3.134.1-zh.25-bridge.0.1.12 bridge/docker/integrated/smoke.sh
+STACK_IMAGE=picpeak-pixcake:3.134.1-zh.26-bridge.0.1.12 bridge/docker/integrated/smoke.sh
 ```
 
 S3 用例需要另行提供对象存储测试环境，默认本地卷部署不依赖 S3。真实容器 E2E 使用 `bridge/scripts/integration.py`，必须是专用、全新、名称以 `pixcake-` 开头的测试容器；不能对生产实例运行。统一 CI 执行前后端、中文键/插值/复数检查、Bridge 测试、Python 依赖扫描、容器重启、100 张照片 E2E 和手机浏览器下载测试，全部通过后才允许 main 手动发布固定标签镜像。

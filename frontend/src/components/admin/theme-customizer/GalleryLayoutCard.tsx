@@ -52,7 +52,7 @@ export const GalleryLayoutCard: React.FC<GalleryLayoutCardProps> = ({
                 {layoutIcons[layout]}
               </div>
               <span className="font-medium text-sm capitalize text-neutral-900 dark:text-neutral-100">
-                {layout}
+                {t(`events.galleryLayouts.${layout}`, { defaultValue: layout })}
                 {(layout === 'gallery-premium' || layout === 'gallery-story') && (
                   <span className="ml-1 text-xs text-amber-600 dark:text-amber-400">{tAudit("ui.beta")}</span>
                 )}
