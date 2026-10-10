@@ -1,0 +1,25 @@
+{
+  "commit": "a1f6099",
+  "restore_late_failure": {
+    "test_passed": true,
+    "picpeak_rollback_calls": 1,
+    "bridge_restore_states": [
+      "backup"
+    ],
+    "bridge_pause_released": true,
+    "expected_bridge_final_state": "before"
+  },
+  "unbind_interrupted_state": {
+    "configured_projects": 0,
+    "database_projects": 1,
+    "export_succeeded": true,
+    "restore_error": "备份项目配置与数据库不一致"
+  },
+  "fixed_lock_package_version": "0.1.10",
+  "unresolved_findings": 2,
+  "bridge_tests": {
+    "passed": 93,
+    "warnings": 1
+  },
+  "uv_locked_validation": true
+}
