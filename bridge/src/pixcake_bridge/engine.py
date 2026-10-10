@@ -21,6 +21,7 @@ class Engine:
         self.maintenance_until = 0
         self.maintenance_token = None
         self.maintenance_reason = None
+        self.checkpoint_info = None
         self.stability = Stability(config.stable_seconds)
         self.wake = asyncio.Event()
         self.rebase_layout_paths()
@@ -66,6 +67,8 @@ class Engine:
             s.commit()
 
     def require_writable(self):
+        from .checkpoints import refresh
+        refresh(self)
         if self.maintenance_until > time.monotonic():
             raise ValueError("正在备份或恢复精修状态，请稍后重试")
 
@@ -154,6 +157,8 @@ class Engine:
 
     async def sync(self, event_id=None):
         async with self.lock:
+            from .checkpoints import refresh
+            refresh(self)
             if self.maintenance_until > time.monotonic():
                 return
             for cfg in self.config.projects:

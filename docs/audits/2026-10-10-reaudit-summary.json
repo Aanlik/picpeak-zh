@@ -1,0 +1,25 @@
+{
+  "baseline": "def9c2e",
+  "findings": [
+    {
+      "id": "A01",
+      "priority": "P1",
+      "reproduced": true
+    },
+    {
+      "id": "A02",
+      "priority": "P1",
+      "reproduced": true
+    },
+    {
+      "id": "A03",
+      "priority": "P2",
+      "reproduced": true
+    }
+  ],
+  "backend_targeted_passed": 28,
+  "bridge_passed": 98,
+  "production_code_modified": false,
+  "nas_modified": false,
+  "mobile_retested": false
+}

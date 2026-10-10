@@ -17,6 +17,12 @@ def atomic_json(path, value):
         os.fsync(file.fileno())
         temporary = Path(file.name)
     temporary.replace(path)
+    # Acknowledging a durable checkpoint requires the rename itself to persist.
+    directory = os.open(path.parent, os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0))
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
 
 
 def export_state(config, sessions):

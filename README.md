@@ -30,7 +30,7 @@ Camera/拍摄项目/
 
 ## 镜像与端口
 
-当前固定标签：`picpeak-pixcake:3.134.1-zh.23-bridge.0.1.11`。禁止使用 `latest` 作为生产更新来源。
+当前固定标签：`picpeak-pixcake:3.134.1-zh.24-bridge.0.1.12`。禁止使用 `latest` 作为生产更新来源。
 
 统一镜像内有两个独立进程：PicPeak 提供网页；Bridge 只监听容器内 `127.0.0.1:8080`，由 PicPeak 后台访问，不发布 Bridge 端口。PicPeak 与 Bridge 保持各自的数据卷和数据库，以便迁移、备份与故障隔离。合并仓库和镜像不代表数据库已合并。
 
@@ -64,6 +64,8 @@ docker compose -f compose.yaml -f compose.nas-camera.yaml up -d
 
 恢复末尾失败时，PicPeak 和 Bridge 会共同回滚到恢复前状态。若任一侧无法完整回滚，精修同步会持久化暂停，重启也不会自动解除；后台会显示暂停原因。请先人工核对双方项目和交付版本，再按 [恢复故障处理说明](docs/recovery-fixes-2026-10-10.md) 解除暂停。项目解绑中断也会在启动或备份前自动补完，防止生成配置与数据库不一致的备份。
 
+恢复前安全备份默认保存在持久化目录 `/data/backup/restore-safety`，成功恢复或回滚失败后均保留，核对无误后再手动清理。检查点采用准备、确认两步：准备阶段有效期 60 秒；普通备份暂停可续期，确认后的恢复暂停持续到任务明确结束，并可跨 Bridge 重启保留。忙碌请求会及时返回，失败请求按任务编号撤销，避免遗留暂停。详见 [三项审计问题修复记录](docs/checkpoint-fixes-2026-10-10.md)。
+
 NAS 原片、外部样片及 `PixCakeDelivery` 文件仍需由 NAS 单独备份；状态清单不复制外部照片、原片或历史成片，也不包含运行环境的 API 令牌。建议同时保留 `/data`、`/bridge-data` 和挂载配置的卷备份。
 
 标准分离目录会从 `01_RAW` 的相邻 `02_PROOF` 读取撤回所需的原样片；两种格式的原目录都保持只读。文件监听器不会因文件被移除而自动删除照片记录，项目和照片的删除通过后台操作完成。
@@ -85,7 +87,7 @@ docker compose -f compose.yaml -f compose.nas-camera.yaml up -d
 不能在 NAS 构建时，在另一台 Docker 主机运行构建并导出，再使用 NAS 的镜像导入功能：
 
 ```sh
-docker save picpeak-pixcake:3.134.1-zh.23-bridge.0.1.11 -o picpeak-pixcake.tar
+docker save picpeak-pixcake:3.134.1-zh.24-bridge.0.1.12 -o picpeak-pixcake.tar
 # 导入完成后，使用相同固定标签与原数据卷重建容器
 ```
 
@@ -104,7 +106,7 @@ npm --prefix frontend run build:check
 SKIP_S3_TESTS=true npm --prefix backend test -- --runInBand
 uv run --directory bridge pytest -q
 ./scripts/build-unified.sh
-STACK_IMAGE=picpeak-pixcake:3.134.1-zh.23-bridge.0.1.11 bridge/docker/integrated/smoke.sh
+STACK_IMAGE=picpeak-pixcake:3.134.1-zh.24-bridge.0.1.12 bridge/docker/integrated/smoke.sh
 ```
 
 S3 用例需要另行提供对象存储测试环境，默认本地卷部署不依赖 S3。真实容器 E2E 使用 `bridge/scripts/integration.py`，必须是专用、全新、名称以 `pixcake-` 开头的测试容器；不能对生产实例运行。统一 CI 执行前后端、中文键/插值/复数检查、Bridge 测试、Python 依赖扫描、容器重启、100 张照片 E2E 和手机浏览器下载测试，全部通过后才允许 main 手动发布固定标签镜像。

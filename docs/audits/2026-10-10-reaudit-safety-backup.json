@@ -1,0 +1,6 @@
+{
+  "restore_failed": true,
+  "rollback_failed": true,
+  "pause_held": true,
+  "safety_backup_exists_after_failure": false
+}

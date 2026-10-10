@@ -1,0 +1,14 @@
+{
+  "checkpoint_restart": {
+    "before_restart_sync_status": 503,
+    "after_restart_sync_status": 200,
+    "old_token_renew_status": 409,
+    "old_token_block_status": 409
+  },
+  "abandoned_checkpoint": {
+    "request_timed_out": true,
+    "sync_status_after_timeout": 503,
+    "lease_created_after_disconnect": true,
+    "remaining_pause_seconds": 1800
+  }
+}

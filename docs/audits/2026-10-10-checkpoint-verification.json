@@ -1,0 +1,46 @@
+{
+  "verified_at": "2026-10-10T13:12:21.298357+00:00",
+  "backend": {
+    "numPassedTestSuites": 336,
+    "numPassedTests": 3106,
+    "numPendingTestSuites": 4,
+    "numPendingTests": 28,
+    "success": true
+  },
+  "bridge_passed": 107,
+  "mobile_stats": {
+    "startTime": "2026-10-10T13:09:50.657Z",
+    "duration": 5777.581,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "integration": {
+    "proof_count": 100,
+    "selected_initial": 50,
+    "added": 5,
+    "cancelled_selecting": 2,
+    "cancelled_editing_raw_preserved": true,
+    "deliveries": 54,
+    "revision_version": 2,
+    "raw_sha256_unchanged": 100,
+    "photo_id_feedback_sort_share_preserved": true,
+    "restart_duplicate_uploads": 0,
+    "withdraw_keep_reselect_preserved": true,
+    "withdraw_delete_restored_proof": true,
+    "archive_restore_progress": true,
+    "picpeak_archive_restore_identity_preserved": true,
+    "guest_share_path": "/gallery/pixcake-e2e-5a0a89/0c819c60a0bf964ce80946e799731956",
+    "event_id": 1,
+    "slug": "pixcake-e2e-5a0a89",
+    "fixture_root": "/private/tmp/picpeak-checkpoint-final",
+    "tested_at": "2026-10-10T13:09:49Z"
+  },
+  "container_smoke_passed": true,
+  "image": "picpeak-pixcake:3.134.1-zh.24-bridge.0.1.12",
+  "artifact_bytes": 245388800,
+  "artifact_sha256": "67e0b6ea1e48de9609ccbf180aeee92299edc95b3af11fba179d9a5296032860",
+  "nas_updated": false,
+  "remote_pushed": false
+}

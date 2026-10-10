@@ -1,13 +1,25 @@
 'use strict';
+const { randomUUID } = require('crypto');
 const { bridgeConfig, bridgeRequest } = require('./photographyWorkflowBridge');
 
-async function checkpoint() {
+async function checkpoint(purpose = 'backup') {
   if (!bridgeConfig()) return null;
-  const result = await bridgeRequest('/api/state/checkpoint', { method: 'POST', body: {} });
-  if (result.status !== 200 || !result.data?.token || result.data.state?.version !== 1) {
-    throw new Error('无法备份精修状态：Bridge 不可用或版本不支持，备份已停止');
+  const token = randomUUID();
+  let checkpoint;
+  try {
+    const result = await bridgeRequest('/api/state/checkpoint', { method: 'POST', body: { token, purpose } });
+    if (result.status !== 200 || result.data?.token !== token || result.data.state?.version !== 1) {
+      throw new Error('无法备份精修状态：Bridge 忙碌、不可用或检查点校验失败，备份已停止');
+    }
+    const activated = await bridgeRequest('/api/state/activate', { method: 'POST', body: { token } });
+    if (activated.status !== 200 || !activated.data?.success) throw new Error('精修状态暂停确认失败，备份或恢复已停止');
+    checkpoint = result.data;
+  } catch (error) {
+    // Nothing has been restored/copied yet. The caller owns the ID even if a response was lost.
+    const cancelled = await bridgeRequest('/api/state/cancel', { method: 'POST', body: { token } });
+    if (![200, 202].includes(cancelled.status)) error.message += '；取消暂停未确认，请在 Bridge 中核对任务状态';
+    throw error;
   }
-  const checkpoint = result.data;
   const timer = setInterval(async () => {
     const renewed = await bridgeRequest('/api/state/renew', { method: 'POST', body: { token: checkpoint.token } });
     if (renewed.status !== 200) checkpoint.renewalError = new Error('精修状态备份锁续期失败，请重新备份');

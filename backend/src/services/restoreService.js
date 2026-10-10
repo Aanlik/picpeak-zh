@@ -389,7 +389,7 @@ class RestoreService {
       }
 
       if (['full', 'database'].includes(options.restoreType) && manifest.metadata?.workflow_state) {
-        workflowCheckpoint = await workflowBackup.checkpoint();
+        workflowCheckpoint = await workflowBackup.checkpoint('restore');
         if (!workflowCheckpoint) throw new Error('该备份包含精修状态，请先配置 Bridge 后恢复');
       }
       // Step 4: Create pre-restore backup (unless explicitly skipped)
@@ -734,6 +734,7 @@ class RestoreService {
           status: 'failed',
           error_message: failureMessage,
           was_rollback_attempted: rollbackAttempted,
+          pre_restore_backup_path: this.preRestoreBackupPath,
           restore_log: JSON.stringify(this.restoreLog)
         });
       }
@@ -986,8 +987,16 @@ class RestoreService {
    */
   async createPreRestoreBackup(options) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupName = `pre-restore-${timestamp}`;
-    const backupPath = path.join(this.tempDir, backupName);
+    const backupName = `pre-restore-${timestamp}-${crypto.randomUUID()}`;
+    const { getStoragePath } = require('../config/storage');
+    const backupRoot = process.env.BACKUP_DIR || path.join(getStoragePath(), '..', 'backup');
+    const backupPath = path.resolve(backupRoot, 'restore-safety', backupName);
+    const tempRoot = path.resolve(this.tempDir);
+    const storageRoot = path.resolve(getStoragePath());
+    if (backupPath === tempRoot || backupPath.startsWith(tempRoot + path.sep) ||
+        (options.restoreType === 'full' && (backupPath === storageRoot || backupPath.startsWith(storageRoot + path.sep)))) {
+      throw new Error('安全备份目录不能位于临时目录或正在备份的照片存储目录中');
+    }
 
     await fs.mkdir(backupPath, { recursive: true });
 

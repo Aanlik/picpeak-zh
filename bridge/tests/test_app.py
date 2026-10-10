@@ -1,3 +1,4 @@
+import uuid
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from urllib.parse import unquote_plus
@@ -247,7 +248,8 @@ def test_authenticated_checkpoint_pauses_sync_and_restores_state(tmp_path):
     with TestClient(create_app(cfg, remote, start_workers=False)) as client:
         assert client.post('/api/state/checkpoint', json={}).status_code == 401
         client.auth = ('admin', cfg.admin_password)
-        saved = client.post('/api/state/checkpoint', json={}).json()
+        saved = client.post('/api/state/checkpoint', json={'token': str(uuid.uuid4()), 'purpose': 'restore'}).json()
+        assert client.post('/api/state/activate', json={'token': saved['token']}).status_code == 200
         assert saved['state']['version'] == 1
         assert client.post('/api/projects/7/stage', json={'stage':'EDITING'}).status_code == 503
         assert client.post('/api/state/restore', json={'token':'wrong', 'state':saved['state']}).status_code == 409
@@ -263,7 +265,8 @@ def test_failed_restore_pause_survives_restart_and_requires_authenticated_releas
     db.dispose()
     with TestClient(create_app(cfg, remote, start_workers=False)) as client:
         client.auth = ('admin', cfg.admin_password)
-        checkpoint = client.post('/api/state/checkpoint', json={}).json()
+        checkpoint = client.post('/api/state/checkpoint', json={'token': str(uuid.uuid4()), 'purpose': 'restore'}).json()
+        assert client.post('/api/state/activate', json={'token': checkpoint['token']}).status_code == 200
         assert client.post('/api/state/block', json={'token': 'wrong'}).status_code == 409
         assert client.post('/api/state/block', json={'token': checkpoint['token'], 'reason': '恢复失败'}).status_code == 200
         assert client.post('/api/state/renew', json={'token': checkpoint['token']}).status_code == 200
@@ -275,7 +278,7 @@ def test_failed_restore_pause_survives_restart_and_requires_authenticated_releas
         assert '精修同步已暂停' in client.get('/').text
         assert any(error['message'] == '恢复失败' for error in client.get('/api/projects/7/detail').json()['errors'])
         assert client.post('/api/projects/7/sync', json={}).status_code == 503
-        assert client.post('/api/state/checkpoint', json={}).status_code == 409
+        assert client.post('/api/state/checkpoint', json={'token': str(uuid.uuid4()), 'purpose': 'restore'}).status_code == 409
         assert client.post('/api/state/release', json={'token': 'wrong'}).status_code == 409
         assert (tmp_path / 'restore-block.json').exists()
         assert client.post('/api/state/release', json={'token': checkpoint['token']}).status_code == 200
@@ -299,7 +302,8 @@ def test_checkpoint_repairs_interrupted_unbind_and_restart_cleans_orphans(tmp_pa
     with TestClient(create_app(cfg, remote, start_workers=False)) as client:
         client.auth = ('admin', cfg.admin_password)
         assert not (tmp_path / 'unbind-state.json').exists()
-        saved = client.post('/api/state/checkpoint', json={}).json()
+        saved = client.post('/api/state/checkpoint', json={'token': str(uuid.uuid4()), 'purpose': 'restore'}).json()
+        assert client.post('/api/state/activate', json={'token': saved['token']}).status_code == 200
         assert saved['state']['projects'] == []
         assert saved['state']['tables']['projects'] == []
         assert client.post('/api/state/restore', json=saved).status_code == 200

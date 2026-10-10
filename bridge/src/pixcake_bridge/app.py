@@ -20,6 +20,7 @@ from .client import PicPeak
 from .config import Config, ProjectConfig
 from .engine import Engine, STAGES
 from .models import Delivery, Error, Photo, Project, SyncRun, Withdrawal, database
+from . import checkpoints
 
 security = HTTPBasic()
 templates = Environment(loader=FileSystemLoader(Path(__file__).parent / "templates"), autoescape=select_autoescape())
@@ -51,6 +52,7 @@ def create_app(config=None, client=None, start_workers=True):
         if journal.exists():
             restore_state(json.loads(journal.read_text()), cfg, sessions, journal=False)
         engine = Engine(cfg, sessions, api)
+        checkpoints.load(engine)
         block = cfg.projects_file.parent / 'restore-block.json'
         if block.exists():
             saved_block = json.loads(block.read_text())
@@ -93,6 +95,7 @@ def create_app(config=None, client=None, start_workers=True):
             raise HTTPException(401, "登录失败", headers={"WWW-Authenticate": "Basic"})
         if request.method not in {"GET", "HEAD"}:
             engine = request.app.state.engine
+            checkpoints.refresh(engine)
             if engine.maintenance_until > time.monotonic() and not request.url.path.startswith('/api/state/'):
                 raise HTTPException(503, '正在备份或恢复精修状态，请稍后重试')
             origin = request.headers.get("origin")
@@ -351,41 +354,95 @@ def create_app(config=None, client=None, start_workers=True):
     async def checkpoint(request: Request):
         from .state_backup import export_state
         engine = request.app.state.engine
-        async with engine.lock:
-            if engine.maintenance_until > time.monotonic():
+        payload = await checkpoints.payload(request)
+        task = checkpoints.token(payload.get('token'))
+        purpose = payload.get('purpose', 'backup')
+        if not isinstance(purpose, str) or purpose not in {'backup', 'restore'}:
+            raise HTTPException(400, '检查点用途无效')
+        async with checkpoints.locked(engine):
+            if checkpoints.cancelled(engine, task):
+                raise HTTPException(409, '检查点任务已取消')
+            record = engine.checkpoint_info
+            if engine.maintenance_until > time.monotonic() and (
+                    not record or record['token'] != task or record['purpose'] != purpose or
+                    (engine.config.projects_file.parent / 'restore-block.json').exists()):
                 raise HTTPException(409, '已有备份或恢复任务')
             from .project_state import recover_detachments
             recover_detachments(engine.config, engine.sessions)
             try:
-                state = export_state(engine.config, engine.sessions)
+                state = await asyncio.wait_for(asyncio.to_thread(export_state, engine.config, engine.sessions), timeout=3)
+            except TimeoutError as error:
+                raise HTTPException(503, '精修状态读取超时，请稍后重试') from error
             except ValueError as error:
                 raise HTTPException(409, str(error)) from error
-            engine.maintenance_token = str(uuid.uuid4())
-            engine.maintenance_until = time.monotonic() + 1800
-            return {"token": engine.maintenance_token, "state": state}
+            if checkpoints.cancelled(engine, task) or await request.is_disconnected():
+                raise HTTPException(409, '检查点请求已取消或连接断开')
+            if not record:
+                record = {'token': task, 'purpose': purpose, 'phase': 'prepared',
+                          'expires_at': time.time() + checkpoints.PREPARED_SECONDS}
+                checkpoints.save(engine, record)
+            return {"token": task, "state": state}
+
+    @app.post("/api/state/activate", dependencies=[Depends(authorize)])
+    async def activate_checkpoint(request: Request):
+        engine = request.app.state.engine
+        task = checkpoints.token((await checkpoints.payload(request)).get('token'))
+        async with checkpoints.locked(engine):
+            record = engine.checkpoint_info
+            if not record or record['token'] != task or checkpoints.cancelled(engine, task):
+                raise HTTPException(409, '检查点任务不存在或已取消')
+            if await request.is_disconnected():
+                raise HTTPException(409, '检查点确认连接断开')
+            if record['phase'] != 'active':
+                checkpoints.save(engine, {**record, 'phase': 'active',
+                    'expires_at': None if record['purpose'] == 'restore' else time.time() + checkpoints.BACKUP_SECONDS})
+        return {"success": True}
+
+    @app.post("/api/state/cancel", dependencies=[Depends(authorize)])
+    async def cancel_checkpoint(request: Request):
+        engine = request.app.state.engine
+        task = checkpoints.token((await checkpoints.payload(request)).get('token'))
+        # Receipt is durable before waiting: a late prepare/activate cannot revive this task.
+        checkpoints.cancel_intent(engine, task)
+        try:
+            async with checkpoints.locked(engine):
+                if engine.checkpoint_info and engine.checkpoint_info['token'] == task:
+                    if (engine.config.projects_file.parent / 'restore-block.json').exists():
+                        raise HTTPException(409, '恢复失败的暂停需要人工核对后解除')
+                    checkpoints.clear(engine)
+        except HTTPException as error:
+            if error.status_code != 409 or (engine.config.projects_file.parent / 'restore-block.json').exists():
+                raise
+            engine.wake.set()
+            return {"success": True, "processing": True}
+        engine.wake.set()
+        return {"success": True}
 
     @app.post("/api/state/renew", dependencies=[Depends(authorize)])
     async def renew_checkpoint(request: Request):
         engine = request.app.state.engine
-        payload = await request.json()
-        async with engine.lock:
-            if payload.get('token') != engine.maintenance_token or engine.maintenance_until <= time.monotonic():
+        payload = await checkpoints.payload(request)
+        async with checkpoints.locked(engine):
+            checkpoints.refresh(engine)
+            if not engine.maintenance_token or payload.get('token') != engine.maintenance_token or engine.maintenance_until <= time.monotonic():
                 raise HTTPException(409, '备份同步锁已过期')
-            if not engine.maintenance_reason:
-                engine.maintenance_until = time.monotonic() + 1800
+            record = engine.checkpoint_info
+            if record and record['phase'] != 'active':
+                raise HTTPException(409, '检查点尚未确认')
+            if record and record['purpose'] == 'backup' and not engine.maintenance_reason:
+                checkpoints.save(engine, {**record, 'expires_at': time.time() + checkpoints.BACKUP_SECONDS})
         return {"success": True}
 
     @app.post("/api/state/release", dependencies=[Depends(authorize)])
     async def release_checkpoint(request: Request):
         engine = request.app.state.engine
-        payload = await request.json()
-        async with engine.lock:
-            if payload.get('token') != engine.maintenance_token:
+        payload = await checkpoints.payload(request)
+        async with checkpoints.locked(engine):
+            checkpoints.refresh(engine)
+            if not engine.maintenance_token or payload.get('token') != engine.maintenance_token:
                 raise HTTPException(409, '备份任务标识不匹配')
             (engine.config.projects_file.parent / 'restore-block.json').unlink(missing_ok=True)
-            engine.maintenance_reason = None
-            engine.maintenance_until = 0
-            engine.maintenance_token = None
+            checkpoints.clear(engine)
             engine.wake.set()
         return {"success": True}
 
@@ -393,8 +450,9 @@ def create_app(config=None, client=None, start_workers=True):
     async def block_checkpoint(request: Request):
         from .state_backup import atomic_json
         engine = request.app.state.engine
-        payload = await request.json()
+        payload = await checkpoints.payload(request)
         async with engine.lock:
+            checkpoints.refresh(engine)
             if not engine.maintenance_token or payload.get('token') != engine.maintenance_token:
                 raise HTTPException(409, '备份任务标识不匹配')
             reason = str(payload.get('reason') or '恢复状态不完整，请人工核对')[:1000]
@@ -408,7 +466,7 @@ def create_app(config=None, client=None, start_workers=True):
         engine = request.app.state.engine
         # The recovery token is available only to authenticated LAN operators.
         return {"blocked": bool(engine.maintenance_reason), "reason": engine.maintenance_reason,
-                "token": engine.maintenance_token if engine.maintenance_reason else None}
+                "token": engine.maintenance_token}
 
     @app.post("/api/state/restore", dependencies=[Depends(authorize)])
     async def restore_checkpoint(request: Request):
@@ -417,9 +475,17 @@ def create_app(config=None, client=None, start_workers=True):
         body = await request.body()
         if len(body) > 100 * 1024 * 1024:
             raise HTTPException(413, '状态备份超过大小限制')
-        payload = json.loads(body)
+        try:
+            payload = json.loads(body)
+        except ValueError as error:
+            raise HTTPException(400, '状态备份不是有效 JSON') from error
+        if not isinstance(payload, dict):
+            raise HTTPException(400, '状态备份必须是 JSON 对象')
         async with engine.lock:
-            if engine.maintenance_until <= time.monotonic() or payload.get('token') != engine.maintenance_token:
+            checkpoints.refresh(engine)
+            record = engine.checkpoint_info
+            if (engine.maintenance_until <= time.monotonic() or payload.get('token') != engine.maintenance_token
+                    or (record and (record['phase'] != 'active' or record['purpose'] != 'restore'))):
                 raise HTTPException(409, '必须先暂停同步并建立恢复检查点')
             try:
                 restore_state(payload['state'], engine.config, engine.sessions)
