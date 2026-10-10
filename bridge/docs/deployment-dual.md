@@ -1,3 +1,5 @@
+> 历史记录：本文件记录合并前的部署或测试，不是当前安装入口。当前使用根目录 README、Dockerfile 和 compose.yaml。
+
 # PixCake Bridge · 飞牛 NAS 中文选片与精修交付
 
 独立 Python 3.12 / FastAPI 服务，通过 PicPeak Public API Token 轮询客户选片，

@@ -68,7 +68,10 @@ class PicPeak:
                 raise ApiError(0, uncertain=True)
         if r.status_code >= 400:
             raise ApiError(r.status_code, uncertain=r.status_code >= 500)
-        data = r.json()
-        if not data.get("replaced") or data.get("photo", {}).get("id") != photo_id:
+        try:
+            data = r.json()
+            if not isinstance(data, dict) or data.get("replaced") is not True or not isinstance(data.get("photo"), dict) or data["photo"].get("id") != photo_id:
+                raise ValueError("Unexpected upload response")
+        except (ValueError, TypeError, AttributeError):
             raise ApiError(0, uncertain=True)
         return data

@@ -1,5 +1,6 @@
 import asyncio
 import uuid
+import json
 from collections import Counter
 from pathlib import Path
 
@@ -7,7 +8,7 @@ from sqlalchemy import func, select
 
 from .client import ApiError
 from .files import FINAL_EXTENSIONS, RAW_EXTENSIONS, Stability, index_files, match_raw, materialize, safe_file, safe_name, sha256, snapshot, stem_key
-from .models import Delivery, Error, Photo, Project, SyncRun, now
+from .models import Delivery, Error, Photo, Project, SyncRun, Withdrawal, now
 
 STAGES = ["SELECTING", "EDITING", "DELIVERED", "ARCHIVED"]
 
@@ -18,6 +19,7 @@ class Engine:
         self.lock = asyncio.Lock()
         self.stability = Stability(config.stable_seconds)
         self.wake = asyncio.Event()
+        self.rebase_layout_paths()
         with sessions() as s:
             for p in config.projects:
                 row = s.scalar(select(Project).where(Project.event_id == p.event_id))
@@ -31,6 +33,32 @@ class Engine:
             for row in s.scalars(select(Delivery).where(Delivery.state == "UPLOADING")):
                 row.state = "UNKNOWN"
                 row.updated = now()
+            s.commit()
+
+    def rebase_layout_paths(self):
+        journal = self.config.projects_file.with_name("layout-migrations.json")
+        if not journal.exists():
+            return
+        with self.sessions() as s:
+            for record in json.loads(journal.read_text()):
+                project = s.scalar(select(Project).where(Project.event_id == record["event_id"]))
+                if project is None:
+                    continue
+                old, new = Path(record["old"]), Path(record["new"])
+                def rebased(value):
+                    if not value:
+                        return value
+                    try:
+                        return str(new / Path(value).relative_to(old))
+                    except ValueError:
+                        return value
+                for photo in s.scalars(select(Photo).where(Photo.project_id == project.id)):
+                    photo.selected_path = rebased(photo.selected_path)
+                    for delivery in s.scalars(select(Delivery).where(Delivery.photo_pk == photo.id)):
+                        delivery.snapshot = rebased(delivery.snapshot)
+                    task = s.scalar(select(Withdrawal).where(Withdrawal.photo_pk == photo.id))
+                    if task:
+                        task.snapshot = rebased(task.snapshot)
             s.commit()
 
     def set_stage(self, event_id, stage):
@@ -100,8 +128,9 @@ class Engine:
             version = current + 1
             folder = self.output_folder(cfg, version, create=True)
             try:
-                relative = folder.relative_to(self.config.delivery_root)
-                shown = Path(self.config.delivery_host_root) / relative if self.config.delivery_host_root else folder
+                relative = folder.relative_to(self.config.delivery_root_for(event_id))
+                host = self.config.delivery_host_root_for(event_id)
+                shown = Path(host) / relative if host else folder
             except ValueError:
                 shown = folder
             return {"version": version, "folder": str(shown)}
@@ -119,6 +148,7 @@ class Engine:
                     continue
                 with self.sessions() as s:
                     project = s.scalar(select(Project).where(Project.event_id == cfg.event_id))
+                    await self.resume_withdrawals(cfg, s, project)
                     if project.stage == "ARCHIVED":
                         continue
                     run = SyncRun(project_id=project.id)
@@ -143,6 +173,9 @@ class Engine:
                                 s.add(photo)
                                 s.flush()
                             try:
+                                pending = s.scalar(select(Withdrawal).where(Withdrawal.photo_pk == photo.id, Withdrawal.state != "SUCCESS"))
+                                if pending:
+                                    continue
                                 source = item.get("source_filename")
                                 if not source:
                                     raise ValueError("PicPeak 缺少 source_filename，拒绝使用可变文件名")
@@ -240,88 +273,135 @@ class Engine:
         photo.raw_path = None
         photo.raw_hash = None
 
-    async def withdraw_photo(self, event_id, photo_id, delete_delivered):
-        """Return one delivered photo to selection, optionally restoring Proof.
+    def queue_withdraw(self, event_id, photo_id, delete_delivered, operation_id=None):
+        with self.sessions() as s:
+            project = s.scalar(select(Project).where(Project.event_id == event_id))
+            photo = s.scalar(select(Photo).where(Photo.project_id == project.id, Photo.photo_id == photo_id)) if project else None
+            if not photo:
+                raise ValueError("照片尚未同步")
+            task = s.scalar(select(Withdrawal).where(Withdrawal.photo_pk == photo.id))
+            if task and operation_id and task.operation_id == operation_id:
+                return {"processing": task.state != "SUCCESS", "deleted": bool(task.delete_delivered)}
+            if not photo.delivery_hash:
+                raise ValueError("照片没有已交付的精修版本")
+            if task and task.state != "SUCCESS":
+                if task.delete_delivered != delete_delivered:
+                    raise ValueError("已有撤回任务正在处理，不能更改删除选项")
+            elif task:
+                task.operation_id = operation_id
+                task.delete_delivered, task.state = delete_delivered, "PENDING"
+                task.marker, task.snapshot, task.error = None, None, None
+            else:
+                s.add(Withdrawal(photo_pk=photo.id, operation_id=operation_id, delete_delivered=delete_delivered))
+            s.commit()
+        self.wake.set()
+        return {"processing": True, "deleted": bool(delete_delivered)}
 
-        The original camera folder stays read-only. The only RAW removed here
-        is the Bridge-owned copy under 03_SELECTED_RAW.
-        """
+    async def withdraw_photo(self, event_id, photo_id, delete_delivered):
+        # Direct engine callers wait; HTTP uses queue_withdraw and returns a
+        # durable receipt before a potentially slow replacement starts.
         async with self.lock:
-            cfg = next((item for item in self.config.projects if item.event_id == event_id), None)
-            if cfg is None:
-                raise ValueError("项目尚未绑定")
+            self.queue_withdraw(event_id, photo_id, delete_delivered)
+            cfg = next(item for item in self.config.projects if item.event_id == event_id)
             with self.sessions() as s:
                 project = s.scalar(select(Project).where(Project.event_id == event_id))
-                photo = s.scalar(select(Photo).where(Photo.project_id == project.id, Photo.photo_id == photo_id)) if project else None
-                if not photo or not photo.delivery_hash:
-                    raise ValueError("照片没有已交付的精修版本")
+                await self.resume_withdrawals(cfg, s, project)
+                photo = s.scalar(select(Photo).where(Photo.project_id == project.id, Photo.photo_id == photo_id))
+                task = s.scalar(select(Withdrawal).where(Withdrawal.photo_pk == photo.id))
+                if task.state != "SUCCESS":
+                    raise ValueError(task.error or "撤回处理中，系统会自动核对结果")
+                return {"deleted": bool(delete_delivered), "current_version": self.current_version(s, photo)}
 
-                deliveries = list(s.scalars(
-                    select(Delivery).where(Delivery.photo_pk == photo.id).order_by(Delivery.updated.desc())
-                ))
-                successful = [item for item in deliveries if item.state == "SUCCESS"]
-                if not successful:
-                    raise ValueError("没有可撤回的精修交付")
-
-                if delete_delivered:
-                    if photo.selected_path:
-                        selected_copy = Path(photo.selected_path)
-                        if selected_copy.exists() or selected_copy.is_symlink():
-                            safe_file(selected_copy, cfg.selected)
-                            if photo.materialized_hash and await asyncio.to_thread(sha256, selected_copy) != photo.materialized_hash:
-                                raise ValueError("待精修 RAW 副本已变更，拒绝自动删除")
-                    final_index = await asyncio.to_thread(index_files, cfg.final, FINAL_EXTENSIONS)
-                    rendered_files = final_index.get(stem_key(photo.source_filename), [])
-                    for rendered in rendered_files:
-                        safe_file(rendered, cfg.final)
-                    for delivery in deliveries:
-                        snapshot_path = Path(delivery.snapshot)
-                        if snapshot_path.exists() or snapshot_path.is_symlink():
-                            safe_file(snapshot_path, cfg.history)
-
-                    # Recover the original proof from the read-only source
-                    # folder and replace the current PicPeak rendition in
-                    # place. This preserves the photo id and feedback rows.
-                    proof_index = await asyncio.to_thread(index_files, cfg.raw, FINAL_EXTENSIONS, {"PixCakeDelivery"})
-                    proof = match_raw(photo.source_filename, proof_index, cfg.raw)
-                    safe_file(proof, cfg.raw)
-                    await self.client.replace(event_id, photo.photo_id, proof, proof.name)
-
-                    # Remove only this photo's rendered outputs and Bridge
-                    # snapshots. Do not touch the Camera source or other stems.
-                    for rendered in rendered_files:
-                        rendered.unlink()
-                    for delivery in deliveries:
-                        snapshot_path = Path(delivery.snapshot)
-                        if snapshot_path.exists() or snapshot_path.is_symlink():
-                            snapshot_path.unlink()
-                        delivery.state = "WITHDRAWN"
-                        delivery.error = None
-                        delivery.updated = now()
+    async def resume_withdrawals(self, cfg, s, project):
+        tasks = list(s.scalars(select(Withdrawal).join(Photo).where(Photo.project_id == project.id, Withdrawal.state != "SUCCESS")))
+        for task in tasks:
+            photo = s.get(Photo, task.photo_pk)
+            try:
+                if photo.selected_path:
+                    selected = Path(photo.selected_path)
+                    if selected.exists() or selected.is_symlink():
+                        safe_file(selected, cfg.selected)
+                        if photo.materialized_hash and await asyncio.to_thread(sha256, selected) != photo.materialized_hash:
+                            raise ValueError("待精修 RAW 副本已变更，拒绝自动删除")
+                if task.delete_delivered:
+                    if not task.snapshot:
+                        proof_index = await asyncio.to_thread(index_files, cfg.raw, FINAL_EXTENSIONS, {"PixCakeDelivery"})
+                        proof = match_raw(photo.source_filename, proof_index, cfg.raw)
+                        directory = cfg.history / str(photo.photo_id)
+                        if directory.is_symlink():
+                            raise ValueError("历史目录不能为符号链接")
+                        directory.mkdir(parents=True, exist_ok=True)
+                        staged = directory / ("withdraw-" + uuid.uuid4().hex + proof.suffix.lower())
+                        digest = await asyncio.to_thread(snapshot, proof, staged, self.config.max_bytes)
+                        task.snapshot = str(staged)
+                        task.marker = f"{Path(photo.source_filename).stem}.__bridge_{digest}{proof.suffix.lower()}"
+                        safe_name(task.marker)
+                        s.commit()
+                    if task.state in {"UPLOADING", "UNKNOWN"}:
+                        remote = await self.client.photos(cfg.event_id)
+                        current = next((row for row in remote if row["id"] == photo.photo_id), None)
+                        if current and current.get("original_filename") == task.marker:
+                            task.state = "CLEANUP"
+                            s.commit()
+                        else:
+                            raise ValueError("撤回替换结果未知，已停止重复上传，请摄影师核对")
+                    if task.state in {"PENDING", "FAILED"}:
+                        safe_file(Path(task.snapshot), cfg.history)
+                        task.state, task.updated = "UPLOADING", now()
+                        s.commit()
+                        try:
+                            await self.client.replace(cfg.event_id, photo.photo_id, Path(task.snapshot), task.marker)
+                        except ApiError as exc:
+                            task.state = "UNKNOWN" if exc.uncertain else "PENDING"
+                            s.commit()
+                            raise
+                        except Exception:
+                            task.state = "UNKNOWN"
+                            s.commit()
+                            raise
+                        task.state = "CLEANUP"
+                        s.commit()
+                    rendered = (await asyncio.to_thread(index_files, cfg.final, FINAL_EXTENSIONS)).get(stem_key(photo.source_filename), [])
+                    deliveries = list(s.scalars(select(Delivery).where(Delivery.photo_pk == photo.id)))
+                    # Preflight every file before deleting any of them.
+                    for row in deliveries:
+                        file = Path(row.snapshot)
+                        if file.exists() or file.is_symlink():
+                            safe_file(file, cfg.history)
+                    for file in rendered:
+                        safe_file(file, cfg.final)
+                    for file in rendered:
+                        file.unlink()
+                    for row in deliveries:
+                        Path(row.snapshot).unlink(missing_ok=True)
+                        row.state, row.error, row.updated = "WITHDRAWN", None, now()
                     photo.delivery_hash = None
-                    photo.remote_filename = photo.source_filename
+                    photo.remote_filename = task.marker
                     photo.added_during_editing = False
                     photo.cancelled = False
                 else:
-                    # Keep the latest rendered image visible, while detaching
-                    # its RAW from the active editing queue.
-                    if photo.selected_path:
-                        selected_copy = Path(photo.selected_path)
-                        if selected_copy.exists() or selected_copy.is_symlink():
-                            safe_file(selected_copy, cfg.selected)
-                            if photo.materialized_hash and await asyncio.to_thread(sha256, selected_copy) != photo.materialized_hash:
-                                raise ValueError("待精修 RAW 副本已变更，拒绝自动删除")
                     photo.cancelled = True
-
                 self._remove_selected_raw(cfg, photo)
-                photo.selected = False
-                photo.error = None
+                photo.selected, photo.error = False, None
+                task.state, task.error, task.updated = "SUCCESS", None, now()
                 s.commit()
-                return {"deleted": bool(delete_delivered), "current_version": self.current_version(s, photo)}
+                if task.snapshot:
+                    file = Path(task.snapshot)
+                    if file.exists():
+                        safe_file(file, cfg.history)
+                        file.unlink()
+            except Exception as exc:
+                task.error, task.updated = str(exc), now()
+                self.record_error(s, project, f"照片 {photo.photo_id} 撤回待处理: {exc}")
+                s.commit()
 
     async def finals(self, s, cfg, project, counts, remote_ids):
         failed = False
+        version_indexes = {}
+        legacy_index = None
         for photo in s.scalars(select(Photo).where(Photo.project_id == project.id)):
+            if s.scalar(select(Withdrawal).where(Withdrawal.photo_pk == photo.id, Withdrawal.state != "SUCCESS")):
+                continue
             if not (photo.selected or photo.selected_path) or photo.error or photo.photo_id not in remote_ids:
                 continue
             try:
@@ -347,13 +427,15 @@ class Engine:
                 key = stem_key(photo.source_filename)
                 version = self.current_version(s, photo) + 1
                 version_dir = self.output_folder(cfg, version)
-                candidates = await asyncio.to_thread(index_files, version_dir, FINAL_EXTENSIONS) if version_dir.is_dir() else {}
-                candidates = candidates.get(key, [])
+                if version not in version_indexes:
+                    version_indexes[version] = await asyncio.to_thread(index_files, version_dir, FINAL_EXTENSIONS) if version_dir.is_dir() else {}
+                candidates = list(version_indexes[version].get(key, []))
                 # Keep compatibility with projects that exported their first
                 # delivery directly into 04_FINAL before version folders were
                 # introduced. A V1 export always wins when it exists alone.
                 if version == 1:
-                    legacy_index = await asyncio.to_thread(index_files, cfg.final, FINAL_EXTENSIONS)
+                    if legacy_index is None:
+                        legacy_index = await asyncio.to_thread(index_files, cfg.final, FINAL_EXTENSIONS)
                     legacy = [p for p in legacy_index.get(key, []) if p.parent == cfg.final]
                     candidates.extend(legacy)
                 if not candidates:
@@ -424,6 +506,11 @@ class Engine:
                     self.record_error(s, project, f"照片 {photo.photo_id}: {exc}")
                     failed = True
                     s.commit()
+                except Exception as exc:
+                    delivery.state, delivery.error, delivery.updated = "UNKNOWN", type(exc).__name__, now()
+                    self.record_error(s, project, f"照片 {photo.photo_id}: 上传结果未知")
+                    failed = True
+                    s.commit()
                 else:
                     self.success(s, cfg, photo, delivery)
             except (OSError, ValueError) as exc:
@@ -456,6 +543,10 @@ class Engine:
             photo_ids = select(Photo.id).join(Project).where(Project.event_id == event_id)
             for delivery in s.scalars(select(Delivery).where(Delivery.photo_pk.in_(photo_ids), Delivery.state.in_(["FAILED", "UNKNOWN"]))):
                 delivery.state, delivery.error = "PENDING", None
+            for task in s.scalars(select(Withdrawal).where(Withdrawal.photo_pk.in_(photo_ids), Withdrawal.state != "SUCCESS")):
+                if task.state in {"UNKNOWN", "UPLOADING", "FAILED"}:
+                    task.state = "PENDING"
+                task.error = None
             s.commit()
         self.wake.set()
 

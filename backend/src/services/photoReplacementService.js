@@ -132,6 +132,8 @@ async function findReplacementCandidate(eventId, originalFilename, opts = {}) {
  * @returns {{ success: boolean, photo?: Object, error?: string }}
  */
 async function replacePhoto(existingPhoto, newFileTempPath, { originalFilename, mimeType, event }) {
+  let newKey = null;
+  let committed = false;
   const categorySlug = existingPhoto.type === 'collage' ? 'collages' : 'individual';
 
   try {
@@ -179,27 +181,6 @@ async function replacePhoto(existingPhoto, newFileTempPath, { originalFilename, 
       await proc.cleanup();
     }
 
-    // Delete old assets BEFORE uploading the new key — if they share the path
-    // (rare but possible if filename collision), we want the new content.
-    const oldOriginalKey = resolvePhotoStorageKey(event, existingPhoto);
-    if (oldOriginalKey && oldOriginalKey !== finalKey) {
-      await storage.delete(oldOriginalKey).catch(() => {});
-    }
-    if (existingPhoto.thumbnail_path && existingPhoto.thumbnail_path !== thumbnailPath) {
-      await storage.delete(existingPhoto.thumbnail_path).catch(() => {});
-    }
-    // Responsive tiers, keyed off the OLD row (#1095 / #492). Their key embeds
-    // the basename, which the update below replaces — so this is the last
-    // moment they can be derived at all. Miss it and a later delete or archive
-    // computes keys from the new basename and leaves them in storage forever.
-    await deleteThumbnailTiers(existingPhoto);
-    await deletePreviewTiers(existingPhoto);
-    try {
-      await watermarkGeneratorService.deleteForPhoto(existingPhoto.id);
-    } catch {
-      // Ignore — watermark may not exist
-    }
-
     // Upload the new original. `putFromFile` COPIES (LocalFsStorage) or
     // uploads (S3) — neither consumes the source, and this function used to
     // leave it behind. The v1 route additionally stops its own cleanup on the
@@ -207,6 +188,7 @@ async function replacePhoto(existingPhoto, newFileTempPath, { originalFilename, 
     // stranded up to 100 MB in storage/temp. Cleaning up here closes the v1
     // and the admin path at once: adminPhotos only unlinks in its
     // new-files branch, so replaced files leaked there too.
+    newKey = finalKey;
     await storage.putFromFile(finalKey, newFileTempPath, { contentType: mimeType });
     await fsp.unlink(newFileTempPath).catch(() => {});
 
@@ -257,9 +239,7 @@ async function replacePhoto(existingPhoto, newFileTempPath, { originalFilename, 
     // gallery would keep showing the previous subject's identities on the new
     // photo. Drop them, then re-queue if the event has detection on.
     try {
-      const { purgePhotoFaces } = require('./faceProcessor');
       const { isEnabledForEvent } = require('./faceSettings');
-      await purgePhotoFaces(existingPhoto.id);
 
       const event = await db('events').where({ id: existingPhoto.event_id }).first();
       updates.face_status = (await isEnabledForEvent(event)) ? 'pending' : null;
@@ -272,7 +252,34 @@ async function replacePhoto(existingPhoto, newFileTempPath, { originalFilename, 
       });
     }
 
-    await db('photos').where({ id: existingPhoto.id }).update(updates);
+    const changed = await db('photos').where({ id: existingPhoto.id, filename: existingPhoto.filename }).update(updates);
+    if (changed !== 1) throw new Error('照片已被其他操作更新，请刷新后重试');
+    committed = true;
+    await require('./faceProcessor').purgePhotoFaces(existingPhoto.id).catch((err) => {
+      logger.warn('replacePhoto: face cleanup failed after commit', { error: err.message });
+    });
+
+    // The row now points to verified new bytes. Old assets can be reclaimed.
+    const oldOriginalKey = resolvePhotoStorageKey(event, existingPhoto);
+    if (oldOriginalKey && oldOriginalKey !== finalKey) {
+      await storage.delete(oldOriginalKey).catch(() => {});
+    }
+    if (existingPhoto.thumbnail_path && existingPhoto.thumbnail_path !== thumbnailPath) {
+      await storage.delete(existingPhoto.thumbnail_path).catch(() => {});
+    }
+    // Responsive tiers, keyed off the OLD row (#1095 / #492). Their key embeds
+    // the basename, which the update below replaces — so this is the last
+    // moment they can be derived at all. Miss it and a later delete or archive
+    // computes keys from the new basename and leaves them in storage forever.
+    await deleteThumbnailTiers(existingPhoto).catch(() => {});
+    await deletePreviewTiers(existingPhoto).catch(() => {});
+    try {
+      await watermarkGeneratorService.deleteForPhoto(existingPhoto.id);
+    } catch {
+      // Ignore — watermark may not exist
+    }
+
+
 
     const updatedPhoto = await db('photos').where({ id: existingPhoto.id }).first();
 
@@ -289,6 +296,7 @@ async function replacePhoto(existingPhoto, newFileTempPath, { originalFilename, 
       previousFilename: existingPhoto.filename,
     };
   } catch (err) {
+    if (newKey && !committed) await getStorage().delete(newKey).catch(() => {});
     logger.error('replacePhoto error', { photoId: existingPhoto.id, error: err.message });
     return { success: false, error: err.message };
   }

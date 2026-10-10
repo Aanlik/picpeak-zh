@@ -49,3 +49,14 @@ backend/storage
 **/*.db-journal
 **/*.sqlite*
 frontend/dist
+
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/tests
+bridge/.github
+bridge/docs
+
+**/__tests__
+
+artifacts

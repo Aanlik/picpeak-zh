@@ -9,18 +9,19 @@ const { noStoreCache } = require('../middleware/noStoreCache');
 const feedbackService = require('../services/feedbackService');
 const { sanitizeComment } = require('../utils/feedbackValidation');
 const {
-  getPublicPhotoStates, prepareVersionFolder, withdrawPhotoSelection,
+  getPublicPhotoStates, prepareVersionFolder, withdrawPhotoSelection, persistWithdrawalIntent,
   triggerWorkflowSync,
 } = require('../services/photographyWorkflowBridge');
 const { isPhotoHiddenFromViewer } = require('../utils/photoVisibility');
 
-function customerStatus(photo) {
+function customerStatus(photo, stage) {
   // A delivered image that its customer kept is back in the proofing queue;
   // the photo bytes stay retouched, but it is no longer an active RAW task.
+  if (photo.withdraw_pending) return 'proof';
   if (photo.selection_cancelled && photo.delivered) return 'proof';
   if (photo.delivered) return 'delivered';
   if (photo.selection_cancelled) return 'cancelled';
-  if (photo.selected && photo.ready_for_editing) return 'editing';
+  if (photo.selected && photo.ready_for_editing && ['EDITING', 'DELIVERED'].includes(stage)) return 'editing';
   if (photo.selected) return 'selected';
   return 'proof';
 }
@@ -40,7 +41,8 @@ router.get('/:slug/retouch-workflow', verifyGalleryAccess, resolveGuest, blockHi
       .filter((photo) => visibleIds.has(Number(photo.photo_id)))
       .map((photo) => ({
         photo_id: Number(photo.photo_id),
-        selected: Boolean(photo.selected),
+        selected: Boolean(photo.selected) && !photo.withdraw_pending,
+        withdraw_pending: Boolean(photo.withdraw_pending),
         // A kept delivered image is intentionally back in the proof queue.
         // The internal flag still protects Bridge from processing its RAW,
         // but it should not present as a cancelled/revision-only customer state.
@@ -49,7 +51,7 @@ router.get('/:slug/retouch-workflow', verifyGalleryAccess, resolveGuest, blockHi
         current_version: Number(photo.current_version) || 0,
         added_during_editing: Boolean(photo.added_during_editing),
         ready_for_editing: Boolean(photo.ready_for_editing),
-        state: customerStatus(photo),
+        state: customerStatus(photo, workflow.data.stage),
       }));
     const requests = await db('photo_retouch_requests')
       .where({ event_id: req.event.id, guest_identifier: guestIdentifier })
@@ -105,10 +107,14 @@ router.post('/:slug/photos/:photoId/withdraw-selection',
       const anotherParticipantSelected = !shared && labels.some((label) => req.guest?.id
         ? Number(label.guest_id) !== Number(req.guest.id)
         : label.guest_identifier !== guestIdentifier);
-      const remove = await feedbackService.removeColorLabel(photoId, event.id, {
-        identity_mode: settings.identity_mode,
-        guest_id: req.guest?.id ?? null,
-        guest_identifier: guestIdentifier,
+      const remove = await db.transaction(async (trx) => {
+        const result = await feedbackService.removeColorLabel(photoId, event.id, {
+          identity_mode: settings.identity_mode,
+          guest_id: req.guest?.id ?? null,
+          guest_identifier: guestIdentifier,
+        }, trx);
+        if (result.removed && !anotherParticipantSelected) await persistWithdrawalIntent(event.id, photoId, deleteDelivered, trx);
+        return result;
       });
       if (!remove.removed) return res.status(409).json({ error: 'The selection has already changed', code: 'SELECTION_CHANGED' });
 
@@ -124,10 +130,10 @@ router.post('/:slug/photos/:photoId/withdraw-selection',
       }
 
       const withdrawn = await withdrawPhotoSelection(event.id, photoId, deleteDelivered);
-      if (withdrawn.status !== 200) {
+      if (![200, 202].includes(withdrawn.status)) {
         // Keep PicPeak selection and RAW task consistent if the Bridge could
         // not safely restore the proof or remove the NAS RAW association.
-        await feedbackService.submitFeedback(photoId, event.id, {
+        if (withdrawn.status >= 400 && withdrawn.status < 500) await feedbackService.submitFeedback(photoId, event.id, {
           feedback_type: 'color_label', color_label: 'green', ensure_color_label: true,
           identity_mode: settings.identity_mode, guest_name: req.guest?.name,
           guest_id: req.guest?.id ?? null,
@@ -142,7 +148,7 @@ router.post('/:slug/photos/:photoId/withdraw-selection',
       if (!shared) openRequests.where({ guest_identifier: guestIdentifier });
       await openRequests.update({ status: 'cancelled', updated_at: new Date().toISOString() });
       await triggerWorkflowSync(event.id);
-      res.json({ success: true, deleted: deleteDelivered, current_version: withdrawn.data?.current_version || 0 });
+      res.json({ success: true, processing: Boolean(withdrawn.data?.processing), deleted: deleteDelivered, current_version: withdrawn.data?.current_version || 0 });
     } catch (error) {
       require('../utils/logger').error('Gallery retouch withdrawal failed', { error: error.message });
       res.status(500).json({ error: 'Unable to withdraw this retouch selection' });
@@ -165,6 +171,7 @@ router.post('/:slug/photos/:photoId/retouch-requests',
       const photo = await db('photos').where({ id: photoId, event_id: event.id }).first();
       if (!photo || isPhotoHiddenFromViewer(photo, req.accessLevel)) return res.sendStatus(404);
 
+      if (await db('workflow_withdrawal_intents').where({ photo_id: photoId, event_id: event.id }).first()) return res.status(409).json({ error: '撤回任务仍在处理中', code: 'WITHDRAW_PENDING' });
       const requestType = req.body?.request_type;
       if (!['revision', 'additional'].includes(requestType)) {
         return res.status(400).json({ error: 'Invalid request type' });
@@ -258,7 +265,7 @@ router.delete('/:slug/retouch-requests/:requestId',
       if (['cancelled', 'completed', 'closed'].includes(request.status)) {
         return res.status(409).json({ error: 'This request can no longer be cancelled', code: 'REQUEST_NOT_CANCELLABLE' });
       }
-      const settings = request.status === 'moderation' ? null : await feedbackService.getEventFeedbackSettings(req.event.id);
+      const settings = await feedbackService.getEventFeedbackSettings(req.event.id);
       const updated = await db.transaction(async (trx) => {
         const current = await trx('photo_retouch_requests')
           .where({ id: requestId, event_id: req.event.id, guest_identifier: guestIdentifier })
@@ -266,13 +273,12 @@ router.delete('/:slug/retouch-requests/:requestId',
         if (!current || ['cancelled', 'completed', 'closed'].includes(current.status)) return null;
         await trx('photo_retouch_requests').where({ id: requestId }).update({ status: 'cancelled', updated_at: new Date().toISOString() });
         // Stop future version uploads when the customer cancels their last
-        // approved request. Keep the shared selection for any other active
-        // request; moderation-only requests never selected the photo.
+        // request. Keep the shared selection for any other active request.
         if (settings) {
           const remainingQuery = trx('photo_retouch_requests')
             .where({ event_id: req.event.id, photo_id: current.photo_id })
             .whereNot('id', requestId)
-            .whereNotIn('status', ['cancelled', 'completed', 'closed', 'moderation']);
+            .whereNotIn('status', ['cancelled', 'completed', 'closed']);
           if (settings.identity_mode !== 'shared') remainingQuery.where({ guest_identifier: guestIdentifier });
           if (!(await remainingQuery.first('id'))) {
             await feedbackService.removeColorLabel(current.photo_id, req.event.id, {

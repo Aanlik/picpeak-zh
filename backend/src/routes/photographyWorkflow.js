@@ -6,7 +6,7 @@ const { requireEventOwnership } = require('../middleware/ownership');
 const { adminAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
 const { db, logActivity } = require('../database/db');
-const { bridgeRequest, getProjectDetail } = require('../services/photographyWorkflowBridge');
+const { bridgeRequest, getProjectDetail, setWorkflowStage } = require('../services/photographyWorkflowBridge');
 const { getExternalMediaRoot, resolveExternalPath } = require('../services/externalMediaService');
 
 const router = express.Router();
@@ -106,7 +106,8 @@ router.post('/:eventId/auto-bind', requirePermission('events.edit'), (req, res, 
 });
 
 router.post('/:eventId/stage', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
-  const result = await bridgeRequest(`/api/projects/${Number(req.params.eventId)}/stage`, { method: 'POST', body: { stage: req.body?.stage } });
+  if (!['SELECTING', 'EDITING', 'DELIVERED', 'ARCHIVED'].includes(req.body?.stage)) return res.status(400).json({ error: '无效的项目阶段' });
+  const result = await setWorkflowStage(Number(req.params.eventId), req.body.stage);
   if (result.status !== 200) return res.status(result.status === 400 ? 400 : 503).json({ error: '无法更新项目阶段' });
   res.json(result.data);
 });

@@ -3553,7 +3553,6 @@
     },
     "requestState": {
       "open": "待处理",
-      "moderation": "待审核",
       "in_progress": "处理中",
       "waiting_customer": "等待客户确认",
       "completed": "已完成",
@@ -3600,7 +3599,8 @@
       "revisions": "返修版本",
       "cancelled": "取消待确认",
       "errors": "异常"
-    }
+    },
+    "withdrawProcessing": "撤回申请已保存，系统正在处理；连接恢复后会自动继续。"
   },
   "retouchRequest": {
     "title": "精修需求",

@@ -78,7 +78,7 @@ export function WorkflowPhotoAction({
       const result = await galleryService.withdrawRetouchSelection(slug, photo.id, deleteDelivered);
       setShowWithdrawOptions(false);
       setSelected(false);
-      toast.success(t(result.kept_for_other_participant
+      toast.success(t(result.processing ? 'photographyWorkflow.withdrawProcessing' : result.kept_for_other_participant
         ? 'photographyWorkflow.keptForOtherParticipant'
         : deleteDelivered
           ? 'photographyWorkflow.deliveredDeleted'
@@ -111,7 +111,7 @@ export function WorkflowPhotoAction({
     <button
       type="button"
       onClick={updateSelection}
-      disabled={busy}
+      disabled={busy || photo.retouch_withdraw_pending}
       aria-label={description}
       aria-pressed={delivered && !selected ? undefined : selected}
       title={description}
@@ -124,7 +124,7 @@ export function WorkflowPhotoAction({
       } ${busy ? 'cursor-wait opacity-80' : ''}`}
     >
       {busy ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : delivered && !selected ? <ClipboardList className="h-4 w-4" aria-hidden="true" /> : selected ? <Check className="h-4 w-4" aria-hidden="true" /> : null}
-      <span>{busy ? t('photographyWorkflow.selectionSubmitting') : label}</span>
+      <span>{photo.retouch_withdraw_pending ? t('photographyWorkflow.withdrawProcessing') : busy ? t('photographyWorkflow.selectionSubmitting') : label}</span>
     </button>
       {showWithdrawOptions && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" onClick={() => setShowWithdrawOptions(false)}>
@@ -139,14 +139,14 @@ export function WorkflowPhotoAction({
               <h2 id={`withdraw-title-${photo.id}`} className="text-lg font-semibold">{t('photographyWorkflow.withdrawTitle')}</h2>
               <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">{t('photographyWorkflow.withdrawDescription')}</p>
             </div>
-            <button type="button" disabled={busy} onClick={() => void withdrawSelection(true)} className="w-full rounded-lg bg-red-600 px-4 py-3 text-left text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60">
+            <button type="button" disabled={busy || photo.retouch_withdraw_pending} onClick={() => void withdrawSelection(true)} className="w-full rounded-lg bg-red-600 px-4 py-3 text-left text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60">
               {t('photographyWorkflow.deleteDeliveredOption')}
             </button>
-            <button type="button" disabled={busy} onClick={() => void withdrawSelection(false)} className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-left text-sm font-medium hover:bg-neutral-100 disabled:opacity-60 dark:border-neutral-700 dark:hover:bg-neutral-800">
+            <button type="button" disabled={busy || photo.retouch_withdraw_pending} onClick={() => void withdrawSelection(false)} className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-left text-sm font-medium hover:bg-neutral-100 disabled:opacity-60 dark:border-neutral-700 dark:hover:bg-neutral-800">
               {t('photographyWorkflow.keepDeliveredOption')}
             </button>
             <div className="flex justify-end">
-              <button type="button" disabled={busy} onClick={() => setShowWithdrawOptions(false)} className="px-3 py-2 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white">
+              <button type="button" disabled={busy || photo.retouch_withdraw_pending} onClick={() => setShowWithdrawOptions(false)} className="px-3 py-2 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white">
                 {t('common.cancel')}
               </button>
             </div>

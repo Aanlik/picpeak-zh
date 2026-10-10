@@ -118,9 +118,11 @@ def snapshot(source: Path, dest: Path, max_bytes: int):
     before = source.stat()
     if not 0 < before.st_size <= max_bytes:
         raise ValueError("FINAL 为空或超过上传大小限制")
+    created = False
     # Bounded copy also handles a file that starts growing during the copy.
     try:
         with source.open("rb") as src, dest.open("xb") as out:
+            created = True
             total = 0
             for chunk in iter(lambda: src.read(1024 * 1024), b""):
                 total += len(chunk)
@@ -135,5 +137,6 @@ def snapshot(source: Path, dest: Path, max_bytes: int):
         dest.chmod(0o444)
         return sha256(dest)
     except Exception:
-        dest.unlink(missing_ok=True)
+        if created:
+            dest.unlink(missing_ok=True)
         raise

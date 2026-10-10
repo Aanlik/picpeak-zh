@@ -178,13 +178,6 @@ async function archiveEvent(event) {
     // Upload the finalized zip to the storage backend.
     await storage.putFromFile(archiveRelKey, tmpArchive, { contentType: 'application/zip' });
 
-    if (deliveredPhotoIds) {
-      const stageResult = await setWorkflowStage(event.id, 'ARCHIVED').catch(() => null);
-      if (stageResult?.status !== 200) {
-        logger.warn(`Bridge project ${event.id} could not be marked ARCHIVED (status ${stageResult?.status || 'unavailable'})`);
-      }
-    }
-
     logger.info(`Archive created: ${archiveName} (${totalBytes} bytes)`);
 
     // Update DB BEFORE deleting originals so a crash mid-cleanup leaves the
@@ -197,6 +190,13 @@ async function archiveEvent(event) {
       archive_size: totalBytes,
       archived_at: new Date(),
     });
+
+    if (deliveredPhotoIds) {
+      const stageResult = await setWorkflowStage(event.id, 'ARCHIVED').catch(() => null);
+      if (stageResult?.status !== 200) {
+        logger.warn(`Bridge project ${event.id} could not be marked ARCHIVED (status ${stageResult?.status || 'unavailable'})`);
+      }
+    }
 
     // Delete the originals from storage.
     for (const entry of photoEntries) {

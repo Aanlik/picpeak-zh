@@ -17,8 +17,8 @@ for _ in range(60):
  time.sleep(1)
 token=subprocess.check_output(['docker','exec',name,'cat','/data/db/SETUP_TOKEN'],text=True).strip()
 password='FixtureA9!'+secrets.token_hex(16)
-r=p.post('/api/setup/admin',json={'token':token,'username':'fixture','email':'fixture@example.com','password':password});assert r.status_code==201,r.text
-r=p.post('/api/admin/events',json={'event_name':'NAS 文件夹关联测试','event_type':'other','event_date':'2026-10-08','customer_name':'测试客户','require_password':False});assert r.status_code in (200,201),r.text
+r=p.post('/api/setup/admin',json={'token':token,'username':'fixture','password':password});assert r.status_code==201,r.text
+r=p.post('/api/admin/events',json={'event_name':'NAS 文件夹关联测试','event_date':'2026-10-08','customer_name':'测试客户','require_password':False});assert r.status_code in (200,201),r.text
 eid=r.json()['id'];slug=r.json()['slug']
 r=p.get('/api/admin/external-media/list',params={'path':'Camera'});assert r.status_code==200 and [x['name'] for x in r.json()['entries']]==['关联测试'],r.text
 assert p.get('/api/admin/external-media/list',params={'path':'../data'}).status_code==400

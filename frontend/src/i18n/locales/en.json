@@ -3553,7 +3553,6 @@
     },
     "requestState": {
       "open": "Open",
-      "moderation": "Pending review",
       "in_progress": "In progress",
       "waiting_customer": "Waiting for client",
       "completed": "Completed",
@@ -3600,7 +3599,8 @@
       "revisions": "Revisions",
       "cancelled": "Cancellations to review",
       "errors": "Errors"
-    }
+    },
+    "withdrawProcessing": "Withdrawal accepted. Processing will continue automatically."
   },
   "retouchRequest": {
     "title": "Retouch request",

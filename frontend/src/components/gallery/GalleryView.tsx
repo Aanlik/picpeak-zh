@@ -251,6 +251,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
       retouch_selection_cancelled: Boolean(state?.selection_cancelled),
       retouch_added_during_editing: Boolean(state?.added_during_editing),
       retouch_workflow_enabled: true,
+      retouch_withdraw_pending: Boolean(state?.withdraw_pending),
     };
   }), [data?.photos, retouchByPhotoId, retouchWorkflow?.enabled, feedbackSettings?.identity_mode]);
   const activeRequestPhotoIds = useMemo(() => new Set((retouchWorkflow?.requests || [])

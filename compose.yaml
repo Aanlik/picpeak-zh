@@ -1,12 +1,10 @@
 name: pixcake
 services:
   picpeak:
-    image: ${STACK_IMAGE:-picpeak-pixcake:3.134.1-zh.20-bridge.0.1.8}
+    image: ${STACK_IMAGE:-picpeak-pixcake:3.134.1-zh.21-bridge.0.1.9}
     build:
       context: .
-      dockerfile: Dockerfile.integrated
-      args:
-        PICPEAK_BASE: ${PICPEAK_BASE:-picpeak-zh:3.134.1-zh.20}
+      dockerfile: Dockerfile
     # Copy only configuration into the service volume to support NAS owner-only bind permissions.
     entrypoint:
     - dumb-init
@@ -16,7 +14,6 @@ services:
     - '[ -e /bridge-data/projects.json ] || cp /config/projects.json /bridge-data/projects.json; chown ${BRIDGE_UID:-1001}:${BRIDGE_GID:-1001} /bridge-data/projects.json; chmod 640 /bridge-data/projects.json; exec /opt/integrated/start.sh'
     environment:
       PORT: '3000'
-      NO_EMAIL_MODE: 'true'
       PIXCAKE_BRIDGE_URL: http://127.0.0.1:8080
       PIXCAKE_BRIDGE_PASSWORD: ${BRIDGE_ADMIN_PASSWORD:?填写管理密码}
       DATABASE_CLIENT: sqlite3
@@ -48,7 +45,6 @@ services:
     volumes:
     - picpeak-data:/data
     - bridge-data:/bridge-data
-    - ./projects.json:/config/projects.json:ro
     # Mount only this project's PixCakeDelivery directory writable. Keep the
     # Camera tree above read-only. Add one scoped volume and map entry per
     # additional active project; never mount Camera writable.
@@ -64,8 +60,8 @@ services:
       bind:
         create_host_path: false
     - type: bind
-      source: ${NAS_PROJECT_5_DELIVERY_ROOT:?填写项目 5 的 PixCakeDelivery 绝对路径}
-      target: /delivery-5
+      source: ${NAS_PROJECT_DELIVERY_ROOT:?填写项目 5 的 PixCakeDelivery 绝对路径}
+      target: /delivery-project
       bind:
         create_host_path: false
     networks:

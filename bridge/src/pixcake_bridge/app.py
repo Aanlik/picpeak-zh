@@ -4,6 +4,7 @@ import os
 import re
 import secrets
 import tempfile
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlencode, urlparse
@@ -18,7 +19,7 @@ from watchfiles import awatch
 from .client import PicPeak
 from .config import Config, ProjectConfig
 from .engine import Engine, STAGES
-from .models import Delivery, Error, Photo, Project, SyncRun, database
+from .models import Delivery, Error, Photo, Project, SyncRun, Withdrawal, database
 
 security = HTTPBasic()
 templates = Environment(loader=FileSystemLoader(Path(__file__).parent / "templates"), autoescape=select_autoescape())
@@ -176,6 +177,7 @@ def create_app(config=None, client=None, start_workers=True):
             deliveries = list(session.scalars(
                 select(Delivery).join(Photo).where(Photo.project_id == entry["project"].id, Delivery.state == "SUCCESS")
             ))
+            pending_withdrawals = {task.photo_pk: task.error for task in session.scalars(select(Withdrawal).join(Photo).where(Photo.project_id == entry["project"].id, Withdrawal.state != "SUCCESS"))}
             for delivery in deliveries:
                 versions_by_photo[delivery.photo_pk] = versions_by_photo.get(delivery.photo_pk, 0) + 1
         project_cfg = next((item for item in engine.config.projects if item.event_id == event_id), None)
@@ -189,7 +191,8 @@ def create_app(config=None, client=None, start_workers=True):
             photos.append({
                 "photo_id": photo.photo_id,
                 "source_filename": photo.source_filename,
-                "selected": bool(photo.selected),
+                "selected": bool(photo.selected) and photo.id not in pending_withdrawals,
+                "withdraw_pending": photo.id in pending_withdrawals,
                 "selection_cancelled": bool(photo.cancelled),
                 "added_during_editing": bool(photo.added_during_editing),
                 "cancelled": bool(photo.cancelled),
@@ -203,8 +206,8 @@ def create_app(config=None, client=None, start_workers=True):
                     else project_cfg.final / f"V{version + 1}"
                 ),
                 "delivered": version > 0,
-                "error": bool(photo.error),
-                "error_message": photo.error or (latest_delivery.error if latest_delivery else None),
+                "error": bool(photo.error or pending_withdrawals.get(photo.id)),
+                "error_message": photo.error or pending_withdrawals.get(photo.id) or (latest_delivery.error if latest_delivery else None),
                 "delivery_state": latest_delivery.state if latest_delivery else None,
             })
         project = entry["project"]
@@ -227,17 +230,19 @@ def create_app(config=None, client=None, start_workers=True):
     async def update_project_stage(request: Request, event_id: int):
         payload = await request.json()
         try:
-            request.app.state.engine.set_stage(event_id, payload.get("stage", ""))
+            async with request.app.state.engine.lock:
+                request.app.state.engine.set_stage(event_id, payload.get("stage", ""))
         except ValueError as exc:
             raise HTTPException(400, str(exc))
         return {"success": True, "stage": payload["stage"]}
 
     @app.post("/api/projects/{event_id}/restore", dependencies=[Depends(authorize)])
-    def restore_project_stage(request: Request, event_id: int):
+    async def restore_project_stage(request: Request, event_id: int):
         if event_id not in {p.event_id for p in request.app.state.config.projects}:
             raise HTTPException(404, "项目尚未绑定")
         try:
-            stage = request.app.state.engine.restore_stage(event_id)
+            async with request.app.state.engine.lock:
+                stage = request.app.state.engine.restore_stage(event_id)
         except ValueError as exc:
             raise HTTPException(404, str(exc))
         return {"success": True, "stage": stage}
@@ -252,7 +257,8 @@ def create_app(config=None, client=None, start_workers=True):
             payload = {}
         expected = payload.get("expected_current_version")
         try:
-            return request.app.state.engine.prepare_next_version_folder(event_id, photo_id, expected)
+            async with request.app.state.engine.lock:
+                return request.app.state.engine.prepare_next_version_folder(event_id, photo_id, expected)
         except ValueError as exc:
             status = 409 if "版本已更新" in str(exc) else 400
             raise HTTPException(status, str(exc))
@@ -267,8 +273,16 @@ def create_app(config=None, client=None, start_workers=True):
             payload = {}
         if not isinstance(payload.get("delete_delivered"), bool):
             raise HTTPException(400, "必须明确选择是否删除已交付成片")
+        if payload.get("operation_id") is not None:
+            try:
+                uuid.UUID(payload["operation_id"])
+            except (ValueError, TypeError, AttributeError):
+                raise HTTPException(400, "撤回任务编号无效")
         try:
-            return await request.app.state.engine.withdraw_photo(event_id, photo_id, payload["delete_delivered"])
+            async with request.app.state.engine.lock:
+                result = request.app.state.engine.queue_withdraw(event_id, photo_id, payload["delete_delivered"], payload.get("operation_id"))
+            from fastapi.responses import JSONResponse
+            return JSONResponse(result, status_code=202)
         except ValueError as exc:
             raise HTTPException(409, str(exc))
         except Exception as exc:
@@ -302,13 +316,15 @@ def create_app(config=None, client=None, start_workers=True):
             unknown = list(session.scalars(
                 select(Delivery).join(Photo).where(Photo.project_id == project.id, Delivery.state == "UNKNOWN")
             ))
+            unknown += list(session.scalars(select(Withdrawal).join(Photo).where(Photo.project_id == project.id, Withdrawal.state.in_(["UNKNOWN", "UPLOADING"]))))
         if unknown and payload.get("confirm_unknown") is not True:
             raise HTTPException(409, detail={
                 "error": "PicPeak 中核对这些照片的结果后，才能重试未知任务",
                 "code": "UNKNOWN_CONFIRMATION_REQUIRED",
                 "count": len(unknown),
             })
-        engine.retry(event_id)
+        async with engine.lock:
+            engine.retry(event_id)
         await engine.sync(event_id)
         return {"success": True}
 
@@ -389,24 +405,29 @@ def create_app(config=None, client=None, start_workers=True):
             # Verify the token can see this PicPeak event before persisting a
             # binding that would otherwise remain permanently disconnected.
             await engine.client.photos(event_id)
-            project.validate()
-            current = list(cfg.projects)
-            current.append(project)
-            payload = [
-                {"name": p.name, "event_id": p.event_id, "raw": str(p.raw), "selected": str(p.selected), "final": str(p.final), "history": str(p.history)}
-                for p in current
-            ]
-            cfg.projects_file.parent.mkdir(parents=True, exist_ok=True)
-            with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=cfg.projects_file.parent, delete=False) as file:
-                json.dump(payload, file, ensure_ascii=False, indent=2)
-                file.write("\n")
-                tmp = Path(file.name)
-            tmp.replace(cfg.projects_file)
-            cfg.projects = current
-            with engine.sessions() as session:
-                if session.scalar(select(Project).where(Project.event_id == event_id)) is None:
-                    session.add(Project(event_id=event_id, name=name))
-                session.commit()
+            async with engine.lock:
+                if any(p.event_id == event_id for p in cfg.projects):
+                    return setup_error("这个 PicPeak 项目已经绑定")
+                if any(p.selected.resolve() == project.selected.resolve() or p.final.resolve() == project.final.resolve() or p.history.resolve() == project.history.resolve() for p in cfg.projects):
+                    return setup_error("每个项目必须使用独立的交付目录，请配置项目专属挂载")
+                project.validate()
+                current = list(cfg.projects)
+                current.append(project)
+                payload = [
+                    {"name": p.name, "event_id": p.event_id, "raw": str(p.raw), "selected": str(p.selected), "final": str(p.final), "history": str(p.history)}
+                    for p in current
+                ]
+                cfg.projects_file.parent.mkdir(parents=True, exist_ok=True)
+                with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=cfg.projects_file.parent, delete=False) as file:
+                    json.dump(payload, file, ensure_ascii=False, indent=2)
+                    file.write("\n")
+                    tmp = Path(file.name)
+                tmp.replace(cfg.projects_file)
+                cfg.projects = current
+                with engine.sessions() as session:
+                    if session.scalar(select(Project).where(Project.event_id == event_id)) is None:
+                        session.add(Project(event_id=event_id, name=name))
+                    session.commit()
         except Exception as exc:
             return setup_error(f"绑定失败：请确认 PicPeak API 连接、目录权限和项目编号（{type(exc).__name__}）")
         return RedirectResponse("/", status_code=303)

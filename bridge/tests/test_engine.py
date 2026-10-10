@@ -173,7 +173,7 @@ async def test_withdraw_delete_restores_proof_and_reselection_is_additional(tmp_
     result = await engine.withdraw_photo(7, 1, True)
 
     assert result == {"deleted": True, "current_version": 0}
-    assert client.rows[0]["original_filename"] == "DSC00001.JPG"
+    assert client.rows[0]["original_filename"].startswith("DSC00001.__bridge_")
     assert proof.read_bytes() == b"proof bytes" and sha256(proof) == proof_hash
     assert not final.exists()
     assert not (cfg.projects[0].selected / "DSC00001.ARW").exists()

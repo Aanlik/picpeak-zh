@@ -223,6 +223,7 @@ export interface Photo {
   retouch_version?: number;
   retouch_added_during_editing?: boolean;
   retouch_workflow_enabled?: boolean;
+  retouch_withdraw_pending?: boolean;
   // Distinct colours OTHER viewers gave this photo (#1178). The lightbox has
   // always shown these as per-colour tallies; without this field the grid
   // could only ever render the viewer's own label, so a colour set by someone

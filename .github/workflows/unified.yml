@@ -1,0 +1,84 @@
+name: Unified photography project
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        type: boolean
+        default: false
+        description: Publish the verified fixed-version image
+permissions:
+  contents: read
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --directory bridge --frozen --python 3.12 --extra test
+      - run: uv run --directory bridge pytest -q
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix frontend --legacy-peer-deps
+      - run: node scripts/check-zh-cn.mjs && node scripts/check-locale-usage.mjs
+      - run: npm --prefix frontend test
+      - run: npm --prefix frontend run build:check
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix backend
+      - run: npm --prefix backend test -- --runInBand --silent
+        env:
+          SKIP_S3_TESTS: 'true'
+  image:
+    runs-on: ubuntu-latest
+    needs: [bridge, frontend, backend]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          tags: picpeak-pixcake:3.134.1-zh.21-bridge.0.1.9
+          load: true
+          cache-from: type=gha,scope=unified
+          cache-to: type=gha,mode=max,scope=unified
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --directory bridge --frozen --python 3.12 --extra test
+      - name: Container boot and restart
+        env:
+          STACK_IMAGE: picpeak-pixcake:3.134.1-zh.21-bridge.0.1.9
+        run: bridge/docker/integrated/smoke.sh
+      - name: Real PicPeak and Bridge end-to-end
+        run: |
+          mkdir -p /tmp/pixcake-fixture/proofs/shoot
+          docker run -d --name pixcake-unified-e2e -p 127.0.0.1:19300:3000 -e PORT=3000 -e EXTERNAL_MEDIA_ROOT=/external-media -v /tmp/pixcake-fixture/proofs:/external-media:ro picpeak-pixcake:3.134.1-zh.21-bridge.0.1.9
+          uv run --directory bridge python scripts/integration.py --container pixcake-unified-e2e --root /tmp/pixcake-fixture --count 100 --report integration-report.json
+      - if: always()
+        run: docker rm -f pixcake-unified-e2e || true
+      - name: Publish only after manual approval of a release run
+        if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          owner=$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          target="ghcr.io/$owner/picpeak-pixcake:3.134.1-zh.21-bridge.0.1.9"
+          docker tag picpeak-pixcake:3.134.1-zh.21-bridge.0.1.9 "$target"
+          docker push "$target"

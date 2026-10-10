@@ -74,20 +74,20 @@ async def main(args):
         # into or alter an existing photographer's installation.
         token_path = docker("exec", args.container, "cat", "/data/db/SETUP_TOKEN")
         password = "FixtureA9!" + secrets.token_hex(16)
-        result = await admin.post("/api/setup/admin", json={"token": token_path, "email": "fixture@example.com", "username": "fixture", "password": password})
+        result = await admin.post("/api/setup/admin", json={"token": token_path, "username": "fixture", "password": password})
         assert result.status_code == 201, f"Fixture setup failed: HTTP {result.status_code}; use a fresh test volume"
         language = await admin.put("/api/admin/settings/general", json={"general_default_language": "zh-CN"})
         assert language.status_code == 200, language.text
         create = await admin.post("/api/admin/api-tokens", json={"name": "Fixture seed", "scopes": ["read", "write", "admin"]})
         assert create.status_code == 201, create.text
         seed_token = create.json()["token"]
-        event = await admin.post("/api/v1/events", headers={"Authorization": "Bearer " + seed_token}, json={"event_name": "PixCake E2E", "event_type": "other", "require_password": False, "feedback_enabled": True, "allow_color_labels": True, "allow_ratings": True, "allow_comments": True, "moderate_comments": False})
+        event = await admin.post("/api/v1/events", headers={"Authorization": "Bearer " + seed_token}, json={"event_name": "PixCake E2E", "require_password": False, "feedback_enabled": True, "allow_color_labels": True, "allow_ratings": True, "allow_comments": True})
         assert event.status_code == 201, event.text
         info = event.json()
         eid, slug = info["id"], info["slug"]
         imported = await admin.post(f"/api/admin/external-media/events/{eid}/import-external", json={"external_path": "shoot", "recursive": True})
         assert imported.status_code == 200, imported.text
-        settings = await admin.put(f"/api/admin/feedback/events/{eid}/feedback-settings", json={"feedback_enabled": True, "allow_color_labels": True, "allow_ratings": True, "allow_comments": True, "allow_favorites": True, "moderate_comments": False, "identity_mode": "simple", "require_name_email": False, "show_feedback_to_guests": True})
+        settings = await admin.put(f"/api/admin/feedback/events/{eid}/feedback-settings", json={"feedback_enabled": True, "allow_color_labels": True, "allow_ratings": True, "allow_comments": True, "allow_favorites": True, "identity_mode": "simple", "show_feedback_to_guests": True})
         assert settings.status_code == 200, settings.text
         bridge_token = await admin.post("/api/admin/api-tokens", json={"name": "Bridge read/write only", "scopes": ["read", "write"]})
         assert bridge_token.status_code == 201
@@ -185,8 +185,42 @@ async def main(args):
         managed = fixture_db_query(args.container, "SELECT path FROM photos WHERE id=" + str(photo_id(4)))[0]["path"]
         remote_hash = docker("exec", args.container, "sha256sum", "/data/storage/events/active/" + managed).split()[0]
         assert remote_hash == sha256(Path(revision["folder"]) / "DSC00004.JPG")
+        # Real replacement API: retain a delivered image, then reselect it.
+        await mark(5, None)
+        await engine.withdraw_photo(eid, photo_id(5), False)
+        assert not (selected / "DSC00005.ARW").exists()
+        await mark(5)
+        await engine.sync()
+        with sessions() as s:
+            from pixcake_bridge.models import Photo
+            retained = s.scalar(select(Photo).where(Photo.photo_id == photo_id(5)))
+            assert retained.selected and retained.delivery_hash
+            assert engine.current_version(s, retained) == 1
+        # Delete delivery and restore the immutable Proof via the real API.
+        # This fixture normally separates RAW/Proof roots; place a single
+        # Proof next to RAW to exercise the NAS shared-project lookup.
+        proof_copy = raw / "DSC00006.JPG"
+        proof_copy.write_bytes((proof / proof_copy.name).read_bytes())
+        await mark(6, None)
+        await engine.withdraw_photo(eid, photo_id(6), True)
+        assert not (final / "DSC00006.JPG").exists()
+        restored_path = fixture_db_query(args.container, "SELECT path FROM photos WHERE id=" + str(photo_id(6)))[0]["path"]
+        restored_hash = docker("exec", args.container, "sha256sum", "/data/storage/events/active/" + restored_path).split()[0]
+        assert restored_hash == sha256(proof_copy)
+        proof_copy.unlink()
+        await mark(6)
+        await engine.sync()
+        with sessions() as s:
+            renewed = s.scalar(select(Photo).where(Photo.photo_id == photo_id(6)))
+            assert renewed.selected and not renewed.delivery_hash
+            assert engine.current_version(s, renewed) == 0
+        engine.set_stage(eid, "ARCHIVED")
+        assert engine.restore_stage(eid) == "EDITING"
+        with sessions() as s:
+            unchanged = s.scalar(select(Photo).where(Photo.photo_id == photo_id(4)))
+            assert engine.current_version(s, unchanged) == 2
         assert {p.name: sha256(p) for p in raw.iterdir()} == before
-        report = {"proof_count": args.count, "selected_initial": 50, "added": 5, "cancelled_selecting": 2, "cancelled_editing_raw_preserved": True, "deliveries": 54, "revision_version": revision["version"], "raw_sha256_unchanged": args.count, "photo_id_feedback_sort_share_preserved": True, "restart_duplicate_uploads": 0, "guest_share_path": share_path, "event_id": eid, "slug": slug, "fixture_root": str(root), "tested_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+        report = {"proof_count": args.count, "selected_initial": 50, "added": 5, "cancelled_selecting": 2, "cancelled_editing_raw_preserved": True, "deliveries": 54, "revision_version": revision["version"], "raw_sha256_unchanged": args.count, "photo_id_feedback_sort_share_preserved": True, "restart_duplicate_uploads": 0, "withdraw_keep_reselect_preserved": True, "withdraw_delete_restored_proof": True, "archive_restore_progress": True, "guest_share_path": share_path, "event_id": eid, "slug": slug, "fixture_root": str(root), "tested_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
         # Credentials deliberately excluded; this report is safe to publish.
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")

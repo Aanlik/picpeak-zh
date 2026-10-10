@@ -82,6 +82,18 @@ class Config:
                 continue
 
             names = ("03_SELECTED_RAW", "04_FINAL", "05_HISTORY")
+            journal = self.projects_file.with_name("layout-migrations.json")
+            records = json.loads(journal.read_text()) if journal.exists() else []
+            record = {"event_id": project.event_id, "old": str(legacy), "new": str(root)}
+            if record not in records:
+                records.append(record)
+                journal.parent.mkdir(parents=True, exist_ok=True)
+                with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=journal.parent, delete=False) as file:
+                    json.dump(records, file)
+                    file.flush()
+                    os.fsync(file.fileno())
+                    temporary = Path(file.name)
+                temporary.replace(journal)
             moves = [(legacy / name, root / name) for name in names]
             for source, destination in moves:
                 if source.is_symlink() or destination.is_symlink():
@@ -127,7 +139,7 @@ class Config:
     def load(cls):
         projects_file = Path(os.getenv("PROJECTS_FILE", "/config/projects.json"))
         projects = json.loads(projects_file.read_text())
-        raw_mounts = json.loads(os.getenv("PROJECT_DELIVERY_MOUNTS", "{}"))
+        raw_mounts = json.loads(os.getenv("PROJECT_DELIVERY_MOUNTS", "{}") or "{}")
         mounts = {}
         for key, mount in raw_mounts.items():
             event_id = int(key)

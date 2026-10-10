@@ -12,9 +12,9 @@ name: Tests
 
 on:
   push:
-    branches: [main, beta, stable]
+    branches: [main, dev, beta, stable]
   pull_request:
-    branches: [main, beta, stable]
+    branches: [main, dev, beta, stable]
   workflow_dispatch:
 
 permissions:

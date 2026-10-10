@@ -160,3 +160,9 @@ ml/*.h5
 /*-screenshot.png
 /*-screenshot.jpg
 
+
+# Local dependency links are also excluded.
+**/node_modules
+bridge/.venv
+
+/artifacts/

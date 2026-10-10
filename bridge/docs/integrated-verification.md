@@ -1,3 +1,5 @@
+> 历史记录：本文件记录合并前的部署或测试，不是当前安装入口。当前使用根目录 README、Dockerfile 和 compose.yaml。
+
 # 一体化镜像验证
 
 ## 当前固定版：zh.18 / Bridge 0.1.6

@@ -59,6 +59,19 @@ class Delivery(Base):
     error: Mapped[str | None] = mapped_column(Text)
 
 
+class Withdrawal(Base):
+    __tablename__ = "withdrawals"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    photo_pk: Mapped[int] = mapped_column(ForeignKey("photos.id"), unique=True)
+    operation_id: Mapped[str | None] = mapped_column(String(36))
+    delete_delivered: Mapped[bool] = mapped_column(Boolean)
+    state: Mapped[str] = mapped_column(String(16), default="PENDING")
+    marker: Mapped[str | None] = mapped_column(String(512))
+    snapshot: Mapped[str | None] = mapped_column(Text)
+    error: Mapped[str | None] = mapped_column(Text)
+    updated: Mapped[datetime] = mapped_column(DateTime, default=now)
+
+
 class SyncRun(Base):
     __tablename__ = "sync_runs"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -86,6 +99,9 @@ def database(url):
             conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("PRAGMA busy_timeout=30000")
     Base.metadata.create_all(engine)
+    if "operation_id" not in {c["name"] for c in inspect(engine).get_columns("withdrawals")}:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE withdrawals ADD COLUMN operation_id VARCHAR(36)"))
     if "has_entered_editing" not in {c["name"] for c in inspect(engine).get_columns("projects")}:
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE projects ADD COLUMN has_entered_editing BOOLEAN NOT NULL DEFAULT FALSE"))

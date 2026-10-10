@@ -1,9 +1,9 @@
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, waitFor, cleanup, fireEvent, act } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PhotographyWorkflowCard } from '../PhotographyWorkflowCard';
 import { api } from '../../../config/api';
 vi.mock('../../../config/api', () => ({ api: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } }));
-afterEach(() => { cleanup(); vi.clearAllMocks(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.clearAllMocks(); });
 describe('photography workflow summary', () => {
   it('shows actual later selections, revision and cancellation counts', async () => {
     vi.mocked(api.get).mockImplementation(async (url: string) => url.endsWith('/requests')
@@ -34,4 +34,18 @@ describe('photography workflow summary', () => {
     await waitFor(() => expect(screen.getByText(/First add Camera\/26-10-04\/PixCakeDelivery as a separate writable Bridge mount/)).toBeTruthy());
     expect(screen.queryByRole('button', { name: 'Connect project folder automatically' })).toBeNull();
   });
+});
+
+
+it('preserves an unsaved photographer reply across automatic refresh', async () => {
+  vi.useFakeTimers();
+  vi.mocked(api.get).mockImplementation(async (url: string) => url.endsWith('/requests')
+    ? { data: { requests: [{ id: 11, photo_id: 42, source_filename: 'DSC.JPG', status: 'open', request_type: 'revision', photographer_reply: 'Saved reply', customer_message: 'Please revise' }] } } as any
+    : { data: { configured: true, stage: 'EDITING', connected: true, summary: {}, photos: [] } } as any);
+  render(<PhotographyWorkflowCard eventId={7} />);
+  await act(async () => { await Promise.resolve(); });
+  const input = screen.getByRole('textbox');
+  fireEvent.change(input, { target: { value: 'Unsaved detailed reply' } });
+  await act(async () => { vi.advanceTimersByTime(30000); });
+  expect(input).toHaveValue('Unsaved detailed reply');
 });

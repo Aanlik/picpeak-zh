@@ -1,3 +1,5 @@
+> 历史记录：本文件记录合并前的部署或测试，不是当前安装入口。当前使用根目录 README、Dockerfile 和 compose.yaml。
+
 # 本机验证记录
 
 基线：PicPeak v3.134.1，官方 stable SHA `5fc54d9a5e17a7f054c926922a6f820f3c98eda2`；Bridge v0.1.0，Python 3.12。测试日期：2026-10-07。

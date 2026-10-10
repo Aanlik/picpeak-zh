@@ -54,7 +54,7 @@ export interface RetouchRequestSummary {
   request_type: 'revision' | 'additional';
   base_version: number | null;
   customer_message: string;
-  status: 'open' | 'moderation' | 'in_progress' | 'waiting_customer' | 'completed' | 'closed' | 'cancelled';
+  status: 'open' | 'in_progress' | 'waiting_customer' | 'completed' | 'closed' | 'cancelled';
   photographer_reply: string | null;
   created_at: string;
   updated_at: string;
@@ -68,6 +68,7 @@ export interface RetouchWorkflowPhoto {
   current_version: number;
   added_during_editing: boolean;
   ready_for_editing: boolean;
+  withdraw_pending?: boolean;
   state: 'proof' | 'selected' | 'editing' | 'delivered' | 'cancelled';
 }
 
@@ -117,6 +118,7 @@ export const galleryService = {
 
   async withdrawRetouchSelection(slug: string, photoId: number, deleteDelivered: boolean): Promise<{
     success: boolean;
+    processing?: boolean;
     deleted?: boolean;
     kept_for_other_participant?: boolean;
     current_version?: number;

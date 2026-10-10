@@ -1202,6 +1202,7 @@ async function startServer() {
     // large number of supertest suites that never start a worker. Keeping it
     // lazy means they don't pay for a module graph they never use.
     require('./src/services/faceQueue').start();
+    require('./src/services/photographyWorkflowBridge').startWorkflowReconciler();
 
     httpServer = app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);

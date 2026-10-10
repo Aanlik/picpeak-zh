@@ -48,6 +48,9 @@ router.post('/:slug/photos/batch-feedback',
       if (feedbackType === 'color_label' && req.body.color_label !== 'green') {
         return res.status(400).json({ error: 'Batch proofing only supports the green retouch label' });
       }
+      if (feedbackType === 'color_label' && await db('workflow_withdrawal_intents').whereIn('photo_id', photoIds).first()) {
+        return res.status(409).json({ error: '撤回任务仍在处理中，请稍后重新选片', code: 'WITHDRAW_PENDING' });
+      }
       const workflowSelection = feedbackType === 'color_label' && req.body.color_label === 'green' &&
         (!settings.feedback_enabled || !settings.allow_color_labels)
         ? await workflowSelectionIsEnabled(event.id)
@@ -331,6 +334,9 @@ router.post('/:slug/photos/:photoId/feedback',
       const settings = await feedbackService.getEventFeedbackSettings(event.id);
       const feedbackType = req.body.feedback_type;
       const isWorkflowSelection = feedbackType === 'color_label' && req.body.color_label === 'green';
+      if (feedbackType === 'color_label' && await db('workflow_withdrawal_intents').where({ photo_id: Number(photoId), event_id: event.id }).first()) {
+        return res.status(409).json({ error: '撤回任务仍在处理中，请稍后重新选片', code: 'WITHDRAW_PENDING' });
+      }
       const workflowSelection = isWorkflowSelection && (!settings.feedback_enabled || !settings.allow_color_labels)
         ? await workflowSelectionIsEnabled(event.id)
         : false;

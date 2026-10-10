@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, Save } from 'lucide-react';
 import { api } from '../../config/api';
@@ -10,6 +10,7 @@ type PhotoState = {
   selected: boolean;
   added_during_editing: boolean;
   cancelled: boolean;
+  withdraw_pending?: boolean;
   raw_matched: boolean;
   ready_for_editing: boolean;
   current_version: number;
@@ -68,6 +69,9 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
   const [projectName, setProjectName] = useState('');
   const [rawSubdir, setRawSubdir] = useState('');
   const [replies, setReplies] = useState<Record<number, string>>({});
+  const replyDrafts = useRef<Record<number, string>>({});
+  const activeEvent = useRef(eventId);
+  activeEvent.current = eventId;
 
   const refresh = useCallback(async () => {
     try {
@@ -75,13 +79,14 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
         api.get<Workflow>(`/admin/photography-workflow/${eventId}`),
         api.get<{ requests: RequestItem[] }>(`/admin/photography-workflow/${eventId}/requests`),
       ]);
+      if (activeEvent.current !== eventId) return;
       setWorkflow(statusResult.data);
       if (!statusResult.data.configured) {
         setProjectName((current) => current || statusResult.data.project_name || '');
         setRawSubdir((current) => current || statusResult.data.suggested_raw_subdir || '');
       }
       setRequests(requestResult.data.requests || []);
-      setReplies(Object.fromEntries((requestResult.data.requests || []).map((item) => [item.id, item.photographer_reply || ''])));
+      setReplies(Object.fromEntries((requestResult.data.requests || []).map((item) => [item.id, replyDrafts.current[item.id] ?? item.photographer_reply ?? ''])));
       setError('');
     } catch (cause: any) {
       setError(typeof cause?.response?.data?.error === 'string' ? cause.response.data.error : t('photographyWorkflow.loadError'));
@@ -90,11 +95,19 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
     }
   }, [eventId, t]);
 
+  useEffect(() => { replyDrafts.current = {}; setReplies({}); }, [eventId]);
+
   useEffect(() => {
     void refresh();
     const timer = setInterval(() => void refresh(), 30000);
     return () => clearInterval(timer);
   }, [refresh]);
+
+  const saveReply = async (id: number, status: string) => {
+    const submitted = replyDrafts.current[id] ?? replies[id] ?? '';
+    await api.patch(`/admin/photography-workflow/${eventId}/requests/${id}`, { status, photographer_reply: submitted });
+    if (replyDrafts.current[id] === submitted) delete replyDrafts.current[id];
+  };
 
   const perform = async (action: () => Promise<unknown>, successKey?: string) => {
     setBusy(true);
@@ -195,7 +208,7 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
             <thead className="sticky top-0 bg-neutral-50 dark:bg-neutral-900"><tr><th className="p-2">{t('photographyWorkflow.filename')}</th><th className="p-2">{t('photographyWorkflow.photoStatus')}</th><th className="p-2">{t('photographyWorkflow.version')}</th><th className="p-2">{t('photographyWorkflow.nextExportFolder')}</th></tr></thead>
             <tbody>{photos.map((photo) => <tr key={photo.photo_id} className="border-t border-neutral-200 dark:border-neutral-700">
               <td className="w-[28%] truncate p-2" title={photo.error_message || photo.source_filename}>{photo.source_filename}{photo.error_message && <span className="block truncate text-xs text-red-600" title={photo.error_message}>{photo.error_message}</span>}</td>
-              <td className="p-2"><span>{photo.error ? t('photographyWorkflow.status.error') : photo.cancelled ? t('photographyWorkflow.status.cancelled') : photo.delivered ? t('photographyWorkflow.status.delivered') : photo.ready_for_editing ? t('photographyWorkflow.status.editing') : photo.selected ? t('photographyWorkflow.status.selected') : t('photographyWorkflow.status.proof')}</span>{photo.added_during_editing && <span className="ml-2 inline-block rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">{t('photographyWorkflow.status.additionalSelection')}</span>}</td>
+              <td className="p-2"><span>{photo.error ? t('photographyWorkflow.status.error') : photo.withdraw_pending ? t('photographyWorkflow.withdrawProcessing') : photo.cancelled ? t('photographyWorkflow.status.cancelled') : photo.delivered ? t('photographyWorkflow.status.delivered') : photo.ready_for_editing && ['EDITING', 'DELIVERED'].includes(workflow?.stage || '') ? t('photographyWorkflow.status.editing') : photo.selected ? t('photographyWorkflow.status.selected') : t('photographyWorkflow.status.proof')}</span>{photo.added_during_editing && <span className="ml-2 inline-block rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">{t('photographyWorkflow.status.additionalSelection')}</span>}</td>
               <td className="p-2">{photo.current_version ? `V${photo.current_version}` : '—'}</td>
               <td className="w-[34%] truncate p-2 text-xs text-neutral-500" title={photo.next_version_folder}>{photo.next_version_folder || '—'}</td>
             </tr>)}
@@ -222,13 +235,12 @@ export function PhotographyWorkflowCard({ eventId }: { eventId: number }) {
             </div>
             <select aria-label={t('photographyWorkflow.requestStatus')} value={request.status} onChange={(event) => void perform(() => api.patch(`/admin/photography-workflow/${eventId}/requests/${request.id}`, { status: event.target.value, photographer_reply: replies[request.id] || '' }))} className="rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900">
               {requestStatuses.map((status) => <option key={status} value={status}>{t(`photographyWorkflow.requestState.${status}`)}</option>)}
-              {request.status === 'moderation' && <option value="moderation">{t('photographyWorkflow.requestState.moderation')}</option>}
             </select>
           </div>
           <p className="whitespace-pre-wrap text-sm text-neutral-700 dark:text-neutral-300">{request.customer_message}</p>
           <div className="flex gap-2">
-            <input value={replies[request.id] || ''} onChange={(event) => setReplies((old) => ({ ...old, [request.id]: event.target.value }))} maxLength={1000} placeholder={t('photographyWorkflow.replyPlaceholder')} className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
-            <Button variant="outline" size="sm" disabled={busy} aria-label={t('photographyWorkflow.saveReply')} onClick={() => void perform(() => api.patch(`/admin/photography-workflow/${eventId}/requests/${request.id}`, { status: request.status === 'moderation' ? 'open' : request.status, photographer_reply: replies[request.id] || '' }))}><Save className="h-4 w-4" /></Button>
+            <input value={replies[request.id] || ''} onChange={(event) => { replyDrafts.current[request.id] = event.target.value; setReplies((old) => ({ ...old, [request.id]: event.target.value })); }} maxLength={1000} placeholder={t('photographyWorkflow.replyPlaceholder')} className="min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900" />
+            <Button variant="outline" size="sm" disabled={busy} aria-label={t('photographyWorkflow.saveReply')} onClick={() => void perform(() => saveReply(request.id, request.status))}><Save className="h-4 w-4" /></Button>
           </div>
         </div>;
         }) : <p className="text-sm text-neutral-500">{t('photographyWorkflow.noRequests')}</p>}
