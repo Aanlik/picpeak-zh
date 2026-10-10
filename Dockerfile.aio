@@ -55,7 +55,7 @@ ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
 
-LABEL org.opencontainers.image.source="https://github.com/PicPeak/picpeak"
+LABEL org.opencontainers.image.source="https://github.com/Aanlik/picpeak-zh"
 LABEL org.opencontainers.image.description="PicPeak all-in-one (backend + frontend, single container)"
 LABEL org.opencontainers.image.licenses="MIT"
 

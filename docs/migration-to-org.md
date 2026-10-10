@@ -1,4 +1,9 @@
-# Migration: PicPeak moved to its own GitHub organization
+# Historical reference: PicPeak moved to its own GitHub organization
+
+> This document describes the upstream PicPeak project only. It is retained as
+> source-history context and is not an installation or update guide for this
+> self-maintained fork. Use the PixCake Bridge deployment guide linked from
+> the repository README for supported deployment instructions.
 
 PicPeak's repository moved from the maintainer's personal handle to a dedicated
 GitHub organization. This is a one-time, operator-facing change. The software

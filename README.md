@@ -1,241 +1,51 @@
-# PicPeak 简体中文 Fork
+# PicPeak 简体中文摄影工作流
 
-客户选片及摄影师后台简体中文支持，保留 `upstream` 官方 stable 同步。同步前比对、已移除模块过滤和冲突处理流程见[维护文档](docs/zh-CN-maintenance.md)。当前中文审校提交 `7a38c5ce` 对应一体化版 PicPeak `3.134.1-zh.6`。
+这是一个由 Aanlik 自行维护的 PicPeak 摄影项目版本，面向 NAS / Docker 部署，提供简体中文客户选片与摄影师后台，并集成 PixCake Bridge 的精修交付流程。
 
-> **上游更新必须先选择一种同步方式：** ① `--all` 完整同步官方代码，可能恢复本 Fork 已删除的模块；② `--exclude-retired` 自动剔除已删除模块后同步其余官方改动。两种方式都先运行 `--plan` 审阅，再用相同选项运行 `--merge`。详见[上游同步维护规范](docs/zh-CN-maintenance.md)。
+## 项目范围
 
-**推荐 NAS / Docker 部署：一个容器运行 PicPeak + PixCake Bridge。** 完整部署、初始化、NAS 目录、更新及迁移说明见 [一体化 README](https://github.com/Aanlik/pixcake-bridge/blob/main/README.md)。Bridge 独立维护，一体化打包位于 Bridge 仓库，避免修改 PicPeak 业务后端。单独运行 PicPeak 时仍可使用 `Dockerfile.aio`。
+- 客户通过分享链接浏览照片、批量选择精修照片、评论和提交返修或追加需求。
+- 摄影师在后台查看项目进度、客户需求、同步状态和精修版本。
+- 支持关联 NAS 中的现有照片目录；Bridge 负责选片同步、RAW 匹配和精修成片交付。
+- 可继续使用 Photoshop、Lightroom、像素蛋糕等外部修图软件；修图软件只需按项目约定读取和导出文件。
 
-下方保留上游项目介绍与使用说明。
+日常 NAS 安装、目录映射、初始化、更新和备份步骤见 [PixCake Bridge 一体化部署说明](https://github.com/Aanlik/pixcake-bridge/blob/main/README.md)。PicPeak 与 Bridge 的源码分仓维护；一体化部署镜像由 Bridge 项目构建。需要独立运行 AIO 时见[单容器部署说明](docs/single-container.md)。
 
----
+## 自主管理策略
 
-<div align="center">
-  <img src="docs/picpeak-logo.png" alt="PicPeak Logo" width="300" />
+本仓库**不再常规合并 PicPeak 官方更新**，也不配置上游更新检查或自动同步。功能修复、依赖升级、安全修复和镜像发布均由本项目自行评估、测试和维护。部署时使用本项目发布的固定版本镜像，不使用官方 PicPeak 的 `main`、`stable` 或 `latest` 镜像替代。
 
-  # 📸 PicPeak
+当前源码沿用 PicPeak `v3.134.1` stable 的代码基线，并在其上维护本项目改动。此信息仅用于追溯代码来源，不代表会继续跟随上游。来源与许可证说明见 [代码来源记录](docs/source-provenance.md)。
 
-  **Open-source, self-hosted photo sharing for events.**
+必要时可以单独评估并移植某项安全修复，但必须作为本项目自己的变更审查、测试和发布；不合并上游分支或整批官方更新。
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
-  [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-theluap-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/theluap)
+## 本地开发与验证
 
-  [Homepage](https://www.picpeak.app) · [Live Demo](https://demo.picpeak.app) · [Documentation](https://docs.picpeak.app) · [Support ☕](https://buymeacoffee.com/theluap)
-</div>
-
----
-
-**PicPeak** is a powerful, self-hosted open-source alternative to commercial photo-sharing platforms like PicDrop.com and Scrapbook.de. Built for photographers and event organizers, it makes it simple to share beautiful, time-limited photo galleries with clients while keeping full control over your data and branding.
-
-![PicPeak Gallery Preview](docs/screenshot-gallery.png)
-
-> [!IMPORTANT]
-> **PicPeak has moved to its own GitHub organization.** Docker images are now at `ghcr.io/picpeak/picpeak/{backend,frontend,aio,ml}` (and on Docker Hub as `picpeak/{backend,frontend,aio,ml}`) and active development is on `main`. The old `ghcr.io/the-luap/...` path still responds but its tags are **frozen** at 2026-05-27 — if updates never arrive, check your image path first. See **[`docs/migration-to-org.md`](docs/migration-to-org.md)** for the one-line `docker-compose.yml` edit.
-
-## Contents
-
-- [Live Demo](#-live-demo)
-- [Quick Start](#-quick-start)
-- [Why PicPeak?](#-why-picpeak)
-- [Features](#-features)
-- [Documentation](#-documentation)
-- [Comparison](#-comparison-with-alternatives)
-- [Tech Stack](#️-tech-stack)
-- [Contributing & Support](#-contributing)
-- [License](#-license)
-
-## 🎮 Live Demo
-
-Try PicPeak without installing anything — [demo.picpeak.app](https://demo.picpeak.app) · [admin panel](https://demo.picpeak.app/admin)
-
-| Email | Password |
-|---|---|
-| `demo@picpeak.app` | `Demo2026!` |
-
-> The demo resets periodically. Uploaded content may be removed without notice.
-
-## 🚀 Quick Start
-
-Get PicPeak running in under 5 minutes:
+前端构建与测试：
 
 ```bash
-# Clone the repository
-git clone https://github.com/PicPeak/picpeak.git
-cd picpeak
-
-# Copy the environment template — the defaults work out of the box.
-# Machine secrets (JWT, DB, Redis) are auto-generated on first run, and the
-# admin account is created in the browser. Edit .env only to customise
-# (domain, SMTP, storage paths, …) — nothing is required.
-cp .env.example .env
-
-# Start with Docker Compose
-docker compose up -d
-
-# Access at http://localhost:3000
+cd frontend
+npm ci --legacy-peer-deps
+npm run build:check
+npm test
 ```
 
-On first start, open **http://localhost:3000/admin** and follow the in-browser setup to create your admin account. Full details — the one-time setup token, Docker file permissions, and ARM64 notes — are in **[First-run setup](https://docs.picpeak.app/getting-started/first-login)**.
-
-> **Updating / release channels:** set `PICPEAK_CHANNEL` (`stable` default, or `beta`) in `.env`, then `docker compose pull && docker compose up -d`. See [RELEASING.md](RELEASING.md) for the promotion cadence.
-
-### Or: one container, no compose file
-
-For a home server, a NAS, or a single small studio, the all-in-one image runs the whole app as one process with SQLite — no compose file, no separate database, no reverse proxy to wire up:
+中文 locale 检查：
 
 ```bash
-docker run -d --name picpeak -p 3000:3000 \
-  -v picpeak:/data \
-  ghcr.io/picpeak/picpeak/aio:main
+node scripts/check-zh-cn.mjs
+node scripts/check-locale-usage.mjs
+node --test scripts/check-zh-cn.test.mjs
 ```
 
-No environment variables to set — the JWT secret is generated on first start and kept on the volume.
+构建独立 PicPeak AIO 镜像：
 
-Then open **http://localhost:3000/admin** and read the setup token with `docker exec picpeak cat /data/db/SETUP_TOKEN`, or open `db/SETUP_TOKEN` on the volume with any file manager if the host has no shell.
+```bash
+docker build -f Dockerfile.aio --build-arg VITE_DEFAULT_LANGUAGE=zh-CN -t picpeak-zh:<版本> .
+```
 
-`:main` is the active-development tag, and today it is the only one the all-in-one image has — `Dockerfile.aio` landed after the current stable release, so `:stable` and `:latest` first appear for this image once the aio build reaches the `stable` branch. Switch to `:stable` then, or pin a published version tag if you would rather not track `main`.
+Bridge 集成验收及 NAS 部署以 Bridge 仓库中的说明为准。发布前应备份 PicPeak 数据、Bridge SQLite 数据和项目照片目录，并在目标 NAS 上验证原分享链接、照片反馈、返修版本和 RAW 文件校验值。
 
-The compose stack above is still the right choice for anything busier — SQLite takes one writer at a time, and Postgres is what scales. You can move to it later without reinstalling: take a `.picpeak` backup and restore it into the full stack. See **[Single-container install](https://docs.picpeak.app/deployment/single-container)** for the volume layout, the external-Postgres variant, TLS, and the limits.
+## 许可证
 
-### Docker images
-
-| | GHCR | Docker Hub |
-|---|---|---|
-| Backend | `ghcr.io/picpeak/picpeak/backend` | [`picpeak/backend`](https://hub.docker.com/r/picpeak/backend) |
-| Frontend | `ghcr.io/picpeak/picpeak/frontend` | [`picpeak/frontend`](https://hub.docker.com/r/picpeak/frontend) |
-| All-in-one | `ghcr.io/picpeak/picpeak/aio` | [`picpeak/aio`](https://hub.docker.com/r/picpeak/aio) |
-| ML sidecar (optional) | `ghcr.io/picpeak/picpeak/ml` | [`picpeak/ml`](https://hub.docker.com/r/picpeak/ml) |
-
-Both registries get the same digests and the same tags — `stable`/`latest`, a pinned `x.y.z`, and `beta`/`main` for the active development channel — for `linux/amd64` and `linux/arm64`. Keep every image in one install on the **same** tag.
-
-## 🌟 Why PicPeak?
-
-Unlike expensive SaaS solutions, PicPeak gives you:
-
-- **💰 No Monthly Fees** — one-time setup, unlimited galleries
-- **🔒 Complete Data Control** — your photos stay on your server
-- **🎨 White-Label Ready** — full branding customization
-- **📱 Mobile-First Design** — beautiful on all devices
-- **🌍 Multi-Language** — built-in i18n (EN, DE)
-
-## ✨ Features
-
-**For photographers** — drag & drop upload, auto-expiring & password-protected galleries, automated emails, an analytics dashboard, custom themes, a public landing page, and a [Live Slideshow](https://docs.picpeak.app/features/live-slideshow) projector view that auto-picks-up new uploads during live events.
-
-**For clients** — clean mobile-optimized galleries, one-click bulk downloads, smart search, **[People in this gallery](https://docs.picpeak.app/features/face-recognition)** face grouping (opt-in per gallery, needs the optional [ML sidecar](https://github.com/PicPeak/picpeak/blob/main/ml/README.md)), optional guest uploads, and download protection (watermarking + right-click prevention).
-
-**Technical** — Docker-ready, automatic thumbnail generation, external media reference mode, smart archiving of expired galleries, S3-compatible [storage backends](https://docs.picpeak.app/features/storage-backends), [webhooks](https://docs.picpeak.app/features/webhooks), and security-first defaults (JWT, rate limiting, CORS).
-
-## 📖 Documentation
-
-Full documentation lives at **[docs.picpeak.app](https://docs.picpeak.app)** — deployment, admin settings, API, branding, and more.
-
-| Topic | Link |
-|---|---|
-| 🚀 Deployment (Docker, env, reverse proxy, SSL) | [docs.picpeak.app/deployment](https://docs.picpeak.app/deployment) |
-| 📦 Single-container install (one `docker run`, SQLite) | [docs.picpeak.app/deployment/single-container](https://docs.picpeak.app/deployment/single-container) |
-| ⚙️ Admin settings reference | [docs.picpeak.app/guides/admin-settings](https://docs.picpeak.app/guides/admin-settings) |
-| 🎯 Creating events | [docs.picpeak.app/guides/creating-events](https://docs.picpeak.app/guides/creating-events) |
-| 📽️ Live Slideshow | [docs.picpeak.app/features/live-slideshow](https://docs.picpeak.app/features/live-slideshow) |
-| 🙂 People in galleries (face grouping) | [docs.picpeak.app/features/face-recognition](https://docs.picpeak.app/features/face-recognition) |
-| 💾 Backup & Restore | [docs.picpeak.app/guides/backup-restore](https://docs.picpeak.app/guides/backup-restore) |
-| 🔌 API reference | [docs.picpeak.app/api](https://docs.picpeak.app/api) |
-| 🪝 Webhooks | [docs.picpeak.app/features/webhooks](https://docs.picpeak.app/features/webhooks) |
-| 💾 Storage backends (local / S3) | [docs.picpeak.app/features/storage-backends](https://docs.picpeak.app/features/storage-backends) |
-| 💻 System requirements & tuning | [docs.picpeak.app/deployment/system-requirements](https://docs.picpeak.app/deployment/system-requirements) |
-| 🗺️ Roadmap | [GitHub Issues](https://github.com/PicPeak/picpeak/issues) |
-
-**Project meta:** [Support](SUPPORT.md) · [Contributing](CONTRIBUTING.md) · [License](LICENSE) · [Security](SECURITY.md) · [Code of Conduct](CODE_OF_CONDUCT.md)
-
-## 📊 Comparison with Alternatives
-
-| Feature | PicPeak | PicDrop | Scrapbook.de | Pixieset |
-|---------|---------|---------|--------------|----------|
-| Self-Hosted | ✅ | ❌ | ❌ | ❌ |
-| Custom Branding | ✅ Full | Limited | Limited | ✅ (paid) |
-| Monthly Cost | $0* | $29-199 | €19-99 | ~$60 |
-| Storage Limit | Unlimited** | 50-500GB | 100-1000GB | 3GB–Unlimited*** |
-| Client Uploads | ✅ | ✅ | ✅ | Limited |
-| API Access | ✅ | Paid | ❌ | ❌ |
-| Open Source | ✅ | ❌ | ❌ | ❌ |
-| Customer Accounts | ✅ | ❌ | ❌ | ✅ |
-
-<sub>*You bring your own server and, optionally, a domain. **Limited only by your server storage. ***Pixieset's "unlimited" is photos only; video is capped by plan.</sub>
-
-## 🏗️ Tech Stack
-
-- **Backend**: Node.js, Express, SQLite/PostgreSQL
-- **Frontend**: React, Tailwind CSS, Framer Motion
-- **Storage**: Local filesystem (default) or S3-compatible object store (AWS S3, MinIO, R2, B2, Wasabi, Spaces) — see [Storage Backends](https://docs.picpeak.app/features/storage-backends)
-- **Email**: SMTP with customizable templates
-- **Analytics**: Privacy-focused with Umami integration
-- **External media**: point PicPeak at `EXTERNAL_MEDIA_ROOT` to reference existing originals read-only, index quickly, and generate thumbnails on demand
-
-## 📸 Screenshots
-
-<details>
-<summary>Click to see the admin dashboard, analytics, and event management</summary>
-
-### 🎛️ Admin Dashboard
-<img src="docs/screenshot-dashboard.png" alt="PicPeak Admin Dashboard" width="800" />
-
-### 📊 Analytics & Insights
-<img src="docs/screenshot-analytics.png" alt="PicPeak Analytics Dashboard" width="800" />
-
-### 📁 Event Management
-<img src="docs/screenshots-events.png" alt="PicPeak Events Management" width="800" />
-
-</details>
-
-## 🤝 Contributing
-
-We love contributions! PicPeak is built by photographers, for photographers — whether you're fixing bugs, adding features, or improving docs. See the [Contributing Guide](CONTRIBUTING.md) to get started.
-
-Found a security issue? Please open a [security issue](https://github.com/PicPeak/picpeak/issues/new?labels=security). See [SECURITY.md](SECURITY.md) for the policy.
-
-## ☕ Support the Project
-
-PicPeak is free, open source, and self-hostable forever. If it saves you time or replaces a paid subscription, consider [buying me a coffee](https://buymeacoffee.com/theluap) — it directly funds new features, bug fixes, and keeping the demo + docs running. You can also ⭐ star the repo, share it, file good bug reports, or open a PR.
-
-## 🙏 Acknowledgments
-
-PicPeak is inspired by the best features of commercial platforms while remaining completely open source. It's developed with AI assistance, but human-tested end-to-end, security-audited, and human-reviewed for quality.
-
-### 👥 Contributors
-
-A huge thank you to the people whose code, reports, and feedback have shaped PicPeak:
-
-**[@the-luap](https://github.com/the-luap)** — creator and lead maintainer
-- Gallery foundation (events, uploads, sharing, download protection, templates)
-- Backup & restore, analytics, branding/theming
-- The architecture every later feature builds on
-
-**[@Luca-Timo](https://github.com/Luca-Timo)**
-- Native Apple Silicon multi-arch images
-- Gallery header/banner decoupling
-
-**[@Rekoo-PS](https://github.com/Rekoo-PS)** — bug reports & product feedback
-- Login-loop fix, mobile-lightbox overhaul, bulk-delete workflow
-- Also a [BuyMeACoffee](https://buymeacoffee.com/theluap) supporter
-
-If you've contributed and aren't listed here, please open a PR — this list is meant to grow.
-
-## 📄 License
-
-PicPeak is released under the [MIT License](LICENSE). Use it freely for personal or commercial projects.
-
----
-
-<p align="center">
-  Made with ❤️ by photographers, for photographers
-  <br>
-  <a href="https://www.picpeak.app">Homepage</a> ·
-  <a href="https://demo.picpeak.app">Live Demo</a> ·
-  <a href="https://docs.picpeak.app">Documentation</a> ·
-  <a href="https://github.com/PicPeak/picpeak/issues">Support</a>
-</p>
-
-### NAS 文件夹关联
-
-无邮箱摄影工作流提供新建项目关联和已有项目“照片”页关联/重新扫描入口，支持自动追加。部署管理员须预先添加只读绑定，例如 `/vol1/1000/Home/Camera:/external-media/Camera:ro`。请选择单次拍摄文件夹；详细步骤与 Bridge 配置边界见 [NAS 文件夹关联说明](docs/nas-folder-linking-zh.md)。
+本项目保留 PicPeak 上游的 MIT 许可证及来源声明，详见 [LICENSE](LICENSE)。本仓库不代表 PicPeak 官方项目或其维护者。

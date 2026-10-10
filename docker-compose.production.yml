@@ -1,3 +1,6 @@
+# Legacy compose inherited from PicPeak upstream: its app services pull official
+# PicPeak images and do not deploy this self-maintained fork. Use the Bridge
+# integrated deployment documented in the root README for production.
 version: '3.8'
 
 services:

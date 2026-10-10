@@ -29,7 +29,7 @@ for (const [key, value] of Object.entries(en)) {
 }
 for (const key of Object.keys(zh)) if (!(key in en)) failures.push(`多余键: ${key}`);
 // Exact parity includes every plural form. Chinese uses _other at runtime,
-// but upstream _one/_zero/etc remain present for low-conflict updates.
+// while the English locale keeps the complete plural-key shape.
 const pluralKeys = Object.keys(en).filter(k => /_(zero|one|two|few|many|other)$/.test(k));
 if (failures.length) {
   console.error(failures.join('\n'));

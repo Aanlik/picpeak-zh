@@ -14,7 +14,7 @@ function check(en, zh) {
     return spawnSync(process.execPath, [checker, path.join(dir, 'en.json'), path.join(dir, 'zh.json')], { encoding: 'utf8' });
   } finally { fs.rmSync(dir, { recursive: true }); }
 }
-test('new upstream keys fail CI', () => assert.equal(check({ added: 'New' }, {}).status, 1));
+test('English keys missing from Chinese fail CI', () => assert.equal(check({ added: 'New' }, {}).status, 1));
 test('lost interpolation fails CI', () => assert.equal(check({ text: '{{count}} photos' }, { text: '照片' }).status, 1));
 test('lost plural form fails CI', () => assert.equal(check({ text_one: 'One', text_other: 'Many' }, { text_other: '多张' }).status, 1));
 test('lost template placeholder fails CI', () => assert.equal(check({ text: '{INVOICE}' }, { text: '{INVOCE}' }).status, 1));
