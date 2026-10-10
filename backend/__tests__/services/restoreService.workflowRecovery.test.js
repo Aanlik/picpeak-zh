@@ -1,4 +1,4 @@
-jest.mock('../../src/services/workflowBackup', () => ({ checkpoint: jest.fn(), restore: jest.fn().mockResolvedValue(), release: jest.fn().mockResolvedValue(), hold: jest.fn().mockResolvedValue() }));
+jest.mock('../../src/services/workflowBackup', () => ({ isConfigured: jest.fn().mockReturnValue(false), checkpoint: jest.fn(), restore: jest.fn().mockResolvedValue(), release: jest.fn().mockResolvedValue(), hold: jest.fn().mockResolvedValue() }));
 /**
  * Built-in full/database restores (and the rollback that replays the
  * pre-restore dump) replace the identity tables but never advanced the global
@@ -53,6 +53,33 @@ describe('restoreService — joint workflow recovery', () => {
     return { svc, options: { source: '/backups', manifestPath: '/backups/m.json', restoreType, skipPreBackup: true } };
   };
 
+  it.each(['database', 'full'])('rejects legacy %s restore before touching data when Bridge is configured', async (restoreType) => {
+    const workflow = require('../../src/services/workflowBackup');
+    workflow.isConfigured.mockReturnValue(true);
+    const { svc, options } = stubbedService(restoreType);
+    svc.performDatabaseRestore = jest.fn();
+    svc.performFullRestore = jest.fn();
+    await expect(svc.restore(options)).rejects.toThrow('旧备份不包含精修状态');
+    expect(svc.performDatabaseRestore).not.toHaveBeenCalled();
+    expect(svc.performFullRestore).not.toHaveBeenCalled();
+  });
+  it('returns and persists a warning when restored data cannot resume synchronization', async () => {
+    const workflow = require('../../src/services/workflowBackup');
+    const { db } = require('../../src/database/db');
+    workflow.checkpoint.mockResolvedValue({ token: 'audit', state: { version: 1 } });
+    workflow.restore.mockReset().mockResolvedValue();
+    workflow.release.mockRejectedValueOnce(new Error('同步暂停未解除'));
+    const { svc, options } = stubbedService('database');
+    const original = svc.loadAndValidateManifest;
+    svc.loadAndValidateManifest = async () => ({ ...await original(), metadata: { workflow_state: { version: 1 } } });
+    const result = await svc.restore(options);
+    expect(result.success).toBe(true);
+    expect(result.workflow_sync_paused).toBe(true);
+    expect(result.warnings).toEqual(['同步暂停未解除']);
+    const run = await db('restore_runs').orderBy('id', 'desc').first();
+    expect(run.status).toBe('completed');
+    expect(run.error_message).toBe('同步暂停未解除');
+  });
   beforeAll(async () => {
     ({ cleanup } = await bootTestDb());
     ({ RestoreService, _internal } = require('../../src/services/restoreService'));
@@ -62,6 +89,7 @@ describe('restoreService — joint workflow recovery', () => {
   afterAll(async () => { if (cleanup) await cleanup(); });
 
   beforeEach(async () => {
+    require('../../src/services/workflowBackup').isConfigured.mockReturnValue(false);
     await cutoff.setSessionsValidAfter(0);
     cutoff._resetCache();
   });

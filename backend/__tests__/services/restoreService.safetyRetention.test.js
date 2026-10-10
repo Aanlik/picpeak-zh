@@ -1,4 +1,4 @@
-jest.mock('../../src/services/workflowBackup', () => ({ checkpoint: jest.fn(), restore: jest.fn().mockResolvedValue(), release: jest.fn().mockResolvedValue(), hold: jest.fn().mockResolvedValue() }));
+jest.mock('../../src/services/workflowBackup', () => ({ isConfigured: jest.fn().mockReturnValue(false), checkpoint: jest.fn(), restore: jest.fn().mockResolvedValue(), release: jest.fn().mockResolvedValue(), hold: jest.fn().mockResolvedValue() }));
 /**
  * Built-in full/database restores (and the rollback that replays the
  * pre-restore dump) replace the identity tables but never advanced the global

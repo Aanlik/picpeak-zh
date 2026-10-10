@@ -49,3 +49,25 @@ it.each(['prepare', 'activate'])('cancels its own ID after %s response is lost',
   await expect(backup.checkpoint('restore')).rejects.toThrow(/已停止/);
   expect(mockBridge.bridgeRequest).toHaveBeenLastCalledWith('/api/state/cancel', { method: 'POST', body: { token: '12345678-1234-4234-8234-123456789abc' } });
 });
+
+it('confirms a lost release response from authoritative status', async () => {
+  mockBridge.bridgeRequest.mockReset().mockResolvedValueOnce({ status: 503 })
+    .mockResolvedValueOnce({ status: 200, data: { token: null, blocked: false } });
+  await expect(backup.release({ token: 'audit', purpose: 'restore' })).resolves.toBeUndefined();
+});
+it('does not claim restoration pauses expire when release cannot be confirmed', async () => {
+  mockBridge.bridgeRequest.mockReset().mockResolvedValue({ status: 503 });
+  await expect(backup.release({ token: 'audit', purpose: 'restore' })).rejects.toThrow('不会自动到期');
+});
+
+it('does not treat another active task as a confirmed release', async () => {
+  mockBridge.bridgeRequest.mockReset().mockResolvedValueOnce({ status: 409 })
+    .mockResolvedValueOnce({ status: 200, data: { token: 'another-task', blocked: true } });
+  await expect(backup.release({ token: 'audit', purpose: 'restore' })).rejects.toThrow('不会自动到期');
+});
+
+it('rejects malformed status instead of assuming synchronization resumed', async () => {
+  mockBridge.bridgeRequest.mockReset().mockResolvedValueOnce({ status: 503 })
+    .mockResolvedValueOnce({ status: 200, data: {} });
+  await expect(backup.release({ token: 'audit', purpose: 'restore' })).rejects.toThrow('不会自动到期');
+});

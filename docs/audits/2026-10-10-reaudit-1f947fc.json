@@ -1,0 +1,34 @@
+{
+  "baseline": "1f947fc",
+  "date": "2026-10-10",
+  "findings": [
+    {
+      "id": "B01",
+      "priority": "P1",
+      "reproduced": true,
+      "legacy_restore_success": true,
+      "checkpoint_calls": 0,
+      "bridge_restore_calls": 0
+    },
+    {
+      "id": "B02",
+      "priority": "P2",
+      "reproduced": true,
+      "release_failed": true,
+      "restore_success": true,
+      "recorded_status": "completed"
+    }
+  ],
+  "tests": {
+    "frontend": 600,
+    "bridge": 107,
+    "backend_targeted": 16,
+    "fault_injection": 7,
+    "locale_keys": 3196,
+    "plural_keys": 154,
+    "static_translation_references": 3134
+  },
+  "production_code_modified": false,
+  "nas_accessed": false,
+  "remote_pushed": false
+}

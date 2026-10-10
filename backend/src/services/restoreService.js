@@ -308,6 +308,7 @@ class RestoreService {
     let restoreRun = null;
     let workflowCheckpoint = null;
     let workflowCompleted = false;
+    let completedResponse = null;
     let workflowRecoverySafe = true;
 
     try {
@@ -331,6 +332,9 @@ class RestoreService {
       // Step 1: Load and validate manifest
       this.updateProgress('Loading and validating manifest...');
       const manifest = await this.loadAndValidateManifest(options.manifestPath, options.s3Config);
+      if (['full', 'database'].includes(options.restoreType) && workflowBackup.isConfigured() && !manifest.metadata?.workflow_state) {
+        throw new Error('该旧备份不包含精修状态，不能在已配置 Bridge 的环境中恢复数据库；请使用包含精修状态的完整备份');
+      }
       this.log('info', 'Manifest loaded and validated', {
         backupId: manifest.backup.id,
         backupType: manifest.backup.type,
@@ -663,14 +667,17 @@ class RestoreService {
       });
 
       workflowCompleted = true;
-      return {
+      completedResponse = {
         success: true,
+        workflow_sync_paused: false,
+        warnings: [],
         duration: durationSeconds,
         result: restoreResult,
         verification,
         preRestoreBackup: this.preRestoreBackupPath,
         logs: this.restoreLog
       };
+      return completedResponse;
 
     } catch (error) {
       this.log('error', 'Restore failed', { error: error.message, stack: error.stack });
@@ -744,7 +751,15 @@ class RestoreService {
     } finally {
       if (workflowCheckpoint) {
         if (workflowCompleted || workflowRecoverySafe) {
-          await workflowBackup.release(workflowCheckpoint).catch(error => this.log('error', error.message));
+          await workflowBackup.release(workflowCheckpoint).catch(async error => {
+            this.log('error', error.message);
+            if (completedResponse) {
+              completedResponse.workflow_sync_paused = true;
+              completedResponse.warnings.push(error.message);
+              await db('restore_runs').where('id', restoreRun.id).update({ error_message: error.message })
+                .catch(recordError => this.log('error', `无法记录同步暂停警告：${recordError.message}`));
+            }
+          });
         } else {
           await workflowBackup.hold(workflowCheckpoint, '项目恢复或回滚不完整，请核对 PicPeak 与精修状态后手动解除暂停')
             .catch(error => this.log('error', `保持同步暂停失败：${error.message}`));

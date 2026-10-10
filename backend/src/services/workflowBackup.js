@@ -26,6 +26,7 @@ async function checkpoint(purpose = 'backup') {
   }, 60000);
   timer.unref();
   Object.defineProperty(checkpoint, 'timer', { value: timer });
+  Object.defineProperty(checkpoint, 'purpose', { value: purpose });
   return checkpoint;
 }
 async function release(checkpoint) {
@@ -33,7 +34,13 @@ async function release(checkpoint) {
   clearInterval(checkpoint.timer);
   const result = await bridgeRequest('/api/state/release', { method: 'POST', body: { token: checkpoint.token } });
   if (checkpoint.renewalError) throw checkpoint.renewalError;
-  if (result.status !== 200) throw new Error('无法解除精修状态备份锁，请检查 Bridge；锁最多保持 30 分钟');
+  if (result.status !== 200) {
+    const status = await bridgeRequest('/api/state/status');
+    if (status.status === 200 && status.data?.token === null && status.data?.blocked === false) return;
+    throw new Error(checkpoint.purpose === 'restore'
+      ? '数据恢复已完成，但同步暂停未解除；恢复暂停不会自动到期，请核对 Bridge 状态后手动解除'
+      : '无法解除精修状态备份锁，请检查 Bridge；备份暂停最多保持 30 分钟');
+  }
 }
 async function restore(state, checkpoint) {
   if (!checkpoint) throw new Error('恢复精修状态需要可连接的 Bridge');
@@ -45,4 +52,4 @@ async function hold(checkpoint, reason) {
   if (result.status !== 200) throw new Error('无法持久化恢复暂停，请保持服务停止并人工核对');
   clearInterval(checkpoint.timer);
 }
-module.exports = { checkpoint, release, restore, hold };
+module.exports = { checkpoint, release, restore, hold, isConfigured: () => Boolean(bridgeConfig()) };

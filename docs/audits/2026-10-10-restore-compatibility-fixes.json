@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-10",
+  "fixes": [
+    "B01",
+    "B02"
+  ],
+  "backend_full": {
+    "numPassedTests": 3113,
+    "numFailedTests": 17,
+    "numPendingTests": 28,
+    "numPassedTestSuites": 334,
+    "numFailedTestSuites": 2,
+    "success": false
+  },
+  "backend_failed_suites": [
+    {
+      "file": "__tests__/integration/imageProcessor.storage.test.js",
+      "reason": "MinIO test endpoint unavailable; CreateBucket failed before test setup"
+    },
+    {
+      "file": "__tests__/integration/storageBackend.test.js",
+      "reason": "MinIO test endpoint unavailable; CreateBucket failed before test setup"
+    }
+  ],
+  "backend_targeted_final_passed": 23,
+  "frontend_passed": 600,
+  "frontend_build_check_passed": true,
+  "locale_keys": 3197,
+  "minio_pull_attempts": [
+    "Docker Hub pull denied",
+    "Quay manifest request 401"
+  ],
+  "image_built": false,
+  "nas_updated": false,
+  "remote_pushed": false
+}

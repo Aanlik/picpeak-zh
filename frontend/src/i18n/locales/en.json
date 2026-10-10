@@ -2780,7 +2780,8 @@
         "idle": "No restore in progress.",
         "errorTitle": "Restore did not complete",
         "errorUnknown": "No error message recorded.",
-        "rolledBack": "Pre-restore safety backup was used to roll back. Destination is in its pre-restore state — safe to retry once the issue above is resolved."
+        "rolledBack": "Pre-restore safety backup was used to roll back. Destination is in its pre-restore state — safe to retry once the issue above is resolved.",
+        "syncPaused": "Data restored; synchronization pause has not been released"
       },
       "actions": {
         "back": "Back",

@@ -672,6 +672,7 @@ export const RestoreWizard = () => {
       !isRunning && lastRun && (lastRun.status === 'failed' || lastRun.was_successful === false);
     const lastRunSucceeded =
       !isRunning && lastRun && lastRun.status === 'completed' && lastRun.was_successful === true;
+    const lastRunWarning = lastRunSucceeded && Boolean(lastRun.error_message);
     // Strip the noisy stack-trace tail from the error message so the
     // user sees the actionable line first.
     const lastRunError = lastRun?.error_message
@@ -786,7 +787,13 @@ export const RestoreWizard = () => {
             succeeded. Previously this gated on `progress.status` which
             could be null between runs, so the green "Restore completed
             successfully" banner could render alongside a silent failure. */}
-        {lastRunSucceeded && (
+        {lastRunWarning && (
+          <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
+            <h3 className="font-semibold">{t('backup.restore.progress.syncPaused')}</h3>
+            <p className="mt-2 text-sm">{lastRunError}</p>
+          </div>
+        )}
+        {lastRunSucceeded && !lastRunWarning && (
           <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
             <div className="flex">
               <CheckCircle className="h-5 w-5 text-green-400 mt-0.5" />
