@@ -56,8 +56,8 @@ describe('single-photo download when res.sendFile fails (issue 1733)', () => {
       event_type: 'project',
       event_name: 'Downloads',
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/s`,
       share_token: 'sendfile-share',

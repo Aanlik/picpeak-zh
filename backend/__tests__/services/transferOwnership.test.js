@@ -55,7 +55,7 @@ describe('PicTransfer ownership guards (#998)', () => {
   const mkEvent = async (slug, createdBy) => {
     const r = await db('events').insert({
       slug, event_type: 'project', event_name: slug, event_date: '2026-08-01',
-      host_email: 'h@e.com', admin_email: 'a@e.com', password_hash: 'x',
+        password_hash: 'x',
       share_token: `t-${slug}`, share_link: `/g/${slug}/t-${slug}`,
       created_by: createdBy,
       expires_at: new Date(Date.now() + 864e5).toISOString(),

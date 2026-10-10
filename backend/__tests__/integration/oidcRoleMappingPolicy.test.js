@@ -317,7 +317,7 @@ describe('OIDC role mapping + login policy (#798 phase 2)', () => {
     await oidcService.saveOidcSettings({ oidc_disable_local_login: true });
     const res = await request(app)
       .post('/api/auth/admin/login')
-      .send({ username: 'root@example.com', password: 'RootPass123' });
+      .send({ username: 'root-admin', password: 'RootPass123' });
     expect(res.status).toBe(403);
     expect(res.body.code).toBe('LOCAL_LOGIN_DISABLED');
   });
@@ -326,7 +326,7 @@ describe('OIDC role mapping + login policy (#798 phase 2)', () => {
     process.env.OIDC_BREAK_GLASS = 'true';
     const res = await request(app)
       .post('/api/auth/admin/login')
-      .send({ username: 'root@example.com', password: 'RootPass123' });
+      .send({ username: 'root-admin', password: 'RootPass123' });
     delete process.env.OIDC_BREAK_GLASS;
     expect(res.status).toBe(200);
     expect(res.body.user).toBeTruthy();

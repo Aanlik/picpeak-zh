@@ -22,10 +22,6 @@ router.post('/:eventId/rename', adminAuth, requirePermission('events.edit'), req
     .trim()
     .isLength({ min: 3, max: 100 })
     .withMessage('Event name must be between 3 and 100 characters'),
-  body('resendEmail')
-    .optional()
-    .isBoolean()
-    .withMessage('resendEmail must be a boolean')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -34,12 +30,11 @@ router.post('/:eventId/rename', adminAuth, requirePermission('events.edit'), req
     }
 
     const { eventId } = req.params;
-    const { newEventName, resendEmail = false } = req.body;
+    const { newEventName } = req.body;
 
     const result = await eventRenameService.renameEvent(
       parseInt(eventId, 10),
       newEventName,
-      resendEmail,
       req.admin
     );
 

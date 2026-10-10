@@ -48,7 +48,6 @@ async function refreshPermissionCache() {
         'events.view', 'events.create', 'events.edit', 'events.delete', 'events.archive',
         'photos.view', 'photos.upload', 'photos.edit', 'photos.delete', 'photos.download',
         'archives.view', 'archives.restore', 'archives.download', 'archives.delete',
-        'analytics.view', 'email.view', 'email.edit', 'email.send',
         'branding.view', 'branding.edit', 'cms.view', 'cms.edit',
         'settings.view', 'settings.edit', 'backup.view', 'backup.create', 'backup.restore', 'backup.delete',
         'users.view', 'users.create', 'users.edit', 'users.delete',

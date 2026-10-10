@@ -44,7 +44,7 @@ function pairAtSimilarity(target, basis) {
 async function seedEvent(slug) {
   const [row] = await db('events').insert({
     slug, event_type: 'project', event_name: slug, event_date: '2026-01-01',
-    host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
+      password_hash: 'x',
     share_link: `${slug}-share`, expires_at: new Date().toISOString(),
   }).returning('id');
   return typeof row === 'object' ? row.id : row;

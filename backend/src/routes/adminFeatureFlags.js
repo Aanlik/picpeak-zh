@@ -18,15 +18,11 @@ const { requirePermission } = require('../middleware/permissions');
 const { invalidateFeatureFlagCache } = require('../middleware/requireFeatureFlag');
 const logger = require('../utils/logger');
 
-// Canonical flag list. Keep in sync with frontend
-// `FeatureKey` union in frontend/src/contexts/FeatureFlagsContext.tsx.
+// Canonical flag list. Keep in sync with the `FeatureKey` union in
+// frontend/src/services/featureFlags.service.ts.
 const KNOWN_FLAGS = [
   'galleries',
-  'reminderEmails',
-  'messaging',
-  'analytics',
   'userManagement',
-  'customerPortal',
   // Live Slideshow ("Diashow") — the per-event fullscreen kiosk link and
   // global watermark defaults tab. Strictly opt-in;
   // gates all slideshow admin UI (per-event card, type preset, settings tab).
@@ -36,11 +32,6 @@ const KNOWN_FLAGS = [
   // opt-in; gates the sidebar entry, the /admin/transfers area AND every
   // transfer route (admin + public token routes).
   'transfers',
-  // Workflow / automation engine — admin-configurable visual flows (triggers,
-  // conditions, branches, loops, approval gates). Strictly opt-in; master
-  // kill-switch for the Workflows admin area AND the engine's runtime side
-  // effects (no run is created/resumed while off).
-  'workflows',
   // Face recognition — "People in this gallery" (migration 177, #1074).
   // Requires the optional picpeak-ml sidecar container. THIS FLAG IS THE
   // GATE for the whole feature: FACE_ML_URL has a working default (the
@@ -59,18 +50,9 @@ const KNOWN_FLAGS = [
 // new release that hasn't run its migration yet on this instance).
 const DEFAULT_FLAGS = {
   galleries: true,
-  // F.3 — reminderEmails is a placeholder card in the Features tab
-  // (lockedReason: NOT_YET_AVAILABLE). Default FALSE so it matches
-  // the locked-but-off visual state of messaging / calendarBooking
-  // instead of being a confusing "on but locked".
-  reminderEmails: false,
-  messaging: false,
-  analytics: true,
   userManagement: true,
-  customerPortal: false,
   slideshow: false,
   transfers: false,
-  workflows: false,
   // #1074 — off by default is the whole "zero behaviour change" guarantee.
   faces: false,
 };
@@ -105,9 +87,9 @@ function applyDependencyRules(flags) {
 router.get('/', adminAuth, requirePermission(['settings.view', 'settings.features']), async (req, res) => {
   try {
     const flags = await readAllFlags();
-    // Always run the rules so derived flags (e.g. `clients`) and
-    // hard invariants (galleries always on) are consistent even if
-    // the DB row is stale or missing.
+    // Always run the rules so hard invariants (galleries always on and face
+    // recognition unavailable in the single-container image) hold even if a
+    // stored flag is stale or missing.
     res.json(applyDependencyRules(flags));
   } catch (error) {
     logger.error('Failed to read feature flags', { error: error.message });

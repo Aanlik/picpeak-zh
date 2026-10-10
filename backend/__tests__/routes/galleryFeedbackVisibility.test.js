@@ -49,8 +49,8 @@ describe('gallery feedback visibility', () => {
       event_type: 'project',
       event_name: 'Feedback Visibility',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'feedback-visibility-share',
@@ -79,7 +79,6 @@ describe('gallery feedback visibility', () => {
       feedback_type: 'rating',
       rating: value,
       guest_identifier: 'someone-else',
-      is_approved: true,
       is_hidden: false,
       created_at: new Date().toISOString(),
     });
@@ -92,7 +91,6 @@ describe('gallery feedback visibility', () => {
       allow_comments: true,
       allow_ratings: true,
       allow_favorites: true,
-      moderate_comments: false,
       show_feedback_to_guests: true,
     });
 

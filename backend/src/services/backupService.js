@@ -10,7 +10,6 @@ const { pipeline } = require('stream/promises');
 const cron = require('node-cron');
 const cronParser = require('cron-parser');
 const { db } = require('../database/db');
-const { queueEmail } = require('./emailProcessor');
 const logger = require('../utils/logger');
 const { formatBytes } = require('../utils/formatBytes');
 const { formatBoolean } = require('../utils/dbCompat');
@@ -232,7 +231,6 @@ async function hasDatabaseChanged(sinceTime) {
       'photos',
       'admin_users',
       'app_settings',
-      'email_queue',
       'access_logs'
     ];
 
@@ -277,7 +275,7 @@ async function hasDatabaseChanged(sinceTime) {
  *   - Lets the manifest path share the same `databaseInfo` object
  *     instead of doing a second `getDatabaseBackupInfo()` round-trip
  *   - Thrown errors bubble up to `runBackupInternal`'s catch, which
- *     marks the `backup_runs` row failed and queues the admin email
+ *     marks the `backup_runs` row failed for the admin to review
  *
  * Default-ON semantics: `backup_database_inline_dump` is only treated
  * as disabled when explicitly set to false. `undefined` (the case on
@@ -1422,18 +1420,6 @@ async function runBackupInternal(isManual = false) {
 
     logger.info(`Backup completed: ${result.backedUpCount} files, ${(result.backedUpSize / 1024 / 1024).toFixed(2)} MB in ${durationSeconds}s`);
 
-    if (normalizeBoolean(config.backup_email_on_success)) {
-      const admins = await db('admin_users').where('is_active', formatBoolean(true));
-      for (const admin of admins) {
-        await queueEmail(null, admin.email, 'backup_completed', {
-          start_time: startTime.toISOString(),
-          duration: `${durationSeconds} seconds`,
-          files_count: String(result.backedUpCount),
-          total_size: formatBytes(result.backedUpSize),
-          backup_type: destinationType
-        });
-      }
-    }
   } catch (error) {
     logger.error('Backup failed:', error);
 
@@ -1447,17 +1433,6 @@ async function runBackupInternal(isManual = false) {
         });
     }
 
-    const config = await resolveConfigWithFallback();
-    if (config && normalizeBoolean(config.backup_email_on_failure)) {
-      const admins = await db('admin_users').where('is_active', formatBoolean(true));
-      for (const admin of admins) {
-        await queueEmail(null, admin.email, 'backup_failed', {
-          start_time: startTime.toISOString(),
-          backup_type: (config.backup_destination_type || 'unknown').toString(),
-          error_message: error.message
-        });
-      }
-    }
   } finally {
     isRunning = false;
   }

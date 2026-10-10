@@ -27,7 +27,7 @@ class SessionAccessService {
   assertPasswordCurrent(account, session) {
     if (account.password_changed_at == null) return;
     const changed = toTimestamp(account.password_changed_at);
-    // Preserve the same-second login convention used by admin/customer auth.
+    // Preserve the same-second login convention used by admin/gallery auth.
     if (!Number.isFinite(changed) || session.iat < Math.floor(changed / 1000)) {
       throw new AppError('Token invalid due to password change', 401, 'PASSWORD_CHANGED');
     }
@@ -40,7 +40,7 @@ class SessionAccessService {
       account = await db('admin_users')
         .leftJoin('roles', 'roles.id', 'admin_users.role_id')
         .where({ 'admin_users.id': session.id, 'admin_users.is_active': formatBoolean(true) })
-        .select('admin_users.id', 'admin_users.username', 'admin_users.email',
+        .select('admin_users.id', 'admin_users.username',
           'admin_users.password_changed_at', 'roles.id as role_id', 'roles.name as role_name',
           // Always projected, never behind includeProfile: it is a security
           // flag, not profile decoration. Gating it meant a caller that forgot
@@ -60,33 +60,10 @@ class SessionAccessService {
       // pass on exactly the upgrade-window installs this fallback exists for.
       account = await db('admin_users')
         .where({ id: session.id, is_active: formatBoolean(true) })
-        .select('id', 'username', 'email', 'password_changed_at', 'must_change_password').first();
+        .select('id', 'username', 'password_changed_at', 'must_change_password').first();
       if (account) Object.assign(account, { role_id: null, role_name: 'super_admin' });
     }
     if (!account) throw new AppError('Invalid token', 401, 'ADMIN_NOT_FOUND');
-    this.assertPasswordCurrent(account, session);
-    return account;
-  }
-
-  async customer(session, { derived = false } = {}) {
-    if (!derived) await this.assertActive(session, 'customer');
-    if (!Number.isInteger(session.customerId)) {
-      throw new AppError('Invalid customer session', 401, 'CUSTOMER_NOT_FOUND');
-    }
-    // A gallery token minted from the portal carries the portal session's
-    // identity, so logging out of the portal ends it too. Tokens minted before
-    // that claim existed carry none and run out on their own (24h at most).
-    if (derived && Number.isFinite(session.parentIat) && await isTokenRevoked({
-      type: 'customer', customerId: session.customerId, iat: session.parentIat,
-      ...(session.parentJti && { jti: session.parentJti }),
-    })) {
-      throw new AppError('Token has been revoked', 401, 'TOKEN_REVOKED');
-    }
-    const account = await db('customer_accounts')
-      .where({ id: session.customerId, is_active: formatBoolean(true) })
-      .select('id', 'email', 'display_name', 'first_name', 'last_name', 'password_changed_at', 'preferred_language')
-      .first();
-    if (!account) throw new AppError('Invalid token', 401, 'CUSTOMER_NOT_FOUND');
     this.assertPasswordCurrent(account, session);
     return account;
   }

@@ -18,6 +18,7 @@ const getOption = (name) => {
 };
 
 const force = hasFlag('--force') || hasFlag('--yes') || hasFlag('--non-interactive');
+const username = getOption('username') || 'admin';
 const credentialsFileArg = getOption('credentials-file');
 const resolvedCredentialsFile = credentialsFileArg
   ? path.resolve(process.cwd(), credentialsFileArg)
@@ -46,7 +47,7 @@ async function resetAdminPassword() {
   try {
     // Check if admin user exists
     const admin = await db('admin_users')
-      .where({ username: 'admin' })
+      .where({ username })
       .first();
 
     if (!admin) {
@@ -56,7 +57,6 @@ async function resetAdminPassword() {
     }
 
     console.log('Found admin user:', admin.username);
-    console.log('Email:', admin.email);
     if (!force) {
       console.log('\nThis will reset the password for this admin account.');
     }
@@ -91,7 +91,6 @@ PicPeak Admin Credentials
 Your admin account has been reset with these credentials:
 
 Username: ${admin.username}
-Email: ${admin.email}
 Password: ${newPassword}
 
 IMPORTANT SECURITY NOTES:
@@ -112,7 +111,6 @@ Reset performed on: ${new Date().toISOString()}
     console.log('New Credentials:');
     console.log('========================================');
     console.log(`Username: ${admin.username}`);
-    console.log(`Email: ${admin.email}`);
     console.log(`Password: ${newPassword}`);
     console.log('\n⚠️  IMPORTANT:');
     console.log('1. You will be required to change this password on next login');

@@ -31,7 +31,7 @@ export function getPhotoViewMode(): PhotoViewMode {
     if (raw && (ALLOWED_VIEWS as readonly string[]).includes(raw)) {
       return raw as PhotoViewMode;
     }
-  } catch (_) {
+  } catch {
     // ignore — fall through to default
   }
   return 'grid';
@@ -46,7 +46,7 @@ export function setPhotoViewMode(view: PhotoViewMode): void {
   if (!(ALLOWED_VIEWS as readonly string[]).includes(view)) return;
   try {
     window.localStorage.setItem(VIEW_KEY, view);
-  } catch (_) {
+  } catch {
     // ignore — quota / disabled storage
   }
 }

@@ -1,4 +1,3 @@
-import { NO_EMAIL_MODE } from '../../../config/communication';
 import React from 'react';
 import { Save, AlertCircle } from 'lucide-react';
 import { Button, Card } from '../../../components/common';
@@ -69,56 +68,6 @@ export const EventsTab: React.FC<EventsTabProps> = ({
                 </p>
               </div>
             </label>
-          </div>
-
-          <div>
-            {!NO_EMAIL_MODE && (<label className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                checked={eventSettings.event_require_customer_email}
-                onChange={(e) => setEventSettings(prev => ({ ...prev, event_require_customer_email: e.target.checked }))}
-                className="mt-1 w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-              />
-              {!NO_EMAIL_MODE && (<div>
-                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  {t('settings.events.requireCustomerEmail', 'Require customer email')}
-                </span>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                  {t('settings.events.requireCustomerEmailHelp', 'Customer email must be provided for new events')}
-                </p>
-                {!eventSettings.event_require_customer_email && (
-                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {t('settings.events.customerEmailWarning', 'Required for sending gallery invitations')}
-                  </p>
-                )}
-              </div>)}
-            </label>)}
-          </div>
-
-          <div>
-            {!NO_EMAIL_MODE && (<label className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                checked={eventSettings.event_require_admin_email}
-                onChange={(e) => setEventSettings(prev => ({ ...prev, event_require_admin_email: e.target.checked }))}
-                className="mt-1 w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-              />
-              {!NO_EMAIL_MODE && (<div>
-                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  {t('settings.events.requireAdminEmail', 'Require admin email')}
-                </span>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                  {t('settings.events.requireAdminEmailHelp', 'Admin email must be provided for new events')}
-                </p>
-                {!eventSettings.event_require_admin_email && (
-                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {t('settings.events.adminEmailWarning', 'Required for receiving event notifications')}
-                  </p>
-                )}
-              </div>)}
-            </label>)}
           </div>
 
           <div>

@@ -38,8 +38,8 @@ describe('short URL delete ownership scoping', () => {
       event_type: 'project',
       event_name: 'Test Event',
       event_date: '2026-08-01',
-      host_email: 'h@e.com',
-      admin_email: 'a@e.com',
+
+
       password_hash: 'x',
       share_link: `suown-${slugSuffix}`,
       share_token: `suown-share-${slugSuffix}`,

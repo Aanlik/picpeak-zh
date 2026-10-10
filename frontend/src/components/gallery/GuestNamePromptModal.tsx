@@ -5,8 +5,6 @@ import { Button, Input } from '../common';
 import { useGuestIdentity } from '../../contexts/GuestIdentityContext';
 
 interface GuestNamePromptModalProps {
-  requireEmail?: boolean;
-  hideEmail?: boolean;
   allowCancel?: boolean;
   onCancel?: () => void;
 }
@@ -20,15 +18,12 @@ interface GuestNamePromptModalProps {
  * another device.
  */
 export const GuestNamePromptModal: React.FC<GuestNamePromptModalProps> = ({
-  requireEmail = false,
-  hideEmail = false,
   allowCancel = true,
   onCancel,
 }) => {
   const { t } = useTranslation();
-  const { promptOpen, closePrompt, register, openRecovery, savedRoles, identity, switchRole } = useGuestIdentity();
+  const { promptOpen, closePrompt, register, savedRoles, identity, switchRole } = useGuestIdentity();
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -37,7 +32,6 @@ export const GuestNamePromptModal: React.FC<GuestNamePromptModalProps> = ({
 
   const handleClose = () => {
     setName('');
-    setEmail('');
     setErrors({});
     setSubmitError(null);
     closePrompt();
@@ -50,12 +44,6 @@ export const GuestNamePromptModal: React.FC<GuestNamePromptModalProps> = ({
     if (!name.trim()) {
       newErrors.name = t('gallery.guestPrompt.nameRequired', 'Name is required');
     }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = t('gallery.guestPrompt.invalidEmail', 'Invalid email address');
-    }
-    if (requireEmail && !email.trim()) {
-      newErrors.email = t('gallery.guestPrompt.emailRequired', 'Email is required');
-    }
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -64,7 +52,7 @@ export const GuestNamePromptModal: React.FC<GuestNamePromptModalProps> = ({
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await register(name.trim(), email.trim() || undefined);
+      await register(name.trim());
     } catch (err) {
       const error = err as { response?: { data?: { error?: string } } };
       setSubmitError(error.response?.data?.error || t('gallery.guestPrompt.error', 'Registration failed'));
@@ -108,17 +96,7 @@ export const GuestNamePromptModal: React.FC<GuestNamePromptModalProps> = ({
             required
             maxLength={100}
           />
-          {!hideEmail && <Input
-              type="email"
-              label={requireEmail
-                ? t('gallery.guestPrompt.emailLabelRequired', 'Email')
-                : t('gallery.guestPrompt.emailLabel', 'Email (optional)')}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={errors.email}
-              placeholder={t('gallery.guestPrompt.emailPlaceholder', 'you@example.com')}
-              maxLength={255}
-            />}
+
 
           {savedRoles.length > 0 && (
             <div className="space-y-2 rounded-lg border border-surface p-3">
@@ -175,27 +153,7 @@ export const GuestNamePromptModal: React.FC<GuestNamePromptModalProps> = ({
               this block would render dark grey on a dark surface. The rest of
               the modal uses text-theme / text-muted-theme for exactly this
               reason. */}
-          {!hideEmail && <div
-            className="pt-3 mt-1 border-t text-center"
-            style={{ borderColor: 'var(--color-surface-border, #e5e5e5)' }}
-          >
-            <p className="text-sm text-muted-theme">
-              {t(
-                'gallery.guestPrompt.returningHint',
-                'Been here before? Your earlier picks are still saved.'
-              )}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                closePrompt();
-                openRecovery();
-              }}
-              className="mt-1 text-sm font-medium text-accent hover:underline"
-            >
-              {t('gallery.guestPrompt.recoverPicks', 'Get them back')}
-            </button>
-          </div>}
+
         </form>
       </div>
     </div>

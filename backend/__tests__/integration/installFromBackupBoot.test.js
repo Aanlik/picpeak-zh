@@ -166,8 +166,8 @@ describe('installFromBackupBoot', () => {
       event_name: 'Existing Event',
       event_type: 'project',
       event_date: new Date(),
-      host_email: 'host@example.com',
-      admin_email: 'host@example.com',
+
+
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       share_link: 'existing-event-token',
       password_hash: 'dummy-hash-for-test',
@@ -193,8 +193,8 @@ describe('installFromBackupBoot', () => {
       event_name: 'Existing Event 2',
       event_type: 'project',
       event_date: new Date(),
-      host_email: 'host@example.com',
-      admin_email: 'host@example.com',
+
+
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       share_link: 'existing-event-2-token',
       password_hash: 'dummy-hash-for-test-2',

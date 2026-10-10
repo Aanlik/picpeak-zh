@@ -10,7 +10,6 @@ interface DuplicateEventDialogProps {
     event_name: string;
     event_date?: string;
     customer_name?: string;
-    customer_email?: string;
   }) => void;
   onClose: () => void;
 }
@@ -34,7 +33,6 @@ export const DuplicateEventDialog: React.FC<DuplicateEventDialogProps> = ({
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
   const [error, setError] = useState<string | undefined>(undefined);
 
   const handleSubmit = () => {
@@ -47,7 +45,6 @@ export const DuplicateEventDialog: React.FC<DuplicateEventDialogProps> = ({
       event_name: eventName.trim(),
       event_date: eventDate || undefined,
       customer_name: customerName.trim() || undefined,
-      customer_email: customerEmail.trim() || undefined,
     });
   };
 
@@ -106,13 +103,6 @@ export const DuplicateEventDialog: React.FC<DuplicateEventDialogProps> = ({
             onChange={(e) => setCustomerName(e.target.value)}
           />
 
-          <Input
-            type="email"
-            label={t('events.duplicateDialog.customerEmailLabel', 'Customer email')}
-            placeholder={t('events.duplicateDialog.customerEmailPlaceholder', 'Optional')}
-            value={customerEmail}
-            onChange={(e) => setCustomerEmail(e.target.value)}
-          />
         </div>
 
         <div className="flex gap-3">

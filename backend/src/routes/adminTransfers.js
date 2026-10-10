@@ -122,7 +122,7 @@ async function storeExtraFiles(transferId, files) {
   }
 }
 
-/** Parse a multipart field that carries a JSON array (photoIds, recipientEmails). */
+/** Parse a multipart field that carries a JSON array of photo ids. */
 function parseJsonArrayField(value) {
   if (Array.isArray(value)) return value;
   if (typeof value !== 'string' || !value.trim()) return [];
@@ -130,7 +130,6 @@ function parseJsonArrayField(value) {
     const parsed = JSON.parse(value);
     return Array.isArray(parsed) ? parsed : [];
   } catch (_) {
-    // Fallback: comma-separated (e.g. a raw "a@x.com, b@y.com" email field).
     return value.split(',').map((s) => s.trim()).filter(Boolean);
   }
 }
@@ -169,10 +168,7 @@ router.get('/', requirePermission('events.view'), handleAsync(async (req, res) =
   return successResponse(res, { transfers });
 }));
 
-// Create. multipart/form-data: text fields + optional `files` (the operator's
-// own deliverable files) + `photoIds`/`recipientEmails` as JSON-array fields.
-// Uploaded files land as transfer_extra_files; delivery_method='email' emails
-// the recipients the download link.
+// Create a shareable transfer link. Uploaded files land as transfer_extra_files.
 router.post('/',
   requirePermission('events.edit'),
   handleAsync(async (req, res) => {
@@ -182,9 +178,6 @@ router.post('/',
     const b = req.body || {};
     const photoIds = parseJsonArrayField(b.photoIds)
       .map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 5000);
-    const recipientEmails = parseJsonArrayField(b.recipientEmails)
-      .map((e) => String(e || '').trim()).filter(Boolean).slice(0, 100);
-    const deliveryMethod = b.deliveryMethod === 'email' ? 'email' : 'link';
 
     const transfer = await transferService.createTransfer({
       title: b.title,
@@ -195,14 +188,9 @@ router.post('/',
       allowUploads: b.allowUploads === 'true' || b.allowUploads === true,
       uploadExpiresInDays: b.uploadExpiresInDays,
       photoIds,
-      deliveryMethod,
     }, req.admin);
 
     await storeExtraFiles(transfer.id, req.files);
-
-    if (deliveryMethod === 'email' && recipientEmails.length) {
-      await transferService.sendTransferEmails(transfer.id, recipientEmails);
-    }
 
     const fresh = await transferService.getTransfer(transfer.id);
     return successResponse(res, { transfer: fresh }, 201, 'Transfer created');

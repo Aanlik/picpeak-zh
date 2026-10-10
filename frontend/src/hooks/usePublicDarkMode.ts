@@ -1,7 +1,7 @@
 /**
  * usePublicDarkMode — toggle the `.dark` class on <html> based on
  * the admin's branding settings, for public pages that live outside
- * the admin/customer layouts.
+ * the admin layout.
  *
  * Priority:
  *   1. `branding_force_color_mode` → 'dark' / 'light' / null
@@ -11,7 +11,7 @@
  * `.dark` class being present, and ThemeContext only writes CSS
  * variables — it doesn't toggle the class.
  *
- * Shared by public pages outside the customer/admin layouts. Reuse this
+ * Shared by public pages outside the admin layout. Reuse this
  * hook when adding another public-page consumer.
  */
 import { useEffect, useState } from 'react';

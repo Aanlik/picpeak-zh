@@ -25,7 +25,6 @@ const buildPublicSiteRows = (overrides = {}) => ([
 const buildBrandingRows = (overrides = {}) => ([
   { setting_key: 'branding_company_name', setting_value: JSON.stringify(overrides.companyName ?? 'Willow & Pine Studio') },
   { setting_key: 'branding_company_tagline', setting_value: JSON.stringify(overrides.companyTagline ?? 'Stories told in colour and light.') },
-  { setting_key: 'branding_support_email', setting_value: JSON.stringify(overrides.supportEmail ?? 'hello@example.com') },
   { setting_key: 'branding_logo_url', setting_value: JSON.stringify(overrides.logoUrl ?? '/uploads/logos/logo.png') },
   { setting_key: 'branding_footer_text', setting_value: JSON.stringify(overrides.footerText ?? 'Crafted with care for every celebration.') },
   { setting_key: 'theme_config', setting_value: JSON.stringify(overrides.themeConfig ?? {
@@ -82,12 +81,11 @@ describe('publicSiteService', () => {
     expect(clientSanitized).not.toContain('javascript:');
   });
 
-  it('injects branding tokens into the rendered payload', async () => {
-    const publicSiteRows = buildPublicSiteRows({ html: '<section><h1>{{company_name}}</h1><p>{{company_tagline}}</p><a href="mailto:{{support_email}}">Get in touch</a></section>' });
+  it('injects public branding tokens without exposing email contact data', async () => {
+    const publicSiteRows = buildPublicSiteRows({ html: '<section><h1>{{company_name}}</h1><p>{{company_tagline}}</p><a href="/contact">Get in touch</a></section>' });
     const brandingRows = buildBrandingRows({
       companyName: 'Aurora Collective',
       companyTagline: 'Modern photography for timeless celebrations.',
-      supportEmail: 'studio@aurora.co',
       logoUrl: '/uploads/logos/aurora.png',
       themeConfig: {
         primaryColor: '#5C8762',
@@ -104,7 +102,8 @@ describe('publicSiteService', () => {
 
     expect(payload.html).toContain('Aurora Collective');
     expect(payload.html).toContain('Modern photography for timeless celebrations.');
-    expect(payload.html).toContain('studio@aurora.co');
+    expect(payload.html).toContain('href="/contact"');
+    expect(payload.html).not.toContain('mailto:');
     expect(payload.branding.logoUrl).toBe('/uploads/logos/aurora.png');
     expect(payload.branding.colors.primary).toBe('#5C8762');
   });

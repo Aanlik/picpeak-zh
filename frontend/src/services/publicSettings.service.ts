@@ -3,7 +3,6 @@ import { api } from '../config/api';
 export interface PublicSettings {
   branding_company_name: string;
   branding_company_tagline: string;
-  branding_support_email: string;
   branding_footer_text: string;
   branding_watermark_enabled: boolean;
   branding_watermark_logo_url: string;
@@ -32,8 +31,8 @@ export interface PublicSettings {
    */
   branding_force_color_mode?: 'dark' | 'light' | null;
   /**
-   * Login-page-only branding (#354 follow-up). Applies exclusively to
-   * /admin/login and /customer/login. Defaults: frame on, size 'medium'.
+   * Login-page-only branding (#354 follow-up). Applies to the admin login
+   * and setup screens. Defaults: frame on, size 'medium'.
    */
   branding_login_logo_frame_enabled?: boolean;
   branding_login_logo_size?: 'small' | 'medium' | 'large' | 'xlarge';
@@ -51,25 +50,11 @@ export interface PublicSettings {
   branding_promo_alignment?: 'left' | 'center' | 'right';
   theme_config: any;
   default_language: string;
-  enable_analytics: boolean;
   general_date_format: string | { format: string; locale: string };
-  /** '12h' or '24h' — controls how times are rendered in admin +
-   *  customer views. Storage is always 24h; only display toggles. */
+  /** '12h' or '24h' — controls how times are rendered in admin and gallery
+   *  views. Storage is always 24h; only display toggles. */
   general_time_format?: '12h' | '24h';
-  enable_recaptcha: boolean;
-  recaptcha_site_key: string | null;
   maintenance_mode: boolean;
-  umami_enabled: boolean;
-  umami_url: string | null;
-  umami_website_id: string | null;
-  // Pluggable trackers (#663 Phase 1). The backend always surfaces these;
-  // missing fields fall back via the existing umami_* shape so older
-  // builds keep working.
-  analytics_tracker_provider?: 'none' | 'umami' | 'rybbit' | 'custom';
-  rybbit_url?: string | null;
-  rybbit_website_id?: string | null;
-  // Custom-mode HTML snippet, already sanitised server-side.
-  analytics_custom_head_html?: string;
   // Upload settings
   allowed_file_types?: string;
   // #613 — per-batch file count limit, surfaced so the guest UserPhotoUpload
@@ -81,8 +66,6 @@ export interface PublicSettings {
   general_max_file_size_mb?: number;
   // Event field requirements
   event_require_customer_name?: boolean;
-  event_require_customer_email?: boolean;
-  event_require_admin_email?: boolean;
   event_require_event_date?: boolean;
   event_require_expiration?: boolean;
   event_default_require_password?: boolean;

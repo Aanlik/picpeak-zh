@@ -33,17 +33,12 @@ const { sanitizeForZipEntry } = require('../utils/filenameSanitizer');
 const { filterOwnedEventIds } = require('../middleware/ownership');
 
 // Unambiguous alphabet for the client upload token — no 0/O/1/I/L to keep it
-// easy to read aloud / type from an email. 6 chars ≈ 31 bits; brute force is
+// easy to read aloud / type from a shared message. 6 chars ≈ 31 bits; brute force is
 // mitigated by the per-route rate limiter + IP lockout on the upload endpoint.
 const UPLOAD_TOKEN_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const UPLOAD_TOKEN_LENGTH = 6;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-async function getFrontendUrl() {
-  const { getAbsoluteFrontendUrl } = require('../utils/frontendUrl');
-  return getAbsoluteFrontendUrl();
-}
 
 function generateDownloadToken() {
   return crypto.randomBytes(32).toString('hex'); // 64 hex chars
@@ -135,7 +130,6 @@ async function createTransfer(input, admin) {
     allowUploads = false,
     uploadExpiresInDays,
     photoIds = [],
-    deliveryMethod = 'link',
   } = input || {};
 
   const defaultExpiry = await getAppSetting('transfer_default_expiry_days', 14);
@@ -163,7 +157,7 @@ async function createTransfer(input, admin) {
     is_active: formatBoolean(true),
     grace_days: grace,
     allow_uploads: formatBoolean(!!allowUploads),
-    delivery_method: deliveryMethod === 'email' ? 'email' : 'link',
+    delivery_method: 'link',
     created_at: now,
     updated_at: now,
   };
@@ -251,7 +245,7 @@ function serializeTransfer(row) {
     grace_days: row.grace_days,
     deleted_at: row.deleted_at || null,
     allow_uploads: row.allow_uploads === true || row.allow_uploads === 1,
-    delivery_method: row.delivery_method === 'email' ? 'email' : 'link',
+    delivery_method: 'link',
     upload_token: row.upload_token || null,
     upload_expires_at: row.upload_expires_at || null,
     created_at: row.created_at,
@@ -298,11 +292,6 @@ async function getTransfer(id) {
     .orderBy('id', 'asc')
     .select('id', 'original_filename', 'size_bytes', 'mime_type', 'created_at');
 
-  const recipients = await db('transfer_recipients')
-    .where('transfer_id', id)
-    .orderBy('id', 'asc')
-    .select('id', 'email', 'last_sent_at');
-
   return {
     ...serializeTransfer(row),
     file_count: files.length + extraFiles.length,
@@ -313,7 +302,6 @@ async function getTransfer(id) {
       size_bytes: f.size_bytes,
       mime_type: f.mime_type,
     })),
-    recipients: recipients.map((r) => ({ id: r.id, email: r.email, last_sent_at: r.last_sent_at || null })),
     files: files.map((f) => ({
       file_id: f.file_id,
       photo_id: f.photo_id,
@@ -363,7 +351,6 @@ async function updateTransfer(id, fields) {
     // Re-activating clears the retention clock; disabling starts it.
     if (fields.isActive) {
       update.disabled_at = null;
-      update.admin_notified_at = null;
     } else if (!row.disabled_at) {
       update.disabled_at = new Date();
     }
@@ -890,62 +877,6 @@ async function removeExtraFiles(transferId) {
 }
 
 // ---------------------------------------------------------------------------
-// Email delivery
-// ---------------------------------------------------------------------------
-
-/**
- * Email the download link to one or more recipients and record them. Sending is
- * best-effort per address (a bad SMTP config must not fail the whole create);
- * `sendTemplateEmail` is required lazily to avoid a service-load cycle.
- */
-async function sendTransferEmails(transferId, emails) {
-  const clean = [...new Set((emails || [])
-    .map((e) => String(e || '').trim())
-    .filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))];
-  if (!clean.length) return { sent: 0, recipients: [] };
-
-  const transfer = await db('transfers').where({ id: transferId }).first();
-  if (!transfer) return { sent: 0, recipients: [] };
-
-  const fileCountRow = await db('transfer_files').where('transfer_id', transferId).count('* as c').first();
-  const extraCountRow = await db('transfer_extra_files').where('transfer_id', transferId).count('* as c').first();
-  const fileCount = (Number(fileCountRow?.c) || 0) + (Number(extraCountRow?.c) || 0);
-
-  const { sendTemplateEmail } = require('./emailProcessor');
-  const downloadUrl = `${await getFrontendUrl()}/transfer/${transfer.token}`;
-  const vars = {
-    transfer_title: transfer.title || `Transfer #${transferId}`,
-    message: transfer.message || '',
-    download_url: downloadUrl,
-    file_count: String(fileCount),
-    expiry_date: transfer.expires_at ? new Date(transfer.expires_at).toISOString().slice(0, 10) : '',
-  };
-
-  let sent = 0;
-  for (const email of clean) {
-    try {
-      await sendTemplateEmail(email, 'transfer_ready', vars);
-      sent += 1;
-    } catch (err) {
-      logger.warn('transferService: failed to send transfer_ready email', {
-        transferId, email, error: err.message,
-      });
-    }
-    // Record the recipient regardless of delivery so the detail panel shows who
-    // it was addressed to (and a future resend has the list).
-    const existing = await db('transfer_recipients').where({ transfer_id: transferId, email }).first();
-    if (existing) {
-      await db('transfer_recipients').where({ id: existing.id }).update({ last_sent_at: new Date() });
-    } else {
-      await db('transfer_recipients').insert({
-        transfer_id: transferId, email, created_at: new Date(), last_sent_at: new Date(),
-      });
-    }
-  }
-  return { sent, recipients: clean };
-}
-
-// ---------------------------------------------------------------------------
 // Client uploads
 // ---------------------------------------------------------------------------
 
@@ -1017,7 +948,6 @@ async function removeUploadedFiles(transferId) {
 module.exports = {
   // constants / helpers
   UPLOAD_TOKEN_LENGTH,
-  getFrontendUrl,
   uploadDirKey,
   extraFilesDirKey,
   computeStatus,
@@ -1037,7 +967,6 @@ module.exports = {
   removeExtraFiles,
   enableUploads,
   disableUploads,
-  sendTransferEmails,
   // public
   getTransferByToken,
   getTransferByUploadToken,

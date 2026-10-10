@@ -1,6 +1,6 @@
 import { usePhotoSelection } from '../../hooks/usePhotoSelection';
 import React, { useState } from 'react';
-import { X, ChevronLeft, ChevronRight, Download, Trash2, Tag, Calendar, HardDrive, Eye, MousePointer, MessageSquare, Star, Heart, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download, Trash2, Tag, Calendar, HardDrive, Eye, MessageSquare, Star, Heart } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -14,7 +14,7 @@ import { useLocalizedDate } from '../../hooks/useLocalizedDate';
 import { COLOR_LABELS, COLOR_LABEL_SWATCHES, type ColorLabel, type KeybindMode } from '../../services/feedback.service';
 import { resolveFeedbackKey, colorShortcutHints } from '../../utils/feedbackKeybinds';
 import { useTranslation } from 'react-i18next';
-import { useMutationWithToast, useModal } from '../../hooks';
+import { useModal } from '../../hooks';
 
 type AdminFeedbackResponse = {
   feedback: PhotoFeedback[];
@@ -56,7 +56,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
   const commentsModal = useModal();
   const queryClient = useQueryClient();
   const { formatDateTime: fmtDateTime } = useLocalizedDate();
-  
+
   const isVideo = currentPhoto
     ? (currentPhoto.media_type === 'video' ||
       (currentPhoto.mime_type && String(currentPhoto.mime_type).startsWith('video/')) ||
@@ -71,20 +71,20 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
     queryKey: ['admin-photo-feedback', eventId, currentPhoto?.id],
     queryFn: () => feedbackService.getEventFeedback(eventId.toString(), {
       photoId: currentPhoto?.id.toString(),
-      status: 'all' // Get all comments including unapproved
+      status: 'all' // Get all comments, including hidden ones, for the photographer.
     }),
     enabled: !!currentPhoto
   });
 
   const comments = (feedbackData?.feedback ?? []).filter((item): item is PhotoFeedback => item.feedback_type === 'comment');
 
-  const goToPrevious = () => {
+  const goToPrevious = React.useCallback(() => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : photos.length - 1));
-  };
+  }, [photos.length, setCurrentIndex]);
 
-  const goToNext = () => {
+  const goToNext = React.useCallback(() => {
     setCurrentIndex((prev) => (prev < photos.length - 1 ? prev + 1 : 0));
-  };
+  }, [photos.length, setCurrentIndex]);
 
   const handleDelete = async () => {
     if (!confirm(tAudit('ui.deletePhotoConfirm', { name: currentPhoto.filename }))) {
@@ -95,7 +95,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
     try {
       await photosService.deletePhoto(eventId, currentPhoto.id);
       toast.success(tAudit('ui.photoDeleted'));
-      
+
       // Close viewer if this was the last photo
       if (photos.length === 1) {
         onClose();
@@ -105,9 +105,9 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
           setCurrentIndex(currentIndex - 1);
         }
       }
-      
+
       onPhotoDeleted();
-    } catch (error) {
+    } catch {
       toast.error(tAudit('ui.deletePhotoFailed'));
     } finally {
       setIsDeleting(false);
@@ -118,7 +118,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
     try {
       await photosService.downloadPhoto(eventId, currentPhoto.id, currentPhoto.filename);
       toast.success(t('events.downloadStarted'));
-    } catch (error) {
+    } catch {
       toast.error(t('errors.downloadFailed'));
     }
   };
@@ -133,26 +133,10 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
       await queryClient.invalidateQueries({ queryKey: ['admin-event-photos', eventId] });
       // Also trigger the parent's refresh callback
       onPhotoDeleted();
-    } catch (error) {
+    } catch {
       toast.error(tAudit('ui.categoryUpdateFailed'));
     }
   };
-
-  // Mutations for feedback moderation
-  const moderateFeedbackMutation = useMutationWithToast({
-    mutationFn: ({ feedbackId, action }: { feedbackId: string; action: 'approve' | 'hide' | 'reject' }) =>
-      feedbackService.moderateFeedback(feedbackId, action),
-    invalidateKeys: [['admin-photo-feedback', eventId, currentPhoto?.id]],
-    successMessage: t('feedback.moderationSuccess'),
-    errorMessage: () => t('feedback.settingsUpdateError')
-  });
-
-  const deleteFeedbackMutation = useMutationWithToast({
-    mutationFn: (feedbackId: string) => feedbackService.deleteFeedback(feedbackId),
-    invalidateKeys: [['admin-photo-feedback', eventId, currentPhoto?.id]],
-    successMessage: t('feedback.deleted'),
-    errorMessage: () => t('errors.somethingWentWrong')
-  });
 
   // The mark shown for a photo: the local edit if there is one, otherwise
   // whatever the list query loaded.
@@ -234,7 +218,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, setCurrentIndex, photos.length, onClose]);
+  }, [currentIndex, setCurrentIndex, photos.length, onClose, goToPrevious, goToNext]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
@@ -338,7 +322,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
             <p className="text-white">
               {currentPhoto.category_name || 'Uncategorized'}
             </p>
-            
+
             {categoryMenuModal.isOpen && (
               <div className="mt-2 bg-neutral-800 rounded-lg p-2">
                 <button
@@ -377,23 +361,6 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
               </p>
             </div>
 
-            {currentPhoto.view_count !== undefined && (
-              <div>
-                <span className="text-neutral-400 flex items-center gap-1 mb-1">
-                  <Eye className="w-4 h-4" />
-                  {tAudit("ui.views")}</span>
-                <p className="text-white">{currentPhoto.view_count}</p>
-              </div>
-            )}
-
-            {currentPhoto.download_count !== undefined && (
-              <div>
-                <span className="text-neutral-400 flex items-center gap-1 mb-1">
-                  <MousePointer className="w-4 h-4" />
-                  {tAudit("ui.downloads")}</span>
-                <p className="text-white">{currentPhoto.download_count}</p>
-              </div>
-            )}
           </div>
 
           {/* The photographer's own marks (#1044 follow-up). Above the guest
@@ -470,7 +437,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
               <h4 className="text-white font-medium mb-4 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" />
                 {tAudit("ui.feedbackComments")}</h4>
-              
+
               {/* Feedback Stats */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 {averageRating > 0 && (
@@ -482,7 +449,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                     <p className="text-xs text-neutral-400">{tAudit("ui.averageRating")}</p>
                   </div>
                 )}
-                
+
                 {likeCount > 0 && (
                   <div className="bg-neutral-800 rounded-lg p-3">
                     <div className="flex items-center gap-1 text-red-400 mb-1">
@@ -492,7 +459,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                     <p className="text-xs text-neutral-400">{tAudit("ui.likes")}</p>
                   </div>
                 )}
-                
+
                 {favoriteCount > 0 && (
                   <div className="bg-neutral-800 rounded-lg p-3">
                     <div className="flex items-center gap-1 text-blue-400 mb-1">
@@ -502,7 +469,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                     <p className="text-xs text-neutral-400">{tAudit("ui.favorites")}</p>
                   </div>
                 )}
-                
+
                 {comments.length > 0 && (
                   <div className="bg-neutral-800 rounded-lg p-3">
                     <div className="flex items-center gap-1 text-green-400 mb-1">
@@ -513,7 +480,7 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                   </div>
                 )}
               </div>
-              
+
               {/* Comments List */}
               {comments.length > 0 && (
                 <div className="space-y-2">
@@ -528,96 +495,18 @@ const AdminPhotoViewerContent: React.FC<ViewerContentProps> = ({
                     <div className="space-y-3 max-h-64 overflow-y-auto">
                       {comments.map((comment) => (
                           <div key={comment.id} className="bg-neutral-800 rounded-lg p-3">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-white">
-                                  {comment.guest_name || 'Anonymous'}
-                                </p>
-                                <p className="text-xs text-neutral-400">
-                                  {fmtDateTime(comment.created_at)}
-                                </p>
-                              </div>
-                              
-                              {/* Comment Status Badge */}
-                              <div className="flex items-center gap-1">
-                                {!comment.is_approved && !comment.is_hidden && (
-                                  <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" />
-                                    {tAudit("ui.pending")}</span>
-                                )}
-                                {comment.is_approved && !comment.is_hidden && (
-                                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded flex items-center gap-1">
-                                    <CheckCircle className="w-3 h-3" />
-                                    {tAudit("ui.approved")}</span>
-                                )}
-                                {comment.is_hidden && (
-                                  <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded flex items-center gap-1">
-                                    <XCircle className="w-3 h-3" />
-                                    {tAudit("ui.hidden")}</span>
-                                )}
-                              </div>
+                            <div className="mb-2">
+                              <p className="text-sm font-medium text-white">{comment.guest_name || 'Anonymous'}</p>
+                              <p className="text-xs text-neutral-400">{fmtDateTime(comment.created_at)}</p>
                             </div>
-                            
-                            <p className="text-sm text-neutral-300 mb-3">
-                              {comment.comment_text}
-                            </p>
-                            
-                            {/* Moderation Actions */}
-                            <div className="flex gap-2">
-                              {!comment.is_approved && (
-                                <button
-                                  onClick={() => moderateFeedbackMutation.mutate({ 
-                                    feedbackId: comment.id.toString(), 
-                                    action: 'approve' 
-                                  })}
-                                  disabled={moderateFeedbackMutation.isPending}
-                                  className="text-xs px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
-                                >
-                                  {tAudit("ui.approve")}</button>
-                              )}
-                              
-                              {!comment.is_hidden && (
-                                <button
-                                  onClick={() => moderateFeedbackMutation.mutate({ 
-                                    feedbackId: comment.id.toString(), 
-                                    action: 'hide' 
-                                  })}
-                                  disabled={moderateFeedbackMutation.isPending}
-                                  className="text-xs px-2 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded"
-                                >
-                                  {tAudit("ui.hide")}</button>
-                              )}
-                              
-                              {comment.is_hidden && (
-                                <button
-                                  onClick={() => moderateFeedbackMutation.mutate({ 
-                                    feedbackId: comment.id.toString(), 
-                                    action: 'approve' 
-                                  })}
-                                  disabled={moderateFeedbackMutation.isPending}
-                                  className="text-xs px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
-                                >
-                                  {tAudit("ui.unhide")}</button>
-                              )}
-                              
-                              <button
-                                onClick={() => {
-                                  if (confirm(tAudit('ui.deleteCommentConfirm'))) {
-                                    deleteFeedbackMutation.mutate(comment.id.toString());
-                                  }
-                                }}
-                                disabled={deleteFeedbackMutation.isPending}
-                                className="text-xs px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded"
-                              >
-                                {tAudit("ui.delete")}</button>
-                            </div>
+                            <p className="text-sm text-neutral-300">{comment.comment_text}</p>
                           </div>
                         ))}
                     </div>
                   )}
                 </div>
               )}
-              
+
               {/* No feedback message */}
               {comments.length === 0 && (
                 <p className="text-neutral-400 text-sm">{tAudit("ui.noFeedback")}</p>

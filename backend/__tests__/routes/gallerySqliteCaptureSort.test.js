@@ -79,8 +79,8 @@ describe('capture-date ordering on SQLite (#1172)', () => {
       event_type: 'project',
       event_name: 'Capture Sort',
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/s`,
       share_token: 'capsort-share',

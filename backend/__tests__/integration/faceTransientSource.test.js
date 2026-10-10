@@ -51,8 +51,8 @@ async function seedExternalPhoto({ externalPath, relpath = 'individual/a.jpg' })
     event_type: 'project',
     event_name: 'tr',
     event_date: '2026-01-01',
-    host_email: 'h@example.com',
-    admin_email: 'a@example.com',
+
+
     password_hash: 'x',
     share_link: `tr-${Math.random()}`,
     expires_at: new Date().toISOString(),
@@ -203,8 +203,8 @@ describe('transient source vs dead photo', () => {
       event_type: 'project',
       event_name: 'trm',
       event_date: '2026-01-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `tr-m-${Math.random()}`,
       expires_at: new Date().toISOString(),

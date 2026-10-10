@@ -50,14 +50,12 @@ export E2E_DB_PASSWORD="${E2E_DB_PASSWORD:-$(openssl rand -hex 16)}"
     printf 'E2E_ADMIN_PASSWORD=%q\n' "$E2E_ADMIN_PASSWORD"
     printf 'E2E_DB_PASSWORD=%q\n' "$E2E_DB_PASSWORD"
     printf 'PLAYWRIGHT_BASE_URL=%q\n' 'http://localhost:7200'
-    printf 'ADMIN_EMAIL=%q\n' 'admin@example.com'
+    printf 'ADMIN_USERNAME=%q\n' 'admin'
     printf 'ADMIN_PASSWORD=%q\n' "$E2E_ADMIN_PASSWORD"
-    printf 'WEBHOOK_RECEIVER_URL=%q\n' 'http://localhost:7207'
     printf 'E2E_EXTERNAL_MEDIA_DIR=%q\n' "$REPO_ROOT/.e2e/external-media"
   } > "$REPO_ROOT/.e2e/credentials.env"
   # What the backend container reads (env_file in docker-compose.e2e.yml).
-  # The seeded admin's username and email are the migration defaults
-  # (admin / admin@example.com), so only its password is set here.
+  # The seeded admin username is the migration default, so only its password is set here.
   cat > "$REPO_ROOT/.e2e/backend.env" <<ENV
 JWT_SECRET=$E2E_JWT_SECRET
 ADMIN_PASSWORD=$E2E_ADMIN_PASSWORD
@@ -85,15 +83,12 @@ echo "▶ Starting the E2E stack…"
 #    log in with the password directly, so clear it
 #  - /api/auth/* allows 5 requests per 15 minutes by default, which a full run
 #    exceeds within its first few specs
-#  - a fresh install opens the one-time usage-reporting dialog over every admin
-#    page until it is answered, which blocks every click behind it
 #  - video uploads are off by default; admin-video-upload.spec.ts needs mp4.
 #    Seeded here rather than in the spec because saving the setting does not
 #    clear the backend's 60-second allowed-types cache
-echo "▶ Seeding admin, rate limits and install prompts…"
+echo "▶ Seeding the admin and test-safe rate limits…"
 "${COMPOSE[@]}" exec -T postgres psql -U picpeak -d picpeak_e2e -v ON_ERROR_STOP=1 -q <<'SQL'
 UPDATE admin_users SET must_change_password = false;
-UPDATE product_usage_state SET prompt_shown = true WHERE id = 1;
 DELETE FROM app_settings
  WHERE setting_key IN ('rate_limit_auth_max_requests', 'rate_limit_max_requests', 'general_allowed_file_types');
 INSERT INTO app_settings (setting_key, setting_value, setting_type, updated_at) VALUES

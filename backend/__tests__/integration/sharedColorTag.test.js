@@ -6,9 +6,8 @@
  * identity-less colour tag per photo, and whoever writes last wins.
  *
  * Stored as an ordinary photo_feedback row under a reserved identifier rather
- * than as a column on photos, which is what keeps the per-colour tallies, the
- * filters, the moderation queue and the XMP/CSV export working unchanged: the
- * tally simply has exactly one entry.
+ * than as a column on photos, which keeps the per-colour tallies and filters
+ * working unchanged: the tally simply has exactly one entry.
  *
  * The mode is scoped to the colour tag. Likes, ratings and the rest stay
  * per-guest, so the last test here is as important as the first.
@@ -86,8 +85,8 @@ describe('shared colour tag (#1197)', () => {
       event_type: 'project',
       event_name: 'Shared Colour Tag',
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'shared-tag-share',
@@ -111,7 +110,7 @@ describe('shared colour tag (#1197)', () => {
 
     await db('event_feedback_settings').insert({
       event_id: eventId, feedback_enabled: true, allow_likes: true,
-      allow_color_labels: true, moderate_comments: false,
+      allow_color_labels: true,
       show_feedback_to_guests: true, identity_mode: 'shared',
     });
 

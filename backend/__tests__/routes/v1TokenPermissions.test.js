@@ -64,8 +64,8 @@ describe('v1 token scopes intersect role permissions (GHSA-9697)', () => {
       event_type: 'project',
       event_name: 'Viewer Event',
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_token: 'vtok',
       share_link: '/gallery/viewer-ev/vtok',

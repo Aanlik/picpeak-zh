@@ -102,32 +102,32 @@ async function findExistingPhoto(eventId, basename, relativePath) {
 async function processNewPhoto(filePath) {
   const relativePath = path.relative(WATCH_PATH(), filePath);
   const pathParts = relativePath.split(path.sep);
-  
+
   if (pathParts.length < 2) return; // Not in correct folder structure
-  
+
   const eventSlug = pathParts[0];
   const photoType = pathParts[1] === 'collages' ? 'collage' : 'individual';
-  
+
   // Check if this is an image or video file
   const ext = path.extname(filePath).toLowerCase();
   const detectedMime = mime.lookup(filePath) || '';
   const isVideo = isVideoMimeType(detectedMime, filePath) || ['.mp4', '.mov', '.webm'].includes(ext);
   if (!isVideo && !['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) return;
-  
+
   // Skip temporary upload files
   const filename = path.basename(filePath);
   if (filename.startsWith('temp_')) {
     logger.debug(`Skipping temporary upload file: ${filename}`);
     return;
   }
-  
+
   // Find the event
   const event = await db('events').where({ slug: eventSlug, is_active: formatBoolean(true) }).first();
   if (!event) return;
-  
+
   // Get file stats
   const stats = await fs.stat(filePath);
-  
+
   // Generate thumbnail or placeholder
   let thumbnailPath = null;
   if (isVideo) {
@@ -135,7 +135,7 @@ async function processNewPhoto(filePath) {
   } else {
     thumbnailPath = await generateThumbnail(filePath);
   }
-  
+
   // Calculate relative thumbnail path
   const relativeThumbPath = thumbnailPath; // thumbnailPath is already relative to storage root
   const mimeType = detectedMime || (isVideo ? 'video/mp4' : 'image/jpeg');
@@ -178,7 +178,7 @@ async function processNewPhoto(filePath) {
 
   if (!existingPhoto) {
     // Add to database
-    const insertResult = await db('photos').insert({
+    await db('photos').insert({
       event_id: event.id,
       filename: path.basename(filePath),
       // The camera-original name. This path never sets original_filename, so
@@ -192,20 +192,9 @@ async function processNewPhoto(filePath) {
       mime_type: mimeType,
       ...(dimensions && { width: dimensions.width, height: dimensions.height })
     }).returning('id');
-    const photoId = insertResult[0]?.id || insertResult[0];
-
     logger.info(`Added new photo: ${relativePath}`);
     downloadZipService.invalidate(event.id);
 
-    // Webhook (#327) — auto-import path. Only fires in local mode since
-    // the watcher is disabled in S3 mode.
-    try {
-      const webhookService = require('./webhookService');
-      await webhookService.fire('photo.uploaded', {
-        event: { id: event.id, slug: event.slug, event_name: event.event_name },
-        photo: { id: photoId, filename: path.basename(filePath), size_bytes: stats.size, source: 'auto-import' },
-      });
-    } catch (e) { /* non-fatal */ }
   } else {
     logger.debug(`Photo already exists: ${relativePath}`);
   }
@@ -223,15 +212,6 @@ async function removePhoto(filePath) {
   if (photo) {
     downloadZipService.invalidate(photo.event_id);
 
-    // Webhook (#327) — fire only if the row actually existed.
-    try {
-      const event = await db('events').where({ id: photo.event_id }).first();
-      const webhookService = require('./webhookService');
-      await webhookService.fire('photo.deleted', {
-        event: { id: photo.event_id, slug: event?.slug, event_name: event?.event_name },
-        photo: { id: photo.id, filename: photo.filename, source: 'auto-import' },
-      });
-    } catch (e) { /* non-fatal */ }
   }
 
   logger.info(`Removed photo: ${relativePath}`);

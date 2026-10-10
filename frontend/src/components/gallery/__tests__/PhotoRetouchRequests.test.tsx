@@ -23,7 +23,6 @@ describe('PhotoRetouchRequests', () => {
   it('submits a revision tied to the delivered version and renders request history', async () => {
     vi.mocked(galleryService.getRetouchWorkflow).mockResolvedValue({ enabled: true, bridge_available: true, photos: [], requests: [] });
     vi.mocked(galleryService.submitRetouchRequest).mockResolvedValue({
-      moderation_required: false,
       request: { id: 1, photo_id: 17, request_type: 'revision', base_version: 2, customer_message: '请调亮一些', status: 'open', photographer_reply: null, created_at: '', updated_at: '' },
     });
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });

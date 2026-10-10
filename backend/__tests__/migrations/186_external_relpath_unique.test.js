@@ -61,8 +61,6 @@ describe('migration 186 — unique (event_id, external_relpath) (#1162)', () => 
       t.integer('reaction_count').defaultTo(0);
       t.integer('color_label_count').defaultTo(0);
       t.string('face_status');
-      t.integer('view_count').defaultTo(0);
-      t.integer('download_count').defaultTo(0);
       t.integer('face_count');
       t.string('face_started_at');
       t.text('face_error');
@@ -467,17 +465,6 @@ describe('migration 186 — unique (event_id, external_relpath) (#1162)', () => 
     await migration.up(knex);
 
     expect((await knex('photos').where('id', 1).first()).face_status).toBe('pending');
-  });
-
-  it('carries the duplicate\'s views and downloads over', async () => {
-    await seedPair();
-    await knex('photos').where('id', 1).update({ view_count: 2, download_count: 1 });
-    await knex('photos').where('id', 2).update({ view_count: 5, download_count: 3 });
-
-    await migration.up(knex);
-
-    const survivor = await knex('photos').where('id', 1).first();
-    expect([survivor.view_count, survivor.download_count]).toEqual([7, 4]);
   });
 
   it('fails loudly rather than recording itself applied without the index', async () => {

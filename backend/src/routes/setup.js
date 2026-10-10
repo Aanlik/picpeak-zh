@@ -52,9 +52,7 @@ router.post('/verify-token', [
 
 router.post('/admin', [
   body('token').notEmpty().withMessage('Setup token is required'),
-  body('email').custom((value, { req }) => require('../utils/communicationProfile').NO_EMAIL_MODE
-    ? /^[\p{L}\p{N}_-]{3,50}$/u.test(req.body.username || '')
-    : /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value || '')).withMessage('Valid account identifier required'),
+  body('username').isString().trim().matches(/^[\p{L}\p{N}_-]{3,50}$/u).withMessage('Valid username required'),
   body('password').isString().notEmpty().isLength({ max: MAX_PASSWORD_LENGTH }).withMessage('Password is required'),
 ], async (req, res) => {
   const errors = validationResult(req);
@@ -62,11 +60,10 @@ router.post('/admin', [
     return res.status(400).json({ errors: safeValidationErrors(errors) });
   }
   try {
-    const { token, email, password } = req.body;
+    const { token, username, password } = req.body;
     const result = await setupService.createInitialAdmin({
       token,
-      email,
-      username: req.body.username,
+      username,
       password,
       ip: getClientIp(req),
     });
@@ -75,7 +72,7 @@ router.post('/admin', [
     res.status(201).json({ user: result.user });
   } catch (err) {
     if (err.statusCode) {
-      // `field` (token/email/password) lets the client show a translated
+      // `field` (token/username/password) lets the client show a translated
       // message instead of rendering the raw English error verbatim.
       return res.status(err.statusCode).json({ error: err.message, field: err.details || undefined });
     }

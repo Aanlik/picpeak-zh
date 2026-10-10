@@ -23,7 +23,7 @@ describe('gallery retouch workflow and client requests', () => {
     await seedMinimal(db);
     const inserted = await db('events').insert({
       slug, event_type: 'project', event_name: 'Retouch workflow', event_date: '2026-08-01',
-      host_email: 'host@example.com', admin_email: 'admin@example.com', password_hash: 'x',
+        password_hash: 'x',
       share_link: `/gallery/${slug}/share`, share_token: 'retouch-share',
       expires_at: new Date(Date.now() + 86400000).toISOString(), is_active: 1, is_archived: 0,
       is_draft: 0, created_at: new Date().toISOString(),
@@ -37,7 +37,7 @@ describe('gallery retouch workflow and client requests', () => {
     hiddenPhoto = await insertPhoto('hidden.jpg', { visibility: 'hidden' });
     await db('event_feedback_settings').insert({
       event_id: eventId, feedback_enabled: true, allow_comments: true,
-      identity_mode: 'shared', moderate_comments: false, show_feedback_to_guests: true,
+      identity_mode: 'shared', show_feedback_to_guests: true,
     });
     global.fetch = jest.fn(async (url) => ({
       status: 200,

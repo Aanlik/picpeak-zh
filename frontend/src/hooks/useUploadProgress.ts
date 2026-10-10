@@ -49,12 +49,13 @@ export function useUploadProgress(
 
     let cancelled = false;
     const pollHandles: Record<string, ReturnType<typeof setTimeout>> = {};
+    const activeEventSources = eventSourcesRef.current;
 
     const closeStream = (uploadId: string) => {
-      const es = eventSourcesRef.current[uploadId];
+      const es = activeEventSources[uploadId];
       if (es) {
         es.close();
-        delete eventSourcesRef.current[uploadId];
+        delete activeEventSources[uploadId];
       }
     };
 
@@ -87,7 +88,7 @@ export function useUploadProgress(
       if (typeof EventSource === 'undefined') return;
       try {
         const es = new EventSource(uploadsService.streamUrl(uploadId), { withCredentials: true });
-        eventSourcesRef.current[uploadId] = es;
+        activeEventSources[uploadId] = es;
 
         es.onmessage = (event) => {
           try {
@@ -96,7 +97,7 @@ export function useUploadProgress(
             if (isTerminal(payload)) {
               closeStream(uploadId);
             }
-          } catch (_) {
+          } catch {
             /* ignore malformed event */
           }
         };
@@ -107,7 +108,7 @@ export function useUploadProgress(
           // storms on broken proxies.
           closeStream(uploadId);
         };
-      } catch (_) {
+      } catch {
         // EventSource construction failed — polling alone covers it.
       }
     };
@@ -120,7 +121,7 @@ export function useUploadProgress(
     return () => {
       cancelled = true;
       for (const handle of Object.values(pollHandles)) clearTimeout(handle);
-      for (const uploadId of Object.keys(eventSourcesRef.current)) closeStream(uploadId);
+      for (const uploadId of Object.keys(activeEventSources)) closeStream(uploadId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey, enabled, pollIntervalMs, preferStream]);

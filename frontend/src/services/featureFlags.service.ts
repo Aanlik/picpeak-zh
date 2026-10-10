@@ -2,14 +2,7 @@ import { api } from '../config/api';
 
 export type FeatureKey =
   | 'galleries'
-  | 'reminderEmails'
-  | 'messaging'
-  | 'analytics'
   | 'userManagement'
-  // Customer-side portal surface (#354). Gates /customer/* routes
-  // (login, dashboard, profile, accept-invite, reset-password) and
-  // the Accounts sub-page under Clients in the admin UI.
-  | 'customerPortal'
   // Live Slideshow ("Diashow") — per-event fullscreen kiosk link + presets +
   // global watermark settings tab. Strictly opt-in; gates all slideshow UI.
   | 'slideshow'
@@ -18,10 +11,6 @@ export type FeatureKey =
   // channel. Strictly opt-in; gates the sidebar entry, the /admin/transfers
   // area and every transfer route (admin + public).
   | 'transfers'
-  // Workflow / automation engine — admin-configurable visual flows (triggers,
-  // conditions, branches, loops, approval gates) built on a canvas. Strictly
-  // opt-in; gates the Workflows admin area and the engine runtime.
-  | 'workflows'
   // Face recognition — "People in this gallery" (migration 177, #1074).
   // Requires the optional picpeak-ml sidecar container. THIS FLAG IS THE
   // GATE for the whole feature: the backend's FACE_ML_URL has a working

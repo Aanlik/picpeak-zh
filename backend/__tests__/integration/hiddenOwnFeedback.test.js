@@ -66,8 +66,8 @@ describe('a guest\'s own hidden feedback (#1150)', () => {
       event_type: 'project',
       event_name: 'Hidden Own Feedback',
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'hidden-own-share',
@@ -92,7 +92,7 @@ describe('a guest\'s own hidden feedback (#1150)', () => {
 
     await db('event_feedback_settings').insert({
       event_id: eventId, feedback_enabled: true, allow_likes: true,
-      allow_color_labels: true, moderate_comments: false,
+      allow_color_labels: true,
       show_feedback_to_guests: true,
     });
 
@@ -107,8 +107,7 @@ describe('a guest\'s own hidden feedback (#1150)', () => {
 
   const like = () => db('photo_feedback').insert({
     photo_id: photoId, event_id: eventId, guest_identifier: ME,
-    guest_id: myGuestRowId, feedback_type: 'like',
-    is_approved: true, is_hidden: false, created_at: new Date().toISOString(),
+    guest_id: myGuestRowId, feedback_type: 'like', is_hidden: false, created_at: new Date().toISOString(),
   });
 
   beforeEach(async () => {
@@ -137,8 +136,7 @@ describe('a guest\'s own hidden feedback (#1150)', () => {
     it('drops a hidden colour label from the badge', async () => {
       await db('photo_feedback').insert({
         photo_id: photoId, event_id: eventId, guest_identifier: ME,
-        guest_id: myGuestRowId, feedback_type: 'color_label', color_label: 'green',
-        is_approved: true, is_hidden: true, created_at: new Date().toISOString(),
+        guest_id: myGuestRowId, feedback_type: 'color_label', color_label: 'green', is_hidden: true, created_at: new Date().toISOString(),
       });
       expect((await getPhoto()).my_color_label).toBeFalsy();
     });
@@ -190,8 +188,7 @@ describe('a guest\'s own hidden feedback (#1150)', () => {
       // nothing to review or unhide.
       const [orig] = await db('photo_feedback').insert({
         photo_id: photoId, event_id: eventId, guest_identifier: ME,
-        guest_id: myGuestRowId, feedback_type: 'color_label', color_label: 'red',
-        is_approved: true, is_hidden: true, created_at: new Date().toISOString(),
+        guest_id: myGuestRowId, feedback_type: 'color_label', color_label: 'red', is_hidden: true, created_at: new Date().toISOString(),
       }).returning('id');
       const hiddenId = typeof orig === 'object' ? orig.id : orig;
 
@@ -208,50 +205,9 @@ describe('a guest\'s own hidden feedback (#1150)', () => {
       expect(survivor.color_label).toBe('red');
     });
 
-    it('leaves other anonymous rows alone when there is no identity to scope by', async () => {
-      // With neither guest_id nor guest_identifier the collapse scope degrades
-      // to `guest_identifier IS NULL` — every identifier-less row on the
-      // photo, i.e. other people's. Verified: knex renders that as `is null`.
-      const anon = (extra) => ({
-        photo_id: photoId, event_id: eventId, feedback_type: 'like',
-        is_approved: true, created_at: new Date().toISOString(), ...extra,
-      });
-      const [h] = await db('photo_feedback').insert(anon({ is_hidden: true })).returning('id');
-      const hiddenId = typeof h === 'object' ? h.id : h;
-      await db('photo_feedback').insert(anon({ is_hidden: false }));
-      await db('photo_feedback').insert(anon({ is_hidden: false }));
 
-      await feedbackService.moderateFeedback(hiddenId, 'approve', 1);
 
-      // All three survive: two unrelated visitors plus the unhidden one.
-      expect(await db('photo_feedback')
-        .where({ photo_id: photoId, feedback_type: 'like', is_hidden: false }))
-        .toHaveLength(3);
-    });
 
-    it('collapses the replacement when an admin unhides the original', async () => {
-      await like();
-      const original = await db('photo_feedback').where({ photo_id: photoId }).first();
-      await db('photo_feedback').where('id', original.id).update({ is_hidden: true });
-
-      // The guest, seeing an empty heart, likes again — a second row.
-      await feedbackService.submitFeedback(photoId, eventId, {
-        feedback_type: 'like', guest_identifier: ME, guest_id: myGuestRowId,
-      });
-      expect(await db('photo_feedback').where({ photo_id: photoId })).toHaveLength(2);
-
-      await feedbackService.moderateFeedback(original.id, 'approve', 1);
-
-      // Two visible rows for one guest would double-count in the tallies and
-      // need two toggles to clear, since each deletes a single row.
-      const visible = await db('photo_feedback')
-        .where({ photo_id: photoId, feedback_type: 'like', is_hidden: false });
-      expect(visible).toHaveLength(1);
-      expect(visible[0].id).toBe(original.id);
-
-      await feedbackService.updatePhotoFeedbackStats(photoId);
-      expect((await db('photos').where('id', photoId).first()).like_count).toBe(1);
-    });
   });
 
   describe('and clicking still works afterwards', () => {
@@ -269,7 +225,7 @@ describe('a guest\'s own hidden feedback (#1150)', () => {
       });
 
       // Before this, the duplicate check found the hidden row and deleted it —
-      // `removed: true` — so the click did nothing visible and the moderation
+      // `removed: true` — so the click did nothing visible and the visibility
       // was silently undone.
       expect(result.removed).toBeUndefined();
 

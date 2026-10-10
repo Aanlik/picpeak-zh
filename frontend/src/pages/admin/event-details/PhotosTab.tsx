@@ -1,4 +1,4 @@
-import { NO_EMAIL_MODE } from '../../../config/communication';
+import { PHOTO_WORKFLOW_MODE } from '../../../config/photography';
 import { NasFolderSelection } from '../../../components/admin/NasFolderSelection';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -113,14 +113,14 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
               {t('events.uploadPhotos')}
             </Button>
           </PermissionGate>
-          {(NO_EMAIL_MODE || event.source_mode === 'reference') && (
+          {(PHOTO_WORKFLOW_MODE || event.source_mode === 'reference') && (
             <PermissionGate permission="photos.upload">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => { setExternalPath(event.external_path || ''); setExternalWatch(event.source_mode === 'reference' ? Boolean(event.external_watch) : true); setShowExternalImport(true); }}
               >
-                {NO_EMAIL_MODE ? t('nasFolder.linkOrRescan') : t('events.importExternal', 'Import from External Folder')}
+                {PHOTO_WORKFLOW_MODE ? t('nasFolder.linkOrRescan') : t('events.importExternal', 'Import from External Folder')}
               </Button>
             </PermissionGate>
           )}
@@ -189,13 +189,13 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="max-w-2xl w-full">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{NO_EMAIL_MODE ? t('nasFolder.linkOrRescan') : t('events.importExternal', 'Import from External Folder')}</h2>
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">{PHOTO_WORKFLOW_MODE ? t('nasFolder.linkOrRescan') : t('events.importExternal', 'Import from External Folder')}</h2>
               <button onClick={() => setShowExternalImport(false)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {NO_EMAIL_MODE ? <NasFolderSelection value={externalPath} onChange={setExternalPath} watch={externalWatch} onWatchChange={setExternalWatch} /> : <>
+            {PHOTO_WORKFLOW_MODE ? <NasFolderSelection value={externalPath} onChange={setExternalPath} watch={externalWatch} onWatchChange={setExternalWatch} /> : <>
             <div className="mb-3 text-sm text-neutral-700 dark:text-neutral-300">
               {t('events.externalImportInfo', 'All pictures from the selected folder will be imported.')}
             </div>
@@ -220,10 +220,10 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
                       toast.error(t('errors.somethingWentWrong', 'Something went wrong'));
                       return;
                     }
-                    const result = NO_EMAIL_MODE
+                    const result = PHOTO_WORKFLOW_MODE
                       ? await externalMediaService.linkEvent(parseInt(id!), selected, externalWatch)
                       : await externalMediaService.importEvent(parseInt(id!), selected, { recursive: true });
-                    if (NO_EMAIL_MODE) toast.success(t('nasFolder.linkedSuccess', { imported: result.imported, skipped: result.skipped }));
+                    if (PHOTO_WORKFLOW_MODE) toast.success(t('nasFolder.linkedSuccess', { imported: result.imported, skipped: result.skipped }));
                     else toast.success(t('toast.saveSuccess'));
                     queryClient.invalidateQueries({ queryKey: ['admin-event', id] });
                     queryClient.invalidateQueries({ queryKey: ['admin-event-photos', id] });
@@ -235,7 +235,7 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
                   }
                 }}
               >
-                {NO_EMAIL_MODE ? t('nasFolder.linkAndImport') : t('events.importFromSelectedFolder', 'Import from selected folder')}
+                {PHOTO_WORKFLOW_MODE ? t('nasFolder.linkAndImport') : t('events.importFromSelectedFolder', 'Import from selected folder')}
               </Button>
             </div>
           </Card>

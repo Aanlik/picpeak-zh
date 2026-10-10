@@ -1,4 +1,3 @@
-import { NO_EMAIL_MODE } from '../../../config/communication';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
@@ -32,7 +31,6 @@ export interface GeneralSettings {
   allowed_file_types: string;
   // #509 — re-added after the main-into-beta merge dropped it.
   max_upload_batch_size_mb: number;
-  enable_analytics: boolean;
   enable_registration: boolean;
   maintenance_mode: boolean;
   short_gallery_urls: boolean;
@@ -53,9 +51,6 @@ export interface SecuritySettings {
   max_login_attempts: number;
   attempt_window_minutes: number;
   lockout_duration_minutes: number;
-  enable_recaptcha: boolean;
-  recaptcha_site_key: string;
-  recaptcha_secret_key: string;
   // #1271 — opt-in reversible storage of gallery passwords and client PINs
   gallery_password_recoverable: boolean;
 }
@@ -86,37 +81,8 @@ export function validateRateLimitSettings(settings: RateLimitSettings): keyof ty
   return null;
 }
 
-export type TrackerProvider = 'none' | 'umami' | 'rybbit' | 'custom';
-
-export interface AnalyticsSettings {
-  // Tracker-provider switch (#663 Phase 1). Drives which provider's
-  // settings panel renders + which tracker script gets injected into the
-  // public gallery. 'none' = no tracker; 'custom' = paste-your-own HTML.
-  tracker_provider: TrackerProvider;
-  umami_enabled: boolean;
-  umami_url: string;
-  umami_website_id: string;
-  umami_share_url: string;
-  // API key for Umami's v2 metrics API. Required ONLY for the device
-  // breakdown (#661 Bug C); the rest of the integration (embedded iframe,
-  // tracker script) still works without it. Server masks as `••••••••`
-  // on GET when a value is stored — submit the masked sentinel unchanged
-  // to keep the stored value, or a real key to replace it.
-  umami_api_key: string;
-  // Rybbit native provider (#663 Phase 1). Same shape as Umami.
-  rybbit_url: string;
-  rybbit_website_id: string;
-  rybbit_api_key: string;
-  // Custom-mode HTML snippet (#663). Sanitised server-side on save via
-  // sanitize-html with a tracker-script allowlist. Rendered into the
-  // public gallery <head> as-is on every request.
-  custom_head_html: string;
-}
-
 export interface EventSettings {
   event_require_customer_name: boolean;
-  event_require_customer_email: boolean;
-  event_require_admin_email: boolean;
   event_require_event_date: boolean;
   event_require_expiration: boolean;
   event_default_require_password: boolean;
@@ -173,7 +139,6 @@ export function useSettingsState() {
     max_files_per_upload: 500,
     allowed_file_types: 'jpg,jpeg,png,gif,webp',
     max_upload_batch_size_mb: 95,
-    enable_analytics: true,
     enable_registration: false,
     maintenance_mode: false,
     short_gallery_urls: false,
@@ -191,9 +156,6 @@ export function useSettingsState() {
     max_login_attempts: 5,
     attempt_window_minutes: 15,
     lockout_duration_minutes: 30,
-    enable_recaptcha: false,
-    recaptcha_site_key: '',
-    recaptcha_secret_key: '',
     gallery_password_recoverable: false
   });
 
@@ -208,25 +170,9 @@ export function useSettingsState() {
     rate_limit_public_endpoints_only: false
   });
 
-  // Analytics settings state
-  const [analyticsSettings, setAnalyticsSettings] = useState<AnalyticsSettings>({
-    tracker_provider: 'none',
-    umami_enabled: false,
-    umami_url: '',
-    umami_website_id: '',
-    umami_share_url: '',
-    umami_api_key: '',
-    rybbit_url: '',
-    rybbit_website_id: '',
-    rybbit_api_key: '',
-    custom_head_html: ''
-  });
-
   // Event creation settings state
   const [eventSettings, setEventSettings] = useState<EventSettings>({
     event_require_customer_name: true,
-    event_require_customer_email: true,
-    event_require_admin_email: true,
     event_require_event_date: true,
     event_require_expiration: true,
     event_default_require_password: true,
@@ -257,8 +203,7 @@ export function useSettingsState() {
 
   // Account form state
   const [accountForm, setAccountForm] = useState({
-    username: '',
-    email: ''
+    username: ''
   });
   const [accountErrors, setAccountErrors] = useState<Record<string, string>>({});
 
@@ -287,7 +232,6 @@ export function useSettingsState() {
         ),
         allowed_file_types: settings.general_allowed_file_types || 'jpg,jpeg,png,gif,webp',
         max_upload_batch_size_mb: toNumber(settings.general_max_upload_batch_size_mb, 95),
-        enable_analytics: toBoolean(settings.general_enable_analytics, true),
         enable_registration: toBoolean(settings.general_enable_registration, false),
         maintenance_mode: toBoolean(settings.general_maintenance_mode, false),
         short_gallery_urls: toBoolean(settings.general_short_gallery_urls, false),
@@ -295,7 +239,9 @@ export function useSettingsState() {
           settings.general_use_original_filenames_for_downloads,
           false
         ),
-        default_language: settings.general_default_language || import.meta.env.VITE_DEFAULT_LANGUAGE || 'en',
+        default_language: /^zh(?:-|$)/i.test(String(settings.general_default_language || import.meta.env.VITE_DEFAULT_LANGUAGE || ''))
+          ? 'zh-CN'
+          : 'en',
         date_format: settings.general_date_format
           ? (typeof settings.general_date_format === 'string'
               ? { format: settings.general_date_format, locale: settings.general_date_format.includes('MM/dd') ? 'en-US' : 'en-GB' }
@@ -311,9 +257,6 @@ export function useSettingsState() {
         max_login_attempts: toNumber(settings.security_max_login_attempts, 5),
         attempt_window_minutes: toNumber(settings.security_attempt_window_minutes, 15),
         lockout_duration_minutes: toNumber(settings.security_lockout_duration_minutes, 30),
-        enable_recaptcha: toBoolean(settings.security_enable_recaptcha, false),
-        recaptcha_site_key: settings.security_recaptcha_site_key ?? '',
-        recaptcha_secret_key: settings.security_recaptcha_secret_key ?? '',
         gallery_password_recoverable: toBoolean(settings.security_gallery_password_recoverable, false)
       });
 
@@ -326,33 +269,8 @@ export function useSettingsState() {
         rate_limit_public_endpoints_only: toBoolean(settings.rate_limit_public_endpoints_only, false)
       });
 
-      // Tracker provider: prefer explicit setting; fall back to legacy
-      // umami_enabled flag for installs that haven't picked yet (#663).
-      const explicitProvider = settings.analytics_tracker_provider;
-      const provider: TrackerProvider = (
-        explicitProvider === 'none' || explicitProvider === 'umami'
-        || explicitProvider === 'rybbit' || explicitProvider === 'custom'
-      )
-        ? explicitProvider
-        : (toBoolean(settings.analytics_umami_enabled, false) ? 'umami' : 'none');
-
-      setAnalyticsSettings({
-        tracker_provider: provider,
-        umami_enabled: toBoolean(settings.analytics_umami_enabled, false),
-        umami_url: settings.analytics_umami_url || '',
-        umami_website_id: settings.analytics_umami_website_id || '',
-        umami_share_url: settings.analytics_umami_share_url || '',
-        umami_api_key: settings.analytics_umami_api_key || '',
-        rybbit_url: settings.analytics_rybbit_url || '',
-        rybbit_website_id: settings.analytics_rybbit_website_id || '',
-        rybbit_api_key: settings.analytics_rybbit_api_key || '',
-        custom_head_html: settings.analytics_custom_head_html || ''
-      });
-
       setEventSettings({
         event_require_customer_name: toBoolean(settings.event_require_customer_name, true),
-        event_require_customer_email: toBoolean(settings.event_require_customer_email, true),
-        event_require_admin_email: toBoolean(settings.event_require_admin_email, true),
         event_require_event_date: toBoolean(settings.event_require_event_date, true),
         event_require_expiration: toBoolean(settings.event_require_expiration, true),
         event_default_require_password: toBoolean(settings.event_default_require_password, true),
@@ -387,8 +305,7 @@ export function useSettingsState() {
   useEffect(() => {
     if (adminProfile) {
       setAccountForm({
-        username: adminProfile.username || '',
-        email: adminProfile.email || ''
+        username: adminProfile.username || ''
       });
     }
   }, [adminProfile]);
@@ -481,31 +398,6 @@ export function useSettingsState() {
     }
   });
 
-  const saveAnalyticsMutation = useMutation({
-    mutationFn: async () => {
-      const settingsData: Record<string, unknown> = {};
-      Object.entries(analyticsSettings).forEach(([key, value]) => {
-        // API keys (Umami / Rybbit) are returned masked as `••••••••` on
-        // GET so they don't leak in the response body. Don't re-save the
-        // sentinel — silently preserve whatever's already stored.
-        if ((key === 'umami_api_key' || key === 'rybbit_api_key') && value === '••••••••') return;
-        settingsData[`analytics_${key}`] = value;
-      });
-      // Keep the legacy `analytics_umami_enabled` flag in sync with the
-      // new `tracker_provider` switch so back-compat consumers (publicSettings
-      // surface, embedded Umami iframe) keep working when provider !== 'umami'.
-      settingsData.analytics_umami_enabled = analyticsSettings.tracker_provider === 'umami';
-      return settingsService.updateSettings(settingsData);
-    },
-    onSuccess: () => {
-      toast.success(t('toast.settingsSaved'));
-      queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
-    },
-    onError: () => {
-      toast.error(t('toast.saveError'));
-    }
-  });
-
   const saveSeoMutation = useMutation({
     mutationFn: async () => {
       const settingsData: Record<string, unknown> = {};
@@ -543,13 +435,12 @@ export function useSettingsState() {
   });
 
   const updateAdminProfileMutation = useMutation({
-    mutationFn: (payload: { username: string; email?: string }) => adminService.updateAdminProfile(payload),
+    mutationFn: (payload: { username: string }) => adminService.updateAdminProfile(payload),
     onSuccess: (updatedUser) => {
       toast.success(t('settings.general.accountSaveSuccess'));
       setAccountErrors({});
       setAccountForm({
-        username: updatedUser.username,
-        email: updatedUser.email
+        username: updatedUser.username
       });
       updateUserProfile(updatedUser);
       queryClient.invalidateQueries({ queryKey: ['admin-profile'] });
@@ -560,9 +451,6 @@ export function useSettingsState() {
         for (const err of error.response.data.errors) {
           if (err.path === 'username') {
             fieldErrors.username = err.msg;
-          }
-          if (err.path === 'email') {
-            fieldErrors.email = err.msg;
           }
         }
         setAccountErrors(fieldErrors);
@@ -615,7 +503,7 @@ export function useSettingsState() {
   });
 
   // Handlers
-  const handleAccountChange = (field: 'username' | 'email') => (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAccountChange = (field: 'username') => (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setAccountForm((prev) => ({ ...prev, [field]: value }));
     if (accountErrors[field]) {
@@ -629,7 +517,6 @@ export function useSettingsState() {
     if (updateAdminProfileMutation.isPending) return;
 
     const trimmedUsername = accountForm.username.trim();
-    const trimmedEmail = accountForm.email.trim();
     const errors: Record<string, string> = {};
 
     if (!trimmedUsername) {
@@ -638,21 +525,12 @@ export function useSettingsState() {
       errors.username = t('settings.general.accountUsernameLength');
     }
 
-    if (!NO_EMAIL_MODE && !trimmedEmail) {
-      errors.email = t('settings.general.accountEmailRequired');
-    } else if (!NO_EMAIL_MODE && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      errors.email = t('settings.general.accountEmailInvalid');
-    }
-
     if (Object.keys(errors).length > 0) {
       setAccountErrors(errors);
       return;
     }
 
-    updateAdminProfileMutation.mutate({
-      username: trimmedUsername,
-      ...(NO_EMAIL_MODE ? {} : { email: trimmedEmail })
-    });
+    updateAdminProfileMutation.mutate({ username: trimmedUsername });
   };
 
   const handleSaveSoftLimit = () => {
@@ -724,8 +602,6 @@ export function useSettingsState() {
     setSecuritySettings,
     rateLimitSettings,
     setRateLimitSettings,
-    analyticsSettings,
-    setAnalyticsSettings,
     eventSettings,
     setEventSettings,
     seoSettings,
@@ -757,7 +633,6 @@ export function useSettingsState() {
     // Save mutations
     saveGeneralMutation,
     saveSecurityMutation,
-    saveAnalyticsMutation,
     saveEventSettingsMutation,
     saveSeoMutation,
 

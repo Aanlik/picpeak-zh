@@ -11,7 +11,6 @@ const knexConfig = require('../../knexfile');
 const logger = require('../utils/logger');
 const backupManifest = require('./backupManifest');
 const S3StorageAdapter = require('./storage/s3Storage');
-const { queueEmail } = require('./emailProcessor');
 const { formatBoolean } = require('../utils/dbCompat');
 const { nextSessionCutoff, invalidateSessionsIssuedSoFar } = require('../utils/sessionCutoff');
 
@@ -248,10 +247,10 @@ const os = require('os');
 
 /**
  * Restore Service with Extreme Safety Measures
- * 
+ *
  * This service handles restoration of backups with multiple safety checks,
  * validation, and rollback capabilities. It prioritizes data safety over speed.
- * 
+ *
  * Features:
  * - Pre-restore validation and integrity checks
  * - Automatic pre-restore backup creation
@@ -262,7 +261,7 @@ const os = require('os');
  * - Multiple restore options (full, database-only, files-only, selective)
  * - S3 support with resume capability
  * - Post-restore verification
- * 
+ *
  * @class RestoreService
  */
 class RestoreService {
@@ -283,7 +282,7 @@ class RestoreService {
 
   /**
    * Main restore method with comprehensive safety checks
-   * 
+   *
    * @param {Object} options - Restore options
    * @param {string} options.source - Backup source (file path or S3 URL)
    * @param {string} options.manifestPath - Path to backup manifest
@@ -336,7 +335,7 @@ class RestoreService {
       // Step 2: Pre-restore validation
       this.updateProgress('Performing pre-restore validation...');
       const validation = await this.performPreRestoreValidation(manifest, options);
-      
+
       if (!validation.isValid && !options.force) {
         throw new Error(`Pre-restore validation failed: ${validation.errors.join(', ')}`);
       }
@@ -359,7 +358,7 @@ class RestoreService {
       // Dry run mode - stop here after validation
       if (options.dryRun) {
         this.log('info', 'Dry run completed successfully');
-        
+
         await db('restore_runs').where('id', runId).update({
           completed_at: new Date(),
           status: 'completed',
@@ -458,7 +457,7 @@ class RestoreService {
       // Step 7: Post-restore verification
       this.updateProgress('Performing post-restore verification...');
       const verification = await this.performPostRestoreVerification(manifest, options);
-      
+
       if (!verification.isValid) {
         this.log('error', 'Post-restore verification failed', { errors: verification.errors });
         // Attempt rollback
@@ -615,7 +614,7 @@ class RestoreService {
 
       // Step 8: Clean up temporary files
       if (localBackupPath !== options.source) {
-        await fs.unlink(localBackupPath).catch(err => 
+        await fs.unlink(localBackupPath).catch(err =>
           this.log('warn', 'Failed to clean up temporary backup file', { error: err.message })
         );
       }
@@ -644,14 +643,6 @@ class RestoreService {
           verification,
           durationSeconds
         })
-      });
-
-      // Send success notification
-      await this.sendRestoreNotification('success', {
-        restoreType: options.restoreType,
-        duration: durationSeconds,
-        filesRestored: restoreResult.filesRestored || 0,
-        backupId: manifest.backup.id
       });
 
       this.log('info', 'Restore completed successfully', {
@@ -722,23 +713,15 @@ class RestoreService {
         });
       }
 
-      // Send failure notification
-      await this.sendRestoreNotification('failure', {
-        error: error.message,
-        restoreType: options.restoreType,
-        rollbackAttempted,
-        rollbackSucceeded,
-      });
-
       throw error;
 
     } finally {
       this.isRunning = false;
       this.currentProgress = null;
-      
+
       // Clean up temp directory
       try {
-        await fs.rmdir(this.tempDir, { recursive: true });
+        await fs.rm(this.tempDir, { recursive: true, force: true });
       } catch (err) {
         // Ignore cleanup errors
       }
@@ -980,7 +963,7 @@ class RestoreService {
       if (options.restoreType === 'full' || options.restoreType === 'database') {
         this.log('info', 'Backing up current database...');
         const dbBackupPath = path.join(backupPath, 'database.sql');
-        
+
         if (this.dbType === 'sqlite') {
           const dbPath = knexConfig.connection.filename;
           // Server-generated path, but it is interpolated into a dot-command.
@@ -1024,7 +1007,7 @@ class RestoreService {
 
     } catch (error) {
       // Clean up on failure
-      await fs.rmdir(backupPath, { recursive: true }).catch(() => {});
+      await fs.rm(backupPath, { recursive: true, force: true }).catch(() => {});
       throw new Error(`Failed to create pre-restore backup: ${error.message}`);
     }
   }
@@ -1079,8 +1062,8 @@ class RestoreService {
 
       // Download files if needed
       if (options.restoreType === 'full' || options.restoreType === 'files') {
-        const filesToDownload = options.restoreType === 'selective' 
-          ? options.selectedItems 
+        const filesToDownload = options.restoreType === 'selective'
+          ? options.selectedItems
           : manifest.files.manifest;
 
         let downloaded = 0;
@@ -1107,7 +1090,7 @@ class RestoreService {
                 this.updateProgress(`Downloading files: ${totalPercent}% (${file.path}: ${filePercent}%)`);
               }
             });
-            
+
             // Verify checksum if available
             if (file.checksum) {
               const downloadedChecksum = await this.calculateChecksum(localFilePath);
@@ -1115,7 +1098,7 @@ class RestoreService {
                 throw new Error(`Checksum mismatch for ${file.path}`);
               }
             }
-            
+
             downloaded++;
           } catch (error) {
             this.log('error', `Failed to download ${file.path}`, { error: error.message });
@@ -1128,7 +1111,7 @@ class RestoreService {
 
     } catch (error) {
       // Clean up on failure
-      await fs.rmdir(localPath, { recursive: true }).catch(() => {});
+      await fs.rm(localPath, { recursive: true, force: true }).catch(() => {});
       throw new Error(`Failed to download from S3: ${error.message}`);
     }
   }
@@ -1318,14 +1301,14 @@ class RestoreService {
       if (this.dbType === 'sqlite') {
         // SQLite restore
         const dbPath = knexConfig.connection.filename;
-        
+
         // Close all database connections
         await db.destroy();
-        
+
         // Backup current database
         const currentBackup = `${dbPath}.restore-backup`;
         await fs.copyFile(dbPath, currentBackup);
-        
+
         try {
           // Restore from backup. `restoreFile` is contained-checked above,
           // but the FILENAME component still comes from the manifest — a
@@ -1340,17 +1323,17 @@ class RestoreService {
           if (!integrityCheck.stdout.includes('ok')) {
             throw new Error('Database integrity check failed after restore');
           }
-          
+
           // Remove backup of previous database
           await fs.unlink(currentBackup);
-          
+
         } catch (error) {
           // Rollback on failure
           await fs.copyFile(currentBackup, dbPath);
           await fs.unlink(currentBackup);
           throw error;
         }
-        
+
       } else {
         // PostgreSQL restore
         const { host, port, user, password, database } = knexConfig.connection;
@@ -1581,7 +1564,7 @@ END $$;`
     this.updateProgress('Restoring files...');
 
     const storagePath = process.env.STORAGE_PATH || path.join(__dirname, '../../../storage');
-    const filesToRestore = options.restoreType === 'selective' 
+    const filesToRestore = options.restoreType === 'selective'
       ? options.selectedItems.filter(item => item.type === 'file')
       : manifest.files.manifest;
 
@@ -1675,7 +1658,7 @@ END $$;`
           }
 
           restoredCount++;
-          
+
           if (restoredCount % 100 === 0) {
             this.updateProgress(`Restored ${restoredCount}/${filesToRestore.length} files`);
           }
@@ -1816,7 +1799,7 @@ END $$;`
           }
           try {
             await fs.access(filePath);
-            
+
             if (file.checksum) {
               const actualChecksum = await this.calculateChecksum(filePath);
               verification.checksums[file.path] = {
@@ -1824,7 +1807,7 @@ END $$;`
                 actual: actualChecksum,
                 match: actualChecksum === file.checksum
               };
-              
+
               if (actualChecksum !== file.checksum) {
                 verification.errors.push(`Checksum mismatch for ${file.path}`);
               }
@@ -1903,7 +1886,7 @@ END $$;`
   async calculateChecksum(filePath) {
     const hash = crypto.createHash('sha256');
     const stream = createReadStream(filePath);
-    
+
     return new Promise((resolve, reject) => {
       stream.on('data', data => hash.update(data));
       stream.on('end', () => resolve(hash.digest('hex')));
@@ -1972,7 +1955,7 @@ END $$;`
    * and the SDK's own later lookup with a private/metadata one.
    * validateExternalUrlAsync's resolved addresses get pinned into the
    * S3Client's requestHandler via pinnedRequestOptions — the same
-   * primitive webhookDeliveryWorker.js/emailWebhookTransport.js use for
+   * primitive asynchronous delivery workers use for
    * outbound HTTP — so the connection can only land on an address that
    * was actually vetted.
    */
@@ -2048,11 +2031,11 @@ END $$;`
    */
   async calculateCurrentStorageUsage() {
     const storagePath = process.env.STORAGE_PATH || path.join(__dirname, '../../../storage');
-    
+
     let totalSize = 0;
     async function calculateDirSize(dirPath) {
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = path.join(dirPath, entry.name);
         if (entry.isDirectory()) {
@@ -2104,7 +2087,7 @@ END $$;`
       message,
       details
     };
-    
+
     this.restoreLog.push(logEntry);
     logger[level](message, details);
   }
@@ -2125,35 +2108,6 @@ END $$;`
   }
 
   /**
-   * Send restore notification
-   */
-  async sendRestoreNotification(type, details) {
-    try {
-      const admins = await db('admin_users').where('is_active', formatBoolean(true));
-      
-      for (const admin of admins) {
-        if (type === 'success') {
-          await queueEmail(null, admin.email, 'restore_completed', {
-            restore_type: details.restoreType,
-            duration: `${details.duration} seconds`,
-            files_restored: details.filesRestored,
-            backup_id: details.backupId,
-            timestamp: new Date().toISOString()
-          });
-        } else {
-          await queueEmail(null, admin.email, 'restore_failed', {
-            restore_type: details.restoreType,
-            error_message: details.error,
-            timestamp: new Date().toISOString()
-          });
-        }
-      }
-    } catch (error) {
-      this.log('error', 'Failed to send restore notification', { error: error.message });
-    }
-  }
-
-  /**
    * Get restore history
    */
   async getRestoreHistory(limit = 10) {
@@ -2167,12 +2121,12 @@ END $$;`
    */
   generateRestoreReport(restoreResult) {
     const report = [];
-    
+
     report.push('=== RESTORE OPERATION REPORT ===');
     report.push(`Status: ${restoreResult.success ? 'SUCCESS' : 'FAILED'}`);
     report.push(`Duration: ${restoreResult.duration}s`);
     report.push(`Dry Run: ${restoreResult.dryRun ? 'Yes' : 'No'}`);
-    
+
     if (restoreResult.result) {
       report.push('\n--- Restore Results ---');
       report.push(`Database Restored: ${restoreResult.result.databaseRestored ? 'Yes' : 'No'}`);
@@ -2182,7 +2136,7 @@ END $$;`
         restoreResult.result.errors.forEach(err => report.push(`  - ${err}`));
       }
     }
-    
+
     if (restoreResult.verification) {
       report.push('\n--- Verification Results ---');
       report.push(`Valid: ${restoreResult.verification.isValid ? 'Yes' : 'No'}`);
@@ -2191,17 +2145,17 @@ END $$;`
         restoreResult.verification.errors.forEach(err => report.push(`  - ${err}`));
       }
     }
-    
+
     if (restoreResult.preRestoreBackup) {
       report.push('\n--- Safety Backup ---');
       report.push(`Location: ${restoreResult.preRestoreBackup}`);
     }
-    
+
     report.push('\n--- Operation Log ---');
     restoreResult.logs.forEach(log => {
       report.push(`[${log.timestamp}] ${log.level.toUpperCase()}: ${log.message}`);
     });
-    
+
     return report.join('\n');
   }
 }

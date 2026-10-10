@@ -85,7 +85,7 @@ describe('admin thumbnail regeneration (#1129)', () => {
   async function seedEvent() {
     const [row] = await db('events').insert({
       slug: 'nas-wedding', event_type: 'project', event_name: 'nas',
-      event_date: '2026-01-01', host_email: 'h@example.com', admin_email: 'a@example.com',
+      event_date: '2026-01-01',
       password_hash: 'x', share_link: 'nas-share', expires_at: new Date().toISOString(),
       source_mode: 'reference', external_path: 'weddings/2026-08',
     }).returning('id');
@@ -332,7 +332,7 @@ describe('admin thumbnail regeneration (#1129)', () => {
     await seedPhoto(a, { source_origin: 'external', external_relpath: 'a.jpg' });
     const [b] = await db('events').insert({
       slug: 'other', event_type: 'project', event_name: 'other', event_date: '2026-01-01',
-      host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
+        password_hash: 'x',
       share_link: 'other-share', expires_at: new Date().toISOString(),
     }).returning('id');
     await seedPhoto(typeof b === 'object' ? b.id : b, { source_origin: 'managed' });

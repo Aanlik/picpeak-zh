@@ -39,13 +39,13 @@ beforeAll(async () => {
   ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
   const [event] = await db('events').insert({ slug: 'legacy-identity', event_type: 'project', event_name: 'Legacy Identity',
-    event_date: '2026-09-16', host_email: 'h@example.test', admin_email: 'a@example.test',
+    event_date: '2026-09-16',
     password_hash: 'unused', share_link: '/gallery/legacy-identity/share', is_active: true, is_archived: false, is_draft: false }).returning('id');
   eventId = event.id ?? event;
   const [photo] = await db('photos').insert({ event_id: eventId, filename: 'legacy.jpg', path: 'legacy.jpg', type: 'individual' }).returning('id');
   photoId = photo.id ?? photo;
   await db('event_feedback_settings').insert({ event_id: eventId, feedback_enabled: true, identity_mode: 'simple',
-    allow_likes: true, allow_favorites: true, moderate_comments: false, require_moderation: false });
+    allow_likes: true, allow_favorites: true });
   app = express();
   // trust proxy: lets X-Forwarded-For below pin req.ip to a known value, so
   // the legacy sha256(ip:userAgent) hash this suite seeds is reproducible.
@@ -68,7 +68,7 @@ const seedLegacyRow = (feedbackType, guestIdentifier = legacyIdentifier()) => {
   const now = new Date().toISOString();
   return db('photo_feedback').insert({
     photo_id: photoId, event_id: eventId, feedback_type: feedbackType,
-    guest_identifier: guestIdentifier, is_hidden: false, is_approved: true,
+    guest_identifier: guestIdentifier, is_hidden: false,
     created_at: now, updated_at: now,
   }).returning('id').then(([row]) => row.id ?? row);
 };
@@ -251,7 +251,7 @@ test('batches the collision check across several legacy rows without an incorrec
       .update(`feedback:${eventId}:${fixedSubject}`).digest('hex');
     const now = new Date().toISOString();
     const insertRow = (overrides) => db('photo_feedback').insert({
-      event_id: eventId, is_hidden: false, is_approved: true, created_at: now, updated_at: now, ...overrides,
+      event_id: eventId, is_hidden: false, created_at: now, updated_at: now, ...overrides,
     }).returning('id').then(([row]) => row.id ?? row);
 
     // Photo 1: no collision — must be re-keyed.
@@ -286,7 +286,7 @@ test('adopts per event: one cookie subject visiting two galleries adopts the leg
   // and the legacy sha256(ip:userAgent) hash names none. A claim keyed on the
   // subject alone would adopt the first gallery and skip the second forever.
   const [eventB] = await db('events').insert({ slug: 'legacy-identity-b', event_type: 'project', event_name: 'Legacy Identity B',
-    event_date: '2026-09-16', host_email: 'h@example.test', admin_email: 'a@example.test',
+    event_date: '2026-09-16',
     password_hash: 'unused', share_link: '/gallery/legacy-identity-b/share', is_active: true, is_archived: false, is_draft: false }).returning('id');
   const eventIdB = eventB.id ?? eventB;
   const [photoB] = await db('photos').insert({ event_id: eventIdB, filename: 'legacy-b.jpg', path: 'legacy-b.jpg', type: 'individual' }).returning('id');
@@ -296,7 +296,7 @@ test('adopts per event: one cookie subject visiting two galleries adopts the leg
     const legacyRowA = await seedLegacyRow('like');
     const now = new Date().toISOString();
     const [rowB] = await db('photo_feedback').insert({ photo_id: photoIdB, event_id: eventIdB, feedback_type: 'like',
-      guest_identifier: legacyIdentifier(), is_hidden: false, is_approved: true, created_at: now, updated_at: now }).returning('id');
+      guest_identifier: legacyIdentifier(), is_hidden: false, created_at: now, updated_at: now }).returning('id');
     const legacyRowB = rowB.id ?? rowB;
 
     const reqFor = (id) => ({ event: { id }, ip: IP, headers: { 'user-agent': USER_AGENT },

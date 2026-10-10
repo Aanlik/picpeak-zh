@@ -117,10 +117,6 @@ jest.mock('../../src/services/watermarkGeneratorService', () => ({
   generateForPhoto: jest.fn(() => Promise.resolve()),
 }));
 
-jest.mock('../../src/services/webhookService', () => ({
-  fire: jest.fn(() => Promise.resolve()),
-}));
-
 jest.mock('../../src/utils/logger', () => ({
   warn: jest.fn(),
   error: jest.fn(),
@@ -140,7 +136,6 @@ const dbModule = require('../../src/database/db');
 const imageProcessor = require('../../src/services/imageProcessor');
 const videoProcessor = require('../../src/services/videoProcessor');
 const watermarkService = require('../../src/services/watermarkGeneratorService');
-const webhookService = require('../../src/services/webhookService');
 
 beforeEach(() => {
   dbModule.__reset();
@@ -177,13 +172,6 @@ describe('photoProcessor.processPhoto', () => {
     expect(finalUpdate.data.captured_at).toBe('2026-04-25T12:00:00Z');
 
     expect(watermarkService.generateForPhoto).toHaveBeenCalledWith(101);
-    expect(webhookService.fire).toHaveBeenCalledWith(
-      'photo.uploaded',
-      expect.objectContaining({
-        event: expect.objectContaining({ slug: 'wedding' }),
-        photo: expect.objectContaining({ id: 101, filename: 'wedding-001.jpg' }),
-      })
-    );
   });
 
   it('handles videos with ffmpeg metadata path', async () => {

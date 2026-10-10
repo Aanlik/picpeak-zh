@@ -28,7 +28,6 @@ import { useGuestIdentityOptional } from '../../../contexts/GuestIdentityContext
 import { useInputMode } from '../../../hooks/useInputMode';
 import { FeedbackIdentityModal } from '../FeedbackIdentityModal';
 import { galleryService } from '../../../services/gallery.service';
-import { analyticsService } from '../../../services/analytics.service';
 import { useDownloadPhoto } from '../../../hooks/useGallery';
 import { toast } from 'react-toastify';
 
@@ -244,7 +243,7 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
     setLikedPhotoIds(new Set(photos.filter(p => p.is_liked).map(p => p.id)));
     likedSeededRef.current = true;
   }, [photos]);
-  const [savedIdentity, setSavedIdentity] = useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = useState<{ name: string } | null>(null);
   // Emoji reactions (#839) inside the premium lightbox. This layout uses
   // yet-another-react-lightbox instead of the shared PhotoLightbox, so the
   // reaction bar is a fixed overlay fed by its own per-photo fetch.
@@ -276,28 +275,29 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
   }, [photos, activeCategory]);
 
   const currentLightboxPhoto = lightboxIndex >= 0 ? filteredPhotos[lightboxIndex] : null;
+  const currentLightboxPhotoId = currentLightboxPhoto?.id;
   const reactionsActive = feedbackEnabled && !!feedbackOptions?.allowReactions;
 
   // Fetch the current photo's reaction tallies + my selection when the
   // lightbox lands on it. Optimistic updates below keep it fresh in place.
   useEffect(() => {
-    if (!currentLightboxPhoto || !reactionsActive) {
+    if (currentLightboxPhotoId == null || !reactionsActive) {
       setReactionState(null);
       return undefined;
     }
     let alive = true;
-    feedbackService.getPhotoFeedback(slug, String(currentLightboxPhoto.id))
+    feedbackService.getPhotoFeedback(slug, String(currentLightboxPhotoId))
       .then((d) => {
         if (!alive) return;
         setReactionState({
-          photoId: currentLightboxPhoto.id,
+          photoId: currentLightboxPhotoId,
           mine: d.my_feedback.reaction || null,
           counts: d.reactions || {},
         });
       })
       .catch(() => { /* bar simply stays hidden for this photo */ });
     return () => { alive = false; };
-  }, [currentLightboxPhoto?.id, reactionsActive, slug]);
+  }, [currentLightboxPhotoId, reactionsActive, slug]);
 
   const handleReactionChange = useCallback((next: string | null) => {
     setReactionState((prev) => {
@@ -378,7 +378,7 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
       return;
     }
 
-    if (feedbackOptions?.requireNameEmail && !savedIdentity) {
+    if (feedbackOptions?.requireGuestName && !savedIdentity) {
       setPendingLikePhotoId(photo.id);
       setShowIdentityModal(true);
       return;
@@ -396,7 +396,6 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
       await feedbackService.submitFeedback(slug, String(photo.id), {
         feedback_type: 'like',
         guest_name: savedIdentity?.name,
-        guest_email: savedIdentity?.email,
       });
       onFeedbackChange?.();
     } catch (err) {
@@ -404,8 +403,8 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
     }
   }, [slug, savedIdentity, feedbackOptions, onFeedbackChange, guestIdentity]);
 
-  const handleIdentitySubmit = useCallback(async (name: string, email: string) => {
-    setSavedIdentity({ name, email });
+  const handleIdentitySubmit = useCallback(async (name: string) => {
+    setSavedIdentity({ name });
     setShowIdentityModal(false);
 
     if (pendingLikePhotoId) {
@@ -424,7 +423,6 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
         await feedbackService.submitFeedback(slug, String(pendingLikePhotoId), {
           feedback_type: 'like',
           guest_name: name,
-          guest_email: email,
         });
         onFeedbackChange?.();
       } catch (err) {
@@ -454,7 +452,6 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
 
     try {
       await galleryService.downloadSelectedPhotos(slug, ids);
-      analyticsService.trackGalleryEvent('bulk_download', { gallery: slug, photo_count: ids.length });
     } catch {
       toast.error(t('gallery.downloadError'));
     }
@@ -470,7 +467,6 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
       ? filteredPhotos.find(p => p.id === slide.photoId)
       : filteredPhotos.find(p => p.url === slide.src);
     if (photo) {
-      analyticsService.trackDownload(photo.id, slug, false);
       downloadPhotoMutation.mutate({
         slug,
         photoId: photo.id,
@@ -665,15 +661,11 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
         close={() => setLightboxIndex(-1)}
         index={lightboxIndex}
         slides={slides}
-        // View beacon (#895): yarl fires `view` on open and on every
-        // slide change — same semantics as PhotoLightbox's beacon.
         on={{
           view: ({ index }) => {
             // Keep the controlled index in sync when loaded dimensions update
             // the slides array; otherwise YARL jumps back to the opening photo.
             setLightboxIndex(index);
-            const photo = filteredPhotos[index];
-            if (photo) galleryService.trackPhotoView(slug, photo.id);
           },
         }}
         plugins={[
@@ -716,7 +708,7 @@ export const GalleryPremiumLayout: React.FC<GalleryPremiumLayoutProps> = ({
             myReaction={reactionState.mine}
             reactionCounts={reactionState.counts}
             isEnabled={true}
-            requireNameEmail={!!feedbackOptions?.requireNameEmail}
+            requireGuestName={!!feedbackOptions?.requireGuestName}
             onReactionChange={handleReactionChange}
           />
         </div>,

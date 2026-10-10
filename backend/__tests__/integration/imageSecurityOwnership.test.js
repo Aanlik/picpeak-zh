@@ -25,7 +25,7 @@ beforeAll(async () => {
   actorId = actor.id ?? actor;
   for (const [name, createdBy] of [['own', actorId], ['foreign', superId], ['legacy', null]]) {
     const [event] = await db('events').insert({ slug: name, event_type: 'project', event_name: name,
-      event_date: '2026-09-16', host_email: 'h@example.test', admin_email: 'a@example.test',
+      event_date: '2026-09-16',
       password_hash: 'unused', share_link: `/gallery/${name}/share`, created_by: createdBy }).returning('id');
     const eventId = event.id ?? event; events[name] = eventId;
     const [photo] = await db('photos').insert({ event_id: eventId, filename: `${name}.jpg`,

@@ -33,8 +33,6 @@ const baseSettings = {
   allow_favorites: true,
   allow_reactions: true,
   allow_color_labels: true,
-  require_name_email: false,
-  moderate_comments: false,
   show_feedback_to_guests: true,
 };
 

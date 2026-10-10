@@ -37,7 +37,7 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
   }, [photos]);
   const [showIdentityModal, setShowIdentityModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<null | { type: 'like'; photoId: number }>(null);
-  const [savedIdentity, setSavedIdentity] = useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = useState<{ name: string } | null>(null);
   const gallerySettings = theme.gallerySettings || {};
   const grouping = gallerySettings.timelineGrouping || 'day';
   const showDates = gallerySettings.timelineShowDates !== false;
@@ -53,11 +53,11 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
   // Group photos by date
   const groupedPhotos = useMemo(() => {
     const groups = new Map<string, Photo[]>();
-    
+
     photos.forEach(photo => {
       const date = parseUploadedAt(photo.uploaded_at);
       let groupKey: string;
-      
+
       switch (grouping) {
         case 'week':
           const weekStart = startOfWeek(date);
@@ -74,13 +74,13 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
           groupKey = format(dayStart, 'yyyy-MM-dd');
           // groupLabel = format(dayStart, 'EEEE, MMMM d, yyyy');
       }
-      
+
       if (!groups.has(groupKey)) {
         groups.set(groupKey, []);
       }
       groups.get(groupKey)!.push(photo);
     });
-    
+
     // Convert to array and sort by date
     return Array.from(groups.entries())
       .map(([date, photos]) => ({
@@ -95,7 +95,7 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
     <div className="relative">
       {/* Timeline line */}
       <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-black/20 hidden lg:block" />
-      
+
       {/* Timeline groups */}
       <div className="space-y-12">
         {groupedPhotos.map((group) => (
@@ -111,7 +111,7 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                 </h3>
               </div>
             )}
-            
+
             {/* Photos grid for this date */}
             <div className="photo-grid lg:ml-24 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {group.photos.map((photo) => {
@@ -178,14 +178,13 @@ export const TimelineGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
       <FeedbackIdentityModal
         isOpen={showIdentityModal}
         onClose={() => { setShowIdentityModal(false); setPendingAction(null); }}
-        onSubmit={async (name, email) => {
-          setSavedIdentity({ name, email });
+        onSubmit={async (name) => {
+          setSavedIdentity({ name });
           setShowIdentityModal(false);
           if (pendingAction) {
             await feedbackService.submitFeedback(slug!, String(pendingAction.photoId), {
               feedback_type: pendingAction.type,
               guest_name: name,
-              guest_email: email,
             });
             setPendingAction(null);
           }

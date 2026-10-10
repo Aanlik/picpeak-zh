@@ -40,7 +40,6 @@ vi.mock('../../../services/events.service', () => ({
     renameEvent: vi.fn(),
     revealNow: vi.fn(),
     archiveEvent: vi.fn(),
-    sendGalleryEmail: vi.fn(),
   },
 }));
 

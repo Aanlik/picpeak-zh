@@ -11,6 +11,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-at-least-32-char
 
 const fs = require('fs');
 const path = require('path');
+const archiver = require('archiver');
 const { bootTestDb } = require('./helpers/sqliteTestDb');
 
 let db;
@@ -138,6 +139,56 @@ describe('.picpeak roundtrip (export → import)', () => {
     } finally {
       fs.rmSync(path.dirname(filePath), { recursive: true, force: true });
       fs.rmSync(logoDir, { recursive: true, force: true });
+    }
+  });
+
+  it('ignores columns retired after an older backup was created', async () => {
+    await db('events').del();
+    const event = {
+      slug: 'legacy-columns',
+      event_type: 'project',
+      event_name: 'Legacy columns',
+      event_date: '2026-10-10',
+      password_hash: 'legacy-hash',
+      share_link: '/gallery/legacy-columns/legacy-token',
+      share_token: 'legacy-token',
+      expires_at: new Date(Date.now() + 86400000).toISOString(),
+      // These fields existed in older backups and were removed from the live
+      // schema when email communication and welcome messages were retired.
+      customer_email: 'client@example.test',
+      host_email: 'host@example.test',
+      admin_email: 'studio@example.test',
+      welcome_message: 'Legacy welcome message',
+    };
+    const archivePath = path.join(tmpDir, 'legacy-columns.picpeak');
+    const manifest = {
+      kind: 'picpeak-backup',
+      format: 1,
+      database: { engine: 'sqlite', latest_migration: null },
+      tables: { events: { rowCount: 1, checksum: 'legacy-fixture' } },
+    };
+
+    await new Promise((resolve, reject) => {
+      const output = fs.createWriteStream(archivePath);
+      const archive = archiver('zip', { zlib: { level: 1 } });
+      output.on('close', resolve);
+      output.on('error', reject);
+      archive.on('error', reject);
+      archive.pipe(output);
+      archive.append(JSON.stringify(manifest), { name: 'manifest.json' });
+      archive.append(`${JSON.stringify(event)}\n`, { name: 'data/events.ndjson' });
+      archive.finalize();
+    });
+
+    try {
+      await importFromPicpeak({ picpeakPath: archivePath });
+      const restored = await db('events').where({ slug: 'legacy-columns' }).first();
+      expect(restored).toMatchObject({ event_name: 'Legacy columns', password_hash: 'legacy-hash' });
+      for (const removedColumn of ['customer_email', 'host_email', 'admin_email', 'welcome_message']) {
+        expect(Object.hasOwn(restored, removedColumn)).toBe(false);
+      }
+    } finally {
+      fs.rmSync(archivePath, { force: true });
     }
   });
 });

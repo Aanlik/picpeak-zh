@@ -23,18 +23,18 @@ router.get('/status', requirePermission('backup.view'), async (req, res) => {
   try {
     // Get configuration
     const config = await databaseBackupService.getBackupConfig();
-    
+
     // Get recent backup history
     const history = await databaseBackupService.getBackupHistory(10);
-    
+
     // Get current progress if running
     const progress = databaseBackupService.getProgress();
-    
+
     // Calculate health status
     const lastBackup = history[0];
-    const isHealthy = lastBackup && lastBackup.status === 'completed' && 
+    const isHealthy = lastBackup && lastBackup.status === 'completed' &&
       new Date(lastBackup.completed_at) > new Date(Date.now() - 48 * 60 * 60 * 1000); // Within 48 hours
-    
+
     res.json({
       config,
       isRunning: databaseBackupService.isRunning,
@@ -63,8 +63,6 @@ router.put('/config', requirePermission('backup.create'), async (req, res) => {
       'database_backup_validate_integrity',
       'database_backup_include_checksums',
       'database_backup_retention_days',
-      'database_backup_email_on_failure',
-      'database_backup_email_on_success'
     ];
 
     // A backup.create holder (the built-in `admin` role has it without
@@ -122,14 +120,14 @@ router.put('/config', requirePermission('backup.create'), async (req, res) => {
     }
 
     const updates = [];
-    
+
     for (const [key, value] of Object.entries(req.body)) {
       if (allowedSettings.includes(key)) {
         // Check if setting exists
         const existing = await db('app_settings')
           .where('setting_key', key)
           .first();
-        
+
         if (existing) {
           await db('app_settings')
             .where('setting_key', key)
@@ -144,20 +142,20 @@ router.put('/config', requirePermission('backup.create'), async (req, res) => {
             setting_type: 'database_backup'
           });
         }
-        
+
         updates.push(key);
       }
     }
-    
+
     // Restart scheduled backups if enabled state changed
     if (updates.includes('database_backup_enabled') || updates.includes('database_backup_schedule')) {
       const { startScheduledBackups, stopScheduledBackups } = require('../services/databaseBackup');
       stopScheduledBackups();
       await startScheduledBackups();
     }
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       updatedSettings: updates,
       message: 'Database backup configuration updated successfully'
     });
@@ -175,20 +173,20 @@ router.post('/backup', requirePermission('backup.create'), async (req, res) => {
     if (databaseBackupService.isRunning) {
       return res.status(409).json({ error: 'Backup already in progress' });
     }
-    
+
     // Start backup asynchronously
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Database backup started',
       trackingUrl: '/api/admin/database-backup/progress'
     });
-    
+
     // Forward ONLY the real backup knobs (GHSA-jw8m). Passing req.body
     // straight through let the caller set `destinationPath`, which the
     // service merges over its config — so a backup.create holder (the
     // `admin` role, which has neither settings.edit nor backup.restore)
     // could dump the whole database into the PUBLIC /uploads static mount
-    // and fetch it unauthenticated, hashes and encrypted SMTP creds included.
+    // and fetch it unauthenticated, including hashes and legacy credentials.
     // destinationPath is not a persistable setting; the request body was its
     // only source, so dropping it here costs no legitimate behaviour.
     const body = req.body || {};
@@ -211,7 +209,7 @@ router.post('/backup', requirePermission('backup.create'), async (req, res) => {
 router.get('/progress', requirePermission('backup.view'), async (req, res) => {
   try {
     const progress = databaseBackupService.getProgress();
-    
+
     res.json({
       isRunning: databaseBackupService.isRunning,
       progress
@@ -236,7 +234,7 @@ router.get('/history', requirePermission('backup.view'), async (req, res) => {
         .offset(offset),
       db('database_backup_runs').count('* as count').first()
     ]);
-    
+
     res.json({
       backups,
       pagination: {
@@ -258,11 +256,11 @@ router.get('/history', requirePermission('backup.view'), async (req, res) => {
 router.delete('/cleanup', requirePermission('backup.delete'), async (req, res) => {
   try {
     const { retentionDays = 30 } = req.body;
-    
+
     await databaseBackupService.cleanupOldBackups(retentionDays);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: `Cleaned up backups older than ${retentionDays} days`
     });
   } catch (error) {
@@ -277,7 +275,7 @@ router.delete('/cleanup', requirePermission('backup.delete'), async (req, res) =
 router.post('/test', requirePermission('backup.create'), async (req, res) => {
   try {
     const config = await databaseBackupService.getBackupConfig();
-    
+
     // Test database connection
     const testResults = {
       databaseConnection: false,
@@ -285,7 +283,7 @@ router.post('/test', requirePermission('backup.create'), async (req, res) => {
       compressionAvailable: true,
       estimatedSize: null
     };
-    
+
     // Test database connection
     try {
       await db.raw('SELECT 1');
@@ -293,7 +291,7 @@ router.post('/test', requirePermission('backup.create'), async (req, res) => {
     } catch (error) {
       testResults.databaseConnectionError = error.message;
     }
-    
+
     // Test the directory a real backup would write to. This read an
     // unprefixed `destinationPath` that getBackupConfig() never returns, so
     // the check was skipped and always reported the destination unwritable.
@@ -314,14 +312,14 @@ router.post('/test', requirePermission('backup.create'), async (req, res) => {
           + 'Set database_backup_destination_path to a directory the backend can write to, or mount a writable volume at that path.';
       }
     }
-    
+
     // Estimate database size
     try {
       testResults.estimatedSize = await databaseBackupService.getDatabaseSize();
     } catch (error) {
       testResults.sizeError = error.message;
     }
-    
+
     res.json({
       success: testResults.databaseConnection && testResults.destinationWritable,
       results: testResults
@@ -338,7 +336,7 @@ router.post('/test', requirePermission('backup.create'), async (req, res) => {
 router.get('/checksums', requirePermission('backup.view'), async (req, res) => {
   try {
     const checksums = await databaseBackupService.getTableChecksums();
-    
+
     res.json({
       checksums,
       tableCount: Object.keys(checksums).length,

@@ -4,7 +4,7 @@ const request = require('supertest');
 const express = require('express');
 let db, cleanup, app, adminId, adminToken, apiToken;
 const base = { event_name: 'Creation parity', event_date: '2030-06-15',
-  customer_name: 'Ada', customer_email: 'ada@example.test', admin_email: 'admin@example.test',
+  customer_name: 'Ada',
   require_password: false, is_draft: false, expires_at: '2030-07-15T00:00:00.000Z' };
 beforeAll(async () => {
   ({ db, cleanup } = await bootTestDb()); ({ adminId } = await seedMinimal(db)); await assignAdminRole(db, adminId);
@@ -28,12 +28,12 @@ it.each(['admin', 'v1', 'legacy'])('%s stores theme, owner, dates and feedback d
   const theme = JSON.stringify({ primaryColor: '#ff0066' });
   const created = await create(source, { color_theme: theme, feedback_enabled: true });
   const row = await db('events').where({ id: created.id }).first();
-  expect(row).toMatchObject({ color_theme: theme, created_by: adminId, event_name: base.event_name, customer_email: base.customer_email });
+  expect(row).toMatchObject({ color_theme: theme, created_by: adminId, event_name: base.event_name });
   expect(require('../../../utils/dateNormalize').toIso(row.expires_at)).toBe(base.expires_at);
   expect([false, 0]).toContain(row.require_password);
   expect(row.updated_at).toBeTruthy(); expect(row.share_token).toBeTruthy(); expect(row.password_hash).toBeTruthy();
   const feedback = await db('event_feedback_settings').where({ event_id: row.id }).first();
-  for (const key of ['feedback_enabled','allow_ratings','allow_likes','allow_comments','allow_favorites','allow_reactions','moderate_comments','show_feedback_to_guests']) expect([true, 1]).toContain(feedback[key]);
+  for (const key of ['feedback_enabled','allow_ratings','allow_likes','allow_comments','allow_favorites','allow_reactions','show_feedback_to_guests']) expect([true, 1]).toContain(feedback[key]);
   expect([false, 0]).toContain(feedback.allow_color_labels); expect(feedback.keybind_mode).toBe('colors');
 });
 it('inherits global feedback and preserves explicit overrides for every entry point', async () => {
@@ -45,12 +45,6 @@ it('inherits global feedback and preserves explicit overrides for every entry po
     const override = await create(source, { feedback_enabled: false });
     expect(await db('event_feedback_settings').where({ event_id: override.id }).first()).toBeUndefined();
   }
-});
-it('queues a publication email only for published galleries', async () => {
-  const draft = await create('admin', { is_draft: true });
-  expect(await db('email_queue').where({ event_id: draft.id })).toHaveLength(0);
-  const published = await create('v1', {});
-  expect(await db('email_queue').where({ event_id: published.id, email_type: 'gallery_created' })).toHaveLength(1);
 });
 it('rejects a required password that is missing with 400 on both routes', async () => {
   for (const source of ['admin', 'v1']) {

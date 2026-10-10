@@ -2,7 +2,7 @@
  * HTTP smoke tests for the core admin event CRUD endpoints:
  *   POST   /api/admin/events           (create)
  *   GET    /api/admin/events           (list + pagination)
- *   GET    /api/admin/events/:id       (detail + stats)
+ *   GET    /api/admin/events/:id       (detail + photo count)
  *   PUT    /api/admin/events/:id       (update)
  *   DELETE /api/admin/events/:id       (cascade delete)
  *
@@ -31,8 +31,6 @@ async function insertEvent(db, adminId, over = {}) {
     event_type: 'project',
     event_name: 'Test Wedding',
     event_date: '2026-05-29',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
     password_hash: 'x',
     share_link: `/gallery/share-${Math.random().toString(16).slice(2)}`,
     share_token: `st-${Math.random().toString(16).slice(2)}`,
@@ -70,7 +68,6 @@ describe('admin events CRUD endpoints (smoke)', () => {
   afterAll(async () => { await cleanup(); });
 
   beforeEach(async () => {
-    await db('email_queue').del();
     await db('events').del();
   });
 
@@ -87,11 +84,7 @@ describe('admin events CRUD endpoints (smoke)', () => {
         event_type: 'project',
         event_name: 'Smoke Wedding',
         event_date: '2026-09-01',
-        // Field requirements default to ON (getEventFieldRequirements)
-        // so customer + admin contact data must be supplied.
         customer_name: 'Client Person',
-        customer_email: 'client@example.com',
-        admin_email: 'admin@example.com',
         require_password: false,
         is_draft: true,
       });
@@ -112,9 +105,6 @@ describe('admin events CRUD endpoints (smoke)', () => {
       expect(fs.existsSync(path.join(eventDir, 'collages'))).toBe(true);
       expect(fs.existsSync(path.join(eventDir, 'individual'))).toBe(true);
 
-      // Draft creates must NOT queue the gallery_created email.
-      const queued = await db('email_queue').where({ event_id: res.body.id });
-      expect(queued).toHaveLength(0);
     });
 
     it('409s (not 500) when the slug uniqueness race is lost', async () => {
@@ -139,8 +129,6 @@ describe('admin events CRUD endpoints (smoke)', () => {
           event_name: 'Race Wedding',
           event_date: '2026-09-02',
           customer_name: 'Client Person',
-          customer_email: 'client@example.com',
-          admin_email: 'admin@example.com',
           require_password: false,
           is_draft: true,
         });
@@ -186,14 +174,12 @@ describe('admin events CRUD endpoints (smoke)', () => {
   });
 
   describe('GET /:id', () => {
-    it('returns the event with photo/view stats', async () => {
+    it('returns the event with photo count and recent photos', async () => {
       const id = await insertEvent(db, adminId, { event_name: 'Detail Event' });
       const res = await auth(request(app).get(`/api/admin/events/${id}`));
       expect(res.status).toBe(200);
       expect(res.body.event_name).toBe('Detail Event');
       expect(res.body.photo_count).toBe(0);
-      expect(res.body.total_views).toBe(0);
-      expect(res.body.total_downloads).toBe(0);
       expect(Array.isArray(res.body.recent_photos)).toBe(true);
     });
 
@@ -206,14 +192,10 @@ describe('admin events CRUD endpoints (smoke)', () => {
   describe('PUT /:id', () => {
     it('updates mutable fields and persists them', async () => {
       const id = await insertEvent(db, adminId, { event_name: 'Before' });
-      const res = await auth(request(app).put(`/api/admin/events/${id}`)).send({
-        event_name: 'After',
-        welcome_message: 'Hello guests',
-      });
+      const res = await auth(request(app).put(`/api/admin/events/${id}`)).send({ event_name: 'After' });
       expect(res.status).toBe(200);
       const row = await db('events').where({ id }).first();
       expect(row.event_name).toBe('After');
-      expect(row.welcome_message).toBe('Hello guests');
     });
 
     // #1296 — express-validator runs isInt/isIn/isBoolean element-wise on
@@ -239,18 +221,6 @@ describe('admin events CRUD endpoints (smoke)', () => {
       // And nothing was written.
       const row = await db('events').where({ id }).first();
       expect(row.event_name).toBe('Unchanged');
-    });
-
-    it('still accepts customer_account_ids, the one field that is an array', async () => {
-      const id = await insertEvent(db, adminId, { event_name: 'Keep' });
-      const res = await auth(request(app).put(`/api/admin/events/${id}`)).send({
-        event_name: 'Renamed',
-        customer_account_ids: [],
-      });
-
-      expect(res.status).toBe(200);
-      const row = await db('events').where({ id }).first();
-      expect(row.event_name).toBe('Renamed');
     });
 
     it('404s when updating a missing event', async () => {

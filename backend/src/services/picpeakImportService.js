@@ -30,7 +30,6 @@ const { hasColumnCached } = require('../utils/schemaCache');
 const { invalidateSessionsIssuedSoFar } = require('../utils/sessionCutoff');
 const logger = require('../utils/logger');
 const { PICPEAK_FORMAT_VERSION, EXCLUDED_TABLES, listDataTables } = require('./picpeakExportService');
-const { normaliseSqliteEmailQueue } = require('../utils/queueTimestamps');
 const { canonicaliseSqliteExpiresAt } = require('../utils/expiresAtText');
 const {
   dedupeExternalPhotos,
@@ -287,15 +286,9 @@ function parseNdjson(filePath) {
 // Re-insert the operator's account inside the restore transaction so they keep
 // working credentials after the wipe.
 //
-// The operator's login + credentials + MFA must be restored, not just the
-// password. A crafted backup can carry a row with the operator's email whose
-// two_factor_* fields are attacker-chosen — leaving those in place would let
-// the backup strip or hijack the operator's MFA, or (cross-instance) pin a TOTP
-// secret encrypted with the source instance's key the operator can never
-// satisfy. These columns are scalar/text (recovery codes are a JSON string in a
-// TEXT column), so writing them needs no special json handling. Relationship/
-// audit FKs (role_id, created_by) are deliberately NOT forced from the snapshot
-// — see the update branch below.
+// Restore the operator's local login credentials so they retain access after
+// replacing the database. Relationship/audit FKs (role_id, created_by) are
+// deliberately NOT forced from the snapshot — see the update branch below.
 //
 // admin_users has UNIQUE constraints on BOTH email and username, and a restored
 // backup can collide with the operator on either — possibly on two DIFFERENT
@@ -327,13 +320,12 @@ async function reinjectCurrentAdmin(trx, currentAdmin) {
 
   if (emailMatch) {
     // Update in place — keeps emailMatch.id so restored FKs to the operator
-    // hold. Write only the AUTH-critical columns (login identity + credentials
-    // + MFA), never the relationship/audit FKs (role_id → roles, created_by →
+    // hold. Write only the AUTH-critical columns (login identity + credentials),
+    // never the relationship/audit FKs (role_id → roles, created_by →
     // admin_users). Forcing the operator's pre-restore role_id/created_by here
     // could reference rows absent from a cross-instance backup and dangle the
     // FK (SQLite rolls back at commit); the row already carries the backup's
-    // own valid values for those. This still closes the MFA-hijack gap — a
-    // crafted backup can't strip or replace the operator's second factor.
+    // own valid values for those.
     const authUpdate = {};
     for (const field of PRESERVED_AUTH_FIELDS) {
       if (field in currentAdmin) authUpdate[field] = currentAdmin[field];
@@ -440,7 +432,6 @@ async function resyncSequences(tables) {
 // FKs (role_id, created_by) — see reinjectCurrentAdmin for why.
 const PRESERVED_AUTH_FIELDS = [
   'username', 'email', 'password_hash', 'is_active', 'must_change_password',
-  'two_factor_enabled', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_enrolled_at',
 ];
 
 // The json/jsonb columns of a table (Postgres only). The pg driver returns
@@ -473,8 +464,8 @@ function serialiseJsonColumns(rows, jsonCols) {
 // ("date/time field value out of range: 1786548038763"). Coerce per column,
 // driven by the TARGET schema so nothing is guessed from the value alone.
 // Same-engine restores never call this and are byte-for-byte unchanged.
-async function typedColumnsFor(trx, table) {
-  const info = await trx(table).columnInfo();
+async function typedColumnsFor(trx, table, knownColumnInfo = null) {
+  const info = knownColumnInfo || await trx(table).columnInfo();
   const timestamps = [];
   const booleans = [];
   for (const [name, meta] of Object.entries(info)) {
@@ -483,6 +474,16 @@ async function typedColumnsFor(trx, table) {
     else if (type === 'boolean' || type === 'bool') booleans.push(name);
   }
   return { timestamps, booleans };
+}
+
+// A forward restore can carry columns that a newer target deliberately
+// removed. The target owns its schema, so discard only those unknown fields
+// before insertion; otherwise a valid older backup fails with "no such
+// column" instead of restoring the fields that still exist.
+function retainTargetColumns(rows, targetColumns) {
+  return rows.map((row) => Object.fromEntries(
+    Object.entries(row).filter(([column]) => targetColumns.has(column)),
+  ));
 }
 
 // SQLite writes Date objects as epoch MILLISECONDS in production, but some rows
@@ -602,11 +603,13 @@ async function replaceAllTables(tables, dataDir, currentAdmin, roleSnapshot, { c
     for (const table of tables) {
       const rows = parseNdjson(path.join(dataDir, `${table}.ndjson`));
       if (!rows.length) continue;
+      const columnInfo = await trx(table).columnInfo();
+      const targetColumns = new Set(Object.keys(columnInfo));
       const jsonCols = await jsonColumnsFor(trx, table);
-      let prepared = rows;
+      let prepared = retainTargetColumns(rows, targetColumns);
       let toSerialise = jsonCols;
       if (crossEngine) {
-        prepared = coerceForTargetEngine(prepared, await typedColumnsFor(trx, table));
+        prepared = coerceForTargetEngine(prepared, await typedColumnsFor(trx, table, columnInfo));
         // A sqlite-sourced archive already carries JSON columns as valid JSON
         // TEXT, which is exactly what pg wants. Serialising again would store
         // `{"a":1}` as the scalar string "{\"a\":1}" and would turn the JSON
@@ -616,9 +619,6 @@ async function replaceAllTables(tables, dataDir, currentAdmin, roleSnapshot, { c
       prepared = serialiseJsonColumns(prepared, toSerialise);
       prepared = relocateStoredPaths(table, prepared, path.join(path.dirname(dataDir), 'files'));
       await trx.batchInsert(table, prepared, 100);
-      // Archived queue rows come back as they were, text timestamps included,
-      // and migration 236 will not run again on this target (issue 1670).
-      if (table === 'email_queue') await normaliseSqliteEmailQueue(trx);
       // Likewise events.expires_at text that julianday() cannot read, which
       // migration 238 rewrote once on this target (issue 1733).
       if (table === 'events') await canonicaliseSqliteExpiresAt(trx);
@@ -870,6 +870,7 @@ module.exports = {
   // exported for testing — the cross-engine coercion (#1038)
   epochToIso,
   coerceForTargetEngine,
+  retainTargetColumns,
   typedColumnsFor,
   relocateStoredPaths,
   reinjectCurrentAdmin,

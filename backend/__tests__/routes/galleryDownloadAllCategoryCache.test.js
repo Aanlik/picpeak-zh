@@ -49,8 +49,8 @@ describe('Download All with a download-restricted category', () => {
       event_type: 'project',
       event_name: `Download All ${seq}`,
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${slug}/share`,
       share_token: `${slug}-share`,

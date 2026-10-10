@@ -8,14 +8,12 @@ export interface SetupStatus {
 export interface SetupAdminUser {
   id: number;
   username: string;
-  email: string;
   role: { name: string; displayName?: string };
 }
 
 export interface CreateInitialAdminInput {
   token: string;
-  email?: string;
-  username?: string;
+  username: string;
   password: string;
 }
 

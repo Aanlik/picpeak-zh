@@ -105,8 +105,8 @@ describe('concurrent external imports (#1162)', () => {
       event_type: 'project',
       event_name: 'extdup',
       event_date: '2026-01-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `extdup-${Math.random()}`,
       expires_at: new Date().toISOString(),

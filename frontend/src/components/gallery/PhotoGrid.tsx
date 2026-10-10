@@ -9,7 +9,6 @@ import { useDownloadPhoto } from '../../hooks/useGallery';
 import { PhotoLightbox } from './PhotoLightbox';
 import { Button, AuthenticatedImage } from '../common';
 import { galleryService } from '../../services/gallery.service';
-import { analyticsService } from '../../services/analytics.service';
 
 interface PhotoGridProps {
   photos: Photo[];
@@ -75,10 +74,9 @@ export const PhotoGrid: React.FC<PhotoGridProps> = ({
 
   const handleDownload = (photo: Photo, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     // Track individual photo download
-    analyticsService.trackDownload(photo.id, slug, false);
-    
+
     downloadPhotoMutation.mutate({
       slug,
       photoId: photo.id,
@@ -106,7 +104,6 @@ export const PhotoGrid: React.FC<PhotoGridProps> = ({
 
     try {
       await galleryService.downloadSelectedPhotos(slug, ids);
-      analyticsService.trackGalleryEvent('bulk_download', { gallery: slug, photo_count: ids.length });
     } catch {
       toastify.error(t('gallery.downloadError'));
     } finally {
@@ -152,7 +149,7 @@ export const PhotoGrid: React.FC<PhotoGridProps> = ({
               </Button>
             )}
           </div>
-          
+
           {isSelectionMode && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
               <span className="text-xs sm:text-sm text-muted-theme">
@@ -194,7 +191,6 @@ export const PhotoGrid: React.FC<PhotoGridProps> = ({
             onClick={(e) => handlePhotoClick(index, e)}
             onDownload={(e) => handleDownload(photo, e)}
             allowDownloads={allowDownloads}
-            protectionLevel={protectionLevel}
             useEnhancedProtection={useEnhancedProtection}
             slug={slug}
             feedbackEnabled={feedbackEnabled}
@@ -229,7 +225,6 @@ interface PhotoThumbnailProps {
   onClick: (e: React.MouseEvent) => void;
   onDownload: (e: React.MouseEvent) => void;
   allowDownloads?: boolean;
-  protectionLevel?: 'basic' | 'standard' | 'enhanced' | 'maximum';
   useEnhancedProtection?: boolean;
   slug: string; // Add slug as required prop
   feedbackEnabled?: boolean;
@@ -242,7 +237,6 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
   onClick,
   onDownload,
   allowDownloads = true,
-  protectionLevel = 'standard',
   slug,
   feedbackEnabled = false
 }) => {
@@ -267,18 +261,8 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
             loading="lazy"
             isGallery={true}
             slug={slug}
-            onProtectionViolation={(violationType) => {
-              // Track analytics
-              if (typeof window !== 'undefined' && (window as any).umami) {
-                (window as any).umami.track('thumbnail_protection_violation', {
-                  photoId: photo.id,
-                  violationType,
-                  protectionLevel
-                });
-              }
-            }}
           />
-          
+
           {/* Feedback Indicators */}
           {feedbackEnabled && (photo.has_feedback || (photo.average_rating ?? 0) > 0 || (photo.comment_count ?? 0) > 0) && (
             <div className="absolute top-2 left-2 flex gap-1 z-10">
@@ -296,7 +280,7 @@ const PhotoThumbnail: React.FC<PhotoThumbnailProps> = ({
               )}
             </div>
           )}
-          
+
           {/* Overlay on hover/tap - Always visible on mobile for better UX.
               #1263: `md:opacity-0` hides the pixels but not the hit area, so
               on a narrow pointer-device window the buttons stayed tappable

@@ -1,4 +1,3 @@
-import { NO_EMAIL_MODE } from '../../config/communication';
 import React from 'react';
 import { clsx } from 'clsx';
 
@@ -24,7 +23,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    if (NO_EMAIL_MODE && props.type === "email") return null;
     const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
 
     return (

@@ -8,7 +8,6 @@ const { feedbackRateLimit, generateGuestIdentifier } = require('../middleware/fe
 const { noStoreCache } = require('../middleware/noStoreCache');
 const feedbackService = require('../services/feedbackService');
 const { sanitizeComment } = require('../utils/feedbackValidation');
-const feedbackModeration = require('../services/feedbackModeration');
 const {
   getPublicPhotoStates, prepareVersionFolder, withdrawPhotoSelection,
   triggerWorkflowSync,
@@ -131,7 +130,7 @@ router.post('/:slug/photos/:photoId/withdraw-selection',
         await feedbackService.submitFeedback(photoId, event.id, {
           feedback_type: 'color_label', color_label: 'green', ensure_color_label: true,
           identity_mode: settings.identity_mode, guest_name: req.guest?.name,
-          guest_email: req.guest?.email, guest_id: req.guest?.id ?? null,
+          guest_id: req.guest?.id ?? null,
           ip_address: req.ip || req.connection.remoteAddress,
           user_agent: (req.headers['user-agent'] || '').replace(/[<>&"']/g, '').substring(0, 255),
         }, guestIdentifier).catch(() => {});
@@ -192,9 +191,6 @@ router.post('/:slug/photos/:photoId/retouch-requests',
         }
       }
 
-      const moderation = await feedbackModeration.moderateText(message);
-      if (moderation.blocked) return res.status(400).json({ error: 'This request contains text that is not allowed', code: 'REQUEST_BLOCKED' });
-      if (!moderation.approved || settings.moderate_comments) status = 'moderation';
       // A new edit of a delivered photo gets a dedicated Vn folder. The Bridge
       // checks the version again while creating it, so a concurrent delivery
       // cannot silently direct the photographer to a stale folder.
@@ -211,19 +207,16 @@ router.post('/:slug/photos/:photoId/retouch-requests',
       // A request means the client wants this photo processed. Ensure the
       // green selection exists (including after a previous withdrawal) so the
       // Bridge can resume work instead of recording an unprocessable request.
-      if (status !== 'moderation') {
-        await feedbackService.submitFeedback(photoId, event.id, {
-          feedback_type: 'color_label',
-          color_label: 'green',
-          ensure_color_label: true,
-          identity_mode: settings.identity_mode,
-          guest_name: req.guest?.name,
-          guest_email: req.guest?.email,
-          guest_id: req.guest?.id ?? null,
-          ip_address: req.ip || req.connection.remoteAddress,
-          user_agent: (req.headers['user-agent'] || '').replace(/[<>&"']/g, '').substring(0, 255),
-        }, guestIdentifier);
-      }
+      await feedbackService.submitFeedback(photoId, event.id, {
+        feedback_type: 'color_label',
+        color_label: 'green',
+        ensure_color_label: true,
+        identity_mode: settings.identity_mode,
+        guest_name: req.guest?.name,
+        guest_id: req.guest?.id ?? null,
+        ip_address: req.ip || req.connection.remoteAddress,
+        user_agent: (req.headers['user-agent'] || '').replace(/[<>&"']/g, '').substring(0, 255),
+      }, guestIdentifier);
       const [request] = await db('photo_retouch_requests').insert({
         event_id: event.id,
         photo_id: photoId,
@@ -237,7 +230,7 @@ router.post('/:slug/photos/:photoId/retouch-requests',
         delivery_folder: deliveryFolder,
       }).returning(['id', 'photo_id', 'request_type', 'base_version', 'customer_message', 'status', 'photographer_reply', 'created_at', 'updated_at']);
       await triggerWorkflowSync(event.id);
-      res.status(201).json({ request, moderation_required: status === 'moderation' });
+      res.status(201).json({ request });
     } catch (error) {
       require('../utils/logger').error('Gallery retouch request failed', { error: error.message });
       res.status(500).json({ error: 'Unable to submit retouch request' });

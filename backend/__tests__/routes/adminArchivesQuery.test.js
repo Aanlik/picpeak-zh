@@ -1,5 +1,5 @@
 /**
- * The archives list must resolve search / type filter / sort in SQL.
+ * The archives list must resolve search / sort in SQL.
  *
  * Before this, GET /admin/archives ignored every query param except page and
  * limit: the UI fetched one 20-row page and filtered it in JavaScript while
@@ -88,15 +88,15 @@ describe('GET /admin/archives query params (#I.01)', () => {
     );
 
     let i = 0;
-    for (const [eventName, eventType, archivedAt, sizes, archiveSize] of fixtures) {
+    for (const [eventName, , archivedAt, sizes, archiveSize] of fixtures) {
       const slug = `arch-${i++}`;
       const ev = await db('events').insert({
         slug,
-        event_type: eventType,
+        event_type: 'project',
         event_name: eventName,
         event_date: '2026-08-01',
-        host_email: 'h@example.com',
-        admin_email: 'a@example.com',
+
+
         password_hash: 'x',
         share_token: `tok-${slug}`,
         share_link: `/gallery/${slug}/tok-${slug}`,
@@ -130,8 +130,8 @@ describe('GET /admin/archives query params (#I.01)', () => {
       event_type: 'project',
       event_name: 'Alpha Live Wedding',
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_token: 'tok-not-archived',
       share_link: '/gallery/not-archived/tok-not-archived',
@@ -178,21 +178,6 @@ describe('GET /admin/archives query params (#I.01)', () => {
     expect(body.archives).toEqual([]);
     expect(body.pagination.total).toBe(0);
     expect(body.pagination.totalPages).toBe(0);
-  });
-
-  test('type filter narrows the rows and the total; "all" is a no-op', async () => {
-    const filtered = await list({ type: 'wedding' });
-    expect(names(filtered).sort()).toEqual(['Alpha Wedding', 'Charlie Wedding', 'Echo WEDDING Gala']);
-    expect(filtered.pagination.total).toBe(3);
-
-    const all = await list({ type: 'all' });
-    expect(all.pagination.total).toBe(9);
-  });
-
-  test('search and type filter combine', async () => {
-    const body = await list({ search: 'wedding', type: 'birthday' });
-    expect(body.archives).toEqual([]);
-    expect(body.pagination.total).toBe(0);
   });
 
   test('sortBy=name orders across the whole set, not just the page', async () => {
@@ -293,17 +278,7 @@ describe('GET /admin/archives query params (#I.01)', () => {
     expect(last.totals).toEqual(body.totals);
   });
 
-  test('totals respect the active search and type filter', async () => {
-    const body = await list({ type: 'wedding' });
-    expect(body.totals).toEqual({
-      archives: 3,
-      photos: 4,                 // Alpha 1 + Charlie 2 + Echo 1
-      archiveSize: 100 + 50 + 0, // Echo's zip was never measured
-    });
 
-    const none = await list({ search: 'zzz-nothing' });
-    expect(none.totals).toEqual({ archives: 0, photos: 0, archiveSize: 0 });
-  });
 
   // --- Migration backfill (C1) ---------------------------------------------
 
@@ -317,8 +292,8 @@ describe('GET /admin/archives query params (#I.01)', () => {
       event_type: 'project',
       event_name: 'Backfill Me',
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
       is_active: 0,

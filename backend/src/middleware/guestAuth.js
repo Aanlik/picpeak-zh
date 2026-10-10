@@ -55,7 +55,7 @@ async function resolveGuest(req, res, next) {
     // event it names, which is not necessarily the gallery this request was
     // authorized for (verifyGalleryAccess runs first and sets req.event); in
     // simple and shared mode nothing downstream compared the two, so another
-    // gallery's guest id, name and email landed on this gallery's feedback.
+    // gallery's guest id and name landed on this gallery's feedback.
     if (req.event?.id != null && Number(guest.event_id) !== Number(req.event.id)) {
       req.guest = null;
       return next();
@@ -66,7 +66,6 @@ async function resolveGuest(req, res, next) {
       eventId: guest.event_id,
       identifier: guest.identifier,
       name: guest.name,
-      email: guest.email || null,
     };
 
     return next();

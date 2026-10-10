@@ -1,6 +1,5 @@
-import { NO_EMAIL_MODE } from '../../config/communication';
 import React from 'react';
-import { MessageSquare, Star, Heart, Bookmark, Shield, Eye, User, Users, Smile, Palette, Keyboard, Tag } from 'lucide-react';
+import { MessageSquare, Star, Heart, Bookmark, Eye, User, Users, Smile, Palette, Keyboard, Tag } from 'lucide-react';
 import { Card } from '../common';
 import { useTranslation } from 'react-i18next';
 import { COLOR_LABELS, COLOR_LABEL_SWATCHES, KEYBIND_SCHEMES, type KeybindMode } from '../../services/feedback.service';
@@ -20,8 +19,6 @@ interface FeedbackSettings {
   allow_reactions: boolean;
   allow_color_labels: boolean;
   keybind_mode?: KeybindMode;
-  require_name_email: boolean;
-  moderate_comments: boolean;
   show_feedback_to_guests: boolean;
   identity_mode?: 'simple' | 'guest' | 'shared';
   // Per-guest caps (#655). null/0 = unlimited.
@@ -101,7 +98,7 @@ export const FeedbackSettings: React.FC<FeedbackSettingsProps> = ({
                   </div>
                 </label>
 
-                {!NO_EMAIL_MODE && (<label
+                <label
                   className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer border transition ${
                     settings.identity_mode === 'guest'
                       ? 'border-accent-dark bg-accent-dark/15'
@@ -128,7 +125,7 @@ export const FeedbackSettings: React.FC<FeedbackSettingsProps> = ({
                       )}
                     </div>
                   </div>
-                </label>)}
+                </label>
 
                 {/* Shared colour tag (#1197). Deliberately worded around what
                     it changes and what it does not: it drops the identity from
@@ -436,48 +433,12 @@ export const FeedbackSettings: React.FC<FeedbackSettingsProps> = ({
 
             <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4" />
 
-            {/* Privacy & Moderation */}
+            {/* Guest identity */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                {t('feedback.settings.privacyModeration', 'Privacy & Moderation')}
+                {t('feedback.settings.guestIdentity', 'Guest identity')}
               </h3>
               <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.require_name_email}
-                    onChange={() => handleToggle('require_name_email')}
-                    className="w-4 h-4 text-accent bg-neutral-100 border-neutral-300 rounded focus:ring-primary-500"
-                  />
-                  <div className="flex-1">
-                    {!NO_EMAIL_MODE && (<div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                      {t('feedback.settings.requireInfo', 'Require Name & Email')}
-                    </div>)}
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {t('feedback.settings.requireInfoDesc', 'Guests must provide name and email to leave feedback')}
-                    </div>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.moderate_comments}
-                    onChange={() => handleToggle('moderate_comments')}
-                    disabled={!settings.allow_comments}
-                    className="w-4 h-4 text-accent bg-neutral-100 border-neutral-300 rounded focus:ring-primary-500 disabled:opacity-50"
-                  />
-                  <Shield className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                      {t('feedback.settings.moderateComments', 'Moderate Comments')}
-                    </div>
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {t('feedback.settings.moderateCommentsDesc', 'Comments require approval before being visible')}
-                    </div>
-                  </div>
-                </label>
-
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -491,7 +452,7 @@ export const FeedbackSettings: React.FC<FeedbackSettingsProps> = ({
                       {t('feedback.settings.showToGuests', 'Show Feedback to Guests')}
                     </div>
                     <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {t('feedback.settings.showToGuestsDesc', 'Other guests can see ratings, likes, and approved comments')}
+                      {t('feedback.settings.showToGuestsDesc', 'Other guests can see ratings, likes, and comments')}
                     </div>
                   </div>
                 </label>

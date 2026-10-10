@@ -55,8 +55,8 @@ describe('slideshow session binding', () => {
       event_type: 'project',
       event_name: 'Slideshow Binding',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'slideshow-binding-share',

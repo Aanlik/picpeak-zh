@@ -18,14 +18,14 @@ async function queryWithRetry(queryFn, retries = MAX_RETRIES) {
       if (i === retries - 1) {
         throw error;
       }
-      
+
       // Check if it's a connection error that might benefit from retry
-      const isConnectionError = 
+      const isConnectionError =
         error.message?.includes('Connection terminated') ||
         error.message?.includes('ECONNREFUSED') ||
         error.message?.includes('ETIMEDOUT') ||
         error.code === 'ECONNRESET';
-      
+
       if (isConnectionError) {
         logger.warn(`Database connection error, retrying in ${RETRY_DELAY}ms... (attempt ${i + 1}/${retries})`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
@@ -38,12 +38,12 @@ async function queryWithRetry(queryFn, retries = MAX_RETRIES) {
 
 async function checkMaintenanceMode() {
   const now = Date.now();
-  
+
   // Use cached value if recent
   if (now - lastCheck < CACHE_DURATION) {
     return maintenanceMode;
   }
-  
+
   try {
     const setting = await queryWithRetry(async () => {
       return await db('app_settings')
@@ -51,10 +51,10 @@ async function checkMaintenanceMode() {
         .where('setting_type', 'general')
         .first();
     });
-    
+
     maintenanceMode = setting ? (setting.setting_value === 'true' || setting.setting_value === true) : false;
     lastCheck = now;
-    
+
     return maintenanceMode;
   } catch (error) {
     logger.error('Error checking maintenance mode after retries:', error.message);
@@ -73,10 +73,6 @@ async function maintenanceMiddleware(req, res, next) {
   // entries here matched nothing, which is exactly why the lockout happened).
   const skipPaths = [
     '/api/auth/admin/login',
-    // The second factor is part of the same login — without this, any
-    // MFA-enrolled admin gets a 503 on the verify step and cannot sign in
-    // at all while maintenance mode is on.
-    '/api/auth/admin/login/mfa',
     // SSO variants of the admin login (#798) — same reasoning: an SSO-only
     // (JIT-provisioned) admin has no password, so blocking these would make
     // maintenance mode admin-proof for them.
@@ -86,10 +82,10 @@ async function maintenanceMiddleware(req, res, next) {
     '/api/public/settings',
     '/health'
   ];
-  
+
   // Allow static assets (uploads, favicons, logos)
-  const isStaticAsset = req.path.startsWith('/uploads/') || 
-                       req.path.startsWith('/favicons/') || 
+  const isStaticAsset = req.path.startsWith('/uploads/') ||
+                       req.path.startsWith('/favicons/') ||
                        req.path.startsWith('/logos/');
 
   // The SPA shell — the HTML document and its bundle, as opposed to an API or a
@@ -136,18 +132,18 @@ async function maintenanceMiddleware(req, res, next) {
   const isBackendRendered = BACKEND_RENDERED_EXACT.includes(requestPath)
     || BACKEND_RENDERED_PREFIXES.some((prefix) => requestPath.startsWith(prefix));
   const isSpaShell = req.method === 'GET' && !isBackendRendered;
-  
+
   // Allow admin routes if admin is authenticated
   const isAdminRoute = req.path.startsWith('/api/admin');
   const hasAdminAuth = req.headers.authorization?.startsWith('Bearer ');
-  
+
   if (skipPaths.includes(req.path) || isStaticAsset || isSpaShell || (isAdminRoute && hasAdminAuth)) {
     return next();
   }
-  
+
   try {
     const inMaintenance = await checkMaintenanceMode();
-    
+
     if (inMaintenance && !isAdminRoute) {
       return res.status(503).json({
         error: 'Service Unavailable',
@@ -159,7 +155,7 @@ async function maintenanceMiddleware(req, res, next) {
     // If we can't check maintenance mode, allow the request to proceed
     logger.error('Failed to check maintenance mode, allowing request:', error.message);
   }
-  
+
   next();
 }
 

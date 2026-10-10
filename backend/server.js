@@ -80,8 +80,6 @@ const { startTransferCleanup } = require('./src/services/transferCleanupService'
 const { startDownloadJobCleanup } = require('./src/services/downloadJobCleanupService');
 const { startFeedbackRateLimitCleanup } = require('./src/services/feedbackRateLimitCleanupService');
 const { startRevealScheduler } = require('./src/services/revealScheduler');
-const { initializeTransporter, startEmailQueueProcessor } = require('./src/services/emailProcessor');
-const emailWebhookTransport = require('./src/services/emailWebhookTransport');
 const { startBackupService } = require('./src/services/backupService');
 const { startScheduledBackups } = require('./src/services/databaseBackup');
 const backgroundProcessor = require('./src/services/backgroundProcessor');
@@ -260,14 +258,6 @@ app.use('/api', cors(corsOptions));
 // Handle preflight explicitly for API paths
 app.options('/api/*', cors(corsOptions));
 
-// Same-origin proxy for the configured analytics tracker. Mounted HERE, ahead
-// of the body parsers, so the tracker's beacon payload reaches the proxy as a
-// raw buffer (express.json would consume it, and the CSRF Content-Type gate
-// below would 415 a navigator.sendBeacon `text/plain` POST). It carries no
-// PicPeak state and reads no PicPeak credentials — see the route file for the
-// SSRF/path-allowlist model.
-app.use('/api/analytics/tracker', require('./src/routes/analyticsTrackerProxy'));
-
 // Health check endpoint. `pid` + `uptime` let monitors (and the local E2E
 // watchdog) detect a silent process restart between two checks.
 //
@@ -380,15 +370,9 @@ function renderBrandFooter(branding) {
     ? `<p>${escapeHtml(branding.footerText)}</p>`
     : '<p>Powered by PicPeak to keep every celebration beautifully organised.</p>';
 
-  const supportEmail = escapeHtml(branding.supportEmail || '');
-  const supportLink = supportEmail
-    ? `<a href="mailto:${supportEmail}">Support</a>`
-    : '';
-
   const legalLinks = `
     <a href="/datenschutz">Privacy Policy</a>
     <a href="/impressum">Impressum</a>
-    ${supportLink}
   `;
 
   return `<footer class="site-footer" id="contact">
@@ -550,8 +534,8 @@ app.use(createApiRateLimitGate(rateLimitService.getGeneralLimiter));
 // and why it must stay unmounted.
 app.use(createAuthRateLimitGate(rateLimitService.getAuthLimiter));
 
-// Body limits. 50mb is only needed by the authenticated admin and API-token
-// surfaces (restore manifests, CMS and email templates, bulk operations).
+// Body limits. 50mb is only needed by authenticated admin and API-token
+// surfaces (restore manifests, CMS and bulk operations).
 // Scoping the large parser to those path prefixes was not enough: it still
 // ran before any authentication, so an unauthenticated POST to an admin path
 // was parsed at 50mb and only then refused. largeJsonBody parses at the large
@@ -566,7 +550,6 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // Validate the origin independently of body length/content type.
 app.use('/api', require('./src/middleware/csrf'));
-app.use('/api', require('./src/utils/communicationProfile').middleware);
 
 app.use('/api', require('./src/middleware/apiRequestLogger'));
 
@@ -617,8 +600,7 @@ process.env.EXTERNAL_MEDIA_ROOT = process.env.EXTERNAL_MEDIA_ROOT || '/external-
 // revoke access immediately. The filenames needed to exercise it are handed to
 // every guest in the photos listing.
 //
-// Nothing builds these URLs: no reference in frontend/src, none in the email
-// templates, and the only backend mentions are the /api/admin/photos/... API
+// Nothing builds these URLs: no reference in frontend/src, and the only backend mentions are the /api/admin/photos/... API
 // routes and a maintenance-mode prefix list. nginx still proxies /photos and
 // /thumbnails; those locations now 404, which is the intended outcome.
 //
@@ -680,11 +662,11 @@ app.use(
 // Debug endpoint to check IP detection (only in development)
 if (process.env.NODE_ENV === 'development') {
   app.get('/api/debug/ip', (req, res) => {
-    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
-                     req.headers['x-real-ip'] || 
-                     req.connection.remoteAddress || 
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                     req.headers['x-real-ip'] ||
+                     req.connection.remoteAddress ||
                      req.ip;
-    
+
     res.json({
       detectedIp: clientIp,
       reqIp: req.ip,
@@ -846,8 +828,6 @@ app.get(
 // Routes
 app.use('/api/setup', setupRoutes); // public first-run bootstrap (self-closes after setup)
 app.use('/api/auth', authRoutes);
-app.use('/api/admin', require('./src/middleware/productUsage').productUsage);
-app.use('/api/admin/usage', require('./src/routes/adminUsage'));
 app.use('/api/admin/external-media', require('./src/routes/adminExternalMedia'));
 // Gallery routes - main routes first, then feedback routes
 app.use('/api/gallery', galleryRoutes);
@@ -866,7 +846,7 @@ app.use('/api/admin/photography-workflow', require('./src/routes/photographyWork
 app.use('/api/admin/feature-flags', require('./src/routes/adminFeatureFlags'));
 app.use('/api/admin/backup', require('./src/routes/adminBackup'));
 app.use('/api/admin/database-backup', require('./src/routes/adminDatabaseBackup'));
-app.use('/api/admin/feedback', require('./src/routes/adminFeedback'));
+app.use('/api/admin/feedback', require('./src/routes/adminPhotographyFeedback'));
 app.use('/api/admin', require('./src/routes/adminGuests'));
 app.use('/api/admin/image-security', require('./src/routes/adminImageSecurity'));
 app.use('/api/admin/thumbnails', require('./src/routes/adminThumbnails'));
@@ -875,62 +855,18 @@ app.use('/api/admin/photos', require('./src/routes/adminPhotos'));
 app.use('/api/admin/photo-export', require('./src/routes/adminPhotoExport'));
 app.use('/api/admin/css-templates', require('./src/routes/adminCssTemplates'));
 app.use('/api/admin/events', require('./src/routes/adminEventRename'));
-app.use('/api/admin/users', require('./src/routes/adminUsers'));
+app.use('/api/admin/users', require('./src/routes/adminCurrentUser'));
 app.use('/api/admin/roles', require('./src/routes/adminRoles'));
-// Customer portal (#354). The customerPortal feature flag is a
-// VISIBILITY toggle for the admin surface, not a kill switch for
-// customer access. Enforcement:
-//
-//   1. Frontend: RequireFeature guards + AdminSidebar visibility
-//      hide the Clients section when the flag is off. Customer-side
-//      /customer/* surfaces stay reachable.
-//   2. Backend: NO route-level gate. The admin surface is gated by
-//      adminAuth + permission checks (admin still has rights to
-//      manage customer records even if the section is hidden in
-//      their UI). The customer surface is gated by customerAuth +
-//      is_active checks on customer_accounts.
-//
-// For close-to-realtime access changes use the dedicated tools:
-//   - Revoke a customer's access to ONE gallery → "Manage galleries"
-//     dialog removes the event_customer_assignments row, which
-//     verifyGalleryAccess re-checks on every customer-minted JWT.
-//   - Lock out a customer entirely → "Deactivate" sets is_active=false
-//     and bumps password_changed_at, killing every outstanding JWT.
-//   - Assign or revoke gallery access → use the customer detail page.
-//
-// Putting the global flag in the kill-switch role was a mistake — a
-// stray click in Settings → Features would lock every paying
-// customer out at once. PR-revert moved the gate back to per-record.
-//
-// `noStoreCache` belt-and-braces the cache-control story for both
-// surfaces: any response — 200, 4xx, 5xx — carries `Cache-Control:
-// no-store` so a transient error (the now-reverted #458 410, a
-// permission flip mid-session, a backend restart) can't get pinned
-// in browser or intermediate caches and outlive its cause. See the
-// PR #458 → #470 history in the middleware file for context.
-const { noStoreCache } = require('./src/middleware/noStoreCache');
-app.use('/api/admin/customers', noStoreCache, require('./src/routes/adminCustomers'));
-// Customer-side surface (#354). Strictly separate from /api/admin/* —
-// distinct token type, distinct cookie, distinct middleware. The
-// noStoreCache wrapper (upstream) prevents stale customer-portal
-// data from being served after logout. The CRM-area route-flag
-// gate was reverted upstream and lives in the UI now.
-app.use('/api/customer/auth', noStoreCache, require('./src/routes/customerAuth'));
-app.use('/api/customer', noStoreCache, require('./src/routes/customer'));
-
-// --- Core customer, workflow, transfer and integration routes ---------
-app.use('/api/admin/workflows',  require('./src/routes/adminWorkflows'));
+// --- Photography, transfer and integration routes --------------------
 app.use('/api/admin/system-health', require('./src/routes/adminSystemHealth'));
 app.use('/api/admin/transfers',  require('./src/routes/adminTransfers'));
 // PicTransfer (#997): recipient download + client upload, token-authenticated.
 app.use('/api/public/transfer', require('./src/routes/publicTransfer'));
 app.use('/api/public/transfer-upload', require('./src/routes/publicTransferUpload'));
-app.use('/api/public/workflow-approvals', require('./src/routes/publicWorkflowApprovals'));
 app.use('/api/admin/api-tokens', require('./src/routes/adminApiTokens'));
-app.use('/api/admin/webhooks', require('./src/routes/adminWebhooks'));
 // Public v1 API for n8n / external integrations (#322). Mounted under
 // /api/v1; auth handled per-route via apiTokenAuth (Bearer tokens).
-app.use('/api/v1', require('./src/middleware/productUsage').productUsageApi, require('./src/routes/v1/events'));
+app.use('/api/v1', require('./src/routes/v1/events'));
 
 // Swagger UI for the v1 API. Admin-gated since it lists endpoint shapes
 // that should not be enumerable to anonymous users (a common reduce-info-leak hardening).
@@ -947,7 +883,6 @@ app.use('/api/v1', require('./src/middleware/productUsage').productUsageApi, req
   );
 }
 
-app.use('/api/invite', require('./src/routes/acceptInvite'));
 app.use('/api/public/settings', require('./src/routes/publicSettings'));
 app.use('/api/public/fonts', require('./src/routes/publicFonts'));
 app.use('/api/public', require('./src/routes/publicCMS'));
@@ -1042,7 +977,7 @@ try {
     // Everything else the router owns client-side. nginx did `try_files $uri
     // $uri/ /index.html`, so behind compose every client route survived a
     // reload and the short route list above was never exercised. Without
-    // nginx it is the whole contract: /setup, /customer, /invite/:token,
+    // nginx this fallback keeps /setup, legacy redirects, /invite/:token,
     // /transfer/:token, /transfer-upload/:token and the
     // branded short URLs all 404'd on a direct hit or a refresh. /setup is
     // the first URL a new install visits.
@@ -1135,7 +1070,7 @@ async function startServer() {
     // Initialize auth security cleanup job
     const { initializeCleanupJob } = require('./src/utils/authSecurity');
     initializeCleanupJob();
-    
+
     require('./src/utils/cleanupTempUploads').startTempUploadCleanup();
 
     // Start file watcher
@@ -1149,7 +1084,7 @@ async function startServer() {
     } catch (err) {
       logger.warn('External-media watcher failed to start:', err.message);
     }
-    
+
     // Start expiration checker
     startExpirationChecker();
     // PicTransfer retention sweep (#997): expire links, notify admins, and
@@ -1169,30 +1104,6 @@ async function startServer() {
     startFeedbackRateLimitCleanup();
     // Reveal-mode scheduler (#838): minutely stamp for scheduled reveals.
     startRevealScheduler();
-    
-    // Initialize email transporter and start queue processor.
-    // Skipped under the webhook transport (#1225): an install that switched to
-    // it may still carry an old, now-unreachable SMTP row, and nodemailer's
-    // verify() would sit on a connection timeout here — delaying boot for a
-    // transport that will never send anything.
-    if (!emailWebhookTransport.isEnabled()) {
-      await initializeTransporter();
-    }
-    // Seed the shared project-reminder email template and recover
-    // any queue rows that exhausted retries because their template
-    // didn't exist yet. Runs once per boot via module-level caches in
-    // each seeder. See _emailTemplateBoot.js for the full rationale.
-    try {
-      const { seedEmailTemplatesAndRecoverQueue } = require('./src/services/_emailTemplateBoot');
-      await seedEmailTemplatesAndRecoverQueue(db, logger);
-    } catch (err) {
-      logger.warn('Email template self-heal failed at boot:', err.message);
-    }
-    startEmailQueueProcessor();
-
-    // Start webhook delivery worker (#327)
-    const { startWebhookDeliveryWorker } = require('./src/services/webhookDeliveryWorker');
-    startWebhookDeliveryWorker();
 
     // Start S3 auto-importer (#328 follow-up). No-op when STORAGE_AUTO_IMPORT
     // is unset OR STORAGE_BACKEND=local — replaces the chokidar watcher
@@ -1222,15 +1133,6 @@ async function startServer() {
       await seedRestoreSettingsAtBoot(db, logger);
     } catch (err) {
       logger.warn('restore-settings self-heal failed at boot:', err.message);
-    }
-
-    // Seed built-in gallery and project reminder workflows. Disabled by
-    // default — live reminder behaviour is unchanged. See _workflowSeedBoot.js.
-    try {
-      const { seedBuiltinWorkflowsAtBoot } = require('./src/services/_workflowSeedBoot');
-      await seedBuiltinWorkflowsAtBoot(db, logger);
-    } catch (err) {
-      logger.warn('built-in workflow seed failed at boot:', err.message);
     }
 
     // Self-heal the RBAC catalog: ensure super_admin holds every permission

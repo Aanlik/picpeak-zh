@@ -139,7 +139,7 @@ export const ColorCustomizationCard: React.FC<ColorCustomizationCardProps> = ({
        * 8-token CI palette pickers, grouped by role.
        * Each token writes directly to the same field name on ThemeConfig
        * (kebab → camel mapping happens via handleChange's first arg).
-       * Translation keys fall back to inline strings — German/English
+       * Translation keys fall back to inline strings — Chinese/English
        * coverage only (per user language profile); other locales will
        * show the fallback until reviewed by a native speaker.
        */}

@@ -14,7 +14,7 @@ interface PhotoCommentsProps {
   gallerySlug: string;
   comments: PhotoFeedback[];
   isEnabled: boolean;
-  requireNameEmail: boolean;
+  requireGuestName: boolean;
   showToGuests: boolean;
   onCommentAdded?: () => void;
 }
@@ -24,7 +24,7 @@ export const PhotoComments: React.FC<PhotoCommentsProps> = ({
   gallerySlug,
   comments,
   isEnabled,
-  requireNameEmail,
+  requireGuestName,
   showToGuests,
   onCommentAdded
 }) => {
@@ -35,7 +35,6 @@ export const PhotoComments: React.FC<PhotoCommentsProps> = ({
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [guestName, setGuestName] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -48,27 +47,19 @@ export const PhotoComments: React.FC<PhotoCommentsProps> = ({
   }, [commentText]);
 
   const submitCommentMutation = useMutation({
-    mutationFn: (data: any) => 
+    mutationFn: (data: any) =>
       feedbackService.submitFeedback(gallerySlug, photoId, {
         feedback_type: 'comment',
         comment_text: data.comment_text,
         guest_name: data.guest_name,
-        guest_email: data.guest_email
       }),
-    onSuccess: (response) => {
+    onSuccess: () => {
       setCommentText('');
       setShowCommentForm(false);
       queryClient.invalidateQueries({ queryKey: ['photo-feedback', gallerySlug, photoId] });
-      
-      if (response.moderation_required) {
-        toast.info(t(
-          'feedback.commentSubmittedForModeration',
-          'Your comment has been submitted for moderation'
-        ));
-      } else {
-        toast.success(t('feedback.commentSubmitted', 'Comment submitted'));
-      }
-      
+
+      toast.success(t('feedback.commentSubmitted', 'Comment submitted'));
+
       if (onCommentAdded) {
         onCommentAdded();
       }
@@ -93,14 +84,11 @@ export const PhotoComments: React.FC<PhotoCommentsProps> = ({
     if (!commentText.trim()) {
       newErrors.comment_text = t('feedback.commentRequired', 'Comment is required');
     }
-    // In guest identity mode, name/email come from the guest token — don't
+    // In guest identity mode, the name comes from the guest token — don't
     // ask for them here.
-    if (requireNameEmail && !isGuestMode) {
+    if (requireGuestName && !isGuestMode) {
       if (!guestName.trim()) {
         newErrors.guest_name = t('feedback.nameRequired', 'Name is required');
-      }
-      if (!guestEmail.trim()) {
-        newErrors.guest_email = t('feedback.emailRequired', 'Email is required');
       }
     }
 
@@ -122,15 +110,14 @@ export const PhotoComments: React.FC<PhotoCommentsProps> = ({
     submitCommentMutation.mutate({
       comment_text: commentText.trim(),
       guest_name: guestName.trim() || undefined,
-      guest_email: guestEmail.trim() || undefined
     });
   };
 
   if (!isEnabled) return null;
 
   // Filter comments based on visibility settings
-  const visibleComments = showToGuests 
-    ? comments.filter(c => c.is_approved && !c.is_hidden)
+  const visibleComments = showToGuests
+    ? comments.filter(c => !c.is_hidden)
     : comments.filter(c => c.is_mine);
 
   return (
@@ -139,7 +126,7 @@ export const PhotoComments: React.FC<PhotoCommentsProps> = ({
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-theme flex items-center gap-2">
           <MessageSquare className="w-4 h-4" />
-          {t('feedback.comments', 'Comments')} 
+          {t('feedback.comments', 'Comments')}
           {visibleComments.length > 0 && (
             <span className="text-muted-theme">({visibleComments.length})</span>
           )}
@@ -158,7 +145,7 @@ export const PhotoComments: React.FC<PhotoCommentsProps> = ({
       {/* Comment Form */}
       {showCommentForm && (
         <form onSubmit={handleSubmitComment} className="space-y-3 p-4 bg-surface rounded-lg border border-surface">
-          {requireNameEmail && !isGuestMode && (
+          {requireGuestName && !isGuestMode && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
                 placeholder={t('feedback.yourName', 'Your name')}
@@ -166,16 +153,9 @@ export const PhotoComments: React.FC<PhotoCommentsProps> = ({
                 onChange={(e) => setGuestName(e.target.value)}
                 error={errors.guest_name}
               />
-              <Input
-                type="email"
-                placeholder={t('feedback.yourEmail', 'Your email')}
-                value={guestEmail}
-                onChange={(e) => setGuestEmail(e.target.value)}
-                error={errors.guest_email}
-              />
             </div>
           )}
-          
+
           <div>
             <textarea
               ref={textareaRef}
@@ -240,11 +220,6 @@ export const PhotoComments: React.FC<PhotoCommentsProps> = ({
                   <span className="text-xs text-muted-theme">
                     {format(new Date(comment.created_at), 'PP')}
                   </span>
-                  {comment.is_mine && !comment.is_approved && (
-                    <span className="text-xs text-orange-600">
-                      {t('feedback.pendingApproval', 'Pending approval')}
-                    </span>
-                  )}
                 </div>
                 <p className="text-sm text-muted-theme break-words">
                   {comment.comment_text}

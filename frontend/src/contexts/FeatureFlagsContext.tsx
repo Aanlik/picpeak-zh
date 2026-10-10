@@ -1,4 +1,3 @@
-import { NO_EMAIL_MODE } from '../config/communication';
 import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -12,14 +11,9 @@ export type { FeatureKey, FeatureFlags };
 // hasn't run its migration yet on this instance).
 export const DEFAULT_FLAGS: FeatureFlags = {
   galleries: true,
-  reminderEmails: false,
-  messaging: false,
-  analytics: true,
   userManagement: true,
-  customerPortal: false,
   slideshow: false,
   transfers: false,
-  workflows: false,
   faces: false,
 };
 
@@ -71,7 +65,6 @@ export const FeatureFlagsProvider: React.FC<ProviderProps> = ({ children }) => {
   // Source-of-truth = server response; fall back to defaults during load.
   const flags = useMemo(() => {
     const next = { ...(serverFlags ?? DEFAULT_FLAGS) };
-    if (NO_EMAIL_MODE) for (const key of ['messaging', 'reminderEmails', 'customerPortal'] as FeatureKey[]) next[key] = false;
     return next;
   }, [serverFlags]);
 

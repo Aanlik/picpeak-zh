@@ -13,10 +13,7 @@ const normalizeEvent = (event: Event): Event => {
   }
 
   const legacyHostName = raw.host_name as string | undefined;
-  const legacyHostEmail = raw.host_email as string | undefined;
-
   const customerName = (raw.customer_name as string | undefined) ?? legacyHostName;
-  const customerEmail = (raw.customer_email as string | undefined) ?? legacyHostEmail ?? '';
 
   return {
     ...raw,
@@ -24,7 +21,6 @@ const normalizeEvent = (event: Event): Event => {
     event_name: rawName.trim(),
     photo_count: Number(raw.photo_count ?? raw.photoCount ?? 0) || 0,
     customer_name: customerName,
-    customer_email: customerEmail,
     require_password: normalizeRequirePassword(raw.require_password, true),
     // SQLite hands these back as 0/1, so a strict `=== false` consumer reads
     // an inactive gallery as active (the #1028 class). Coerced once here with
@@ -37,11 +33,8 @@ interface CreateEventData {
   event_name: string;
   event_date?: string;
   customer_name?: string;
-  customer_email?: string;
-  admin_email?: string;
   require_password?: boolean;
   password?: string;
-  welcome_message?: string;
   color_theme?: string;
   expiration_days?: number;
   allow_user_uploads?: boolean;
@@ -52,23 +45,15 @@ interface CreateEventData {
   allow_comments?: boolean;
   allow_favorites?: boolean;
   allow_reactions?: boolean;
-  require_name_email?: boolean;
-  moderate_comments?: boolean;
   show_feedback_to_guests?: boolean;
   photo_cap?: number | null;
   default_photo_sort?: string;
-  // Customer accounts assigned to this event (#354). Optional array of
-  // customer_accounts.id; backend service diffs against the existing
-  // assignments and applies inserts/deletes inside the same transaction.
-  customer_account_ids?: number[];
 }
 
 interface UpdateEventData {
   event_name?: string;
   event_date?: string;
   customer_name?: string;
-  customer_email?: string;
-  admin_email?: string;
   require_password?: boolean;
   password?: string;
   // Client (photographer's customer) access to the gallery. The plaintext
@@ -77,7 +62,6 @@ interface UpdateEventData {
   client_access_enabled?: boolean;
   client_password?: string;
   regenerate_client_token?: boolean;
-  welcome_message?: string;
   color_theme?: string;
   expires_at?: string;
   is_active?: boolean;
@@ -94,9 +78,6 @@ interface UpdateEventData {
   default_photo_sort?: string;
   // Per-event opt-in for hero photo as social-share preview (#474).
   og_image_share_enabled?: boolean;
-  // Customer accounts (#354). Same semantics as on CreateEventData;
-  // omit the field to leave assignments untouched, send [] to clear.
-  customer_account_ids?: number[];
 }
 
 export type EventStatusFilter = 'active' | 'inactive' | 'archived' | 'draft' | 'expiring';
@@ -264,18 +245,11 @@ export const eventsService = {
   // server auto-generate one.
   async resetPassword(
     eventId: number,
-    sendEmail: boolean = true,
     password?: string
-  ): Promise<{ message: string; newPassword: string; emailSent: boolean }> {
-    const body: { sendEmail: boolean; password?: string } = { sendEmail };
+  ): Promise<{ message: string; newPassword: string }> {
+    const body: { password?: string } = {};
     if (password) body.password = password;
     const response = await api.post(`/admin/events/${eventId}/reset-password`, body);
-    return response.data;
-  },
-
-  // Resend creation email
-  async resendCreationEmail(eventId: number): Promise<{ success: boolean; message: string }> {
-    const response = await api.post(`/admin/events/${eventId}/resend-email`);
     return response.data;
   },
 
@@ -308,35 +282,8 @@ export const eventsService = {
     return response.data;
   },
 
-  // Publish a draft event. `password` is optional; when the event is
-  // password-protected, supplying the password here makes the gallery_created
-  // email carry the actual plaintext instead of the "set at creation" sentinel
-  // (#627) — the backend also re-hashes it so the stored hash matches.
-  async publishEvent(
-    eventId: number,
-    options?: { password?: string; notifyCustomer?: boolean },
-  ): Promise<{ message: string; is_draft: boolean; notified_customer?: boolean }> {
-    // Only send what was actually chosen. Omitting notify_customer entirely
-    // when it is true keeps the request identical to the pre-#1235 shape.
-    const body: Record<string, unknown> = {};
-    if (options?.password) body.password = options.password;
-    if (options?.notifyCustomer === false) body.notify_customer = false;
-    const response = await api.post(
-      `/admin/events/${eventId}/publish`,
-      Object.keys(body).length ? body : undefined,
-    );
-    return response.data;
-  },
-
-  // Send the gallery email for an already-published gallery (#1235). The other
-  // half of publishing quietly: the address often arrives after the gallery
-  // does. Also covers an ordinary re-send when the first one was lost.
-  async sendGalleryEmail(
-    eventId: number,
-    options?: { password?: string },
-  ): Promise<{ message: string; recipient: string }> {
-    const body = options?.password ? { password: options.password } : undefined;
-    const response = await api.post(`/admin/events/${eventId}/send-gallery-email`, body);
+  async publishEvent(eventId: number): Promise<{ message: string; is_draft: boolean }> {
+    const response = await api.post(`/admin/events/${eventId}/publish`);
     return response.data;
   },
 
@@ -349,7 +296,6 @@ export const eventsService = {
       event_name: string;
       event_date?: string;
       customer_name?: string;
-      customer_email?: string;
     },
   ): Promise<{ message: string; id: number; slug: string; is_draft: boolean }> {
     const response = await api.post(`/admin/events/${eventId}/duplicate`, data);
@@ -357,7 +303,7 @@ export const eventsService = {
   },
 
   // Rename event
-  async renameEvent(eventId: number, newEventName: string, resendEmail: boolean = false): Promise<{
+  async renameEvent(eventId: number, newEventName: string): Promise<{
     success: boolean;
     message?: string;
     data?: {
@@ -367,12 +313,11 @@ export const eventsService = {
       oldSlug: string;
       newSlug: string;
       newShareLink: string;
-      emailSent: boolean;
       filesRenamed: number;
     };
     error?: string;
   }> {
-    const response = await api.post(`/admin/events/${eventId}/rename`, { newEventName, resendEmail });
+    const response = await api.post(`/admin/events/${eventId}/rename`, { newEventName });
     return response.data;
   },
 

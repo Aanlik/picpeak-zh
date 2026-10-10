@@ -200,8 +200,8 @@ describe('buildOgMetadata — share-image opt-in', () => {
 
 // ---- handleGalleryOgCover: unauthenticated 404 contract ----------------
 
-describe('public preview welcome text', () => {
-  test('withholds welcome text until a password-free gallery is revealed', async () => {
+describe('public preview description', () => {
+  test('does not expose legacy welcome text on a hidden gallery', async () => {
     mockResolveSlug({ id: 1, slug: 'hidden', event_name: 'Surprise',
       require_password: false, reveal_mode: true, welcome_message: 'PRIVATE SURPRISE' });
     mockBranding();
@@ -216,11 +216,11 @@ describe('public preview welcome text', () => {
     expect(meta.description).toBe('Photo gallery from Private event.');
   });
 
-  test.each([false, 0, '0'])('preserves public gallery welcome text (%p)', async (requirePassword) => {
+  test.each([false, 0, '0'])('uses the standard description for a public gallery (%p)', async (requirePassword) => {
     mockResolveSlug({ id: 1, slug: 'public', event_name: 'Public event',
       require_password: requirePassword, welcome_message: 'Public welcome' });
     mockBranding();
-    expect((await buildOgMetadata('public', '/gallery/public')).description).toBe('Public welcome');
+    expect((await buildOgMetadata('public', '/gallery/public')).description).toBe('Photo gallery from Public event.');
   });
 });
 

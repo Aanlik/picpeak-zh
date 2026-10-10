@@ -163,9 +163,9 @@ export const toArray = <T>(value: unknown, defaultValue: T[] = []): T[] => {
 /**
  * Locale-tolerant decimal parser. Accepts strings using either '.' or
  * ',' as the decimal separator and either thousand-separator
- * convention (German "1.234,50" or English "1,234.50"). Crucially, this
- * accepts values typed by humans in either an EN or DE locale. `Number('12,50')`
- * silently returns NaN, so this parser handles the locale-specific separator.
+ * convention (period thousands/comma decimal or comma thousands/period
+ * decimal). `Number('12,50')` silently returns NaN, so this parser handles
+ * either separator convention without depending on the interface language.
  *
  * Heuristic when both separators appear: the LAST one is the decimal
  * separator; all earlier instances of either symbol are thousands and

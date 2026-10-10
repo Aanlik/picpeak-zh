@@ -146,7 +146,7 @@ router.get('/config', adminAuth, requirePermission('backup.view'), async (req, r
     const settings = await db('app_settings')
       .where('setting_type', 'backup')
       .select('setting_key', 'setting_value');
-    
+
     const config = {};
     settings.forEach(setting => {
       try {
@@ -215,7 +215,7 @@ router.put('/config', adminAuth, requirePermission('backup.create'), async (req,
         fields: restricted,
       });
     }
-    
+
     // Validate required fields based on destination type
     if (updates.backup_destination_type) {
       switch (updates.backup_destination_type) {
@@ -277,7 +277,7 @@ router.put('/config', adminAuth, requirePermission('backup.create'), async (req,
           });
       }
     }
-    
+
     // Restart backup service if enabled status changed
     if ('backup_enabled' in updates) {
       const { startBackupService, stopBackupService } = require('../services/backupService');
@@ -287,7 +287,7 @@ router.put('/config', adminAuth, requirePermission('backup.create'), async (req,
         stopBackupService();
       }
     }
-    
+
     res.json({ success: true, message: 'Backup configuration updated' });
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to update backup configuration');
@@ -299,7 +299,7 @@ router.get('/status', adminAuth, requirePermission('backup.view'), async (req, r
   try {
     const { limit } = getPagination(req, { limit: 10 });
     const status = await getBackupStatus(limit);
-    
+
     res.json(status);
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to get backup status');
@@ -314,12 +314,12 @@ router.post('/run', adminAuth, requirePermission('backup.create'), async (req, r
     if (status.isRunning) {
       return res.status(409).json({ error: 'Backup is already running' });
     }
-    
+
     // Start backup in background
     triggerManualBackup().catch(error => {
       logger.error('Manual backup failed:', error);
     });
-    
+
     res.json({ success: true, message: 'Backup started' });
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to trigger backup');
@@ -331,12 +331,12 @@ router.post('/run', adminAuth, requirePermission('backup.create'), async (req, r
 // another instance via the web UI. `?includePhotos=true` also bundles original
 // gallery photos (larger); otherwise the admin re-uploads them per gallery.
 //
-// SECURITY: the file contains plaintext secrets (SMTP password, admin password
+// SECURITY: the file contains plaintext secrets (legacy settings, admin password
 // hashes, API keys). The download UI must warn before offering it. We surface
 // the flag as a response header too so the client can double-confirm.
 // Full-instance export dumps every table unredacted — bcrypt password
-// hashes, 2FA columns, and all integration secrets (SMTP/SSO/
-// webhook/S3) in cleartext. The built-in `admin` role holds backup.create,
+// hashes, legacy MFA columns, and integration secrets (SSO/S3) in cleartext.
+// The built-in `admin` role holds backup.create,
 // but is denied this data everywhere else (config APIs mask secrets as
 // ********). Gate the raw dump behind super_admin (GHSA-pv6w-rj34-wj9v).
 router.get('/picpeak/export', adminAuth, requireSuperAdmin(), async (req, res) => {
@@ -442,15 +442,15 @@ router.post('/picpeak/import', adminAuth, requireSuperAdmin(), picpeakUpload.sin
 router.get('/runs/:id', adminAuth, requirePermission('backup.view'), async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const run = await db('backup_runs')
       .where('id', id)
       .first();
-    
+
     if (!run) {
       return res.status(404).json({ error: 'Backup run not found' });
     }
-    
+
     // Parse JSON fields
     if (run.statistics) {
       try {
@@ -459,7 +459,7 @@ router.get('/runs/:id', adminAuth, requirePermission('backup.view'), async (req,
         // Keep as string if parsing fails
       }
     }
-    
+
     res.json(run);
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to get backup run details');
@@ -471,13 +471,13 @@ router.get('/files', adminAuth, requirePermission('backup.view'), async (req, re
   try {
     const { page = 1, limit = 50, search = '' } = req.query;
     const offset = (page - 1) * limit;
-    
+
     let query = db('backup_file_states');
-    
+
     if (search) {
       query = query.where('file_path', 'like', `%${search}%`);
     }
-    
+
     const [files, totalCount] = await Promise.all([
       query
         .orderBy('last_backed_up', 'desc')
@@ -485,7 +485,7 @@ router.get('/files', adminAuth, requirePermission('backup.view'), async (req, re
         .offset(offset),
       db('backup_file_states').count('* as count').first()
     ]);
-    
+
     res.json({
       files,
       pagination: {
@@ -504,9 +504,9 @@ router.get('/files', adminAuth, requirePermission('backup.view'), async (req, re
 router.delete('/cleanup', adminAuth, requirePermission('backup.delete'), async (req, res) => {
   try {
     const { days = 30 } = req.body;
-    
+
     await cleanupOldBackupRuns(days);
-    
+
     res.json({ success: true, message: `Cleaned up backup runs older than ${days} days` });
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to cleanup backup runs');
@@ -519,7 +519,7 @@ router.delete('/cleanup', adminAuth, requirePermission('backup.delete'), async (
 router.post('/test-connection', adminAuth, requireSuperAdmin(), async (req, res) => {
   try {
     const { destination_type, ...config } = req.body;
-    
+
     switch (destination_type) {
     case 'local': {
       // The rule the backup itself applies: writable, or missing below a
@@ -734,7 +734,7 @@ router.post('/test-connection', adminAuth, requireSuperAdmin(), async (req, res)
       }
       break;
     }
-        
+
     default:
       res.status(400).json({ error: 'Invalid destination type' });
     }
@@ -748,7 +748,7 @@ router.get('/manifest/:backupRunId', adminAuth, requirePermission('backup.view')
   try {
     const { backupRunId } = req.params;
     const result = await getBackupManifest(backupRunId);
-    
+
     res.json({
       backupRunId,
       manifest: result.manifest,
@@ -775,7 +775,7 @@ router.post('/manifest/validate', adminAuth, requirePermission('backup.view'), a
     const safePath = safePathJoin(backupBasePath, manifestPath);
 
     const result = await validateBackupManifest(safePath);
-    
+
     res.json({
       valid: result.valid,
       error: result.error,
@@ -791,14 +791,14 @@ router.get('/manifest/:backupRunId/download', adminAuth, requirePermission('back
   try {
     const { backupRunId } = req.params;
     const { format = 'json' } = req.query;
-    
+
     const result = await getBackupManifest(backupRunId);
-    
+
     // Set appropriate headers
     const filename = `backup-manifest-${backupRunId}.${format}`;
     res.setHeader('Content-Type', format === 'yaml' ? 'text/yaml' : 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    
+
     // Send the manifest in requested format
     if (format === 'yaml') {
       const yaml = require('js-yaml');
@@ -822,7 +822,7 @@ router.get('/manifests/:backupId', adminAuth, requirePermission('backup.view'), 
   try {
     const { backupId } = req.params;
     const result = await getBackupManifest(backupId);
-    
+
     res.json({
       backupId,
       manifest: result.manifest,
@@ -839,14 +839,14 @@ router.get('/manifests/:backupId/download', adminAuth, requirePermission('backup
   try {
     const { backupId } = req.params;
     const { format = 'json' } = req.query;
-    
+
     const result = await getBackupManifest(backupId);
-    
+
     // Set appropriate headers
     const filename = `backup-manifest-${backupId}.${format}`;
     res.setHeader('Content-Type', format === 'yaml' ? 'text/yaml' : 'application/json');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    
+
     // Send the manifest in requested format
     if (format === 'yaml') {
       const yaml = require('js-yaml');
@@ -887,7 +887,7 @@ router.post('/manifests/validate', adminAuth, requirePermission('backup.view'), 
 
     // Use existing validation function for path
     const result = await validateBackupManifest(safePath);
-    
+
     res.json({
       valid: result.valid,
       error: result.error,
@@ -904,11 +904,11 @@ router.post('/manifests/validate', adminAuth, requirePermission('backup.view'), 
 router.get('/s3/buckets', adminAuth, requireSuperAdmin(), async (req, res) => {
   try {
     const config = await getBackupConfig();
-    
+
     if (config.backup_destination_type !== 's3') {
       return res.status(400).json({ error: 'S3 backup not configured' });
     }
-    
+
     const s3Adapter = new S3StorageAdapter({
       endpoint: config.backup_s3_endpoint,
       bucket: config.backup_s3_bucket,
@@ -919,11 +919,11 @@ router.get('/s3/buckets', adminAuth, requireSuperAdmin(), async (req, res) => {
       sslEnabled: backupS3Ssl(config),
       ...backupS3Access(config)
     });
-    
+
     // List buckets using the S3 client
     const { ListBucketsCommand } = require('@aws-sdk/client-s3');
     const result = await s3Adapter.s3Client.send(new ListBucketsCommand({}));
-    
+
     res.json({
       buckets: result.Buckets || []
     });
@@ -937,11 +937,11 @@ router.get('/s3/files', adminAuth, requirePermission('backup.view'), async (req,
   try {
     const { prefix = '', maxKeys = 100, continuationToken } = req.query;
     const config = await getBackupConfig();
-    
+
     if (config.backup_destination_type !== 's3') {
       return res.status(400).json({ error: 'S3 backup not configured' });
     }
-    
+
     const s3Adapter = new S3StorageAdapter({
       endpoint: config.backup_s3_endpoint,
       bucket: config.backup_s3_bucket,
@@ -952,12 +952,12 @@ router.get('/s3/files', adminAuth, requirePermission('backup.view'), async (req,
       sslEnabled: backupS3Ssl(config),
       ...backupS3Access(config)
     });
-    
+
     const result = await s3Adapter.list(prefix, {
       maxKeys: parseInt(maxKeys),
       continuationToken
     });
-    
+
     res.json({
       files: result.objects || [],
       directories: result.directories || [],
@@ -975,11 +975,11 @@ router.delete('/s3/cleanup', adminAuth, requirePermission('backup.delete'), asyn
   try {
     const { retentionDays = 30, dryRun = false } = req.body;
     const config = await getBackupConfig();
-    
+
     if (config.backup_destination_type !== 's3') {
       return res.status(400).json({ error: 'S3 backup not configured' });
     }
-    
+
     const s3Adapter = new S3StorageAdapter({
       endpoint: config.backup_s3_endpoint,
       bucket: config.backup_s3_bucket,
@@ -990,22 +990,22 @@ router.delete('/s3/cleanup', adminAuth, requirePermission('backup.delete'), asyn
       sslEnabled: backupS3Ssl(config),
       ...backupS3Access(config)
     });
-    
+
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
-    
+
     // List all backup files
     const backupFiles = await s3Adapter.list('backups/', { maxKeys: 1000 });
     const filesToDelete = [];
     let totalSize = 0;
-    
+
     for (const file of backupFiles.objects || []) {
       if (file.lastModified && new Date(file.lastModified) < cutoffDate) {
         filesToDelete.push(file.key);
         totalSize += file.size || 0;
       }
     }
-    
+
     if (dryRun) {
       return res.json({
         wouldDelete: filesToDelete.length,
@@ -1014,14 +1014,14 @@ router.delete('/s3/cleanup', adminAuth, requirePermission('backup.delete'), asyn
         message: 'Dry run completed - no files were deleted'
       });
     }
-    
+
     // Delete files in batches
     const deleteResult = await s3Adapter.deleteMany(filesToDelete);
     const deletedCount = deleteResult.Deleted ? deleteResult.Deleted.length : 0;
-    
+
     // Also clean up database records
     await cleanupOldBackupRuns(retentionDays);
-    
+
     res.json({
       success: true,
       deletedCount: deletedCount,
@@ -1037,11 +1037,11 @@ router.delete('/s3/cleanup', adminAuth, requirePermission('backup.delete'), asyn
 router.post('/s3/test-upload', adminAuth, requirePermission('backup.create'), async (req, res) => {
   try {
     const config = await getBackupConfig();
-    
+
     if (config.backup_destination_type !== 's3') {
       return res.status(400).json({ error: 'S3 backup not configured' });
     }
-    
+
     const s3Adapter = new S3StorageAdapter({
       endpoint: config.backup_s3_endpoint,
       bucket: config.backup_s3_bucket,
@@ -1052,29 +1052,28 @@ router.post('/s3/test-upload', adminAuth, requirePermission('backup.create'), as
       sslEnabled: backupS3Ssl(config),
       ...backupS3Access(config)
     });
-    
+
     // Create test content
     const testKey = `test/backup-test-${Date.now()}.txt`;
     const testContent = `PicPeak S3 backup test\nTimestamp: ${new Date().toISOString()}\nEndpoint: ${config.backup_s3_endpoint || 'AWS'}\nBucket: ${config.backup_s3_bucket}`;
-    
+
     // Test upload
     const uploadStart = Date.now();
     await s3Adapter.upload(testKey, Buffer.from(testContent));
     const uploadTime = Date.now() - uploadStart;
-    
+
     // Test download
     const downloadStart = Date.now();
     const downloadedContent = await s3Adapter.download(testKey);
     const downloadTime = Date.now() - downloadStart;
-    
+
     // Verify content
     const contentMatch = downloadedContent.toString() === testContent;
-    
+
     // Test deletion
     await s3Adapter.delete(testKey);
 
-    if (contentMatch) require('../usage/capabilityEvidence').capabilityEvidence(res, 's3_storage', 's3_backups');
-    
+
     res.json({
       success: true,
       testKey: testKey,
@@ -1092,40 +1091,40 @@ router.post('/s3/test-upload', adminAuth, requirePermission('backup.create'), as
 router.get('/download/:backupId', adminAuth, requirePermission('backup.view'), async (req, res) => {
   try {
     const { backupId } = req.params;
-    
+
     // Get backup run details
     const backupRun = await db('backup_runs')
       .where('id', backupId)
       .first();
-    
+
     if (!backupRun) {
       return res.status(404).json({ error: 'Backup not found' });
     }
-    
+
     if (backupRun.status !== 'completed') {
       return res.status(400).json({ error: 'Backup is not completed' });
     }
-    
+
     const config = await getBackupConfig();
-    
+
     // Handle different backup types
     switch (config.backup_destination_type) {
     case 'local': {
       // Stream local backup as zip
       const backupPath = path.join(config.backup_destination_path, `backup-${backupRun.id}`);
       const archive = archiver('zip', { zlib: { level: 9 } });
-        
+
       res.attachment(`picpeak-backup-${backupRun.id}.zip`);
       archive.pipe(res);
-        
+
       // Add backup directory contents
       archive.directory(backupPath, false);
-        
+
       // Add manifest if exists
       if (backupRun.manifest_path && await fs.access(backupRun.manifest_path).then(() => true).catch(() => false)) {
         archive.file(backupRun.manifest_path, { name: 'manifest.json' });
       }
-        
+
       await archive.finalize();
       break;
     }
@@ -1142,11 +1141,11 @@ router.get('/download/:backupId', adminAuth, requirePermission('backup.view'), a
         sslEnabled: backupS3Ssl(config),
         ...backupS3Access(config)
       });
-        
+
       // List all files for this backup
       const prefix = `backups/${backupRun.id}/`;
       const files = await s3Adapter.list(prefix, { maxKeys: 1000 });
-        
+
       // Generate pre-signed URLs
       const urls = [];
       for (const file of files.objects || []) {
@@ -1157,7 +1156,7 @@ router.get('/download/:backupId', adminAuth, requirePermission('backup.view'), a
           url: url
         });
       }
-        
+
       res.json({
         backupId: backupRun.id,
         type: 's3',
@@ -1170,7 +1169,7 @@ router.get('/download/:backupId', adminAuth, requirePermission('backup.view'), a
 
     case 'rsync':
       return res.status(400).json({ error: 'Direct download not available for rsync backups' });
-        
+
     default:
       return res.status(400).json({ error: 'Unknown backup type' });
     }
@@ -1192,22 +1191,22 @@ router.get('/checksums', adminAuth, requirePermission('backup.view'), async (req
       const { safePathJoin } = require('../utils/fileSecurityUtils');
       basePath = safePathJoin(storagePath, targetPath);
     }
-    
+
     // Calculate checksums for files
     const calculateDirChecksums = async (dirPath, relative = '') => {
       try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
-        
+
         for (const entry of entries) {
           const fullPath = path.join(dirPath, entry.name);
           const relativePath = path.join(relative, entry.name);
-          
+
           if (entry.isDirectory() && recursive) {
             await calculateDirChecksums(fullPath, relativePath);
           } else if (entry.isFile()) {
             const hash = crypto.createHash('sha256');
             const stream = require('fs').createReadStream(fullPath);
-            
+
             await new Promise((resolve, reject) => {
               stream.on('data', data => hash.update(data));
               stream.on('end', () => {
@@ -1226,13 +1225,13 @@ router.get('/checksums', adminAuth, requirePermission('backup.view'), async (req
         logger.error(`Failed to calculate checksums for ${dirPath}:`, error);
       }
     };
-    
+
     await calculateDirChecksums(basePath);
-    
+
     // Also get database checksums from backup_file_states
     const dbChecksums = await db('backup_file_states')
       .select('file_path', 'checksum', 'size_bytes', 'last_modified');
-    
+
     res.json({
       currentChecksums: checksums,
       totalFiles: Object.keys(checksums).length,
@@ -1255,24 +1254,24 @@ router.get('/checksums', adminAuth, requirePermission('backup.view'), async (req
 router.post('/estimate', adminAuth, requirePermission('backup.view'), async (req, res) => {
   try {
     const { includeArchived = true } = req.body;
-    
+
     // Get storage path
     const storagePath = process.env.STORAGE_PATH || path.join(__dirname, '../../../storage');
     let totalSize = 0;
     let fileCount = 0;
     const breakdown = {};
-    
+
     // Estimate size for each directory
     const estimateDir = async (dirPath, category) => {
       let dirSize = 0;
       let dirCount = 0;
-      
+
       try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
-        
+
         for (const entry of entries) {
           const fullPath = path.join(dirPath, entry.name);
-          
+
           if (entry.isDirectory()) {
             const subResult = await estimateDir(fullPath, category);
             dirSize += subResult.size;
@@ -1288,21 +1287,21 @@ router.post('/estimate', adminAuth, requirePermission('backup.view'), async (req
           logger.error(`Failed to estimate ${dirPath}:`, error);
         }
       }
-      
+
       return { size: dirSize, count: dirCount };
     };
-    
+
     // Estimate each category
     const categories = [
       { path: 'events/active', name: 'Active Events' },
       { path: 'thumbnails', name: 'Thumbnails' },
       { path: 'uploads', name: 'Uploads' }
     ];
-    
+
     if (includeArchived) {
       categories.push({ path: 'events/archived', name: 'Archived Events' });
     }
-    
+
     for (const category of categories) {
       const result = await estimateDir(path.join(storagePath, category.path), category.name);
       breakdown[category.name] = {
@@ -1313,12 +1312,12 @@ router.post('/estimate', adminAuth, requirePermission('backup.view'), async (req
       totalSize += result.size;
       fileCount += result.count;
     }
-    
+
     // Estimate database size
-    const dbPath = process.env.DB_TYPE === 'postgresql' 
-      ? null 
+    const dbPath = process.env.DB_TYPE === 'postgresql'
+      ? null
       : path.join(__dirname, '../../database.sqlite');
-    
+
     if (dbPath) {
       try {
         const dbStats = await fs.stat(dbPath);
@@ -1333,10 +1332,10 @@ router.post('/estimate', adminAuth, requirePermission('backup.view'), async (req
         logger.error('Failed to get database size:', error);
       }
     }
-    
+
     // Estimate compression ratio (typically 20-40% for mixed media)
     const estimatedCompressedSize = Math.round(totalSize * 0.7);
-    
+
     res.json({
       totalSize: totalSize,
       totalSizeFormatted: formatBytes(totalSize),
@@ -1360,7 +1359,7 @@ async function getBackupConfig() {
     const settings = await db('app_settings')
       .where('setting_type', 'backup')
       .select('setting_key', 'setting_value');
-    
+
     const config = {};
     settings.forEach(setting => {
       try {
@@ -1369,7 +1368,7 @@ async function getBackupConfig() {
         config[setting.setting_key] = setting.setting_value;
       }
     });
-    
+
     return config;
   } catch (error) {
     logger.error('Failed to get backup configuration:', error);
@@ -1383,7 +1382,7 @@ async function validateManifestData(manifestData) {
     // Check required fields
     const requiredFields = ['version', 'backupId', 'timestamp', 'files'];
     const missingFields = requiredFields.filter(field => !manifestData[field]);
-    
+
     if (missingFields.length > 0) {
       return {
         valid: false,
@@ -1391,7 +1390,7 @@ async function validateManifestData(manifestData) {
         details: { missingFields }
       };
     }
-    
+
     // Validate version
     if (manifestData.version !== '1.0') {
       return {
@@ -1400,7 +1399,7 @@ async function validateManifestData(manifestData) {
         details: { version: manifestData.version }
       };
     }
-    
+
     // Validate files array
     if (!Array.isArray(manifestData.files)) {
       return {
@@ -1409,7 +1408,7 @@ async function validateManifestData(manifestData) {
         details: { filesType: typeof manifestData.files }
       };
     }
-    
+
     // Validate each file entry
     const invalidFiles = [];
     for (let i = 0; i < manifestData.files.length; i++) {
@@ -1418,7 +1417,7 @@ async function validateManifestData(manifestData) {
         invalidFiles.push({ index: i, file });
       }
     }
-    
+
     if (invalidFiles.length > 0) {
       return {
         valid: false,
@@ -1426,7 +1425,7 @@ async function validateManifestData(manifestData) {
         details: { invalidFiles: invalidFiles.slice(0, 10) } // Limit to first 10
       };
     }
-    
+
     return {
       valid: true,
       details: {

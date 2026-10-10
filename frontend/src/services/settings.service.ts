@@ -4,7 +4,6 @@ import type { SlideshowGlobalDefaults } from './slideshow.service';
 export interface BrandingSettings {
   company_name: string;
   company_tagline: string;
-  support_email: string;
   footer_text: string;
   watermark_enabled: boolean;
   watermark_position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'center';
@@ -36,8 +35,8 @@ export interface BrandingSettings {
    */
   force_color_mode?: 'dark' | 'light' | null;
   /**
-   * Login-page-only branding (#354 follow-up). Applies exclusively to
-   * /admin/login and /customer/login. Frame default is true; size
+   * Login-page-only branding (#354 follow-up). Applies to the admin login
+   * and setup screens. Frame default is true; size
    * default is 'medium' (matches the visual state before the toggle).
    */
   login_logo_frame_enabled?: boolean;
@@ -122,28 +121,6 @@ export interface StorageInfo {
 }
 
 export interface SystemStatus {
-  database: {
-    size: number;
-    tables: {
-      events: number;
-      photos: number;
-      admins: number;
-      categories: number;
-      activityLogs: number;
-    };
-  };
-  storage: {
-    totalUsed: number;
-    photoStorage: number;
-    archiveStorage: number;
-  };
-  emailQueue: {
-    pending: number;
-    processable: number;
-    stuck: number;
-    sent: number;
-    failed: number;
-  };
   system: {
     platform: string;
     arch: string;
@@ -163,9 +140,6 @@ export interface SystemStatus {
   services: {
     fileWatcher: { status: string };
     expirationChecker: { status: string };
-    // 'active' | 'degraded' | 'stopped' (#1262). Was a hardcoded 'active'
-    // until the processor started reporting what it actually did.
-    emailProcessor: { status: string; lastRunAt?: string | null; lastError?: string | null };
   };
   timestamp: string;
 }
@@ -173,7 +147,6 @@ export interface SystemStatus {
 export interface PublicSiteBranding {
   companyName: string | null;
   companyTagline: string | null;
-  supportEmail: string | null;
   logoUrl: string | null;
   footerText: string | null;
   colors: {
@@ -274,7 +247,7 @@ export const settingsService = {
   async uploadFavicon(file: File): Promise<string> {
     const formData = new FormData();
     formData.append('favicon', file);
-    
+
     const response = await api.post<{ faviconUrl: string }>(
       '/admin/settings/favicon',
       formData,
@@ -284,7 +257,7 @@ export const settingsService = {
         }
       }
     );
-    
+
     return response.data.faviconUrl;
   },
 
@@ -292,7 +265,7 @@ export const settingsService = {
   async uploadWatermarkLogo(file: File): Promise<string> {
     const formData = new FormData();
     formData.append('watermarkLogo', file);
-    
+
     const response = await api.post<{ watermarkLogoUrl: string }>(
       '/admin/settings/branding/watermark-logo',
       formData,
@@ -302,7 +275,7 @@ export const settingsService = {
         }
       }
     );
-    
+
     return response.data.watermarkLogoUrl;
   },
 
@@ -331,16 +304,12 @@ export const settingsService = {
 
     if (firstKey?.startsWith('security_')) {
       endpoint = '/admin/settings/security';
-    } else if (firstKey?.startsWith('analytics_')) {
-      endpoint = '/admin/settings/analytics';
     } else if (firstKey?.startsWith('branding_')) {
       endpoint = '/admin/settings/branding';
     } else if (firstKey?.startsWith('seo_')) {
       endpoint = '/admin/settings/seo';
-    } else if (firstKey?.startsWith('email_')) {
-      endpoint = '/admin/settings/general';
     }
-    
+
     await api.put(endpoint, settings);
   },
 
@@ -368,7 +337,6 @@ export const settingsService = {
     return {
       company_name: rawSettings.branding_company_name || '',
       company_tagline: rawSettings.branding_company_tagline || '',
-      support_email: rawSettings.branding_support_email || '',
       footer_text: rawSettings.branding_footer_text || '',
       watermark_enabled: this._parseBoolean(rawSettings.branding_watermark_enabled, false),
       watermark_position: rawSettings.branding_watermark_position || 'bottom-right',

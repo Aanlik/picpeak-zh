@@ -5,7 +5,6 @@ const { guestBlockedByReveal, blockHiddenGallery } = require('../utils/revealMod
 const { feedbackRateLimit, generateGuestIdentifier } = require('../middleware/feedbackRateLimit');
 const { resolveGuest } = require('../middleware/guestAuth');
 const feedbackService = require('../services/feedbackService');
-const feedbackModeration = require('../services/feedbackModeration');
 const { db, logActivity } = require('../database/db');
 const logger = require('../utils/logger');
 const { isPhotoHiddenFromViewer, applyPhotoVisibilityFilter } = require('../utils/photoVisibility');
@@ -16,9 +15,7 @@ const {
   validateGuestRequirements,
   sanitizeComment
 } = require('../utils/feedbackValidation');
-const validator = require('validator');
 const { getPublicPhotoStates, triggerWorkflowSync } = require('../services/photographyWorkflowBridge');
-const { NO_EMAIL_MODE } = require('../utils/communicationProfile');
 
 async function workflowSelectionIsEnabled(eventId) {
   const workflow = await getPublicPhotoStates(eventId);
@@ -26,7 +23,7 @@ async function workflowSelectionIsEnabled(eventId) {
 }
 
 // Batch proofing is one user action and shares the same access, identity,
-// visibility, moderation and rate-limit rules as the single-photo endpoint.
+// visibility and rate-limit rules as the single-photo endpoint.
 // The caps keep a single request bounded while making ordinary selections
 // practical; comments are append-only, so their smaller cap is deliberate.
 router.post('/:slug/photos/batch-feedback',
@@ -70,9 +67,6 @@ router.post('/:slug/photos/batch-feedback',
             return res.status(400).json({ error: 'Guest name is invalid' });
           }
         }
-        if (req.body.guest_email && !validator.isEmail(String(req.body.guest_email).trim())) {
-          return res.status(400).json({ error: 'Invalid email address' });
-        }
       }
 
       if (settings.identity_mode === 'guest' && (!req.guest || req.guest.eventId !== event.id)) {
@@ -81,7 +75,7 @@ router.post('/:slug/photos/batch-feedback',
       const guestIdentifier = await generateGuestIdentifier(req);
       const typeAllowed = feedbackType === 'comment' ? settings.allow_comments : settings.allow_color_labels || workflowSelection;
       if (!typeAllowed) return res.status(403).json({ error: `${feedbackType} feedback is not enabled` });
-      if (settings.identity_mode !== 'guest' && !workflowSelection && !NO_EMAIL_MODE) {
+      if (settings.identity_mode !== 'guest' && !workflowSelection) {
         const guestValidation = await validateGuestRequirements(settings, req.body);
         if (!guestValidation.valid) {
           return res.status(400).json({ error: 'Guest information required', errors: guestValidation.errors });
@@ -98,16 +92,6 @@ router.post('/:slug/photos/batch-feedback',
       await limiter(req, res, (err) => { if (err) throw err; });
       if (res.headersSent) return;
 
-      let approved = true;
-      if (feedbackType === 'comment') {
-        const reputation = await feedbackModeration.checkUserReputation(guestIdentifier, event.id);
-        const moderation = await feedbackModeration.moderateText(req.body.comment_text);
-        if (moderation.blocked) {
-          return res.status(400).json({ error: 'Your comment contains words that are not allowed here.', code: 'COMMENT_BLOCKED' });
-        }
-        approved = moderation.approved && (reputation.autoApprove || !settings.moderate_comments);
-      }
-
       const payload = {
         feedback_type: feedbackType,
         color_label: feedbackType === 'color_label' ? 'green' : undefined,
@@ -115,14 +99,11 @@ router.post('/:slug/photos/batch-feedback',
         // an already-selected photo back into an unselected photo.
         ensure_color_label: feedbackType === 'color_label',
         comment_text: feedbackType === 'comment' ? req.body.comment_text : undefined,
-        is_approved: approved,
         identity_mode: settings.identity_mode,
         guest_name: req.guest?.name ?? req.body.guest_name,
-        guest_email: req.guest?.email ?? req.body.guest_email,
         guest_id: req.guest?.id ?? null,
         ip_address: req.ip || req.connection.remoteAddress,
         user_agent: (req.headers['user-agent'] || '').replace(/[<>&"']/g, '').substring(0, 255),
-        moderate_comments: settings.moderate_comments,
       };
       const applied = [];
       const failed = [];
@@ -145,7 +126,6 @@ router.post('/:slug/photos/batch-feedback',
         success: failed.length === 0,
         applied_count: applied.length,
         failed_photo_ids: failed,
-        moderation_required: feedbackType === 'comment' && !approved,
       });
       if (feedbackType === 'color_label' && applied.length) void triggerWorkflowSync(event.id);
     } catch (error) {
@@ -175,7 +155,6 @@ router.get('/:slug/feedback-settings',
         allow_color_labels: Boolean(settings.allow_color_labels),
         // Which lightbox shortcut scheme this gallery uses (#1044).
         keybind_mode: settings.keybind_mode || 'colors',
-        require_name_email: Boolean(settings.require_name_email),
         show_feedback_to_guests: Boolean(settings.show_feedback_to_guests),
         identity_mode: settings.identity_mode || 'simple',
         // Per-guest caps (#655). The UI uses these to disable the heart /
@@ -207,36 +186,36 @@ router.get('/:slug/photos/:photoId/feedback',
       const { photoId } = req.params;
       const event = req.event;
       const guestIdentifier = await generateGuestIdentifier(req);
-      
+
       // Get feedback settings
       const settings = await feedbackService.getEventFeedbackSettings(event.id);
-      
+
       if (!settings.feedback_enabled) {
         return res.status(403).json({ error: 'Feedback is not enabled for this event' });
       }
-      
+
       // Verify photo belongs to event
       const photo = await db('photos')
         .where({ id: photoId, event_id: event.id })
         .first();
-      
+
       // A client-hidden photo does not exist for a viewer who cannot see it:
       // no reading its comments and counts, no adding to them.
       if (!photo || isPhotoHiddenFromViewer(photo, req.accessLevel)) {
         return res.status(404).json({ error: 'Photo not found' });
       }
-      
+
       // Get feedback based on settings
       const options = {
-        approved_only: true,
         include_hidden: false,
         // Only the colour-label set this event is actually using (#1197).
         identity_mode: settings.identity_mode,
       };
-      
-      // Include guest's own feedback even if not approved
+
+      // Include the guest's own feedback in the response, alongside any feedback
+      // shared with the gallery.
       const feedback = await feedbackService.getPhotoFeedback(photoId, options);
-      
+
       // Get guest's own feedback separately
       const guestFeedback = await feedbackService.getPhotoFeedback(photoId, {
         // Older merges updated guest_id without rewriting guest_identifier.
@@ -250,7 +229,7 @@ router.get('/:slug/photos/:photoId/feedback',
       const sharedColorLabel = settings.identity_mode === 'shared'
         ? (await feedbackService.getSharedColorLabels(event.id, [photoId]))[photoId] || null
         : null;
-      
+
       // Combine and deduplicate
       const allFeedback = [...feedback];
       guestFeedback.forEach(gf => {
@@ -261,11 +240,11 @@ router.get('/:slug/photos/:photoId/feedback',
           allFeedback[index].is_mine = true;
         }
       });
-      
+
       // Filter based on what guests should see
-      const visibleFeedback = settings.show_feedback_to_guests ? allFeedback : 
+      const visibleFeedback = settings.show_feedback_to_guests ? allFeedback :
         allFeedback.filter(f => f.is_mine);
-      
+
       // Every aggregate is other guests' feedback, so all of them are gated
       // on show_feedback_to_guests — the photo list already hides like_count
       // this way. The viewer's own choices stay in my_feedback below.
@@ -290,7 +269,6 @@ router.get('/:slug/photos/:photoId/feedback',
               .where({
                 photo_id: photoId,
                 feedback_type: 'comment',
-                is_approved: true,
                 is_hidden: false
               })
               .count('id as count')
@@ -362,7 +340,7 @@ router.post('/:slug/photos/:photoId/feedback',
       }
 
       // In guest identity mode, a valid guest token is required. The server
-      // never trusts guest_name/guest_email from the body in this mode — it
+      // never trusts guest_name from the body in this mode — it
       // reads them from the verified token via req.guest.
       if (settings.identity_mode === 'guest') {
         if (!req.guest || req.guest.eventId !== event.id) {
@@ -402,7 +380,7 @@ router.post('/:slug/photos/:photoId/feedback',
 
       // Validate guest requirements only in simple mode. In guest mode, the
       // identity is already provided via the token and verified above.
-      if (settings.identity_mode !== 'guest' && !workflowSelection && !NO_EMAIL_MODE) {
+      if (settings.identity_mode !== 'guest' && !workflowSelection) {
         const guestValidation = await validateGuestRequirements(settings, req.body);
         if (!guestValidation.valid) {
           return res.status(400).json({
@@ -421,7 +399,7 @@ router.post('/:slug/photos/:photoId/feedback',
       if (res.headersSent) return;
 
       // Prepare feedback data. In guest mode, use the verified token as the
-      // source of truth for name/email — never the body.
+      // source of truth for the name — never the body.
       const feedbackData = {
         feedback_type: feedbackType,
         rating: req.body.rating,
@@ -433,52 +411,10 @@ router.post('/:slug/photos/:photoId/feedback',
         // than re-fetched: the settings are already in hand here.
         identity_mode: settings.identity_mode,
         guest_name: req.guest?.name ?? req.body.guest_name,
-        guest_email: req.guest?.email ?? req.body.guest_email,
         guest_id: req.guest?.id ?? null,
         ip_address: req.ip || req.connection.remoteAddress,
         user_agent: (req.headers['user-agent'] || '').replace(/[<>&"']/g, '').substring(0, 255),
-        moderate_comments: settings.moderate_comments
       };
-      
-      // For comments, check moderation
-      if (feedbackType === 'comment') {
-        // Check user reputation
-        const reputation = await feedbackModeration.checkUserReputation(guestIdentifier, event.id);
-        
-        // Moderate the comment
-        const moderationResult = await feedbackModeration.moderateText(req.body.comment_text);
-        
-        if (moderationResult.blocked) {
-          // `block` severity means rejected outright — never stored, not even
-          // as a pending row for a moderator to see. Anything else that isn't
-          // approved falls through to the held-for-moderation branch below.
-          logger.warn('Comment rejected by word filter:', {
-            eventId: event.id,
-            reason: moderationResult.reason,
-            violations: moderationResult.violations
-          });
-          return res.status(400).json({
-            error: 'Your comment contains words that are not allowed here.',
-            code: 'COMMENT_BLOCKED'
-          });
-        }
-
-        if (!moderationResult.approved) {
-          // Still save but mark as not approved
-          feedbackData.is_approved = false;
-          logger.warn('Comment flagged for moderation:', {
-            reason: moderationResult.reason,
-            violations: moderationResult.violations
-          });
-        } else if (reputation.autoApprove) {
-          // Trusted user, auto-approve
-          feedbackData.is_approved = true;
-        } else if (settings.moderate_comments) {
-          // Default moderation setting
-          feedbackData.is_approved = false;
-        }
-      }
-      
       // Submit feedback
       const result = await feedbackService.submitFeedback(
         photoId,
@@ -528,7 +464,6 @@ router.post('/:slug/photos/:photoId/feedback',
         ...result,
         // The UI owns the localized message. Returning a structured status
         // instead of English copy prevents API text from bypassing i18n.
-        moderation_required: feedbackType === 'comment' && feedbackData.is_approved === false
       });
       if (feedbackType === 'color_label') void triggerWorkflowSync(event.id);
     } catch (error) {
@@ -553,14 +488,14 @@ router.get('/:slug/feedback-summary',
 
       // Get feedback settings
       const settings = await feedbackService.getEventFeedbackSettings(event.id);
-      
+
       if (!settings.feedback_enabled || !settings.show_feedback_to_guests) {
         return res.json({
           enabled: false,
           summary: null
         });
       }
-      
+
       // Totals scoped like the list below: feedback on photos this viewer
       // cannot see is not counted either.
       const summary = await feedbackService.getEventFeedbackSummary(event.id, { viewerAccessLevel: req.accessLevel });
@@ -580,7 +515,7 @@ router.get('/:slug/feedback-summary',
             like_count: p.like_count
           }))
       };
-      
+
       res.json({
         enabled: true,
         settings: {
@@ -624,8 +559,7 @@ router.get('/:slug/my-feedback',
           // guest identity mode GalleryView builds its Liked/Favorited/Rated
           // chips and their filters from THIS array rather than from is_liked,
           // so without this a hidden like left an empty heart while the Liked
-          // chip still counted it and still surfaced the photo. Unapproved rows
-          // stay: a comment in the moderation queue is still the guest's own.
+          // chip still counted it and still surfaced the photo.
           .where('photo_feedback.is_hidden', false),
         // A photo the client has since hidden is gone for this viewer, its id
         // and filename included.
@@ -642,9 +576,8 @@ router.get('/:slug/my-feedback',
       }
 
       // Name the columns rather than photo_feedback.*: the row also carries
-      // guest_email, guest_name, ip_address and user_agent. After an admin
-      // merges two guest identities those still describe the source guest,
-      // so the survivor's token would receive another person's email and IP.
+      // guest_name, ip_address and user_agent. After an admin merges two guest
+      // identities those still describe the source guest.
       // GalleryView reads photo_id and feedback_type from this list.
       const myFeedback = await query
         .select(
@@ -655,7 +588,6 @@ router.get('/:slug/my-feedback',
           'photo_feedback.comment_text',
           'photo_feedback.reaction',
           'photo_feedback.color_label',
-          'photo_feedback.is_approved',
           'photo_feedback.created_at',
           'photo_feedback.updated_at',
           'photos.filename'

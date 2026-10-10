@@ -19,6 +19,13 @@ const { timingSafeEqualStr } = require('../utils/timingSafe');
 
 const router = express.Router();
 
+function isPhotoOutsideSlideshowCategory(event, photo, galleryAccess) {
+  const session = galleryAccess?.session;
+  return session?.accessLevel === 'slideshow'
+    && event?.show_category_id != null
+    && Number(photo.category_id) !== Number(event.show_category_id);
+}
+
 /**
  * Generate a signed URL token for image access
  */
@@ -99,6 +106,12 @@ router.get('/:slug/photo/:photoId/view', verifyGalleryAccess, blockHiddenGallery
     
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
+    }
+
+    // Keep this protected-image route aligned with gallery media routes: a
+    // slideshow grant only reaches the configured category, even by photo ID.
+    if (isPhotoOutsideSlideshowCategory(req.event, photo, req.galleryAccess)) {
+      return res.status(403).json({ error: 'Photo not available' });
     }
 
     // Block guest access to hidden/client-only photos (parity with the
@@ -205,6 +218,10 @@ router.post('/:slug/photo/:photoId/generate-secure-token', verifyGalleryAccess, 
       return res.status(404).json({ error: 'Photo not found' });
     }
 
+    if (isPhotoOutsideSlideshowCategory(req.event, photo, req.galleryAccess)) {
+      return res.status(403).json({ error: 'Photo not available' });
+    }
+
     // Don't mint a secure-image capability for a hidden/client-only photo
     // when the caller isn't a client — the serve route is token-only.
     if (isPhotoHiddenFromViewer(photo, req.accessLevel)) {
@@ -261,6 +278,10 @@ router.post('/:slug/photo/:photoId/generate-url', verifyGalleryAccess, async (re
     
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
+    }
+
+    if (isPhotoOutsideSlideshowCategory(req.event, photo, req.galleryAccess)) {
+      return res.status(403).json({ error: 'Photo not available' });
     }
 
     // Refuse to mint a signed URL for a hidden/client-only photo when the
@@ -330,6 +351,12 @@ router.get('/:slug/photo/:photoId/signed/:token', async (req, res) => {
     
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
+    }
+
+    // Re-check the scoped grant at serve time, so a category change also
+    // narrows signed URLs that were issued before the change.
+    if (isPhotoOutsideSlideshowCategory(event, photo, tokenData.galleryAccess)) {
+      return res.status(403).json({ error: 'Photo not available' });
     }
 
     // Recheck visibility at serve time (TOCTOU): a photo hidden AFTER the

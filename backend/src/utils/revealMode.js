@@ -39,15 +39,10 @@ function isGalleryHidden(event, now = new Date()) {
 
 /**
  * Which access levels see the full gallery while it is hidden:
- * the live slideshow (the "surprise beamer" case), client access and
- * customer-portal-minted tokens (both are the host/customer reviewing
- * their own event — those tokens carry via:'customer' with NO accessLevel,
- * so accessLevel alone would misclassify them as guests) and the admin
- * preview.
+ * the live slideshow, client access, and the admin preview.
  */
 function bypassesReveal(req) {
   if (req.accessLevel === 'slideshow' || req.accessLevel === 'client') return true;
-  if (req.viaCustomer) return true;
   // req.isAdminPreview is set by verifyAdminPreview() only after the full
   // session check (revocation, deactivation, password change). Re-decoding
   // the token here would re-grant the bypass to a session that check just

@@ -1,16 +1,14 @@
-import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, AlertCircle, CheckCircle, Loader2, Type, Mail } from 'lucide-react';
+import { X, AlertCircle, CheckCircle, Loader2, Type } from 'lucide-react';
 import { Button, Input, Card } from '../common';
 
 interface EventRenameDialogProps {
   isOpen: boolean;
   eventName: string;
   eventId: number;
-  customerEmail?: string;
   onClose: () => void;
-  onRename: (newName: string, resendEmail: boolean) => Promise<{
+  onRename: (newName: string) => Promise<{
     success: boolean;
     data?: {
       newSlug: string;
@@ -30,14 +28,12 @@ export const EventRenameDialog: React.FC<EventRenameDialogProps> = ({
   isOpen,
   eventName,
   eventId: _eventId,
-  customerEmail,
   onClose,
   onRename,
   onValidate
 }) => {
   const { t } = useTranslation();
   const [newName, setNewName] = useState(eventName);
-  const [resendEmail, setResendEmail] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [validationResult, setValidationResult] = useState<{
@@ -58,7 +54,6 @@ export const EventRenameDialog: React.FC<EventRenameDialogProps> = ({
   useEffect(() => {
     if (isOpen) {
       setNewName(eventName);
-      setResendEmail(false);
       setValidationResult(null);
       setRenameStatus(null);
       setRenameResult(null);
@@ -77,7 +72,7 @@ export const EventRenameDialog: React.FC<EventRenameDialogProps> = ({
       try {
         const result = await onValidate(newName.trim());
         setValidationResult(result);
-      } catch (error) {
+      } catch {
         setValidationResult({ valid: false, error: 'Validation failed' });
       } finally {
         setIsValidating(false);
@@ -96,7 +91,7 @@ export const EventRenameDialog: React.FC<EventRenameDialogProps> = ({
     try {
       setRenameStatus(t('events.rename.renamingFiles', 'Renaming files...'));
 
-      const result = await onRename(newName.trim(), resendEmail);
+      const result = await onRename(newName.trim());
 
       if (result.success) {
         setRenameStatus(t('events.rename.complete', 'Complete!'));
@@ -248,29 +243,6 @@ export const EventRenameDialog: React.FC<EventRenameDialogProps> = ({
               <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
                 <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
                 <p className="text-sm text-red-700">{validationResult.error}</p>
-              </div>
-            )}
-
-            {/* Resend email option */}
-            {!NO_EMAIL_MODE && customerEmail && (
-              <div className="pt-2 border-t border-neutral-200">
-                <label className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    checked={resendEmail}
-                    onChange={(e) => setResendEmail(e.target.checked)}
-                    className="mt-1 w-4 h-4 text-accent border-neutral-300 rounded focus:ring-primary-500"
-                  />
-                  <div>
-                    <span className="text-sm font-medium text-neutral-700 flex items-center gap-1">
-                      <Mail className="w-4 h-4" />
-                      {t('events.rename.resendEmail', 'Resend invitation email with new gallery link')}
-                    </span>
-                    <p className="text-xs text-neutral-500 mt-1">
-                      {t('events.rename.emailTo', 'Send updated gallery access email to')} {customerEmail}
-                    </p>
-                  </div>
-                </label>
               </div>
             )}
 

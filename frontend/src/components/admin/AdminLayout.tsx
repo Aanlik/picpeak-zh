@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import React, { lazy, Suspense, useState } from 'react';
+import React, { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 
 import { useAdminAuth } from '../../contexts';
@@ -8,12 +8,9 @@ import { useSessionTimeout } from '../../hooks/useSessionTimeout';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminHeader } from './AdminHeader';
 import { MaintenanceBanner } from './MaintenanceBanner';
-import { MigrationBanner } from './MigrationBanner';
 import { MandatoryPasswordChangeModal } from './MandatoryPasswordChangeModal';
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
-const ProductUsageNotice = lazy(() => import('./ProductUsageNotice'));
-const UsageReportingPrompt = lazy(() => import('./UsageReportingPrompt'));
 
 export const AdminLayout: React.FC = () => {
   const { t: tAudit } = useTranslation();
@@ -85,7 +82,7 @@ const AdminLayoutInner: React.FC<AdminLayoutInnerProps> = ({ sidebarOpen, setSid
     <div className="h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 flex overflow-hidden">
       {/* Mandatory Password Change Modal */}
       {mustChangePassword && <MandatoryPasswordChangeModal />}
-      
+
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -124,13 +121,6 @@ const AdminLayoutInner: React.FC<AdminLayoutInnerProps> = ({ sidebarOpen, setSid
 
         {/* Maintenance mode banner */}
         <MaintenanceBanner />
-
-        {/* One-time migration banner — flip the constant in MigrationBanner.tsx
-            (or remove this mount) after operators have had time to update their
-            docker-compose.yml. See #669. */}
-        <MigrationBanner />
-        {!mustChangePassword && <Suspense fallback={null}><ProductUsageNotice /></Suspense>}
-        {!mustChangePassword && <Suspense fallback={null}><UsageReportingPrompt /></Suspense>}
 
         {/* Page content - disabled when password change required.
             overflow moved up to the column so the scrollbar gutter is

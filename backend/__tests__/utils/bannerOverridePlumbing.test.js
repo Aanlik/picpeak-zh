@@ -40,8 +40,8 @@ const baseEvent = (slug, extra = {}) => ({
   event_type: 'project',
   event_name: slug,
   event_date: '2026-06-22',
-  host_email: 'host@example.com',
-  admin_email: 'admin@example.com',
+
+
   password_hash: 'x',
   share_link: `/gallery/${slug}/share`,
   share_token: `${slug}-share`,

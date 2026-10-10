@@ -14,7 +14,7 @@ interface PhotoLikesProps {
   isLiked: boolean;
   likeCount: number;
   isEnabled: boolean;
-  requireNameEmail?: boolean;
+  requireGuestName?: boolean;
   onLikeChange?: (liked: boolean) => void;
 }
 
@@ -24,7 +24,7 @@ export const PhotoLikes: React.FC<PhotoLikesProps> = ({
   isLiked,
   likeCount,
   isEnabled,
-  requireNameEmail = false,
+  requireGuestName = false,
   onLikeChange
 }) => {
   const { t } = useTranslation();
@@ -34,14 +34,13 @@ export const PhotoLikes: React.FC<PhotoLikesProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [showIdentityModal, setShowIdentityModal] = useState(false);
-  const [savedIdentity, setSavedIdentity] = useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = useState<{ name: string } | null>(null);
 
   const submitLikeMutation = useMutation({
-    mutationFn: (data: { guest_name?: string; guest_email?: string } = {}) => 
+    mutationFn: (data: { guest_name?: string } = {}) =>
       feedbackService.submitFeedback(gallerySlug, photoId, {
         feedback_type: 'like',
         guest_name: data.guest_name || undefined,
-        guest_email: data.guest_email || undefined
       }),
     onMutate: async () => {
       setIsSubmitting(true);
@@ -78,7 +77,7 @@ export const PhotoLikes: React.FC<PhotoLikesProps> = ({
     if (!isEnabled || isSubmitting) return;
 
     // Guest identity mode: ensure we have a per-person guest token. The
-    // server will read name/email from the token — body values are ignored.
+    // server will read the name from the token — body values are ignored.
     if (guestIdentity?.identityMode === 'guest') {
       try {
         await guestIdentity.ensureIdentity();
@@ -91,20 +90,20 @@ export const PhotoLikes: React.FC<PhotoLikesProps> = ({
     }
 
     // Simple mode (or no provider at all): legacy inline prompt flow.
-    if (requireNameEmail && !savedIdentity) {
+    if (requireGuestName && !savedIdentity) {
       setShowIdentityModal(true);
     } else {
       const identityPayload = savedIdentity
-        ? { guest_name: savedIdentity.name, guest_email: savedIdentity.email }
+        ? { guest_name: savedIdentity.name }
         : {};
       submitLikeMutation.mutate(identityPayload);
     }
   };
 
-  const handleIdentitySubmit = (name: string, email: string) => {
-    setSavedIdentity({ name, email });
+  const handleIdentitySubmit = (name: string) => {
+    setSavedIdentity({ name });
     setShowIdentityModal(false);
-    submitLikeMutation.mutate({ guest_name: name, guest_email: email });
+    submitLikeMutation.mutate({ guest_name: name });
   };
 
   if (!isEnabled) return null;

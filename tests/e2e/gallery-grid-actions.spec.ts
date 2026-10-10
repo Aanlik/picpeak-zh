@@ -4,7 +4,7 @@ import path from 'path';
 import { adminApiToken, publishEvent, waitForPhotosProcessed } from './_helpers/admin';
 import { passGalleryPasswordPrompt } from './_helpers/gallery';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const GALLERY_PASSWORD = process.env.GALLERY_PASSWORD || 'PlaywrightGallery123!';
 
 async function ensureGalleryWithPhotos(page) {
@@ -25,8 +25,6 @@ async function ensureGalleryWithPhotos(page) {
       event_name: eventName,
       event_date: eventDate,
       customer_name: 'Playwright Host',
-      customer_email: 'host@example.com',
-      admin_email: ADMIN_EMAIL,
       password: GALLERY_PASSWORD,
       expiration_days: 90,
       allow_user_uploads: false,
@@ -39,7 +37,6 @@ async function ensureGalleryWithPhotos(page) {
       allow_comments: true,
       allow_favorites: true,
       require_name_email: false,
-      moderate_comments: false,
       show_feedback_to_guests: true,
     },
     failOnStatusCode: false,

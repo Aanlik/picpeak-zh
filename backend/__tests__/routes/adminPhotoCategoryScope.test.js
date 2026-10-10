@@ -56,8 +56,8 @@ describe('admin photo category scope (PATCH / bulk-update)', () => {
       event_type: 'project',
       event_name: `Cat Scope ${slug}`,
       event_date: '2026-09-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${slug}/share`,
       share_token: `${slug}-share`,

@@ -21,7 +21,6 @@ vi.mock('../../../../services/events.service', () => ({
     getQrBlob: vi.fn().mockRejectedValue(new Error('no qr in tests')),
     getGalleryPassword: vi.fn(),
     getGalleryPasswordStatus: vi.fn().mockResolvedValue({ enabled: false }),
-    resendCreationEmail: vi.fn(),
   },
 }));
 

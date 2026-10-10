@@ -25,7 +25,7 @@ beforeAll(async () => {
   const { importFromPicpeak } = require('../../src/services/picpeakImportService');
 
   const base = {
-    event_type: 'project', host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
+    event_type: 'project',   password_hash: 'x',
     is_active: 1, is_archived: 0, is_draft: 0, created_by: adminId, created_at: new Date().toISOString(),
   };
   await db('events').insert([

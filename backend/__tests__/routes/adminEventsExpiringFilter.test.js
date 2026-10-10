@@ -46,8 +46,8 @@ beforeAll(async () => {
   for (const [slug, expires_at] of FIXTURES) {
     await db('events').insert({
       slug, event_type: 'project', event_name: slug, event_date: '2026-09-01',
-      customer_name: 'A', customer_email: 'a@example.com', host_name: 'A', host_email: 'a@example.com',
-      admin_email: 'admin@example.com', password_hash: 'x',
+      customer_name: 'A',  host_name: 'A',
+       password_hash: 'x',
       share_link: `/gallery/${slug}/tok`, share_token: `tok-${slug}`,
       expires_at, is_active: 1, is_archived: 0, is_draft: 0, created_by: adminId,
       created_at: new Date().toISOString(),
@@ -114,7 +114,7 @@ test('POST and PUT store the same instant for the same zone-less expires_at', as
     .set('Authorization', `Bearer ${token}`)
     .send({
       event_type: 'project', event_name: `Zoneless ${Date.now()}`, event_date: '2026-09-01',
-      customer_name: 'A', customer_email: 'a@example.com', admin_email: 'admin@example.com',
+      customer_name: 'A',
       password: 'ZonelessPass!1', expires_at: '2026-10-06T12:00:00',
     });
   expect(created.status).toBeLessThan(300);
@@ -133,7 +133,7 @@ test('POST refuses an expires_at it cannot read instead of failing on it', async
     .set('Authorization', `Bearer ${token}`)
     .send({
       event_type: 'project', event_name: `Unreadable ${Date.now()}`, event_date: '2026-09-01',
-      customer_name: 'A', customer_email: 'a@example.com', admin_email: 'admin@example.com',
+      customer_name: 'A',
       password: 'ZonelessPass!1', expires_at: '20261006T120000Z',
     });
   expect(res.status).toBe(400);

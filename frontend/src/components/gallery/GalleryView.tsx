@@ -34,12 +34,10 @@ import { GallerySidebar } from './GallerySidebar';
 import { PhotoFilterBar } from './PhotoFilterBar';
 import { UserPhotoUpload } from './UserPhotoUpload';
 import { GuestNamePromptModal } from './GuestNamePromptModal';
-import { GuestRecoveryModal } from './GuestRecoveryModal';
 import { PeopleStrip } from './PeopleStrip';
 import { PeopleSheet } from './PeopleSheet';
 import { GuestIdentityProvider } from '../../contexts/GuestIdentityContext';
 import type { FilterType, FeedbackFilterType } from './GalleryFilter';
-import { analyticsService } from '../../services/analytics.service';
 import { useDevToolsProtection } from '../../hooks/useDevToolsProtection';
 import { Upload, Menu, Eye, EyeOff, Shield, X, Download, ChevronLeft } from 'lucide-react';
 import { galleryService, type RetouchWorkflow } from '../../services/gallery.service';
@@ -60,7 +58,6 @@ interface GalleryViewProps {
     id: number;
     event_name: string;
     event_date: string | null;
-    welcome_message?: string;
     color_theme?: string;
     expires_at: string | null;
     allow_user_uploads?: boolean;
@@ -84,8 +81,7 @@ interface GalleryViewProps {
    * skeleton until a manual reload.
    *
    * A client (PIN) session still gets the button on a public gallery: that
-   * one IS a credential, and it is the only way back to the guest view. So is
-   * a customer-portal session — see `via_customer` on the /photos response.
+   * credential provides the only way back to the guest view.
    */
   requiresPassword?: boolean;
 }
@@ -111,7 +107,7 @@ const parseDefaultPhotoSort = (defaultSort?: string): { sortBy: 'date' | 'name' 
 
 export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresPassword = true }) => {
   const { t } = useTranslation();
-  const { logout, isClient, viaCustomer } = useGalleryAuth();
+  const { logout, isClient } = useGalleryAuth();
   const { setTheme, theme } = useTheme();
   const queryClient = useQueryClient();
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | string | null>(null);
@@ -204,7 +200,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     }
     setGuestId(storedGuestId);
   }, []);
-  
+
   // Fetch photos WITHOUT filter (always get all photos, filter on frontend)
   // This ensures counts are always calculated from the full dataset
   const { data, isLoading, error, refetch } = useGalleryPhotos(slug, 'all', guestId);
@@ -278,7 +274,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     });
   }, [galleryPhotos, activeRequestPhotoIds, retouchWorkflow?.enabled, workflowFilter]);
   const { isSelectionMode, setIsSelectionMode, selectedPhotos, setSelectedPhotos } = useGallerySelection(galleryPhotos);
-  
+
   // Set protection level when data is available
   useEffect(() => {
     if (data?.event?.protection_level) {
@@ -335,15 +331,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     onDevToolsDetected: () => {
       console.warn('DevTools detected in gallery view');
 
-      // Track analytics
-      if (typeof window !== 'undefined' && (window as any).umami) {
-        (window as any).umami.track('gallery_devtools_detected', {
-          gallery: slug,
-          protectionLevel,
-          eventId: data?.event?.id
-        });
-      }
-
       // For maximum protection, redirect away from gallery
       if (protectionLevel === 'maximum') {
         setTimeout(() => {
@@ -369,7 +356,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
       document.removeEventListener('contextmenu', handleContextMenu);
     };
   }, [disableRightClick]);
-  
+
   // Data updates are handled by React Query
   const downloadAllMutation = useDownloadAllPhotos();
 
@@ -498,7 +485,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
       setBrandingSettings({
         company_name: settingsData.branding_company_name || '',
         company_tagline: settingsData.branding_company_tagline || '',
-        support_email: settingsData.branding_support_email || '',
         footer_text: settingsData.branding_footer_text || '',
         watermark_enabled: settingsData.branding_watermark_enabled || false,
         logo_url: settingsData.branding_logo_url || null,
@@ -794,13 +780,8 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     }
 
     downloadAllMutation.mutate({ slug, zipReady: data?.event?.download_zip_ready });
-    
+
     // Track download all action
-    analyticsService.trackGalleryEvent('bulk_download', {
-      gallery: slug,
-      photo_count: galleryPhotos.length,
-      is_download_all: true
-    });
   };
 
   const handleDownloadSelected = async () => {
@@ -823,10 +804,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     toastify.info(t('gallery.downloadStarted', { photoCount: selectedPhotoIds.length }));
     try {
       await galleryService.downloadSelectedPhotos(slug, selectedPhotoIds);
-      analyticsService.trackGalleryEvent('bulk_download', {
-        gallery: slug,
-        photo_count: selectedPhotoIds.length,
-      });
       setSelectedPhotos(new Set());
       setIsSelectionMode(false);
     } catch {
@@ -860,10 +837,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
       return;
     }
 
-    analyticsService.trackGalleryEvent('bulk_download', {
-      gallery: slug,
-      photo_count: peopleDownloadableIds.length,
-    });
 
     await galleryService.downloadSelectedPhotos(slug, peopleDownloadableIds);
   };
@@ -908,10 +881,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
       return;
     }
 
-    analyticsService.trackGalleryEvent('bulk_download', {
-      gallery: slug,
-      photo_count: folderDownloadIds.length,
-    });
 
     await galleryService.downloadSelectedPhotos(slug, folderDownloadIds);
   };
@@ -934,24 +903,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
     });
     return counts;
   }, [scopedPhotos, mediaFilter]);
-
-  // Track search usage with debouncing
-  useEffect(() => {
-    if (searchTerm.length > 0) {
-      const timer = setTimeout(() => {
-        analyticsService.trackSearch(searchTerm, filteredPhotos.length, 'gallery');
-      }, 1000); // Debounce for 1 second
-
-      return () => clearTimeout(timer);
-    }
-  }, [searchTerm, filteredPhotos.length]);
-
-  // Track expiration warning views
-  useEffect(() => {
-    if (showUrgentWarning && daysUntilExpiration > 0) {
-      analyticsService.trackExpirationWarning(slug, daysUntilExpiration);
-    }
-  }, [showUrgentWarning, daysUntilExpiration, slug]);
 
   if (isLoading) {
     return <GallerySkeleton />;
@@ -1089,17 +1040,14 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   const isFullPageLayout = theme.galleryLayout === 'gallery-premium' || theme.galleryLayout === 'gallery-story';
 
   // Does this session hold something worth dropping? A password gallery and a
-  // PIN client obviously do. So does a customer-portal session: its token
-  // bypasses reveal mode, so it opens galleries a plain visitor cannot, and it
-  // lives for 24h in a cookie the customer logout does not clear. Hiding the
-  // control would remove the only way to drop it (#1149).
+  // PIN client do; both provide a credential that can be explicitly cleared.
   //
   // Read from the auth context, which resolves this from /auth/session on
   // mount — NOT from the photos payload. That response is cached by React
   // Query for five minutes on a key that knows nothing about the session, so
   // opening a gallery as a guest and then from the portal would have reused
   // the guest answer, and vice versa.
-  const showLogoutControl = requiresPassword || isClient || viaCustomer;
+  const showLogoutControl = requiresPassword || isClient;
 
   // Folder navigation (#1160): tiles at root, a breadcrumb + folder download
   // inside one. Defined once and rendered by BOTH layout branches — containment
@@ -1257,7 +1205,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
             allowRatings: !!feedbackSettings?.allow_ratings,
             allowComments: !!feedbackSettings?.allow_comments,
             allowReactions: !!feedbackSettings?.allow_reactions,
-            requireNameEmail: !!feedbackSettings?.require_name_email,
+            requireGuestName: !!feedbackSettings?.require_name_email,
           }}
           isSelectionMode={isSelectionMode}
           selectedPhotos={selectedPhotos}
@@ -1282,7 +1230,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
           headerStyle={data?.event?.header_style || theme.headerStyle}
           heroDividerStyle={data?.event?.hero_divider_style || theme.heroDividerStyle || 'wave'}
           heroImageAnchor={data?.event?.hero_image_anchor || 'center'}
-          welcomeMessage={event.welcome_message}
           // Same gate as the standard layout below (#1149). These layouts
           // render the button on the callback being present rather than on a
           // showLogout flag, so withholding it is how the gate reaches them.
@@ -1324,8 +1271,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
   return (
     <GuestIdentityProvider slug={slug} identityMode={identityMode}>
     <>
-      <GuestNamePromptModal requireEmail={false} hideEmail />
-      <GuestRecoveryModal />
+      <GuestNamePromptModal />
       {/* Sidebar for non-grid layouts */}
       {showSidebar ? (
         <GallerySidebar
@@ -1422,13 +1368,13 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
         onToggleSelectionMode={() => setIsSelectionMode(!isSelectionMode)}
         headerExtra={(() => {
           const items = [];
-          
+
           if (daysUntilExpiration !== null && daysUntilExpiration <= 1 && daysUntilExpiration > 0 && event.expires_at) {
             items.push(
               <CountdownTimer key="countdown" expiresAt={event.expires_at} className="mr-2" />
             );
           }
-          
+
           // Upload button - always show when uploads are allowed (regardless of layout/theme loading state)
           const allowUploads = data?.event?.allow_user_uploads || event?.allow_user_uploads;
           if (allowUploads) {
@@ -1446,7 +1392,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
               </Button>
             );
           }
-          
+
           return items.length > 0 ? <>{items}</> : null;
         })()}
       >
@@ -1536,7 +1482,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
               photoIds={Array.from(selectedPhotos)}
               colorLabelsEnabled={Boolean(feedbackSettings?.allow_color_labels || retouchWorkflow?.enabled)}
               commentsEnabled={Boolean(feedbackEnabled && feedbackSettings?.allow_comments)}
-              requireNameEmail={false}
+              requireGuestName={!!feedbackSettings?.require_name_email}
             />
           </div>
         )}
@@ -1698,7 +1644,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
             suppressEmptyState={rootIsFoldersOnly}
             slug={slug}
             people={peopleEnabled ? people : undefined}
-            onSelectPerson={togglePerson} 
+            onSelectPerson={togglePerson}
             categoryId={selectedCategoryId}
             onFeedbackChange={() => {
               refetch();
@@ -1717,7 +1663,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
               allowRatings: !!feedbackSettings?.allow_ratings,
               allowComments: !!feedbackSettings?.allow_comments,
               allowReactions: !!feedbackSettings?.allow_reactions,
-              requireNameEmail: !!feedbackSettings?.require_name_email,
+              requireGuestName: !!feedbackSettings?.require_name_email,
             }}
             isSelectionMode={isSelectionMode}
             selectedPhotos={selectedPhotos}
@@ -1742,7 +1688,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ slug, event, requiresP
             headerStyle={data?.event?.header_style || theme.headerStyle}
             heroDividerStyle={data?.event?.hero_divider_style || theme.heroDividerStyle || 'wave'}
             heroImageAnchor={data?.event?.hero_image_anchor || 'center'}
-            welcomeMessage={event.welcome_message}
             isClient={isClient}
             onToggleVisibility={isClient ? handleToggleVisibility : undefined}
             showOriginalFilename={showOriginalFilename}

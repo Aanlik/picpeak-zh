@@ -72,8 +72,8 @@ describe('v1 event ownership (GHSA-9697)', () => {
       event_type: 'project',
       event_name: slug,
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_token: shareToken,
       share_link: `/gallery/${slug}/${shareToken}`,

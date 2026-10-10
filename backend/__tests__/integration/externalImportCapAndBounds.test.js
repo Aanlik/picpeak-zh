@@ -67,8 +67,8 @@ describe('external import: photo cap and walk bounds', () => {
       event_type: 'project',
       event_name: 'extcap',
       event_date: '2026-01-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `extcap-${Math.random()}`,
       expires_at: new Date().toISOString(),

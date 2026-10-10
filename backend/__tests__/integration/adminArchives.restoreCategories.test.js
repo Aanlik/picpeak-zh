@@ -102,8 +102,8 @@ describe('archive restore restores categories (flat archives included)', () => {
       event_type: 'project',
       event_name: slug,
       event_date: '2026-06-27',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `${slug}-share`,
       expires_at: new Date().toISOString(),

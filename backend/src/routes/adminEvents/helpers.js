@@ -159,9 +159,7 @@ async function deleteEventCascade(eventId, adminContext) {
     await trx('activity_logs').where('event_id', eventId).del();
     // 2. Delete access logs
     await trx('access_logs').where('event_id', eventId).del();
-    // 3. Delete email queue entries
-    await trx('email_queue').where('event_id', eventId).del();
-    // 4. Delete photos (also handles hero_photo_id foreign key)
+    // 3. Delete photos (also handles hero_photo_id foreign key)
     // Face data (#1074). The FK declares ON DELETE CASCADE, but SQLite only
     // honours that when `PRAGMA foreign_keys = ON`, which PicPeak does not set
     // — so on the SQLite path the cascade is inert and biometric embeddings

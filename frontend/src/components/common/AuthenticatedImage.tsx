@@ -99,7 +99,6 @@ export const AuthenticatedImage: React.FC<AuthenticatedImageProps> = ({
   src,
   fallbackSrc,
   alt,
-  isGallery = false,
   slug,
   useCanvasRendering,
   onProtectionViolation,
@@ -296,7 +295,7 @@ export const AuthenticatedImage: React.FC<AuthenticatedImageProps> = ({
               setError(false);
             }
             return;
-          } catch (fallbackError) {
+          } catch {
             // Swallow and mark error below
           }
         }

@@ -82,7 +82,7 @@ function sanitizeBrandUrl(url) {
  * value reaches the public page unfiltered. The default templates interpolate
  * tokens into text AND into quoted attributes
  * (`<img src="{{brand_logo_url}}" alt="{{company_name}} logo">`,
- * `href="mailto:{{support_email}}"`), so escaping the five HTML-significant
+ * `href` attributes), so escaping the five HTML-significant
  * characters is correct in both positions.
  *
  * Mirrors galleryOgService's escapeHtml, which already handles this correctly.
@@ -110,7 +110,6 @@ async function fetchBrandingContext() {
     .whereIn('setting_key', [
       'branding_company_name',
       'branding_company_tagline',
-      'branding_support_email',
       'branding_logo_url',
       'branding_footer_text',
       'theme_config'
@@ -119,7 +118,6 @@ async function fetchBrandingContext() {
   const context = {
     companyName: null,
     companyTagline: null,
-    supportEmail: null,
     logoUrl: null,
     footerText: null,
     // 8-token CI palette mirrored from frontend ThemeConfig.
@@ -146,9 +144,6 @@ async function fetchBrandingContext() {
       break;
     case 'branding_company_tagline':
       context.companyTagline = parsed || context.companyTagline;
-      break;
-    case 'branding_support_email':
-      context.supportEmail = parsed || context.supportEmail;
       break;
     case 'branding_logo_url':
       context.logoUrl = sanitizeBrandUrl(parsed);
@@ -194,14 +189,25 @@ function sanitizeHtmlPayload(html) {
       img: ['src', 'alt', 'title', 'width', 'height', 'loading', 'decoding', ...COMMON_ATTRIBUTES],
       button: ['type', ...COMMON_ATTRIBUTES]
     },
-    allowedSchemes: ['http', 'https', 'mailto', 'tel'],
+    allowedSchemes: ['http', 'https', 'tel'],
     allowedSchemesByTag: { img: ['http', 'https', 'data'] },
     transformTags: {
       a: (tagName, attribs) => {
         const transformed = { ...attribs };
-        if (transformed.href && !/^https?:|^mailto:|^tel:/i.test(transformed.href)) {
-          // sanitize-html will remove disallowed schemes, but we guard as well
-          delete transformed.href;
+        if (transformed.href) {
+          const href = transformed.href.trim();
+          const scheme = href.match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase();
+          // Public-site links may point to this site, or use the explicitly
+          // allowed web/telephone schemes. Reject protocol-relative and
+          // script/data schemes even if HTML was saved before sanitization.
+          const safeRelative = !scheme && !href.startsWith('//') && !href.startsWith('\\');
+          if (scheme && !['http', 'https', 'tel'].includes(scheme)) {
+            delete transformed.href;
+          } else if (!scheme && !safeRelative) {
+            delete transformed.href;
+          } else {
+            transformed.href = href;
+          }
         }
 
         if (transformed.target === '_blank') {
@@ -292,7 +298,6 @@ function applyBrandTokens(html, branding) {
   const tokens = {
     company_name: branding.companyName || '',
     company_tagline: branding.companyTagline || '',
-    support_email: branding.supportEmail || '',
     brand_logo_url: branding.logoUrl || '/picpeak-logo-transparent.png',
     brand_primary_hex: branding.colors?.primary || '#2563eb',
     brand_accent_hex: branding.colors?.accent || '#1d4ed8',
@@ -302,7 +307,7 @@ function applyBrandTokens(html, branding) {
 
   // Escape on substitution (GHSA-j347) — this runs AFTER sanitizeHtmlPayload,
   // so an unescaped value would reintroduce raw markup into the public origin.
-  return html.replace(/\{\{\s*(company_name|company_tagline|support_email|brand_logo_url|brand_primary_hex|brand_accent_hex|brand_background_hex|brand_text_hex)\s*\}\}/gi,
+  return html.replace(/\{\{\s*(company_name|company_tagline|brand_logo_url|brand_primary_hex|brand_accent_hex|brand_background_hex|brand_text_hex)\s*\}\}/gi,
     (_, key) => escapeTokenValue(tokens[key] || ''));
 }
 

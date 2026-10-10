@@ -1,17 +1,11 @@
-/*
- * Self-hosted Inter is bootstrapped here so the very first paint —
- * before React mounts and runs the dynamic @font-face injector — has
- * the default body font available. Replaces the previous Google Fonts
- * @import that leaked visitor IPs to fonts.googleapis.com (LG München
- * 2022 GDPR ruling). All other families are injected on-demand by
- * frontend/src/contexts/ThemeContext.tsx based on the active theme.
- */
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap; src: url('/fonts/Inter/400.woff2') format('woff2'); }
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap; src: url('/fonts/Inter/600.woff2') format('woff2'); }
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/Inter/700.woff2') format('woff2'); }
-
 /* Import image protection styles */
 @import './styles/image-protection.css';
+
+/*
+ * ThemeContext injects @font-face rules on demand for selected themes. The
+ * default stack below uses installed system fonts, avoiding remote font
+ * requests and references to font files that are not shipped with this app.
+ */
 
 @tailwind base;
 @tailwind components;
@@ -307,7 +301,7 @@
   /*
    * Low-opacity accent fills used as "icon tile" / "tinted chip"
    * backgrounds (Features tab feature icons, Sidebar Preview pills,
-   * Customer dashboard branding card header). Picks up the admin's CI
+   * gallery branding card header). Picks up the admin's CI
    * accent automatically — previously these places used Tailwind's
    * hardcoded `primary-50` palette which stayed green regardless of
    * branding settings.

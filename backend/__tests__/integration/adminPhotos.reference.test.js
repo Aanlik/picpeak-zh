@@ -132,7 +132,6 @@ describe('Admin photos in reference mode', () => {
       table.increments('id');
       table.integer('photo_id');
       table.string('feedback_type');
-      table.boolean('is_approved');
       table.boolean('is_hidden');
     });
 

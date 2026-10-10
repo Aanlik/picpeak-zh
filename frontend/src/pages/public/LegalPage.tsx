@@ -120,7 +120,7 @@ export const LegalPage: React.FC = () => {
             className="inline-flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            {i18n.language === 'de' ? 'Zurück' : 'Back'}
+            {lang.startsWith('zh') ? '返回' : 'Back'}
           </button>
         </div>
       </header>
@@ -166,14 +166,14 @@ export const LegalPage: React.FC = () => {
               to="/impressum"
               className="text-neutral-600 hover:text-neutral-900"
             >
-              {lang === 'de' ? 'Impressum' : 'Legal Notice'}
+              {lang.startsWith('zh') ? '法律声明' : 'Legal Notice'}
             </Link>
             <span className="text-neutral-400">•</span>
             <Link
               to="/datenschutz"
               className="text-neutral-600 hover:text-neutral-900"
             >
-              {lang === 'de' ? 'Datenschutz' : 'Privacy Policy'}
+              {lang.startsWith('zh') ? '隐私政策' : 'Privacy Policy'}
             </Link>
           </div>
           <p className="text-sm text-neutral-500 mt-4">

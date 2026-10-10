@@ -230,7 +230,7 @@ async function createPicpeak({ includePhotos = false, includeFiles = true, outDi
       options: { includePhotos: !!includePhotos, includeFiles: !!includeFiles },
       tables: tableMeta,
       file_count: files.length,
-      // NOTE: contains secrets (SMTP password, admin hashes, API keys) in plain
+      // NOTE: contains secrets (legacy settings, admin hashes, API keys) in plain
       // text — the download surface must warn about this.
       contains_secrets: true,
     };

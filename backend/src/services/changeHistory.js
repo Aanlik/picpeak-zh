@@ -252,7 +252,7 @@ async function deleteWithHistory(conn, table, where, context = {}) {
             else await auditedUpdate(trx, ref.table, match, { [ref.column]: null }, context);
           } else {
             // Retired tables can still exist on upgraded installations.
-            // Apply only their old FK action so core event/customer deletion
+            // Apply only their old FK action so core record deletion
             // remains possible.
             const query = trx(ref.table).whereIn('id', affectedIds.slice(j, j + CHUNK))
               .whereIn(ref.column, ids.slice(i, i + CHUNK));

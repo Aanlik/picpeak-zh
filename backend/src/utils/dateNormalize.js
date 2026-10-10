@@ -33,6 +33,20 @@ function toIso(value) {
   return value;
 }
 
+// API timestamps backed by SQLite's CURRENT_TIMESTAMP are zone-less strings,
+// but SQLite stores that shape in UTC. Mark it explicitly before parsing so a
+// browser or server running west of UTC does not shift popup notifications.
+function toUtcIso(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(value.trim())) {
+    const stamped = `${value.trim().replace(' ', 'T')}Z`;
+    const parsed = new Date(stamped);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  }
+  const timestamp = toTimestamp(value);
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null;
+}
+
 // Shared comparison boundary for SQLite epoch values and PostgreSQL Dates.
 // Invalid input stays NaN so access-control callers can fail closed.
 function toTimestamp(value) {
@@ -44,4 +58,4 @@ function toTimestamp(value) {
   }
 }
 
-module.exports = { toIso, toTimestamp };
+module.exports = { toIso, toTimestamp, toUtcIso };

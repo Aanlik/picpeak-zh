@@ -189,12 +189,10 @@ function validateExternalUrl(urlString) {
  * literal isPrivateIP check alone can't see that. Fails closed on resolution
  * failure. IP literals are decided by isPrivateIP without a lookup.
  *
- * HTTP clients for admin-configured URLs (webhook delivery, the email webhook
- * transport) must use the returned addresses from validateExternalUrlAsync
- * with pinnedRequestOptions; a separate preflight alone cannot stop rebinding.
- * Tracker adapters, OIDC and the analytics tracker proxy use integrationHttp
- * to validate addresses at connection time (the proxy keeps isHostAllowed as
- * a config-load preflight on top).
+ * HTTP clients for admin-configured destinations must use the returned
+ * addresses from validateExternalUrlAsync with pinnedRequestOptions; a
+ * separate preflight alone cannot stop rebinding. OIDC uses integrationHttp
+ * to validate addresses at connection time.
  *
  * @param {string} hostname
  * @returns {Promise<boolean>} true when safe to connect
@@ -224,7 +222,7 @@ async function isHostAllowed(hostname) {
 
 /**
  * Async, DNS-resolving counterpart to validateExternalUrl. Returns a `reason`
- * so callers with retry semantics (e.g. the webhook worker) can distinguish a
+ * so callers with retry semantics can distinguish a
  * policy rejection ('private'/'invalid') from a transient lookup failure
  * ('unresolved') that should be retried rather than permanently failed.
  * @param {string} urlString

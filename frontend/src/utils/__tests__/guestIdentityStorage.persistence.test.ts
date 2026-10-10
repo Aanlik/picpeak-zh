@@ -2,7 +2,7 @@
  * Guest identity has to survive a tab close (#1265).
  *
  * It used to live in sessionStorage, so a guest who closed the tab and came
- * back through the same emailed link lost their identity. The `?invite=` token
+ * back through the same invitation link lost their identity. The `?invite=` token
  * in that link is single-use and already redeemed, so re-registering was the
  * only way back in — and that inserted a second gallery_guests row, orphaning
  * the likes they had already made.
@@ -23,7 +23,7 @@ import {
 } from '../guestIdentityStorage';
 
 const SLUG = 'wedding-summer-2026';
-const IDENTITY = { id: 42, name: 'Tina', email: 'tina@example.com', identifier: 'abc-123' };
+const IDENTITY = { id: 42, name: 'Tina', identifier: 'abc-123' };
 
 /** A JWT-shaped token whose `exp` is `secondsFromNow` away. Signature is irrelevant. */
 function tokenExpiringIn(secondsFromNow: number): string {
@@ -52,7 +52,7 @@ describe('guest identity persistence (#1265)', () => {
     closeTab();
 
     expect(getGuestToken(SLUG)).toBe(TOKEN);
-    expect(getGuestIdentity(SLUG)).toMatchObject({ id: 42, email: 'tina@example.com' });
+    expect(getGuestIdentity(SLUG)).toMatchObject({ id: 42, name: 'Tina' });
   });
 
   it('does not write the token to sessionStorage, where a tab close would drop it', () => {
@@ -72,7 +72,7 @@ describe('guest identity persistence (#1265)', () => {
   });
 
   it('keeps named picker roles and switches the active feedback identity', () => {
-    const second = { ...IDENTITY, id: 43, name: 'Leo', email: null };
+    const second = { ...IDENTITY, id: 43, name: 'Leo' };
     const secondToken = tokenExpiringIn(3600);
     storeGuestIdentity(SLUG, IDENTITY as never, TOKEN);
     storeGuestIdentity(SLUG, second as never, secondToken);

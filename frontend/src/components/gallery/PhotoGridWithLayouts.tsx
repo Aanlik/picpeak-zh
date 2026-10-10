@@ -9,7 +9,6 @@ import { PhotoLightbox } from './PhotoLightbox';
 import { DownloadResolutionModal } from './DownloadResolutionModal';
 import { Button } from '../common';
 import { galleryService } from '../../services/gallery.service';
-import { analyticsService } from '../../services/analytics.service';
 import { useTheme } from '../../contexts/ThemeContext';
 
 // Import all layouts
@@ -58,7 +57,7 @@ interface PhotoGridWithLayoutsProps {
     allowRatings?: boolean;
     allowComments?: boolean;
     allowReactions?: boolean;
-    requireNameEmail?: boolean;
+    requireGuestName?: boolean;
   };
   onFeedbackChange?: () => void;
   // Hero logo customization options
@@ -70,8 +69,6 @@ interface PhotoGridWithLayoutsProps {
   heroDividerStyle?: HeroDividerStyle;
   // Hero image anchor position (#162) – keyword or "X% Y%" focal point
   heroImageAnchor?: string;
-  // Welcome message (per-event) for layouts that display it
-  welcomeMessage?: string;
   // Logout callback for full-page layouts
   onLogout?: () => void;
   // Client visibility controls (#172)
@@ -132,7 +129,6 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
   headerStyle,
   heroDividerStyle = 'wave',
   heroImageAnchor = 'center',
-  welcomeMessage,
   onLogout,
   isClient = false,
   onToggleVisibility,
@@ -149,7 +145,7 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
   // Non-null while the resolution picker is open (#858); holds the ids it applies to.
   const [resolutionPickerIds, setResolutionPickerIds] = useState<number[] | null>(null);
   const downloadPhotoMutation = useDownloadPhoto();
-  
+
   // Use parent state if provided, otherwise use local state
   const selectedPhotos = parentSelectedPhotos ?? localSelectedPhotos;
   const isSelectionMode = parentSelectionMode ?? localSelectionMode;
@@ -191,10 +187,9 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
 
   const handleDownload = (photo: Photo, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     // Track individual photo download
-    analyticsService.trackDownload(photo.id, slug, false);
-    
+
     downloadPhotoMutation.mutate({
       slug,
       photoId: photo.id,
@@ -226,7 +221,6 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
 
     try {
       await galleryService.downloadSelectedPhotos(slug, ids);
-      analyticsService.trackGalleryEvent('bulk_download', { gallery: slug, photo_count: ids.length });
     } catch {
       toastify.error(t('gallery.downloadError'));
     } finally {
@@ -253,7 +247,7 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
 
   // Get the current layout from theme
   const galleryLayout = theme.galleryLayout || 'grid';
-  
+
   // Select the appropriate layout component
   const layoutProps = {
     photos,
@@ -299,7 +293,6 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
     heroLogoVisible,
     heroLogoSize,
     heroLogoPosition,
-    welcomeMessage,
     onLogout,
     isClient,
     onToggleVisibility,
@@ -359,13 +352,6 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
         />
       )}
 
-      {/* Welcome Message - shown for non-fullpage layouts when set */}
-      {!isFullPageLayout && welcomeMessage && (
-        <div className="mb-6 px-4 py-3 rounded-lg bg-card-theme/50 border border-border-theme text-center">
-          <p className="text-sm text-muted-theme whitespace-pre-line">{welcomeMessage}</p>
-        </div>
-      )}
-
       {/* Selection Mode Controls - Not shown for carousel, full-page layouts, or when controls are hidden */}
       {showSelectionControls && photos.length > 1 && galleryLayout !== 'carousel' && !isFullPageLayout && (
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -393,7 +379,7 @@ export const PhotoGridWithLayouts: React.FC<PhotoGridWithLayoutsProps> = ({
               </Button>
             )}
           </div>
-          
+
           {isSelectionMode && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
               <span className="text-xs sm:text-sm text-muted-theme">

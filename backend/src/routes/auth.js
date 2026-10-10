@@ -7,9 +7,7 @@ const { body, validationResult } = require('express-validator');
 
 const { db, logActivity } = require('../database/db');
 const { formatBoolean } = require('../utils/dbCompat');
-const { verifyRecaptcha } = require('../services/recaptcha');
-const mfaService = require('../services/mfaService');
-const { 
+const {
   trackFailedAttempt,
   trackSuccessfulLogin,
   checkAccountLockout,
@@ -48,9 +46,7 @@ const router = express.Router();
 /**
  * Finish a successful admin login: reset the lockout counter, stamp
  * last_login, mint the 24h admin JWT, set the HttpOnly cookie, and return the
- * user payload. Shared by the direct (no-MFA) path and the MFA-verify path so
- * both produce an identical session. `lockoutKey` is the identifier the user
- * typed (username or email) so success/failure tracking stays in one bucket.
+ * user payload. `lockoutKey` is the username used for lockout tracking.
  */
 async function establishAdminSession(res, admin, ipAddress, userAgent, lockoutKey, { rememberMe = false } = {}) {
   await trackSuccessfulLogin(lockoutKey, ipAddress, userAgent);
@@ -92,7 +88,6 @@ async function establishAdminSession(res, admin, ipAddress, userAgent, lockoutKe
   return {
     id: admin.id,
     username: admin.username,
-    email: admin.email,
     mustChangePassword: admin.must_change_password || false,
     role: admin.role_name ? {
       name: admin.role_name,
@@ -121,8 +116,8 @@ router.post('/admin/login', [
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: safeValidationErrors(errors) });
     }
-    
-    const { username, password, recaptchaToken } = req.body;
+
+    const { username, password } = req.body;
     // Validator above coerces this to a real boolean and leaves it undefined
     // when absent, so the fallback keeps the historical 24h session (#1186).
     const rememberMe = req.body.remember_me === true;
@@ -143,31 +138,23 @@ router.post('/admin/login', [
     const lockoutStatus = await checkAccountLockout(username, ipAddress);
     if (lockoutStatus.isLocked) {
       logger.warn('Login attempt on locked account', { username, ipAddress });
-      return res.status(423).json({ 
+      return res.status(423).json({
         error: 'Account temporarily locked due to too many failed attempts',
         retryAfter: lockoutStatus.remainingTime
       });
     }
-    
-    // Verify reCAPTCHA
-    const recaptchaValid = await verifyRecaptcha(recaptchaToken);
-    if (!recaptchaValid) {
-      await trackFailedAttempt(username, ipAddress, userAgent);
-      return res.status(400).json({ error: 'reCAPTCHA verification failed' });
-    }
-    
+
     // Check for suspicious activity
     const isSuspicious = await checkSuspiciousActivity(username, ipAddress);
     if (isSuspicious) {
       // Still allow login but log it
       logger.warn('Suspicious login pattern detected', { username, ipAddress });
     }
-    
+
     // Fetch admin with role information
     const admin = await db('admin_users')
       .leftJoin('roles', 'roles.id', 'admin_users.role_id')
       .where('admin_users.username', username)
-      .modify(query => { if (!require('../utils/communicationProfile').NO_EMAIL_MODE) query.orWhere('admin_users.email', username); })
       .select(
         'admin_users.*',
         'roles.name as role_name',
@@ -195,183 +182,9 @@ router.post('/admin/login', [
       return res.status(401).json({ error: getGenericAuthError() });
     }
 
-    // Second factor: if this admin has TOTP enabled, do NOT complete the login
-    // yet. Issue a short-lived, single-purpose mfa_pending token and require the
-    // code via /admin/login/mfa. We deliberately don't reset the lockout counter
-    // (trackSuccessfulLogin) or stamp last_login until the second factor passes.
-    // MFA guessing is gated by the verify step's own account-wide bucket
-    // (`mfa:<id>`); `loginId` carries the typed identifier for the success
-    // record once the second factor passes.
-    if (mfaService.isEnrolled(admin)) {
-      const mfaToken = jwt.sign({
-        id: admin.id,
-        username: admin.username,
-        type: 'mfa_pending',
-        loginId: username,
-        // Carried in the signed token rather than re-sent by the client at the
-        // verify step: the choice was made at the password prompt, and this
-        // way the second leg cannot be talked into a longer session than the
-        // first one asked for.
-        rememberMe
-      }, process.env.JWT_SECRET, {
-        expiresIn: '5m',
-        issuer: 'picpeak-auth'
-      });
-      return res.json({ mfaRequired: true, mfaToken });
-    }
-
     return await completeAdminLogin(req, res, admin, ipAddress, userAgent, username, { rememberMe });
   } catch (error) {
     errorResponse(res, error, 500, 'Login failed');
-  }
-});
-
-// Second-factor verification. Exchanges the short-lived mfa_pending token
-// (from /admin/login) plus a TOTP or recovery code for a full admin session.
-router.post('/admin/login/mfa', [
-  body('mfaToken').notEmpty(),
-  body('code').notEmpty().trim()
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: safeValidationErrors(errors) });
-    }
-
-    const { mfaToken, code } = req.body;
-    const ipAddress = getClientIp(req);
-    const userAgent = req.headers['user-agent'] || '';
-
-    // Same SSO policy gate as /admin/login (#798 phase 2): an mfa_pending
-    // token minted moments before the policy flipped must not complete into
-    // a local session through this second step.
-    if (await require('../services/oidcService').isLocalLoginDisabled()) {
-      logger.warn('Local admin MFA completion refused — disabled by SSO policy', { ipAddress });
-      return res.status(403).json({ error: 'Local login is disabled — sign in through SSO', code: 'LOCAL_LOGIN_DISABLED' });
-    }
-
-    let decoded;
-    try {
-      decoded = jwt.verify(mfaToken, process.env.JWT_SECRET, {
-        algorithms: ['HS256'],
-        issuer: 'picpeak-auth'
-      });
-    } catch (err) {
-      return res.status(401).json({
-        error: 'Your verification session expired. Please sign in again.',
-        code: 'MFA_SESSION_EXPIRED'
-      });
-    }
-
-    if (decoded.type !== 'mfa_pending') {
-      return res.status(401).json({ error: getGenericAuthError() });
-    }
-
-    const lockoutKey = decoded.loginId || decoded.username;
-    // The second factor has a bucket of its own, counted across every source
-    // address. Per-IP (like the password step) would hand a holder of the
-    // mfa_pending token a fresh batch of six-digit guesses for each address
-    // they rotate to; sharing the password step's bucket would let anonymous
-    // password failures lock the owner out of this step. Only someone who
-    // already passed the password can add to it.
-    const mfaLockoutKey = `mfa:${decoded.id}`;
-    const lockoutStatus = await checkAccountLockout(mfaLockoutKey);
-    if (lockoutStatus.isLocked) {
-      return res.status(423).json({
-        error: 'Account temporarily locked due to too many failed attempts',
-        retryAfter: lockoutStatus.remainingTime
-      });
-    }
-
-    const admin = await db('admin_users')
-      .leftJoin('roles', 'roles.id', 'admin_users.role_id')
-      .where('admin_users.id', decoded.id)
-      .select(
-        'admin_users.*',
-        'roles.name as role_name',
-        'roles.display_name as role_display_name'
-      )
-      .first();
-
-    if (!admin || !admin.is_active || !mfaService.isEnrolled(admin)) {
-      return res.status(401).json({ error: getGenericAuthError() });
-    }
-
-    // TOTP first, then a one-time recovery code. verifyTotpEncryptedStep also
-    // enforces replay protection (GHSA-qcwx-r25m-j869): a code whose matched
-    // step doesn't advance past this admin's two_factor_last_used_step is
-    // rejected, so the same code can't complete two logins. The step is
-    // persisted atomically (persistTotpStep) right here, immediately after a
-    // match, so two concurrent requests carrying the same captured code
-    // can't both read the same last-used step and both win — only the first
-    // writer's UPDATE affects a row; the loser falls through and is treated
-    // as a replay below.
-    const totpStep = mfaService.verifyTotpEncryptedStep(
-      code, admin.two_factor_secret, admin.two_factor_last_used_step
-    );
-    let ok = false;
-    if (totpStep !== null) {
-      ok = await mfaService.persistTotpStep(db, admin.id, totpStep, { updated_at: new Date() });
-    }
-    let usedRecovery = false;
-    let remainingHashes = null;
-    if (!ok) {
-      const stored = mfaService.parseRecoveryCodes(admin.two_factor_recovery_codes);
-      const result = await mfaService.consumeRecoveryCode(code, stored);
-      if (result.matched) {
-        ok = true;
-        usedRecovery = true;
-        remainingHashes = result.remainingHashes;
-      }
-    }
-
-    if (!ok) {
-      await trackFailedAttempt(mfaLockoutKey, ipAddress, userAgent);
-      return res.status(401).json({ error: 'Invalid verification code', code: 'MFA_INVALID' });
-    }
-
-    if (usedRecovery) {
-      // Compare-and-set against the list this request read. Two requests
-      // carrying the same captured code both passed the bcrypt compare and
-      // both overwrote the list, so both got a session and a code was
-      // redeemable twice; concurrent redemption of two different codes let
-      // the last writer restore the other one. Only the writer that still
-      // sees the list it read consumes the code (Codex security audit
-      // 2026-09-30) — the same rule persistTotpStep applies to TOTP.
-      const consumed = await db('admin_users')
-        .where('id', admin.id)
-        .where('two_factor_recovery_codes', admin.two_factor_recovery_codes)
-        .update({
-          two_factor_recovery_codes: JSON.stringify(remainingHashes),
-          updated_at: new Date()
-        });
-      if (consumed !== 1) {
-        await trackFailedAttempt(mfaLockoutKey, ipAddress, userAgent);
-        return res.status(401).json({ error: 'Invalid verification code', code: 'MFA_INVALID' });
-      }
-      await logActivity('admin_mfa_recovery_used',
-        { admin_id: admin.id, remaining: remainingHashes.length },
-        null,
-        { type: 'admin', id: admin.id, name: admin.username }
-      );
-    }
-    // else: the TOTP step was already persisted atomically above.
-
-    await logActivity('admin_mfa_login',
-      { admin_id: admin.id, method: usedRecovery ? 'recovery_code' : 'totp' },
-      null,
-      { type: 'admin', id: admin.id, name: admin.username }
-    );
-
-    // Taken from the signed mfa_pending token, not from this request: the
-    // choice belongs to the password step, and reading it back out of the
-    // token stops the verify leg asking for a longer session than was agreed.
-    return await completeAdminLogin(req, res, admin, ipAddress, userAgent, lockoutKey, {
-      rememberMe: decoded.rememberMe === true,
-    });
-  } catch (error) {
-    logger.error('MFA verification error:', error);
-    res.status(500).json({ error: 'Verification failed' });
   }
 });
 
@@ -391,7 +204,7 @@ router.post('/logout', async (req, res) => {
 
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        logger.info('User logged out', { 
+        logger.info('User logged out', {
           userId: decoded.id,
           username: decoded.username,
           type: decoded.type
@@ -446,8 +259,8 @@ router.post('/gallery/verify', [
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: safeValidationErrors(errors) });
     }
-    
-    const { slug, password, recaptchaToken } = req.body;
+
+    const { slug, password } = req.body;
     const ipAddress = getClientIp(req);
     const userAgent = req.headers['user-agent'] || '';
     const event = await db('events')
@@ -467,16 +280,10 @@ router.post('/gallery/verify', [
       const lockoutStatus = await checkAccountLockout(`gallery:${slug}`, ipAddress);
       if (lockoutStatus.isLocked) {
         logger.warn('Gallery access attempt on locked gallery', { slug, ipAddress });
-        return res.status(423).json({ 
+        return res.status(423).json({
           error: 'Too many failed attempts. Please try again later.',
           retryAfter: lockoutStatus.remainingTime
         });
-      }
-
-      const recaptchaValid = await verifyRecaptcha(recaptchaToken);
-      if (!recaptchaValid) {
-        await trackFailedAttempt(`gallery:${slug}`, ipAddress, userAgent);
-        return res.status(400).json({ error: 'reCAPTCHA verification failed' });
       }
 
       if (!password) {
@@ -488,8 +295,7 @@ router.post('/gallery/verify', [
       if (!validPassword) {
         // Passwords copy-pasted out of chat apps carry invisible Unicode
         // that fails the byte-exact compare (#654). Retry the compare with
-        // those characters stripped — in the SAME request, so the fallback
-        // costs no reCAPTCHA token and no failed-attempt quota. Exact bytes
+        // those characters stripped — in the SAME request. Exact bytes
         // are tried first so stored passwords that legitimately contain
         // such characters keep working.
         const sanitized = sanitizePasswordInput(password);
@@ -526,8 +332,8 @@ router.post('/gallery/verify', [
       });
     }
 
-    const token = jwt.sign({ 
-      eventId: event.id, 
+    const token = jwt.sign({
+      eventId: event.id,
       eventSlug: event.slug,
       type: 'gallery',
       // Unique per token: the revocation key falls back to eventId+iat otherwise,
@@ -535,20 +341,19 @@ router.post('/gallery/verify', [
       jti: crypto.randomUUID(),
       ip: ipAddress,
       loginTime: Date.now()
-    }, process.env.JWT_SECRET, { 
+    }, process.env.JWT_SECRET, {
       expiresIn: '24h',
       issuer: 'picpeak-auth'
     });
 
     setGalleryAuthCookies(res, token, event.slug);
-    
+
     res.json({
       token,
       event: {
         id: event.id,
         event_name: event.event_name,
         event_date: event.event_date,
-        welcome_message: event.welcome_message,
         color_theme: event.color_theme,
         expires_at: event.expires_at,
         allow_user_uploads: event.allow_user_uploads,
@@ -625,7 +430,6 @@ router.post('/gallery/:slug/client-login', [
         id: event.id,
         event_name: event.event_name,
         event_date: event.event_date,
-        welcome_message: event.welcome_message,
         color_theme: event.color_theme,
         expires_at: event.expires_at,
         allow_user_uploads: event.allow_user_uploads,
@@ -723,7 +527,6 @@ router.post('/gallery/share-login', [
         id: event.id,
         event_name: event.event_name,
         event_date: event.event_date,
-        welcome_message: event.welcome_message,
         color_theme: event.color_theme,
         expires_at: event.expires_at,
         allow_user_uploads: event.allow_user_uploads,
@@ -759,15 +562,9 @@ router.post('/gallery/logout', async (req, res) => {
 router.get('/session', async (req, res) => {
   try {
     const { slug } = req.query;
-    // Token precedence: when ?slug= is present the caller is asking
-    // specifically about gallery auth (GalleryAuthContext), so prefer the
-    // gallery token. Without this, an admin who's also dogfooding the
-    // customer dashboard from the same browser would always get
-    // {type:'admin'} back here, the gallery context's
-    // `type === 'gallery'` check would fail, and the page would fall
-    // through to the per-event password prompt — even though the
-    // gallery_token_<slug> cookie was correctly set on the prior
-    // /api/customer/events/:slug/access-token response.
+    // When ?slug= is present the caller is asking specifically about gallery
+    // auth (GalleryAuthContext), so prefer the gallery token. Otherwise an
+    // admin session in the same browser could mask the active gallery token.
     const token = slug
       ? (getGalleryTokenFromRequest(req, slug) || getAdminTokenFromRequest(req))
       : (getAdminTokenFromRequest(req) || getGalleryTokenFromRequest(req, slug));
@@ -795,7 +592,7 @@ router.get('/session', async (req, res) => {
           return res.json({ valid: false, error: 'Session expired' });
         }
         adminUser = {
-          id: admin.id, username: admin.username, email: admin.email,
+          id: admin.id, username: admin.username,
           mustChangePassword: !!admin.must_change_password,
           role: admin.role_name ? { name: admin.role_name, displayName: admin.role_display_name } : null,
         };
@@ -825,11 +622,7 @@ router.get('/session', async (req, res) => {
         // backend — still treated it as one. Reported from the token so a
         // restored session knows what it actually is.
         //
-        // viaCustomer marks a portal-minted token. It runs at accessLevel
-        // 'guest' but bypasses reveal mode, so it is a credential even though
-        // it does not look like one.
         accessLevel: decoded.type === 'gallery' ? (decoded.accessLevel || 'guest') : undefined,
-        viaCustomer: decoded.type === 'gallery' ? decoded.via === 'customer' : undefined,
         // Full admin payload (or null) — lets the SPA hydrate its user
         // state after a redirect-established session (SSO, #798) where no
         // login JSON response ever reached it.
@@ -883,8 +676,7 @@ router.post('/admin/change-password', [
 
     // Validate new password
     const passwordValidation = validatePasswordInContext(newPassword, 'admin', {
-      username: admin.username,
-      email: admin.email
+      username: admin.username
     });
 
     if (!passwordValidation.valid) {
@@ -955,7 +747,6 @@ router.post('/password-strength', [
     const userData = {};
     if (context === 'admin' && req.admin) {
       userData.username = req.admin.username;
-      userData.email = req.admin.email;
     }
 
     // validatePasswordInContext is async; unawaited this resolved to a Promise
@@ -982,8 +773,7 @@ router.post('/password-strength', [
 // permits), scoped to this route prefix. Token/claim validation happens in
 // oidcService via openid-client; a successful callback reuses the exact
 // session establishment of the local login, so an SSO session is
-// indistinguishable from a password one downstream. MFA is the IdP's job on
-// this path — local TOTP guards the password flow SSO users don't take.
+// indistinguishable from a password one downstream.
 // ──────────────────────────────────────────────────────────────────────────
 
 const OIDC_STATE_COOKIE = 'oidc_state';
@@ -1108,11 +898,6 @@ router.get('/admin/sso/callback', async (req, res) => {
     await logActivity('admin_sso_login', { provider: 'oidc' }, null, {
       type: 'admin', id: admin.id, name: admin.username,
     });
-    // Only a successful ADMIN SSO callback sets this opt-in capability marker.
-    // No token, claim, address, or account identifier reaches product usage.
-    require('../services/productUsageService').markUsed(['oauth'])
-      .catch(() => logger.warn('Product usage marker could not be recorded'));
-
     return res.redirect(`${frontendBase}/admin/dashboard`);
   } catch (error) {
     const codeMap = {

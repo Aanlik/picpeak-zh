@@ -64,8 +64,8 @@ describe('iPhone DNG through the upload routes', () => {
       event_type: 'project',
       event_name: 'DNG Upload Test',
       event_date: '2026-09-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'dng-upload-share',

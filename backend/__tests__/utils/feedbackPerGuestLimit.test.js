@@ -45,8 +45,6 @@ async function setEventFeedbackSettings(overrides) {
     allow_likes: 1,
     allow_comments: 0,
     allow_favorites: 1,
-    require_name_email: 0,
-    moderate_comments: 0,
     show_feedback_to_guests: 1,
     identity_mode: 'simple',
     max_favorites_per_guest: null,
@@ -90,8 +88,8 @@ beforeAll(async () => {
     event_type: 'project',
     event_name: 'Cap Test',
     event_date: '2026-06-22',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: `/gallery/${EVENT_SLUG}/share`,
     share_token: 'cap-test-share',

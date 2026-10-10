@@ -95,8 +95,8 @@ describe('admin upload per-file video size limit (general_max_video_size_mb)', (
       event_type: 'project',
       event_name: 'Video Size Test',
       event_date: '2026-09-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'video-size-share',

@@ -134,7 +134,6 @@ const DEFAULT_PUBLIC_SITE_HTML = `
       <p>Create a PicPeak landing page that matches your studio and introduces every celebration with confidence.</p>
     </div>
     <div class="cta__actions">
-      <a href="mailto:{{support_email}}" class="button button--primary">Contact us</a>
       <a href="#features" class="button button--ghost">Review features</a>
     </div>
   </div>
@@ -149,7 +148,6 @@ const DEFAULT_PUBLIC_SITE_HTML = `
     <div class="footer-links">
       <a href="/datenschutz">Privacy Policy</a>
       <a href="/impressum">Impressum</a>
-      <a href="mailto:{{support_email}}">Support</a>
     </div>
   </div>
 </footer>

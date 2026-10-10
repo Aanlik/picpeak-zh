@@ -53,8 +53,8 @@ describe('draft preview through the short share URL (#1386)', () => {
       event_type: 'project',
       event_name: slug,
       event_date: '2026-09-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${slug}/${token}`,
       share_token: token,

@@ -23,29 +23,9 @@ const EXPLICIT_COLOR = /\btext-(neutral|white|amber|blue|red|green|primary|accen
 
 const HEADING_TAG = /<(h[1-4])(\s[^>]*?)?>/gs;
 
-const HEADING_FILES = [
-  'pages/admin/settings/ReminderTemplatesPage.tsx',
-  'pages/public/LegalPage.tsx',
-  // Follow-up (QA B14): these three were the known remaining offenders —
-  // they set `text-theme` explicitly, which beats the AdminLayout default.
-  'pages/admin/SystemHealthPage.tsx',
-];
-
-// Admin-only surfaces: the themed utilities are correct on the customer
-// portal and the public token pages, but wrong here.
-const ADMIN_ONLY_FILES = [
-  'pages/admin/SystemHealthPage.tsx',
-  // Issue 1741: the whole usage tab was wrapped in `text-theme`, so a
-  // dark-toned branding theme greyed out every control on it in light mode.
-  'features/settings/tabs/ProductUsageTab.tsx',
-  'features/settings/UsageCatalog.tsx',
-];
-
-const THEMED_TEXT_CLASS = /className="[^"]*\btext-(muted-)?theme\b/;
-
 describe('branding-theme text colour leak (QA S3 / S4 / S13)', () => {
-  it.each(HEADING_FILES)('every heading in %s declares an explicit text colour', (rel) => {
-    const source = read(rel);
+  it('LegalPage headings declare an explicit text colour', () => {
+    const source = read('pages/public/LegalPage.tsx');
     const offenders: string[] = [];
 
     for (const match of source.matchAll(HEADING_TAG)) {
@@ -55,10 +35,6 @@ describe('branding-theme text colour leak (QA S3 / S4 / S13)', () => {
     }
 
     expect(offenders).toEqual([]);
-  });
-
-  it.each(ADMIN_ONLY_FILES)('%s uses no themed text utility at all', (rel) => {
-    expect(THEMED_TEXT_CLASS.test(read(rel))).toBe(false);
   });
 
   it('gives the LegalPage CMS body an explicit colour instead of the themed body colour', () => {

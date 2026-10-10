@@ -14,11 +14,11 @@ const PASSWORD = 'Bootstrap-Only-Pa55word!';
 function fakeKnex() {
   const inserted = {};
   const knex = (table) => ({
-    // No admin yet; templates and mail config already exist, so only the
-    // admin branch runs.
+    // No admin yet, so only the bootstrap-admin branch runs.
     first: async () => (table === 'admin_users' ? undefined : { id: 1 }),
     insert: async (row) => { inserted[table] = row; return [1]; },
   });
+  knex.schema = { hasTable: async () => true };
   return { knex, inserted };
 }
 
@@ -27,7 +27,7 @@ describe('001_init bootstrap admin credentials', () => {
 
   beforeEach(() => {
     process.env.ADMIN_PASSWORD = PASSWORD;
-    process.env.ADMIN_EMAIL = 'owner@example.com';
+    process.env.ADMIN_USERNAME = 'owner';
     logs = [];
     jest.spyOn(console, 'log').mockImplementation((...args) => { logs.push(args.join(' ')); });
     jest.spyOn(fs.promises, 'mkdir').mockResolvedValue();
@@ -37,7 +37,7 @@ describe('001_init bootstrap admin credentials', () => {
 
   afterEach(() => {
     delete process.env.ADMIN_PASSWORD;
-    delete process.env.ADMIN_EMAIL;
+    delete process.env.ADMIN_USERNAME;
     jest.restoreAllMocks();
   });
 
@@ -46,7 +46,7 @@ describe('001_init bootstrap admin credentials', () => {
 
     await require('../../migrations/core/001_init').up(knex);
 
-    expect(inserted.admin_users).toEqual(expect.objectContaining({ email: 'owner@example.com', must_change_password: true }));
+    expect(inserted.admin_users).toEqual(expect.objectContaining({ username: 'owner', email: 'owner@local.invalid', must_change_password: true }));
     expect(logs.join('\n')).not.toContain(PASSWORD);
   });
 

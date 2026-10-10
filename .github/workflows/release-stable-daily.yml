@@ -33,7 +33,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_PAT: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           # No checkout — set the repo explicitly so gh works without a
-          # git remote (same pattern as whatsnew, 2a5f0a8).
+          # git remote in this job-less checkout.
           GH_REPO: ${{ github.repository }}
         run: |
           if [ -z "$RELEASE_PAT" ]; then

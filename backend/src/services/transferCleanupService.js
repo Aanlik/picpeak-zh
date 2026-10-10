@@ -8,9 +8,7 @@
  *                  (is_active=false, disabled_at=now). This is the "disable the
  *                  link after the set time period" behaviour. A transfer
  *                  disabled early by its download cap is already in this state.
- *   2. Notify    — the admin is emailed once when a transfer becomes inactive
- *                  (admin_notified_at stamped so it never repeats).
- *   3. Delete    — `grace_days` after disable, the client-uploaded files are
+ *   2. Delete    — `grace_days` after disable, the client-uploaded files are
  *                  removed and the transfer record is dropped. (The gallery
  *                  originals a transfer pointed at are owned by their events and
  *                  are never touched — only the transfer's own ad-hoc uploads
@@ -21,7 +19,6 @@ const { scheduledTask } = require('./scheduledTask');
 const { db } = require('../database/db');
 const logger = require('../utils/logger');
 const { formatBoolean } = require('../utils/dbCompat');
-const { sendTemplateEmail } = require('./emailProcessor');
 const transferService = require('./transferService');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -33,7 +30,6 @@ const stopTransferCleanup = () => task.stop();
 async function runTransferCleanup() {
   try {
     await expireTransfers();
-    await notifyExpiredTransfers();
     await deleteRetiredTransfers();
   } catch (err) {
     logger.error('Transfer cleanup error', { error: err.message });
@@ -56,59 +52,6 @@ async function expireTransfers() {
       updated_at: now,
     });
     logger.info(`Transfer ${t.id} expired`);
-  }
-}
-
-/** Email the admin(s) once per transfer that has become inactive. */
-async function notifyExpiredTransfers() {
-  const pending = await db('transfers')
-    .where('is_active', formatBoolean(false))
-    .whereNull('deleted_at')
-    .whereNull('admin_notified_at')
-    .whereNotNull('disabled_at');
-
-  if (!pending.length) return;
-
-  const admins = await db('admin_users')
-    .where('is_active', formatBoolean(true))
-    .whereNotNull('email')
-    .select('email');
-  const adminUrl = `${transferService.getFrontendUrl()}/admin/transfers`;
-
-  for (const t of pending) {
-    const fileCount = await db('transfer_files').where('transfer_id', t.id).count('* as c').first();
-    const uploadCount = await db('transfer_uploads').where('transfer_id', t.id).count('* as c').first();
-    const grace = Number(t.grace_days) || 0;
-    const deleteDate = new Date(new Date(t.disabled_at).getTime() + grace * DAY_MS);
-
-    const vars = {
-      transfer_title: t.title || `Transfer #${t.id}`,
-      expiry_date: new Date(t.disabled_at).toISOString().slice(0, 10),
-      file_count: String(Number(fileCount?.c) || 0),
-      upload_count: String(Number(uploadCount?.c) || 0),
-      grace_days: String(grace),
-      delete_date: deleteDate.toISOString().slice(0, 10),
-      admin_url: adminUrl,
-    };
-
-    let sent = false;
-    for (const { email } of admins) {
-      try {
-        await sendTemplateEmail(email, 'transfer_link_expired', vars);
-        sent = true;
-      } catch (err) {
-        // Email not configured / SMTP down — don't spin forever retrying; just
-        // stamp so the sweep moves on. The transfer still expires + deletes.
-        logger.warn('Failed to send transfer_link_expired notification', {
-          transferId: t.id, email, error: err.message,
-        });
-      }
-    }
-
-    // Stamp regardless so we notify at most once even if delivery failed
-    // (avoids an unbounded retry loop every hour).
-    await db('transfers').where({ id: t.id }).update({ admin_notified_at: new Date() });
-    if (sent) logger.info(`Notified admins that transfer ${t.id} expired`);
   }
 }
 
@@ -139,6 +82,5 @@ module.exports = {
   // exported for tests / manual invocation
   runTransferCleanup,
   expireTransfers,
-  notifyExpiredTransfers,
   deleteRetiredTransfers,
 };

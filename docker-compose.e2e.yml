@@ -18,8 +18,7 @@ services:
       dockerfile: Dockerfile
     # JWT_SECRET, the seeded admin's ADMIN_PASSWORD and DB_PASSWORD are
     # generated per run by scripts/e2e.sh into this git-ignored file, so no
-    # credential is committed. The admin's username and email are the
-    # migration defaults, admin / admin@example.com.
+    # credential is committed. The admin username is the migration default.
     env_file:
       - .e2e/backend.env
     environment:
@@ -30,10 +29,6 @@ services:
       - DB_PORT=5432
       - DB_USER=picpeak
       - DB_NAME=picpeak_e2e
-      - SMTP_HOST=mailhog
-      - SMTP_PORT=1025
-      - SMTP_SECURE=false
-      - EMAIL_FROM=noreply@picpeak.local
       - FRONTEND_URL=http://localhost:7200
       - ADMIN_URL=http://localhost:7200
       - TZ=UTC
@@ -43,11 +38,6 @@ services:
       # the entrypoint chowns and a read-only mount would make it fail on.
       - EXTERNAL_MEDIA_ROOT=/external-media
       - EXTERNAL_MEDIA_WATCH=false
-      # The webhook spec posts to the receiver on the private compose network.
-      - WEBHOOK_ALLOW_PRIVATE_URLS=true
-      # The customer portal spec accepts its invitation from the API response
-      # instead of the email. Never set outside a test stack.
-      - PICPEAK_ECHO_INVITE_TOKEN=1
     volumes:
       - ./.e2e/external-media:/external-media:ro
     ports:
@@ -92,18 +82,3 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-
-  mailhog:
-    image: mailhog/mailhog:latest
-    ports:
-      - "127.0.0.1:7225:8025"
-
-  webhook-receiver:
-    build:
-      context: ./dev/webhook-receiver
-      dockerfile: Dockerfile
-    environment:
-      - PORT=8888
-      - RING_SIZE=200
-    ports:
-      - "127.0.0.1:7207:8888"

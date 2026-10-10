@@ -165,7 +165,7 @@ export const buildShareLinkUrl = (link: string | null | undefined): string => {
  *
  * Used for the public address (`general_site_url`), which since #705 feeds the
  * CORS allowlist and the Access-Control-Allow-Origin header as well as every
- * email link — a schemeless "gallery.example.com" saves happily through a
+ * shared link — a schemeless "gallery.example.com" saves happily through a
  * `type="url"` input that is not inside a <form>, and then matches no browser
  * origin at all. Mirrors the backend check in adminSettings.js: a bare host or
  * IP is fine (LAN and NAS installs run on http://nas:3000), the scheme is not.

@@ -142,8 +142,8 @@
  * avoid.
  *
  * Keyed on `.text-theme`, which is the app's existing marker for "the active
- * theme owns the text colour here". Admin surfaces (the CMS and email
- * editors, the update modal) do not carry it and keep the stock palette,
+ * theme owns the text colour here". Admin surfaces (the CMS editor and
+ * dialogs) do not carry it and keep the stock palette,
  * which is what they want — they sit on fixed neutral chrome and already
  * handle dark mode through the real `.dark` class.
  * ------------------------------------------------------------------------ */

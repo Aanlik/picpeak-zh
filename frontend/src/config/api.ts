@@ -48,7 +48,7 @@ api.interceptors.request.use(
           if (config.url.startsWith('http://') || config.url.startsWith('https://')) {
             return new URL(config.url).pathname;
           }
-        } catch (error) {
+        } catch {
           return config.url;
         }
         return config.url;
@@ -139,12 +139,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle maintenance mode (503). A 503 that names its own cause (the
-    // verification email could not be sent) is the asking page's to show,
-    // not a reason to swap the whole app for the maintenance screen.
-    if (error.response?.status === 503 && error.response?.data?.code !== 'EMAIL_UNAVAILABLE') {
+    // Handle maintenance mode (503).
+    if (error.response?.status === 503) {
       const isAdminRoute = error.config?.url?.includes('/admin');
-      
+
       // Only trigger maintenance mode for non-admin routes or unauthenticated admin routes
       if (!isAdminRoute) {
         if (maintenanceModeCallback) {
@@ -152,7 +150,7 @@ api.interceptors.response.use(
         }
       }
     }
-    
+
     if (error.response?.status === 401) {
       // Check if it's an admin route (but not public endpoints)
       const isAdminRoute = error.config?.url?.includes('/admin') && !error.config?.url?.includes('/public/');
@@ -173,10 +171,10 @@ api.interceptors.response.use(
       } else {
         // For gallery routes, check if the error is from a gallery API call
         const galleryMatch = error.config?.url?.match(/\/gallery\/([^\/]+)/);
-        
+
         // Check if this is an image request (photo or thumbnail)
         const isImageRequest = error.config?.url?.match(/\/(photo|thumbnail)\/\d+$/);
-        
+
         // Don't redirect if we're on any gallery page (to avoid redirect loops during login)
         if (currentPath.startsWith('/gallery/')) {
           // Don't clear tokens for image requests - they might just need a retry

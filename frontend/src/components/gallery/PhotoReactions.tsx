@@ -14,21 +14,21 @@ interface PhotoReactionsProps {
   /** Per-emoji visible counts, e.g. { '❤️': 3 }. */
   reactionCounts: Record<string, number>;
   isEnabled: boolean;
-  requireNameEmail?: boolean;
+  requireGuestName?: boolean;
   onReactionChange?: (reaction: string | null) => void;
 }
 
 // Emoji reaction bar (#839): one reaction per guest per photo, changeable —
 // tapping the current emoji removes it, tapping another switches. Fixed
 // curated set; identity handling mirrors PhotoLikes (guest-token mode vs.
-// legacy inline name/email prompt).
+// legacy inline name prompt).
 export const PhotoReactions: React.FC<PhotoReactionsProps> = ({
   photoId,
   gallerySlug,
   myReaction,
   reactionCounts,
   isEnabled,
-  requireNameEmail = false,
+  requireGuestName = false,
   onReactionChange
 }) => {
   const { t } = useTranslation();
@@ -36,16 +36,15 @@ export const PhotoReactions: React.FC<PhotoReactionsProps> = ({
   const guestIdentity = useGuestIdentityOptional();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showIdentityModal, setShowIdentityModal] = useState(false);
-  const [savedIdentity, setSavedIdentity] = useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = useState<{ name: string } | null>(null);
   const [pendingEmoji, setPendingEmoji] = useState<string | null>(null);
 
   const submitReactionMutation = useMutation({
-    mutationFn: (data: { emoji: string; guest_name?: string; guest_email?: string }) =>
+    mutationFn: (data: { emoji: string; guest_name?: string }) =>
       feedbackService.submitFeedback(gallerySlug, photoId, {
         feedback_type: 'reaction',
         reaction: data.emoji,
         guest_name: data.guest_name || undefined,
-        guest_email: data.guest_email || undefined
       }),
     onMutate: async (data) => {
       setIsSubmitting(true);
@@ -77,7 +76,7 @@ export const PhotoReactions: React.FC<PhotoReactionsProps> = ({
     if (!isEnabled || isSubmitting) return;
 
     // Guest identity mode: ensure a per-person guest token; the server reads
-    // name/email from the token — body values are ignored.
+    // the name from the token — body values are ignored.
     if (guestIdentity?.identityMode === 'guest') {
       try {
         await guestIdentity.ensureIdentity();
@@ -89,22 +88,22 @@ export const PhotoReactions: React.FC<PhotoReactionsProps> = ({
     }
 
     // Simple mode: legacy inline prompt flow.
-    if (requireNameEmail && !savedIdentity) {
+    if (requireGuestName && !savedIdentity) {
       setPendingEmoji(emoji);
       setShowIdentityModal(true);
     } else {
       submitReactionMutation.mutate({
         emoji,
-        ...(savedIdentity ? { guest_name: savedIdentity.name, guest_email: savedIdentity.email } : {})
+        ...(savedIdentity ? { guest_name: savedIdentity.name } : {})
       });
     }
   };
 
-  const handleIdentitySubmit = (name: string, email: string) => {
-    setSavedIdentity({ name, email });
+  const handleIdentitySubmit = (name: string) => {
+    setSavedIdentity({ name });
     setShowIdentityModal(false);
     if (pendingEmoji) {
-      submitReactionMutation.mutate({ emoji: pendingEmoji, guest_name: name, guest_email: email });
+      submitReactionMutation.mutate({ emoji: pendingEmoji, guest_name: name });
       setPendingEmoji(null);
     }
   };

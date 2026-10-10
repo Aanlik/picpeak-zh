@@ -37,7 +37,6 @@ function attachAccess(req, event, grant) {
   req.galleryAccess = grant;
   req.isAdminPreview = grant.kind === 'admin';
   req.accessLevel = grant.session?.accessLevel || 'guest';
-  req.viaCustomer = grant.session?.via === 'customer';
   req.sessionID = req.isAdminPreview ? `gallery_admin_preview_${event.id}`
     : `gallery_${grant.kind === 'public' ? 'public_' : ''}${event.id}_${Date.now()}`;
   const ip = req.ip || req.connection?.remoteAddress || 'unknown';

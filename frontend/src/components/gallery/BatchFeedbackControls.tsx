@@ -11,7 +11,7 @@ interface BatchFeedbackControlsProps {
   photoIds: number[];
   colorLabelsEnabled: boolean;
   commentsEnabled: boolean;
-  requireNameEmail: boolean;
+  requireGuestName: boolean;
 }
 
 /** Batch client proofing actions shown alongside the normal selection toolbar. */
@@ -20,7 +20,7 @@ export function BatchFeedbackControls({
   photoIds,
   colorLabelsEnabled,
   commentsEnabled,
-  requireNameEmail,
+  requireGuestName,
 }: BatchFeedbackControlsProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -28,7 +28,6 @@ export function BatchFeedbackControls({
   const [commentOpen, setCommentOpen] = useState(false);
   const [comment, setComment] = useState('');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const isGuestMode = guestIdentity?.identityMode === 'guest';
 
@@ -54,7 +53,7 @@ export function BatchFeedbackControls({
       toast.error(t('gallery.batchCommentRequired'));
       return;
     }
-    if (feedbackType === 'comment' && requireNameEmail && !isGuestMode && (!name.trim() || !email.trim())) {
+    if (feedbackType === 'comment' && requireGuestName && !isGuestMode && !name.trim()) {
       toast.error(t('gallery.batchGuestInfoRequired'));
       return;
     }
@@ -69,15 +68,12 @@ export function BatchFeedbackControls({
           : {
               comment_text: comment.trim(),
               guest_name: name.trim() || undefined,
-              guest_email: email.trim() || undefined,
             }),
       });
       refreshFeedback();
       if (result.applied_count > 0) {
         if (feedbackType === 'color_label') {
           toast.success(t('gallery.batchMarkedForEditing', { count: result.applied_count }));
-        } else if (result.moderation_required) {
-          toast.info(t('gallery.batchCommentModerated', { count: result.applied_count }));
         } else {
           toast.success(t('gallery.batchCommentAdded', { count: result.applied_count }));
         }
@@ -131,10 +127,9 @@ export function BatchFeedbackControls({
             placeholder={t('gallery.batchCommentPlaceholder')}
             className="w-full rounded-md border border-neutral-300 dark:border-neutral-600 bg-transparent p-2 text-sm"
           />
-          {requireNameEmail && !isGuestMode && (
+          {requireGuestName && !isGuestMode && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input value={name} onChange={(event) => setName(event.target.value)} maxLength={100} placeholder={t('feedback.yourName')} className="rounded-md border border-neutral-300 dark:border-neutral-600 bg-transparent p-2 text-sm" />
-              <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" placeholder={t('feedback.yourEmail')} className="rounded-md border border-neutral-300 dark:border-neutral-600 bg-transparent p-2 text-sm" />
             </div>
           )}
           <div className="flex justify-end gap-2">

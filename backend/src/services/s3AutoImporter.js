@@ -140,14 +140,6 @@ async function processEvent(event, storage) {
 
         logger.info(`[s3AutoImporter] imported s3://.../${entry.key} → photo #${photoId} for event ${event.slug}`);
 
-        // Webhook (#327): same shape as fileWatcher.
-        try {
-          const webhookService = require('./webhookService');
-          await webhookService.fire('photo.uploaded', {
-            event: { id: event.id, slug: event.slug },
-            photo: { id: photoId, filename, size_bytes: entry.size, source: 's3-auto-import' },
-          });
-        } catch (e) { /* non-fatal */ }
       } catch (err) {
         logger.warn(`[s3AutoImporter] failed to insert ${entry.key}: ${err.message}`);
       }

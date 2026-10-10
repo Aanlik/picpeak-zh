@@ -52,8 +52,8 @@ describe('guest upload limits', () => {
       event_type: 'project',
       event_name: `Upload Limits ${seq}`,
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${slug}/share`,
       expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),

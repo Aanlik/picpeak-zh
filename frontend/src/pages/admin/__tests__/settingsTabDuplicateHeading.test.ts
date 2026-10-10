@@ -34,8 +34,6 @@ const SHELL_HEADING_TABS = [
   { tab: 'downloads', labelKey: 'settings.downloads.title', file: 'features/settings/tabs/DownloadsTab.tsx' },
   { tab: 'sso', labelKey: 'settings.sso.title', file: 'features/settings/tabs/SsoTab.tsx' },
   { tab: 'apiTokens', labelKey: 'settings.apiTokens.title', file: 'features/settings/tabs/ApiTokensTab.tsx' },
-  { tab: 'webhooks', labelKey: 'settings.webhooks.title', file: 'features/settings/tabs/WebhooksTab.tsx' },
-  { tab: 'moderation', labelKey: 'settings.moderation.title', file: 'components/admin/WordFilterManager.tsx' },
   { tab: 'styling', labelKey: 'settings.styling.title', file: 'components/admin/CssTemplateEditor.tsx' },
   { tab: 'slideshow', labelKey: 'settings.slideshow.title', file: 'pages/admin/SlideshowSettingsPage.tsx' },
 ];
@@ -46,7 +44,6 @@ const SHELL_HEADING_TABS = [
  * label comparison above can't catch a regression on them.
  */
 const PARAPHRASED_TITLE_KEYS = [
-  { file: 'components/admin/WordFilterManager.tsx', key: 'settings.moderation.wordFilters' },
   { file: 'components/admin/CssTemplateEditor.tsx', key: 'cssTemplates.title' },
 ];
 

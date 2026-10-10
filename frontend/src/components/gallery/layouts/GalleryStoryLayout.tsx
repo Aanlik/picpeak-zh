@@ -6,7 +6,6 @@ import type { BaseGalleryLayoutProps } from './BaseGalleryLayout';
 import type { Photo } from '../../../types';
 import { feedbackService } from '../../../services/feedback.service';
 import { galleryService } from '../../../services/gallery.service';
-import { analyticsService } from '../../../services/analytics.service';
 import { toast } from 'react-toastify';
 
 import {
@@ -35,7 +34,6 @@ interface CategoryScene {
 
 interface GalleryStoryLayoutProps extends BaseGalleryLayoutProps {
   heroPhotoOverride?: Photo | null;
-  welcomeMessage?: string;
 }
 
 export const GalleryStoryLayout: React.FC<GalleryStoryLayoutProps> = ({
@@ -61,7 +59,6 @@ export const GalleryStoryLayout: React.FC<GalleryStoryLayoutProps> = ({
   useCanvasRendering = false,
   feedbackEnabled = false,
   heroPhotoOverride,
-  welcomeMessage,
   onLogout,
   showOriginalFilename = false,
 
@@ -188,7 +185,6 @@ export const GalleryStoryLayout: React.FC<GalleryStoryLayoutProps> = ({
     toast.info(t('gallery.downloadStarted', { photoCount: ids.length }));
     try {
       await galleryService.downloadSelectedPhotos(slug, ids);
-      analyticsService.trackGalleryEvent('bulk_download', { gallery: slug, photo_count: ids.length });
     } catch {
       toast.error(t('gallery.downloadError'));
     }
@@ -309,9 +305,6 @@ export const GalleryStoryLayout: React.FC<GalleryStoryLayoutProps> = ({
       {/* Footer */}
       <footer className="story-footer">
         <h2 className="story-footer-title">{t('gallery.thankYou', 'Thank You')}</h2>
-        <p className="story-footer-text">
-          {welcomeMessage || t('gallery.thankYouMessage', 'For being part of our story and making our special day unforgettable.')}
-        </p>
         {/* Needs something to download: either the whole-gallery callback, or
             photos in the current scope. On a folder-only root of a gallery with
             a category download opt-out it has neither, and posting an empty id

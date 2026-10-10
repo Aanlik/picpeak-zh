@@ -18,7 +18,6 @@ interface GalleryEvent {
   id: number;
   event_name: string;
   event_date: string | null;
-  welcome_message?: string;
   color_theme?: string;
   expires_at: string | null;
   require_password?: boolean;
@@ -40,9 +39,7 @@ interface GalleryAuthContextType {
   event: GalleryEvent | null;
   accessLevel: GalleryAccessLevel;
   isClient: boolean;
-  /** Session was minted by the customer portal — credentialed, bypasses reveal. */
-  viaCustomer: boolean;
-  login: (slug: string, password?: string, recaptchaToken?: string | null) => Promise<void>;
+  login: (slug: string, password?: string) => Promise<void>;
   clientLogin: (slug: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
@@ -67,7 +64,6 @@ export const GalleryAuthProvider: React.FC<GalleryAuthProviderProps> = ({ childr
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [event, setEvent] = useState<GalleryEvent | null>(null);
   const [accessLevel, setAccessLevel] = useState<GalleryAccessLevel>('guest');
-  const [viaCustomer, setViaCustomer] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
@@ -209,7 +205,7 @@ export const GalleryAuthProvider: React.FC<GalleryAuthProviderProps> = ({ childr
         setIsLoading(true);
         const sessionResponse = await api.get<{
           valid: boolean; type: string; eventSlug?: string;
-          accessLevel?: GalleryAccessLevel; viaCustomer?: boolean;
+          accessLevel?: GalleryAccessLevel;
         }>(
           '/auth/session',
           { params: { slug: currentSlug } }
@@ -225,11 +221,10 @@ export const GalleryAuthProvider: React.FC<GalleryAuthProviderProps> = ({ childr
             setAccessLevel('client');
             sessionStorage.setItem(`gallery_access_level_${currentSlug}`, 'client');
           }
-          setViaCustomer(Boolean(sessionResponse.data.viaCustomer));
 
           // Always refresh from the server — the stored event from sessionStorage
           // is shown above as an instant placeholder for perceived perf, but it
-          // must NOT win permanently: admin edits to welcome_message / event_name /
+          // must NOT win permanently: admin edits to the project name /
           // hero_logo / colour theme need to land on the next page load for
           // returning guests. sessionStorage survives Cmd+Shift+R, so without
           // this refresh the cache could only be cleared by closing the tab or
@@ -310,12 +305,12 @@ export const GalleryAuthProvider: React.FC<GalleryAuthProviderProps> = ({ childr
     };
   }, [routeInfo]);
 
-  const login = async (slug: string, password?: string, recaptchaToken?: string | null) => {
+  const login = async (slug: string, password?: string) => {
     try {
       setRouteError(null);
       setError(null);
       setIsLoading(true);
-      const response = await authService.verifyGalleryPassword(slug, password, recaptchaToken);
+      const response = await authService.verifyGalleryPassword(slug, password);
       // Store token and slug BEFORE setting authenticated state to avoid
       // race condition where photo queries fire before token is available
       if (response.token) {
@@ -379,7 +374,6 @@ export const GalleryAuthProvider: React.FC<GalleryAuthProviderProps> = ({ childr
     setIsAuthenticated(false);
     setEvent(null);
     setAccessLevel('guest');
-    setViaCustomer(false);
     clearActiveGallerySlug();
   };
 
@@ -390,7 +384,6 @@ export const GalleryAuthProvider: React.FC<GalleryAuthProviderProps> = ({ childr
         event,
         accessLevel,
         isClient: accessLevel === 'client',
-        viaCustomer,
         login,
         clientLogin: clientLoginFn,
         logout,

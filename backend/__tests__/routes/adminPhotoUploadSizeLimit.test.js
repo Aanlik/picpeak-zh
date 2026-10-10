@@ -77,8 +77,8 @@ describe('admin upload per-file size limit (general_max_file_size_mb)', () => {
       event_type: 'project',
       event_name: 'Upload Size Test',
       event_date: '2026-09-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'upload-size-share',

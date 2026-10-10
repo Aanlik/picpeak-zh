@@ -55,8 +55,8 @@ describe('secure-image view route token binding (GHSA-g94x)', () => {
       event_type: 'project',
       event_name: slug,
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       require_password: requirePassword ? 1 : 0,
       share_link: `/gallery/${slug}/share`,

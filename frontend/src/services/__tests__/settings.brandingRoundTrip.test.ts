@@ -28,7 +28,6 @@ const RAW = {
   branding_promo_alignment: 'left',
   branding_info_markdown: '**Tipp:** use the menu button to filter',
   branding_facebook_url: 'https://facebook.com/studionord',
-  branding_support_email: 'hello@studionord.example',
 };
 
 describe('formatBrandingSettings — persisted values survive a page load', () => {

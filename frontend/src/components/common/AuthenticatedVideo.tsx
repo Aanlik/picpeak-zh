@@ -81,7 +81,7 @@ export const AuthenticatedVideo: React.FC<AuthenticatedVideoProps> = ({
           setVideoSrc(primaryUrl);
           setError(false);
         }
-      } catch (err) {
+      } catch {
         if (fallbackSrc && fallbackSrc !== src) {
           try {
             const fallbackUrl = await fetchWithAuth(fallbackSrc);
@@ -90,7 +90,7 @@ export const AuthenticatedVideo: React.FC<AuthenticatedVideoProps> = ({
               setError(false);
             }
             return;
-          } catch (_) {
+          } catch {
             // ignore and set error below
           }
         }
@@ -107,7 +107,7 @@ export const AuthenticatedVideo: React.FC<AuthenticatedVideoProps> = ({
       aborted = true;
       objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [src, fallbackSrc, slug]);
 
   if (error || !videoSrc) {

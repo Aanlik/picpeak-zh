@@ -3,7 +3,6 @@ import { api } from '../config/api';
 export interface GuestIdentity {
   id: number;
   name: string;
-  email: string | null;
   identifier: string;
 }
 
@@ -25,16 +24,9 @@ export interface AdminGuestStats {
 export interface AdminGuest {
   id: number;
   name: string;
-  email: string | null;
   created_at: string;
   last_seen_at: string;
-  email_verified_at: string | null;
   is_deleted: boolean;
-  // Set when this row shares an email with another on the same event (#1210)
-  // — the same person who registered again after their token expired or on a
-  // second device. The value is the normalised email, so it doubles as the
-  // grouping key; null for everyone else.
-  duplicate_group?: string | null;
   stats: AdminGuestStats;
 }
 
@@ -73,7 +65,7 @@ export interface GuestInvite {
   redeemed_at: string | null;
   revoked_at: string | null;
   status: 'pending' | 'redeemed' | 'revoked';
-  guest: { id: number; name: string; email: string | null };
+  guest: { id: number; name: string };
 }
 
 class GuestsService {
@@ -81,7 +73,7 @@ class GuestsService {
   // Gallery-side (public) — guest identity
   // ===================================================================
 
-  async registerGuest(slug: string, data: { name: string; email?: string }): Promise<GuestRegisterResponse> {
+  async registerGuest(slug: string, data: { name: string }): Promise<GuestRegisterResponse> {
     const response = await api.post(`/gallery/${slug}/guest`, data);
     return response.data;
   }
@@ -96,16 +88,6 @@ class GuestsService {
     return response.data;
   }
 
-  async requestRecoveryCode(slug: string, email: string): Promise<{ success: boolean }> {
-    const response = await api.post(`/gallery/${slug}/guest/recover`, { email });
-    return response.data;
-  }
-
-  async verifyRecoveryCode(slug: string, email: string, code: string): Promise<GuestRegisterResponse> {
-    const response = await api.post(`/gallery/${slug}/guest/verify`, { email, code });
-    return response.data;
-  }
-
   async redeemInvite(slug: string, inviteToken: string): Promise<GuestRegisterResponse> {
     const response = await api.post(`/gallery/${slug}/guest/redeem`, { inviteToken });
     return response.data;
@@ -117,7 +99,6 @@ class GuestsService {
 
   async getEventGuests(eventId: number): Promise<{
     guests: AdminGuest[];
-    duplicates?: { groups: number; guests: number };
   }> {
     const response = await api.get(`/admin/events/${eventId}/guests`);
     return response.data;
@@ -162,7 +143,7 @@ class GuestsService {
     return response.data;
   }
 
-  async createInvite(eventId: number, data: { name: string; email?: string }): Promise<{ invite: GuestInvite }> {
+  async createInvite(eventId: number, data: { name: string }): Promise<{ invite: GuestInvite }> {
     const response = await api.post(`/admin/events/${eventId}/guests/invites`, data);
     return response.data;
   }

@@ -52,20 +52,18 @@ describe('adminAuth profile updates', () => {
     const updatedUser = {
       id: 1,
       username: 'newadmin',
-      email: 'newadmin@example.com',
       must_change_password: false,
     };
 
     db.__setImplementations(
       buildChain({ firstResult: null }),          // username check
-      buildChain({ firstResult: null }),          // email check
       buildChain({ updateResult: 1 }),            // update
       buildChain({ firstResult: updatedUser }),   // fetch updated user
     );
 
     const response = await request(app)
       .put('/auth/admin/profile')
-      .send({ username: updatedUser.username, email: updatedUser.email })
+      .send({ username: updatedUser.username })
       .expect(200);
 
     expect(response.body).toEqual({
@@ -74,34 +72,33 @@ describe('adminAuth profile updates', () => {
     });
     expect(logActivity).toHaveBeenCalledWith(
       'admin_profile_updated',
-      { username: updatedUser.username, email: updatedUser.email },
+      { username: updatedUser.username },
       null,
       { type: 'admin', id: 1, name: 'admin' }
     );
   });
 
-  it('rejects email conflicts', async () => {
+  it('rejects username conflicts', async () => {
     db.__setImplementations(
-      buildChain({ firstResult: null }),          // username check
-      buildChain({ firstResult: { id: 2 } }),     // email check
+      buildChain({ firstResult: { id: 2 } }),     // username check
     );
 
     const response = await request(app)
       .put('/auth/admin/profile')
-      .send({ username: 'newadmin', email: 'taken@example.com' })
+      .send({ username: 'takenadmin' })
       .expect(409);
 
     expect(response.body).toEqual({
-      error: 'Email address is already in use',
+      error: 'Username is already in use',
       code: 'CONFLICT',
-      field: 'email'
+      field: 'username'
     });
   });
 
   it('validates input', async () => {
     const response = await request(app)
       .put('/auth/admin/profile')
-      .send({ username: '', email: 'not-an-email' })
+      .send({ username: '' })
       .expect(400);
 
     expect(response.body.details).toBeDefined();

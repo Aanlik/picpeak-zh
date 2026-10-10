@@ -1,7 +1,7 @@
 const { db } = require('../database/db');
 
-// Terminal fallback for callers that need an ABSOLUTE url (emails, QR codes,
-// payment links). Deliberately not the fallback of getFrontendBaseUrl(): some
+// Terminal fallback for callers that need an ABSOLUTE url (QR codes and share
+// links). Deliberately not the fallback of getFrontendBaseUrl(): some
 // callers (shareLinkService, the SSO redirects in routes/auth) rely on an
 // empty base to emit a RELATIVE url, which is the better answer for a
 // same-origin redirect.
@@ -11,9 +11,8 @@ const DEFAULT_ABSOLUTE_BASE = 'http://localhost:3000';
 // Rationale (#705): docker-compose used to inject
 // FRONTEND_URL=http://localhost:3000 unconditionally, so millions of installs
 // have it baked into their environment; taking it literally means gallery
-// links, QR codes and reminder emails point every recipient at THEIR OWN
-// machine. The same guard already existed locally in routes/gallery.js for
-// the slideshow QR (#848) and is centralised here.
+// links and QR codes point every visitor at THEIR OWN machine. Gallery share
+// links and slideshow QR codes use this resolver.
 //
 // The host token has to end at a real boundary. Bare prefix matching (which is
 // what routes/gallery.js did while this only gated the QR) also demotes
@@ -77,7 +76,7 @@ const invalidateSiteUrlCache = () => {
 // stripped, so this can lose a non-default port on the split stack — which is
 // why the setup wizard persists the browser's own window.location.origin
 // instead of relying on this. It stays a last resort, and it is unavailable
-// entirely to background jobs (reminder emails) that have no request.
+// entirely to background jobs that have no request.
 const originFromRequest = (req) => {
   if (!req || typeof req.get !== 'function') return '';
   const host = req.get('host');
@@ -117,7 +116,7 @@ const isEnvPinned = () => !!envPinnedBase();
  * (2) exists because split-origin deployments are supported (API_URL, #798):
  * an operator who sets ADMIN_URL for a separate admin host has stated an
  * explicit per-purpose intent, and that must beat a value derived from the
- * database or from whichever request happened to trigger the email (#1104).
+ * database or from whichever request happened to trigger link generation (#1104).
  * It sits BELOW FRONTEND_URL to preserve the historic
  * `FRONTEND_URL || ADMIN_URL` order those call sites used.
  */
@@ -166,7 +165,7 @@ const primeSiteUrlCache = async () => {
 };
 
 /**
- * Public API origin used for assets that email clients must load. Explicit
+ * Public API origin used for assets that gallery pages must load. Explicit
  * API_URL wins (split-origin deployments); otherwise it is the resolved
  * public origin + /api, so the wizard's single answer covers it.
  */

@@ -2,7 +2,7 @@
  * The 50 MB JSON parser, for callers who have already proven who they are.
  *
  * The admin and API-token surfaces need large bodies (restore manifests, CMS
- * and email templates, bulk operations). Mounted plainly on /api/admin and
+ * and larger admin operations). Mounted plainly on /api/admin and
  * /api/v1 the parser ran before any authentication, so anyone could hand
  * JSON.parse a 50 MB nested body and block the event loop, bounded only by
  * the general rate limiter (security review 2026-09-29).

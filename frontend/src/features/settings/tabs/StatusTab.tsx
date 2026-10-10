@@ -1,8 +1,6 @@
-import { NO_EMAIL_MODE } from '../../../config/communication';
 import React, { useEffect } from 'react';
 import {
   Save,
-  Database,
   Server,
   CheckCircle,
   Clock,
@@ -11,7 +9,6 @@ import {
   Ruler,
   CalendarClock,
   RotateCw,
-  AlertTriangle,
 } from 'lucide-react';
 import { Button, Card, Input } from '../../../components/common';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +16,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../config/api';
 import { settingsService } from '../../../services/settings.service';
 import { useStatusTab } from '../hooks/useStatusTab';
-import { UpdateNotificationSettings } from '../components/UpdateNotificationSettings';
 import { useLocalizedDate } from '../../../hooks/useLocalizedDate';
 import { usePermission } from '../../../hooks/usePermission';
 
@@ -539,41 +535,10 @@ export const StatusTab: React.FC<StatusTabProps> = ({
 
           <Card padding="md">
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
-              <Database className="w-5 h-5" />
-              {t('settings.systemStatus.databaseInfo')}
-            </h2>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{systemStatus.database.tables.events}</p>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">{t('navigation.events')}</p>
-              </div>
-              <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{systemStatus.database.tables.photos}</p>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">{t('settings.systemStatus.photos')}</p>
-              </div>
-              <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{systemStatus.database.tables.admins}</p>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">{t('settings.systemStatus.admins')}</p>
-              </div>
-              <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{systemStatus.database.tables.categories}</p>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">{t('settings.categories.title')}</p>
-              </div>
-              <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{settingsService.formatBytes(systemStatus.database.size)}</p>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">{t('settings.systemStatus.dbSize')}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card padding="md">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
               <Activity className="w-5 h-5" />
               {t('settings.systemStatus.services')}
             </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('settings.systemStatus.fileWatcher')}</p>
@@ -588,71 +553,7 @@ export const StatusTab: React.FC<StatusTabProps> = ({
                 </div>
                 <p className="text-xs text-neutral-600 dark:text-neutral-400">{t('settings.systemStatus.expirationCheckerDesc')}</p>
               </div>
-              {/* #1262 — this card used to render a green check unconditionally,
-                  against an API field that was itself the literal 'active'. Both
-                  ends now tell the truth: a stopped or bailing processor is the
-                  reason queued mail never arrives, and this is one of the two
-                  places an admin looks to find that out. */}
-              {!NO_EMAIL_MODE && (<div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4">
-                {!NO_EMAIL_MODE && (<div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('settings.systemStatus.emailProcessor')}</p>
-                  {systemStatus?.services?.emailProcessor?.status === 'active' ? (
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                  )}
-                </div>)}
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                  {systemStatus?.services?.emailProcessor?.status === 'stopped'
-                    ? t('settings.systemStatus.emailProcessorStopped',
-                      'Not running — queued emails are written but nothing sends them.')
-                    : systemStatus?.services?.emailProcessor?.status === 'degraded'
-                      ? t('settings.systemStatus.emailProcessorDegraded',
-                        'Running, but the last pass could not send: {{error}}',
-                        { error: systemStatus?.services?.emailProcessor?.lastError })
-                      : t('settings.systemStatus.emailProcessorDesc')}
-                </p>
-              </div>)}
             </div>
-
-            {!NO_EMAIL_MODE && (<div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-2">{t('settings.systemStatus.emailQueue')}</h3>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-blue-700 dark:text-blue-300">{t('settings.systemStatus.pending')}:</span>
-                  <span className="ml-2 font-semibold text-blue-900 dark:text-blue-200">
-                    {systemStatus.emailQueue.pending}
-                    {systemStatus.emailQueue.stuck > 0 && (
-                      <span className="text-orange-600 text-xs ml-1">
-                        ({t('settings.systemStatus.stuckEmailCount', { stuckCount: systemStatus.emailQueue.stuck })})
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-green-700 dark:text-green-400">{t('settings.systemStatus.sent')}:</span>
-                  <span className="ml-2 font-semibold text-green-900 dark:text-green-300">{systemStatus.emailQueue.sent}</span>
-                </div>
-                <div>
-                  <span className="text-red-700 dark:text-red-400">{t('settings.systemStatus.failed')}:</span>
-                  <span className="ml-2 font-semibold text-red-900 dark:text-red-300">{systemStatus.emailQueue.failed}</span>
-                </div>
-              </div>
-              {systemStatus.emailQueue.stuck > 0 && (
-                <div className="mt-3 p-3 bg-orange-50 dark:bg-orange-900/30 rounded-md">
-                  <p className="text-xs text-orange-800 dark:text-orange-200">
-                    <span className="font-semibold">
-                      {t('settings.systemStatus.stuckEmailWarning', { stuckCount: systemStatus.emailQueue.stuck })}
-                    </span>{' '}
-                    {t('settings.systemStatus.stuckEmailHelp')}{' '}
-                    {t('settings.systemStatus.pendingEmailProcessing', {
-                      processableCount: systemStatus.emailQueue.processable,
-                      pendingCount: systemStatus.emailQueue.pending,
-                    })}
-                  </p>
-                </div>
-              )}
-            </div>)}
           </Card>
         </>
       )}
@@ -848,9 +749,6 @@ export const StatusTab: React.FC<StatusTabProps> = ({
           </div>
         </Card>
       )}
-
-      {/* Update Notification Settings */}
-      <UpdateNotificationSettings />
 
       {/* Last update time */}
       {systemStatus && (

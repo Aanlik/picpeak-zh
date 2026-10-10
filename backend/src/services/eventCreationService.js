@@ -16,11 +16,10 @@ const { hasColumnCached } = require('../utils/schemaCache');
 const { getAppSetting } = require('../utils/appSettings');
 const { galleryPasswordColumns, dropCopiesIfStorageOff } = require('../utils/galleryPasswordVault');
 const { clampIntOrUndefined } = require('../utils/numericHelpers');
-const { getFrontendBaseUrl } = require('../utils/frontendUrl');
 const { resolveEventFeedbackDefaults, applyFeedbackDefaults } = require('./feedbackDefaults');
 const { getStoragePath, getEventFieldRequirements, readBooleanSetting, getDownloadProtectionDefaults,
   getImageSecurityDefaults, resolveImageSecurityColumns, getBrandingDefaults, getCustomerNameFromPayload,
-  getCustomerEmailFromPayload, getCustomerPhoneFromPayload, isPhoneFieldEnabled, hasCustomerContactColumns,
+  getCustomerPhoneFromPayload, isPhoneFieldEnabled, hasCustomerContactColumns,
   SLIDESHOW_TRANSITIONS, SLIDESHOW_COLORFILTERS } = require('./eventSettings');
 const { validateCreationInput } = require('./eventCreationValidation');
 function creationError(body) {
@@ -32,7 +31,7 @@ function creationError(body) {
 /** Shared creation operation. v1 explicitly publishes immediately and accepts
  * an optional absolute expiry; admin/legacy use configured field requirements.
  */
-async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) {
+async function createEvent(data, { actor, source = 'admin' } = {}) {
   const input = await validateCreationInput(data);
   if (source === 'v1') input.is_draft = false;
   if (!actor || !Number.isInteger(actor.id)) throw new AppError('Event owner required', 400, 'EVENT_OWNER_REQUIRED');
@@ -48,9 +47,7 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
     event_time_start,
     event_time_end,
     is_full_day,
-    admin_email,
     password,
-    welcome_message = '',
     color_theme = null,
     expiration_days = 30,
     allow_user_uploads = false,
@@ -75,8 +72,6 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
     allow_reactions: allowReactionsInput,
     allow_color_labels: allowColorLabelsInput,
     keybind_mode: keybindModeInput,
-    require_name_email = false,
-    moderate_comments = true,
     show_feedback_to_guests = true,
     // The create form has always shown the identity-mode chooser and this
     // route has never read it, so a gallery created as 'guest' quietly came
@@ -111,7 +106,6 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
   } = input;
 
   const customerName = getCustomerNameFromPayload(input);
-  const customerEmail = getCustomerEmailFromPayload(input);
   // Phone field is opt-in via the global setting (#322). If disabled,
   // ignore whatever the client posted — defence in depth against form
   // bypass.
@@ -124,12 +118,6 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
   const validationErrors = [];
   if (fieldRequirements.require_customer_name && !customerName) {
     validationErrors.push({ path: 'customer_name', msg: 'Customer name is required' });
-  }
-  if (fieldRequirements.require_customer_email && !customerEmail) {
-    validationErrors.push({ path: 'customer_email', msg: 'Customer email is required' });
-  }
-  if (fieldRequirements.require_admin_email && !admin_email) {
-    validationErrors.push({ path: 'admin_email', msg: 'Admin email is required' });
   }
   if (fieldRequirements.require_event_date && !event_date) {
     validationErrors.push({ path: 'event_date', msg: 'Event date is required' });
@@ -184,7 +172,7 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
     });
 
     if (!passwordValidation.valid) {
-      throw creationError({ 
+      throw creationError({
         error: 'Password does not meet security requirements',
         details: passwordValidation.errors,
         score: passwordValidation.score,
@@ -192,7 +180,7 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
       });
     }
   }
-    
+
   // Generate unique slug. Uses the shared util so accented names
   // (Família, Decoração, etc.) get transliterated instead of dropped
   // — see backend/src/utils/slug.js for the why (#525).
@@ -208,16 +196,16 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
     slug = `${baseSlug}-${counter}`;
     counter++;
   }
-    
+
   // Generate share link respecting configured format
   const shareToken = crypto.randomBytes(16).toString('hex');
   const { shareUrl, shareLinkToStore } = await buildShareLinkVariants({ slug, shareToken });
-    
+
   // Hash password with configurable rounds (random placeholder when not required)
   const password_hash = requirePassword
     ? await bcrypt.hash(password, getBcryptRounds())
     : await bcrypt.hash(crypto.randomBytes(32).toString('hex'), getBcryptRounds());
-    
+
   // Calculate expiration date (days after event date)
   // If expiration is not required, expires_at will be null (never expires)
   // If event_date is not provided, use current date as base for expiration
@@ -245,13 +233,13 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
     }
     expires_at.setDate(expires_at.getDate() + parseInt(expiration_days, 10));
   }
-    
+
   // Create folder structure
   const storagePath = getStoragePath();
   const eventPath = path.join(storagePath, 'events/active', slug);
   await fs.mkdir(path.join(eventPath, 'collages'), { recursive: true });
   await fs.mkdir(path.join(eventPath, 'individual'), { recursive: true });
-    
+
   // Sync header_style / hero_divider_style from color_theme JSON when not
   // explicitly provided in the request body (#158).
   let effectiveHeaderStyle = header_style;
@@ -355,11 +343,9 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
       event_time_end: calendarTriple.event_time_end,
       is_full_day: formatBoolean(calendarTriple.is_full_day),
     } : {}),
-    ...(customerColumnsAvailable ? { customer_name: customerName, customer_email: customerEmail } : {}),
+    ...(customerColumnsAvailable ? { customer_name: customerName } : {}),
     ...(customerPhone ? { customer_phone: customerPhone } : {}),
     host_name: customerName || null,
-    host_email: customerEmail || null,
-    admin_email: admin_email || null,
     password_hash,
     // Opt-in recoverable copy (#1271), written with the hash so the two
     // can never disagree. Empty unless the security setting is on.
@@ -367,7 +353,6 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
       ...(requirePassword && password ? { password } : {}),
       ...(client_access_enabled && client_password ? { clientPassword: client_password } : {}),
     })),
-    welcome_message,
     color_theme,
     share_link: shareLinkToStore,
     share_token: shareToken,
@@ -418,7 +403,7 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
     // they've picked a hero they're comfortable surfacing publicly.
     og_image_share_enabled: formatBoolean(input.og_image_share_enabled === true),
   };
-    
+
   // The gallery row and its feedback configuration commit together.
   const eventId = await db.transaction(async trx => {
     const result = await trx('events').insert(insertData).returning('id');
@@ -435,8 +420,6 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
         allow_reactions: formatBoolean(feedbackDefaults.allow_reactions),
         allow_color_labels: formatBoolean(feedbackDefaults.allow_color_labels),
         keybind_mode: feedbackDefaults.keybind_mode,
-        require_name_email: formatBoolean(require_name_email),
-        moderate_comments: formatBoolean(moderate_comments),
         show_feedback_to_guests: formatBoolean(show_feedback_to_guests),
         identity_mode: ['simple', 'guest', 'shared'].includes(identityModeInput)
           ? identityModeInput
@@ -445,32 +428,11 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
         updated_at: new Date().toISOString()
       });
     }
-    
+
     return eventId;
   });
   // #1271 — the setting was read before the hashes; re-check after the write
   await dropCopiesIfStorageOff(eventId);
-
-  // Apply customer-account assignments (#354). Skip when the customer
-  // portal flag is off — the frontend hides the picker in that case,
-  // but a stale tab could still POST customer_account_ids; we ignore
-  // them rather than 403 the entire create.
-  if (Array.isArray(input.customer_account_ids)) {
-    try {
-      const customerAccountsService = require('./customerAccountsService');
-      if (await customerAccountsService.isCustomerPortalEnabled()) {
-        await customerAccountsService.setAssignmentsForEvent(
-          eventId,
-          input.customer_account_ids,
-          actor.id
-        );
-      }
-    } catch (e) {
-      logger.error('Failed to set customer assignments on event create', {
-        eventId, error: e.message,
-      });
-    }
-  }
 
   // Log activity
   await logActivity('event_created',
@@ -479,117 +441,13 @@ async function createEvent(data, { actor, source = 'admin', frontendUrl } = {}) 
     { type: 'admin', id: actor.id, name: actor.username }
   );
 
-  // Fire event.created webhook (#327). If the event is being published
-  // immediately (not a draft), event.published also fires below.
-  // Payload uses canonical event subject (#341) so receivers always see
-  // the same shape (id/slug/event_name + customer contact + share_*).
-  try {
-    const webhookService = require('./webhookService');
-    await webhookService.fire('event.created', {
-      event: {
-        ...webhookService.buildEventSubject({
-          id: eventId,
-          slug,
-          event_name,
-          event_date,
-          share_url: shareUrl,
-          share_token: shareToken,
-          customer_name: customerName,
-          customer_email: customerEmail,
-          customer_phone: customerPhone,
-        }),
-        is_draft: parseBooleanInput(is_draft, true),
-      },
-    });
-  } catch (e) { /* webhookService.fire never throws but be defensive */ }
-
-  // Queue creation email (only if there is a recipient and event is not a draft)
-  // Language detection is handled by email processor
   const isDraft = parseBooleanInput(is_draft, true);
-
-  if (customerEmail && !isDraft) {
-    // Build email data with optional client access info
-    const emailData = {
-      customer_name: customerName,
-      customer_email: customerEmail,
-      host_name: customerName || (customerEmail ? customerEmail.split('@')[0] : null),
-      event_name,
-      event_date: event_date,  // Pass raw date - will be formatted by email processor
-      gallery_link: shareUrl,
-      gallery_password: requirePassword ? password : 'No password required',
-      expiry_date: expires_at ? expires_at.toISOString() : null,  // Pass ISO string - will be formatted by email processor
-      welcome_message: welcome_message || ''
-    };
-
-    // Include client access info in email when enabled (#172)
-    if (client_access_enabled && client_password) {
-      const createdEvent = await db('events').where('id', eventId).first();
-      // Same FRONTEND_URL-before-APP_URL order as before: APP_URL is
-      // passed as the override so it still outranks the general_site_url
-      // setting and the request origin. Chaining it after the resolver
-      // would make it dead code, because the resolver only returns falsy
-      // when NOTHING is configured (#1104).
-      const resolvedFrontendUrl = frontendUrl || await getFrontendBaseUrl();
-      emailData.client_link = `${resolvedFrontendUrl}/gallery/${slug}/client-access?token=${createdEvent.client_share_token}`;
-      emailData.client_password = client_password;
-    }
-
-    // Best-effort, as the v1 route always was: the event, folder, activity
-    // log and webhook are committed by now, so a queue failure must not 500.
-    try {
-      await db('email_queue').insert({
-        event_id: eventId,
-        recipient_email: customerEmail,
-        email_type: 'gallery_created',
-        email_data: JSON.stringify(emailData),
-        status: 'pending',
-        created_at: new Date(),
-        // Explicit NULL, not the column default: on SQLite the default is
-        // text and the processor never picks the row up (issue 1670).
-        scheduled_at: null
-      });
-    } catch (queueError) {
-      logger.warn('Failed to queue gallery_created email on create', { eventId, error: queueError.message });
-    }
-  }
-
-  // Fire event.published when the event is created NOT as a draft. The
-  // separate /publish endpoint fires it for the draft → live transition;
-  // this covers the "create-and-publish in one shot" path.
-  if (!isDraft) {
-    try {
-      const webhookService = require('./webhookService');
-      await webhookService.fire('event.published', {
-        event: webhookService.buildEventSubject({
-          id: eventId,
-          slug,
-          event_name,
-          event_date,
-          share_url: shareUrl,
-          share_token: shareToken,
-          customer_name: customerName,
-          customer_email: customerEmail,
-          customer_phone: customerPhone,
-        }),
-      });
-    } catch (e) { /* non-fatal */ }
-  }
-
-  if (!isDraft) {
-    await require('./workflows').emitWorkflowEvent('gallery.published', {
-      entityType: 'event', entityId: eventId,
-      payload: { eventId, slug, eventName: event_name, eventDate: event_date,
-        customerEmail, adminEmail: admin_email, galleryLink: shareUrl,
-        expiresAt: expires_at ? expires_at.toISOString() : null },
-    }).catch(error => logger.warn('Failed to emit gallery.published', { eventId, error: error.message }));
-  }
 
   return {
     id: eventId,
     slug,
     event_name,
     customer_name: customerName,
-    customer_email: customerEmail,
     require_password: requirePassword,
     photo_cap: photo_cap || null,
     is_draft: isDraft,

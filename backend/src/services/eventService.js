@@ -61,7 +61,7 @@ const getStoragePath = () => process.env.STORAGE_PATH || path.join(__dirname, '.
 let customerColumnCache = null;
 
 /**
- * Check if the database has the new customer_email column
+ * Check if the database has the canonical customer_name column
  * @returns {Promise<boolean>}
  */
 const hasCustomerContactColumns = async () => {
@@ -70,7 +70,7 @@ const hasCustomerContactColumns = async () => {
   }
 
   try {
-    const hasColumn = await db.schema.hasColumn('events', 'customer_email');
+    const hasColumn = await db.schema.hasColumn('events', 'customer_name');
     if (hasColumn) {
       customerColumnCache = true;
     }
@@ -92,16 +92,12 @@ const mapEventForApi = (event) => {
 
   const {
     host_name,
-    host_email,
     customer_name,
-    customer_email,
     ...rest
   } = event;
-
   return {
     ...rest,
-    customer_name: customer_name ?? host_name ?? null,
-    customer_email: customer_email ?? host_email ?? null
+    customer_name: customer_name ?? host_name ?? null
   };
 };
 
@@ -213,11 +209,6 @@ const updateEvent = async (id, updates) => {
   delete updates.created_at;
   delete updates.password_confirmation;
 
-  // Handle legacy field names
-  if (updates.host_name || updates.host_email) {
-    throw new Error('host_name and host_email are no longer supported. Use customer_name and customer_email instead.');
-  }
-
   // Handle customer name update
   if (updates.customer_name !== undefined) {
     const nextName = parseStringInput(updates.customer_name);
@@ -230,21 +221,6 @@ const updateEvent = async (id, updates) => {
       updates.host_name = nextName;
     } else {
       delete updates.customer_name;
-    }
-  }
-
-  // Handle customer email update
-  if (updates.customer_email !== undefined) {
-    const nextEmail = parseStringInput(updates.customer_email);
-    if (nextEmail) {
-      if (customerColumnsAvailable) {
-        updates.customer_email = nextEmail;
-      } else {
-        delete updates.customer_email;
-      }
-      updates.host_email = nextEmail;
-    } else {
-      delete updates.customer_email;
     }
   }
 

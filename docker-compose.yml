@@ -53,7 +53,6 @@ services:
       - PORT=3000
       - JWT_SECRET=${JWT_SECRET:-}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       # How long a gallery guest stays recognised (#1210). Unset = 30d.
       # Listed explicitly because this service takes an environment list, so a
@@ -67,19 +66,6 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-}
       - DB_NAME=${DB_NAME}
       - EXTERNAL_MEDIA_ROOT=${EXTERNAL_MEDIA_ROOT:-/app/storage/external-media}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT}
-      - SMTP_SECURE=${SMTP_SECURE:-false}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASS=${SMTP_PASS}
-      - EMAIL_FROM=${EMAIL_FROM:-noreply@picpeak.local}
-      # Webhook email transport (#1225). Listed here because this service
-      # declares an explicit `environment:` block — a variable only present in
-      # .env is NOT passed through, so without these three the documented
-      # "uncomment in .env and restart" flow silently leaves the transport off.
-      - EMAIL_WEBHOOK_URL=${EMAIL_WEBHOOK_URL:-}
-      - EMAIL_WEBHOOK_SECRET=${EMAIL_WEBHOOK_SECRET:-}
-      - EMAIL_WEBHOOK_ALLOW_PRIVATE_URLS=${EMAIL_WEBHOOK_ALLOW_PRIVATE_URLS:-false}
       # Unset by default (#705): an injected value would always win over the
       # `general_site_url` admin setting, so the setup wizard could never
       # take effect. Set this only to pin the origin from config-as-code.
@@ -91,9 +77,6 @@ services:
       # JWT_SECRET) and the break-glass override that re-enables local
       # password login when the IdP is down while SSO-only mode is active.
       - OIDC_ENCRYPTION_KEY=${OIDC_ENCRYPTION_KEY:-}
-      # Optional product usage (#1110); remains off until explicit in-app consent.
-      - USAGE_COLLECTOR_URL=${USAGE_COLLECTOR_URL:-https://usage.picpeak.app}
-      - USAGE_ENCRYPTION_KEY=${USAGE_ENCRYPTION_KEY:-}
       - OIDC_BREAK_GLASS=${OIDC_BREAK_GLASS:-}
       - INTEGRATION_PRIVATE_ORIGINS=${INTEGRATION_PRIVATE_ORIGINS:-}
       - ADMIN_URL=${ADMIN_URL:-}
@@ -197,22 +180,6 @@ services:
     networks:
       - picpeak-network
 
-  # Local mail catcher for development/testing only — never wanted in a real
-  # deployment. Gated behind the `dev` profile so a plain `docker compose up -d`
-  # does NOT start it; opt in with `docker compose --profile dev up -d`. Nothing
-  # depends on it (SMTP_HOST comes from .env), so gating is safe.
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: picpeak-mailhog
-    restart: unless-stopped
-    profiles:
-      - dev
-    ports:
-      - "${MAILHOG_SMTP_PORT:-1025}:1025"
-      - "${MAILHOG_UI_PORT:-8025}:8025"
-    networks:
-      - picpeak-network
-
   # Optional face-detection sidecar (#1074). Gated behind the `faces` profile
   # so a plain `docker compose up -d` does NOT start it — opt in with
   # `docker compose --profile faces up -d`. Nothing depends on it: the backend
@@ -263,9 +230,6 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=${VITE_API_URL:-/api}
-        - VITE_UMAMI_URL=${VITE_UMAMI_URL:-}
-        - VITE_UMAMI_WEBSITE_ID=${VITE_UMAMI_WEBSITE_ID:-}
-        - VITE_UMAMI_SHARE_URL=${VITE_UMAMI_SHARE_URL:-}
     container_name: picpeak-frontend
     restart: unless-stopped
     environment:

@@ -88,8 +88,8 @@ function dominantColorLabel(counts) {
  *
  * In identity_mode='shared' the colour label has no owner: one tag per photo,
  * any guest can overwrite it. It is still an ordinary photo_feedback row —
- * which is what keeps the filters, the per-colour tallies, the moderation
- * queue and the XMP/CSV export working unchanged — but its guest_identifier is
+ * which is what keeps the filters, the per-colour tallies, hidden-tag state
+ * and the XMP/CSV export working unchanged — but its guest_identifier is
  * this reserved value rather than a person or a device.
  *
  * Cannot collide with a real guest. generateGuestIdentifier returns either a

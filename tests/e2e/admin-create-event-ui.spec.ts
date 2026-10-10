@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin!234';
 
 function randomSuffix() {
@@ -9,11 +9,9 @@ function randomSuffix() {
 
 test('admin can create event via UI @smoke', async ({ page }) => {
   const eventName = `UI Playwright ${randomSuffix()}`;
-  const hostEmail = `host+${randomSuffix()}@example.com`;
-
   // Login
   await page.goto('/admin/login');
-  await page.getByLabel(/Email/i).fill(ADMIN_EMAIL);
+  await page.getByLabel(/Username/i).fill(ADMIN_USERNAME);
   await page.getByLabel(/Password/i).fill(ADMIN_PASSWORD);
   await page.getByRole('button', { name: /^(Sign In|Log in|Anmelden)$/i }).click();
   await expect(page.getByRole('heading', { name: /Dashboard/i })).toBeVisible({ timeout: 20000 });
@@ -33,8 +31,6 @@ test('admin can create event via UI @smoke', async ({ page }) => {
   // The date picker prefills today in the display format (dd/mm/yyyy), and its
   // calendar button carries the same label, so check the textbox has a value.
   await expect(page.getByRole('textbox', { name: 'Event Date' })).not.toHaveValue('');
-  await page.getByLabel(/Customer Email/i).fill(hostEmail);
-  await page.getByLabel(/Admin Email/i).fill(ADMIN_EMAIL);
   await page.getByLabel(/Gallery Password/i).fill('UiPlay123!');
   await page.getByLabel(/Confirm Password/i).fill('UiPlay123!');
 

@@ -56,25 +56,19 @@ function mountRoutes(app) {
   // Credential endpoints — the group that must be limited.
   app.post('/api/auth/admin/login', (req, res) =>
     (loginSucceeds ? res.json({ user: {} }) : fail(res)));
-  app.post('/api/auth/admin/login/mfa', (req, res) => fail(res));
   app.post('/api/auth/gallery/verify', (req, res) => fail(res));
   app.post('/api/auth/gallery/share-login', (req, res) => fail(res));
   app.post('/api/auth/gallery/:slug/client-login', (req, res) => fail(res));
   app.post('/api/setup/verify-token', (req, res) => fail(res));
   app.post('/api/setup/admin', (req, res) => fail(res));
-  app.post('/api/customer/auth/login', (req, res) => fail(res));
-  app.post('/api/customer/auth/password-reset', (req, res) => fail(res));
   // Password changes verify the current password before replacing it.
   app.post('/api/auth/admin/change-password', (req, res) => fail(res));
-  app.post('/api/admin/auth/mfa/disable', (req, res) => fail(res));
-  app.post('/api/admin/auth/mfa/recovery-codes', (req, res) => fail(res));
   // The real login router is MOUNTED at /api/auth, and Express collapses a
   // repeated slash at that boundary, so /api/auth//admin/login reaches the
   // same handler; a directly registered route would 404 it. Mirror the mount.
   const mountedAuth = express.Router();
   mountedAuth.post('/admin/login', (req, res) => fail(res));
   app.use('/api/auth', mountedAuth);
-  app.post('/api/customer/profile/password', (req, res) => fail(res));
 
   // Benign endpoints living under the very same prefixes the old registrations
   // covered. Every one of these is called more than five times per window by a
@@ -84,9 +78,7 @@ function mountRoutes(app) {
   app.post('/api/auth/logout', (req, res) => res.json({ ok: true }));
   app.post('/api/auth/gallery/logout', (req, res) => res.json({ ok: true }));
   app.get('/api/auth/admin/sso/callback', (req, res) => res.json({ ok: true }));
-  app.get('/api/customer/profile', (req, res) => res.json({ ok: true }));
   app.get('/api/setup/status', (req, res) => res.json({ needsSetup: false }));
-  app.get('/api/customer/auth/session', (req, res) => res.json({ ok: true }));
   app.get('/api/gallery/:slug/verify-token/:token', (req, res) => res.json({ valid: true }));
   app.get('/api/public/settings', (req, res) => res.json({ ok: true }));
 }
@@ -118,25 +110,18 @@ describe('authRateLimitGate — credential endpoints are limited', () => {
     }
     const blocked = await request(app).post('/api/auth/admin/login').send({});
     expect(blocked.status).toBe(429);
-    // Shape the frontend already branches on (AdminLoginPage, GalleryPage,
-    // CustomerLoginPage and SetupPage all check status === 429).
+    // Shape the frontend branches on for admin, gallery and setup login.
     expect(blocked.body.error).toBe('Too many authentication attempts, please try again later.');
     expect(blocked.headers['ratelimit-limit']).toBe('5');
   });
 
   it.each([
-    ['/api/auth/admin/login/mfa'],
     ['/api/auth/gallery/verify'],
     ['/api/auth/gallery/share-login'],
     ['/api/auth/gallery/some-slug/client-login'],
     ['/api/setup/verify-token'],
     ['/api/setup/admin'],
-    ['/api/customer/auth/login'],
-    ['/api/customer/auth/password-reset'],
     ['/api/auth/admin/change-password'],
-    ['/api/admin/auth/mfa/disable'],
-    ['/api/admin/auth/mfa/recovery-codes'],
-    ['/api/customer/profile/password']
   ])('429s %s once the budget is spent', async (endpoint) => {
     const app = await buildApp();
     for (let i = 0; i < 5; i++) {
@@ -164,7 +149,7 @@ describe('authRateLimitGate — credential endpoints are limited', () => {
     const sprayed = [
       '/api/auth/admin/login',
       '/api/auth/gallery/verify',
-      '/api/customer/auth/login',
+      '/api/auth/gallery/some-slug/client-login',
       '/api/setup/verify-token',
       '/api/auth/gallery/share-login'
     ];
@@ -225,9 +210,7 @@ describe('authRateLimitGate — benign endpoints are never limited', () => {
     ['POST', '/api/auth/logout'],
     ['POST', '/api/auth/gallery/logout'],
     ['GET', '/api/auth/admin/sso/callback'],
-    ['GET', '/api/customer/profile'],
     ['GET', '/api/setup/status'],
-    ['GET', '/api/customer/auth/session'],
     ['GET', '/api/gallery/some-slug/verify-token/abc']
   ])('%s %s stays available after 40 calls', async (method, endpoint) => {
     const app = await buildApp();

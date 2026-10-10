@@ -24,7 +24,6 @@ async function showAdminCredentials(resetPassword = false) {
     console.log('PicPeak Admin Credentials');
     console.log('========================================');
     console.log(`Username: ${admin.username}`);
-    console.log(`Email: ${admin.email}`);
     
     if (resetPassword) {
       // Generate new password

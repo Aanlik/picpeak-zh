@@ -10,8 +10,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import {
-  Plus, Send, Link2, Download, Trash2, Upload, X, Copy, Image as ImageIcon,
-  Clock, Ban, RefreshCw, Mail, Paperclip, FileText,
+  Plus, Send, Download, Trash2, Upload, X, Copy, Image as ImageIcon,
+  Clock, Ban, RefreshCw, Paperclip, FileText,
 } from 'lucide-react';
 
 import { Button, Input, Card, CardContent, Loading, useConfirm } from '../../../components/common';
@@ -162,15 +162,6 @@ const CreateTransferModal: React.FC<{ onClose: () => void; onCreated: () => void
   const [picked, setPicked] = useState<PickedPhoto[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
-  const [deliveryMethod, setDeliveryMethod] = useState<'link' | 'email'>('link');
-  const [emails, setEmails] = useState('');
-
-  // Split the free-text recipient field on comma / semicolon / whitespace and
-  // keep only well-formed addresses. Used both to send and to gate the button.
-  const parsedEmails = emails
-    .split(/[,;\s]+/)
-    .map((e) => e.trim())
-    .filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
 
   const createMutation = useMutationWithToast({
     mutationFn: () => transfersService.create({
@@ -181,8 +172,6 @@ const CreateTransferModal: React.FC<{ onClose: () => void; onCreated: () => void
       allowUploads,
       photoIds: picked.map((p) => p.id),
       files,
-      deliveryMethod,
-      recipientEmails: deliveryMethod === 'email' ? parsedEmails : [],
     }),
     successMessage: t('transfers.created', 'Transfer created'),
     errorMessage: t('transfers.createFailed', 'Could not create transfer'),
@@ -304,51 +293,6 @@ const CreateTransferModal: React.FC<{ onClose: () => void; onCreated: () => void
             )}
           </div>
 
-          {/* Delivery: copy a link yourself, or email it to recipients */}
-          <div className="rounded-md border border-neutral-200 p-3 dark:border-neutral-700">
-            <span className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-              {t('transfers.field.delivery', 'Delivery')}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={deliveryMethod === 'link' ? 'primary' : 'outline'}
-                className="flex-1"
-                leftIcon={<Link2 className="h-4 w-4" />}
-                onClick={() => setDeliveryMethod('link')}
-              >
-                {t('transfers.delivery.link', 'Share a link')}
-              </Button>
-              <Button
-                type="button"
-                variant={deliveryMethod === 'email' ? 'primary' : 'outline'}
-                className="flex-1"
-                leftIcon={<Mail className="h-4 w-4" />}
-                onClick={() => setDeliveryMethod('email')}
-              >
-                {t('transfers.delivery.email', 'Send by email')}
-              </Button>
-            </div>
-            {deliveryMethod === 'email' && (
-              <div className="mt-3">
-                <label className="mb-1 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  {t('transfers.field.recipients', 'Recipient email addresses')}
-                </label>
-                <textarea
-                  value={emails}
-                  onChange={(e) => setEmails(e.target.value)}
-                  rows={2}
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-600 dark:bg-neutral-800"
-                  placeholder={t('transfers.field.recipientsPlaceholder', 'anna@example.com, ben@example.com')}
-                />
-                <p className="mt-1 text-xs text-neutral-400">
-                  {parsedEmails.length > 0
-                    ? t('transfers.field.recipientsCount', '{{count}} recipient(s) — each gets the download link', { count: parsedEmails.length })
-                    : t('transfers.field.recipientsHint', 'Separate multiple addresses with commas. Each recipient gets the download link.')}
-                </p>
-              </div>
-            )}
-          </div>
         </div>
 
         <div className="flex justify-end gap-2 border-t border-neutral-200 px-5 py-3 dark:border-neutral-700">
@@ -358,12 +302,9 @@ const CreateTransferModal: React.FC<{ onClose: () => void; onCreated: () => void
             isLoading={createMutation.isPending}
             disabled={
               (picked.length === 0 && files.length === 0 && !allowUploads)
-              || (deliveryMethod === 'email' && parsedEmails.length === 0)
             }
           >
-            {deliveryMethod === 'email'
-              ? t('transfers.createAndSend', 'Create & send')
-              : t('transfers.create', 'Create transfer')}
+            {t('transfers.create', 'Create transfer')}
           </Button>
         </div>
       </div>
@@ -572,22 +513,6 @@ const TransferDetailModal: React.FC<DetailProps> = ({ transferId, onClose, onCop
                 <p className="text-sm text-neutral-400">{t('transfers.noUploadedFiles', 'No uploaded files. Add files from your computer to include them in the download.')}</p>
               )}
             </div>
-
-            {/* Email recipients (when delivered by email) */}
-            {transfer.recipients && transfer.recipients.length > 0 && (
-              <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-700">
-                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                  <Mail className="h-4 w-4" /> {t('transfers.sentTo', 'Emailed to')}
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {transfer.recipients.map((r) => (
-                    <span key={r.id} className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                      {r.email}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Client uploads */}
             <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-700">

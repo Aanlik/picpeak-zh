@@ -45,9 +45,8 @@
 // reaches the login handler, so a case-sensitive pattern would be a free bypass.
 // The optional trailing slash is there for the same reason.
 const CREDENTIAL_ENDPOINTS = [
-  // Admin password, and the second factor that completes the same login.
+  // Admin password login.
   { method: 'POST', path: /^\/api\/auth\/admin\/login\/?$/i },
-  { method: 'POST', path: /^\/api\/auth\/admin\/login\/mfa\/?$/i },
   // Gallery password, client PIN, share-link token.
   { method: 'POST', path: /^\/api\/auth\/gallery\/verify\/?$/i },
   { method: 'POST', path: /^\/api\/auth\/gallery\/share-login\/?$/i },
@@ -55,23 +54,12 @@ const CREDENTIAL_ENDPOINTS = [
   // First-run bootstrap: both of these take the setup token.
   { method: 'POST', path: /^\/api\/setup\/verify-token\/?$/i },
   { method: 'POST', path: /^\/api\/setup\/admin\/?$/i },
-  // Customer portal password, and the reset that replaces it.
-  { method: 'POST', path: /^\/api\/customer\/auth\/login\/?$/i },
-  { method: 'POST', path: /^\/api\/customer\/auth\/password-reset\/?$/i },
   // Password changes verify the CURRENT password first, so they are a
   // credential check too — one an attacker holding a hijacked session can
   // drive, and one the general limiter never sees because the session's own
   // JWT skips it as authenticated. Only failed attempts count here, so the
   // one legitimate change a user makes costs nothing.
   { method: 'POST', path: /^\/api\/auth\/admin\/change-password\/?$/i },
-  { method: 'POST', path: /^\/api\/customer\/profile\/password\/?$/i },
-  // Disabling MFA and regenerating recovery codes verify a current TOTP or
-  // recovery code, the same way change-password verifies the current
-  // password: a hijacked session can drive them, the session's own JWT skips
-  // the general limiter, and a ±1-step window leaves three valid codes at any
-  // moment. Without this entry nothing bounded the guessing.
-  { method: 'POST', path: /^\/api\/admin\/auth\/mfa\/disable\/?$/i },
-  { method: 'POST', path: /^\/api\/admin\/auth\/mfa\/recovery-codes\/?$/i },
 ];
 
 /**

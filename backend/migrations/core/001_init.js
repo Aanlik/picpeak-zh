@@ -6,11 +6,55 @@ const path = require('path');
 
 exports.up = async function(knex) {
   console.log('Initializing database schema...');
-  
+
   try {
     // Initialize tables
     await initializeDatabase();
-    
+
+    // The historical migration chain contains old communication migrations
+    // which still expect these tables while upgrading from the upstream
+    // schema. Keep their starting schema available only during migrations;
+    // the retired-module cleanup migration removes it before the app starts.
+    if (!(await knex.schema.hasTable('email_queue'))) {
+      await knex.schema.createTable('email_queue', (table) => {
+        table.increments('id').primary();
+        table.integer('event_id').references('id').inTable('events');
+        table.string('recipient_email').notNullable();
+        table.string('email_type').notNullable();
+        table.json('email_data');
+        table.string('status').defaultTo('pending');
+        table.datetime('created_at').defaultTo(knex.fn.now());
+        table.datetime('scheduled_at').defaultTo(knex.fn.now());
+        table.datetime('sent_at');
+        table.text('error_message');
+        table.integer('retry_count').defaultTo(0);
+      });
+    }
+    if (!(await knex.schema.hasTable('email_configs'))) {
+      await knex.schema.createTable('email_configs', (table) => {
+        table.increments('id').primary();
+        table.string('smtp_host').notNullable();
+        table.integer('smtp_port').notNullable();
+        table.boolean('smtp_secure').defaultTo(false);
+        table.string('smtp_user');
+        table.string('smtp_pass');
+        table.string('from_email').notNullable();
+        table.string('from_name');
+        table.datetime('updated_at').defaultTo(knex.fn.now());
+      });
+    }
+    if (!(await knex.schema.hasTable('email_templates'))) {
+      await knex.schema.createTable('email_templates', (table) => {
+        table.increments('id').primary();
+        table.string('template_key').unique().notNullable();
+        table.string('subject').notNullable();
+        table.text('body_html').notNullable();
+        table.text('body_text');
+        table.json('variables');
+        table.datetime('updated_at').defaultTo(knex.fn.now());
+      });
+    }
+
     // Create default admin user if none exists.
     //
     // Legacy path — only when ADMIN_PASSWORD is explicitly provided (keeps
@@ -24,11 +68,13 @@ exports.up = async function(knex) {
       // Use ADMIN_PASSWORD from environment if set, otherwise generate a random one
       const generatedPassword = process.env.ADMIN_PASSWORD || generateReadablePassword();
       const passwordHash = await bcrypt.hash(generatedPassword, 12); // Increased rounds for better security
-      
+
       // Get admin credentials from environment or use defaults
       const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-      
+      // The email column is retained by legacy schemas but is not an account
+      // identifier or a delivery address in this build.
+      const adminEmail = `${adminUsername}@local.invalid`;
+
       await knex('admin_users').insert({
         username: adminUsername,
         email: adminEmail,
@@ -36,7 +82,7 @@ exports.up = async function(knex) {
         must_change_password: true,
         created_at: new Date()
       });
-      
+
       // Try to save credentials to file, but don't fail if we can't
       const dataDir = path.join(__dirname, '..', '..', 'data');
       const setupInfoPath = path.join(dataDir, 'ADMIN_CREDENTIALS.txt');
@@ -66,12 +112,12 @@ valid as a fallback recovery path.
 
       const setupInfo = `
 ========================================
-PicPeak Admin Credentials
+PicPeak Administrator Credentials
 ========================================${restoreNotice}
 
 Your admin account has been created with these credentials:
 
-Email: ${adminEmail}
+Username: ${adminUsername}
 Password: ${generatedPassword}
 
 IMPORTANT SECURITY NOTES:
@@ -82,12 +128,12 @@ IMPORTANT SECURITY NOTES:
 
 Login URL: ${process.env.ADMIN_URL || 'http://localhost:3001'}/admin
 
-Login with the email address shown above
+Log in with the username shown above
 
 Generated on: ${new Date().toISOString()}
 ========================================
 `;
-      
+
       try {
         // Try to create directory and write file
         await fs.mkdir(dataDir, { recursive: true });
@@ -102,75 +148,17 @@ Generated on: ${new Date().toISOString()}
         console.log('⚠️  Could not save credentials to file (permission denied)');
         console.log('   Log in with the ADMIN_PASSWORD from your environment');
       }
-      
+
       console.log('\n========================================');
       console.log('✅ Admin user created successfully!');
       console.log('========================================');
-      console.log(`Email: ${adminEmail}`);
+      console.log(`Username: ${adminUsername}`);
       // Never log the password: container logs are often collected and kept.
       console.log('Password: the ADMIN_PASSWORD from your environment');
       console.log('\n⚠️  IMPORTANT:');
       console.log('1. Save these credentials securely');
       console.log('2. Please change the password after first login');
       console.log('========================================\n');
-    }
-    
-    // Create default email templates if none exist
-    const templateExists = await knex('email_templates').first();
-    if (!templateExists) {
-      await knex('email_templates').insert([
-        {
-          template_key: 'gallery_created',
-          subject: 'Your Photo Gallery is Ready!',
-          body_html: `<h2>Gallery Created Successfully</h2>
-<p>Dear {{host_name}},</p>
-<p>Your photo gallery "{{event_name}}" has been created successfully!</p>
-<p><strong>Gallery Details:</strong></p>
-<ul>
-  <li>Event Date: {{event_date}}</li>
-  <li>Gallery Link: {{gallery_link}}</li>
-  <li>Password: {{gallery_password}}</li>
-  <li>Expires: {{expiry_date}}</li>
-</ul>
-<p>Share this link and password with your guests to allow them to view and download photos.</p>`,
-          body_text: 'Gallery Created Successfully\n\nDear {{host_name}},\n\nYour photo gallery "{{event_name}}" has been created successfully!',
-          variables: JSON.stringify(['host_name', 'event_name', 'event_date', 'gallery_link', 'gallery_password', 'expiry_date'])
-        },
-        {
-          template_key: 'expiration_warning',
-          subject: 'Your Photo Gallery Expires Soon',
-          body_html: `<h2>Gallery Expiring Soon</h2>
-<p>Dear {{host_name}},</p>
-<p>Your photo gallery "{{event_name}}" will expire in {{days_remaining}} days.</p>
-<p>After expiration, the gallery will be archived and no longer accessible to guests.</p>
-<p><a href="{{gallery_link}}">Visit Gallery</a></p>`,
-          body_text: 'Gallery Expiring Soon\n\nDear {{host_name}},\n\nYour photo gallery "{{event_name}}" will expire in {{days_remaining}} days.',
-          variables: JSON.stringify(['host_name', 'event_name', 'days_remaining', 'gallery_link'])
-        }
-      ]);
-      console.log('Default email templates created');
-    }
-
-    // Seed an email config ONLY when the environment actually supplies a host
-    // (#705). This used to fall back to `mailhog`, the dev compose service, so
-    // every fresh install came up with a LIVE config pointing at a host that
-    // does not exist outside the dev stack — the setup wizard then showed empty
-    // SMTP fields (reading as "nothing configured") while mail silently failed.
-    // With no row at all, emailProcessor logs "No email configuration found"
-    // and the wizard's blank fields are the truth. The dev stack keeps mailhog
-    // by setting SMTP_HOST explicitly in docker-compose.yml.
-    const emailConfig = await knex('email_configs').first();
-    if (!emailConfig && process.env.SMTP_HOST) {
-      await knex('email_configs').insert({
-        smtp_host: process.env.SMTP_HOST,
-        smtp_port: process.env.SMTP_PORT || 1025,
-        smtp_secure: process.env.SMTP_SECURE === 'true',
-        smtp_user: process.env.SMTP_USER || '',
-        smtp_pass: process.env.SMTP_PASS || '',
-        from_email: process.env.EMAIL_FROM || 'noreply@photo-sharing.local',
-        from_name: 'Photo Sharing'
-      });
-      console.log('Default email configuration created');
     }
 
     console.log('Migrations completed successfully');

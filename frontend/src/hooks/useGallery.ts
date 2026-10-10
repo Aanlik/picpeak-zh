@@ -36,16 +36,6 @@ export const useGalleryPhotos = (
   });
 };
 
-export const useGalleryStats = (slug: string, enabled: boolean = true) => {
-  return useQuery({
-    queryKey: ['gallery-stats', slug],
-    queryFn: () => galleryService.getGalleryStats(slug),
-    enabled,
-    retry: 1,
-    staleTime: 60 * 1000, // 1 minute
-  });
-};
-
 export const useDownloadPhoto = () => {
   const { t } = useTranslation();
   return useMutation({

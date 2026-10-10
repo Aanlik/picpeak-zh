@@ -16,13 +16,13 @@ beforeAll(async () => {
   ({ db, cleanup } = await bootTestDb());
   await seedMinimal(db);
   const [event] = await db('events').insert({ slug: 'limits', event_type: 'project', event_name: 'Limits',
-    event_date: '2026-09-16', host_email: 'h@example.test', admin_email: 'a@example.test',
+    event_date: '2026-09-16',
     password_hash: 'unused', share_link: '/gallery/limits/share', is_active: true, is_archived: false, is_draft: false }).returning('id');
   eventId = event.id ?? event;
   const [photo] = await db('photos').insert({ event_id: eventId, filename: 'test.jpg', path: 'test.jpg', type: 'individual' }).returning('id');
   photoId = photo.id ?? photo;
   await db('event_feedback_settings').insert({ event_id: eventId, feedback_enabled: true, identity_mode: 'simple',
-    allow_comments: true, allow_likes: true, moderate_comments: false, require_moderation: false });
+    allow_comments: true, allow_likes: true });
   await db('app_settings').where({ setting_key: 'feedback_rate_limits' }).update({
     setting_value: JSON.stringify({ comment: { max: 3, window: 3600 } })
   });

@@ -40,7 +40,7 @@ test('existing keys respect a forced-change flag before any protected API handle
   await db('admin_users').where({ id: adminId }).update({ must_change_password: false });
 });
 test('forced reset revokes only the target account keys permanently', async () => {
-  await require('../../src/services/userManagementService').resetAdminPassword(adminId, otherId);
+  await require('../../src/services/adminPasswordReset').setAdminPasswordForReset(adminId, 'new-reset-hash');
   expect((await db('api_tokens').where({ created_by: adminId }).first()).revoked_at).toBeTruthy();
   expect((await db('api_tokens').where({ created_by: otherId }).first()).revoked_at).toBeFalsy();
   await db('admin_users').where({ id: adminId }).update({ must_change_password: false });

@@ -27,8 +27,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   events: 'Events',
   photos: 'Photos',
   archives: 'Archives',
-  analytics: 'Analytics',
-  email: 'Email',
   branding: 'Branding',
   cms: 'CMS Pages',
   settings: 'Settings & Config',
@@ -36,7 +34,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   users: 'Users & Roles',
   activity: 'Activity Logs',
   customers: 'Customers',
-  workflows: 'Workflows',
   system: 'System',
 };
 

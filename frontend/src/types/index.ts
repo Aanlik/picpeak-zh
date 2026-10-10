@@ -5,10 +5,7 @@ export interface Event {
   event_name: string;
   event_date: string | null;
   customer_name?: string;
-  customer_email: string;
   customer_phone?: string | null;
-  admin_email: string;
-  welcome_message?: string;
   color_theme?: string;
   share_link: string;
   created_at: string;
@@ -33,9 +30,6 @@ export interface Event {
   revealed_at?: string | null;
   upload_category_id?: number | null;
   hero_photo_id?: number | null;
-  total_views?: number;
-  total_downloads?: number;
-  unique_visitors?: number;
   source_mode?: 'managed' | 'reference' | string;
   external_path?: string | null;
   // Folder watcher opt-in (issue 1187). SQLite hands back 0/1, Postgres a boolean.
@@ -283,7 +277,6 @@ export interface GalleryData {
       picker_enabled: boolean;
       choices: DownloadResolutionChoice[];
     };
-    welcome_message?: string;
     color_theme?: string;
     expires_at: string | null;
     allow_user_uploads?: boolean;
@@ -334,10 +327,6 @@ export interface GalleryData {
   reveal_at?: string | null;
 }
 
-export interface GalleryStats {
-  total_photos: number;
-}
-
 export interface ResolvedGalleryIdentifier {
   slug: string;
   token: string;
@@ -353,7 +342,6 @@ export interface ResolvedGalleryIdentifier {
 export interface AdminUser {
   id: number;
   username: string;
-  email: string;
   mustChangePassword?: boolean;
   role?: {
     name: string;
@@ -375,19 +363,7 @@ export interface LoginResponse {
   user: AdminUser;
 }
 
-// Two-step admin login: when MFA is enabled, POST /auth/admin/login returns
-// this challenge instead of a session (no cookie yet). The mfaToken is a
-// short-lived (5 min) JWT exchanged at POST /auth/admin/login/mfa.
-export interface MfaChallengeResponse {
-  mfaRequired: true;
-  mfaToken: string;
-}
-
-export type AdminLoginResponse = LoginResponse | MfaChallengeResponse;
-
-export function isMfaChallenge(res: AdminLoginResponse): res is MfaChallengeResponse {
-  return (res as MfaChallengeResponse).mfaRequired === true;
-}
+export type AdminLoginResponse = LoginResponse;
 
 export interface GalleryAuthResponse {
   token: string;
@@ -395,7 +371,6 @@ export interface GalleryAuthResponse {
     id: number;
     event_name: string;
     event_date: string;
-    welcome_message?: string;
     color_theme?: string;
     expires_at: string;
     allow_user_uploads?: boolean;
@@ -433,15 +408,6 @@ export interface AdminPermissions {
     displayName: string;
   } | null;
   permissions: string[];
-}
-
-export interface AdminInvitation {
-  id: number;
-  email: string;
-  roleName: string;
-  invitedBy: string;
-  expiresAt: string;
-  createdAt: string;
 }
 
 // Export protection types

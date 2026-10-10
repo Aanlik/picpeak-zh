@@ -61,9 +61,6 @@ vi.mock('../../../../services/feedback.service', () => ({
 vi.mock('../../../../services/gallery.service', () => ({
   galleryService: { downloadSelectedPhotos: vi.fn() },
 }));
-vi.mock('../../../../services/analytics.service', () => ({
-  analyticsService: { trackGalleryEvent: vi.fn() },
-}));
 
 const photos: Photo[] = [1, 2, 3].map((i) => ({
   id: i,
@@ -86,7 +83,7 @@ const props = {
   isSelectionMode: false,
   allowDownloads: true,
   feedbackEnabled: true,
-  feedbackOptions: { requireNameEmail: true, allowComments: true, allowRatings: true },
+  feedbackOptions: { requireGuestName: true, allowComments: true, allowRatings: true },
 } as never;
 
 describe('GalleryStoryLayout — feedback lives in the lightbox only', () => {

@@ -83,8 +83,8 @@ describe('a second external import (#1163)', () => {
       event_type: 'project',
       event_name: 'ext2nd',
       event_date: '2026-01-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `ext2nd-${Math.random()}`,
       expires_at: new Date().toISOString(),

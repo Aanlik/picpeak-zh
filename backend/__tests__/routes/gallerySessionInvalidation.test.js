@@ -20,7 +20,7 @@ const crypto = require('crypto');
 
 process.env.JWT_SECRET = 'gallery-session-invalidation-secret-at-least-32-chars';
 
-let db, cleanup, app, adminId, customerId;
+let db, cleanup, app, adminId;
 const eventId = 71001, slug = 'session-invalidation';
 const photos = `/api/gallery/${slug}/photos`;
 
@@ -32,16 +32,14 @@ const listWith = (bearer) => request(app).get(photos).set('Authorization', `Bear
 
 beforeAll(async () => {
   ({ db, cleanup } = await bootTestDb());
-  ({ adminId, customerId } = await seedMinimal(db));
+  ({ adminId } = await seedMinimal(db));
   await assignAdminRole(db, adminId);
   await db('events').insert({
     id: eventId, slug, event_type: 'project', event_name: 'Session invalidation',
-    event_date: '2026-01-01', host_email: 'h@example.test', admin_email: 'a@example.test',
+    event_date: '2026-01-01',
     password_hash: 'unused', share_link: `/gallery/${slug}`, created_by: adminId,
-    // "Send gallery email" builds the share link from it.
     share_token: crypto.randomBytes(16).toString('hex'),
   });
-  await db('event_customer_assignments').insert({ event_id: eventId, customer_account_id: customerId });
   // Pin the idle timeout the preview cases rely on (the default is 60 minutes).
   const timeoutSetting = { setting_key: 'security_session_timeout_minutes', setting_value: '60' };
   if (await db('app_settings').where({ setting_key: timeoutSetting.setting_key }).first()) {
@@ -52,8 +50,6 @@ beforeAll(async () => {
   app = express(); app.use(express.json()); app.use(cookieParser());
   app.use('/api/admin/events', require('../../src/routes/adminEvents'));
   app.use('/api/gallery', require('../../src/routes/gallery'));
-  app.use('/api/customer/auth', require('../../src/routes/customerAuth'));
-  app.use('/api/customer', require('../../src/routes/customer'));
 }, 120000);
 
 beforeEach(async () => {
@@ -70,12 +66,11 @@ describe('rotating a gallery credential', () => {
   it('ends guest sessions opened with the old gallery password and keeps the others', async () => {
     const guest = galleryToken();
     const client = galleryToken({ accessLevel: 'client' });
-    const portal = galleryToken({ via: 'customer', customerId });
     const slideshow = galleryToken({ accessLevel: 'slideshow' });
     expect((await listWith(guest)).status).toBe(200);
 
     const reset = await request(app).post(`/api/admin/events/${eventId}/reset-password`)
-      .set('Authorization', `Bearer ${mintAdminToken(adminId)}`).send({ sendEmail: false });
+      .set('Authorization', `Bearer ${mintAdminToken(adminId)}`).send({});
     expect(reset.status).toBe(200);
 
     const refused = await listWith(guest);
@@ -85,65 +80,7 @@ describe('rotating a gallery credential', () => {
     // gallery password, keep working.
     expect((await listWith(galleryToken({ iat: Math.floor(Date.now() / 1000) + 1 }))).status).toBe(200);
     expect((await listWith(client)).status).toBe(200);
-    expect((await listWith(portal)).status).toBe(200);
     expect((await listWith(slideshow)).status).toBe(200);
-  });
-
-  it('ends guest sessions when "Send gallery email" sets a new gallery password', async () => {
-    const guest = galleryToken();
-    expect((await listWith(guest)).status).toBe(200);
-
-    const sent = await request(app).post(`/api/admin/events/${eventId}/send-gallery-email`)
-      .set('Authorization', `Bearer ${mintAdminToken(adminId)}`)
-      .send({ password: 'Gallery-Email-Rotation-2026!' });
-    expect(sent.status).toBe(200);
-
-    const refused = await listWith(guest);
-    expect(refused.status).toBe(401);
-    expect(refused.body.code).toBe('GALLERY_PASSWORD_CHANGED');
-  });
-
-  it('keeps guest sessions when "Send gallery email" resends the current password', async () => {
-    const auth = `Bearer ${mintAdminToken(adminId)}`;
-    const current = 'Gallery-Resend-Same-2026!';
-    expect((await request(app).post(`/api/admin/events/${eventId}/send-gallery-email`).set('Authorization', auth)
-      .send({ password: current })).status).toBe(200);
-    await db('events').where({ id: eventId }).update({ gallery_password_changed_at: null });
-    const guest = galleryToken();
-    expect((await listWith(guest)).status).toBe(200);
-
-    const resent = await request(app).post(`/api/admin/events/${eventId}/send-gallery-email`).set('Authorization', auth)
-      .send({ password: current });
-    expect(resent.status).toBe(200);
-
-    expect((await listWith(guest)).status).toBe(200);
-    expect((await db('events').where({ id: eventId }).first()).gallery_password_changed_at).toBeNull();
-  });
-
-  it('writes a resent password as a change when the stored password changed underneath', async () => {
-    // Keeping the hash is only safe while it is still the one compared; a reset
-    // landing in between must not leave the emailed password not working.
-    const bcrypt = require('bcrypt');
-    const auth = `Bearer ${mintAdminToken(adminId)}`;
-    const current = 'Gallery-Race-Current-2026!';
-    expect((await request(app).post(`/api/admin/events/${eventId}/send-gallery-email`).set('Authorization', auth)
-      .send({ password: current })).status).toBe(200);
-    const concurrentHash = await bcrypt.hash('Gallery-Race-Concurrent-2026!', 4);
-    const realCompare = bcrypt.compare;
-    const compare = jest.spyOn(bcrypt, 'compare').mockImplementationOnce(async (...args) => {
-      const result = await realCompare.apply(bcrypt, args);
-      await db('events').where({ id: eventId }).update({ password_hash: concurrentHash });
-      return result;
-    });
-    try {
-      expect((await request(app).post(`/api/admin/events/${eventId}/send-gallery-email`).set('Authorization', auth)
-        .send({ password: current })).status).toBe(200);
-    } finally {
-      compare.mockRestore();
-    }
-
-    const row = await db('events').where({ id: eventId }).first();
-    expect(await bcrypt.compare(current, row.password_hash)).toBe(true);
   });
 
   it('keeps sessions when an event edit resubmits the current gallery and client passwords', async () => {
@@ -165,7 +102,7 @@ describe('rotating a gallery credential', () => {
     const client = galleryToken({ accessLevel: 'client' });
     const auth = `Bearer ${mintAdminToken(adminId)}`;
     expect((await request(app).post(`/api/admin/events/${eventId}/reset-password`).set('Authorization', auth)
-      .send({ sendEmail: false })).status).toBe(200);
+      .send({})).status).toBe(200);
     expect((await request(app).put(`/api/admin/events/${eventId}`).set('Authorization', auth)
       .send({ client_password: 'Client-Rotation-2027!' })).status).toBe(200);
 
@@ -190,37 +127,6 @@ describe('rotating a gallery credential', () => {
     expect(refused.status).toBe(401);
     expect(refused.body.code).toBe('GALLERY_PASSWORD_CHANGED');
     expect((await listWith(guest)).status).toBe(200);
-  });
-});
-
-describe('logging out of the customer portal', () => {
-  it('ends the gallery token the portal minted for that session', async () => {
-    const portalSession = jwt.sign({
-      type: 'customer', customerId, iat: Math.floor(Date.now() / 1000) - 5,
-    }, process.env.JWT_SECRET, { issuer: 'picpeak-auth', expiresIn: '1h' });
-    const cookie = `customer_token=${portalSession}`;
-
-    const minted = await request(app).get(`/api/customer/events/${slug}/access-token`).set('Cookie', cookie);
-    expect(minted.status).toBe(200);
-    const galleryBearer = minted.body.token;
-    expect((await listWith(galleryBearer)).status).toBe(200);
-
-    expect((await request(app).post('/api/customer/auth/logout').set('Cookie', cookie)).status).toBe(200);
-
-    const refused = await listWith(galleryBearer);
-    expect(refused.status).toBe(401);
-    expect(refused.body.code).toBe('TOKEN_REVOKED');
-  });
-
-  it('never mints a gallery token that outlives the portal session', async () => {
-    // The portal session's revocation row is removed at its own exp; a gallery
-    // token living past that would work again after logout.
-    const portalSession = jwt.sign({ type: 'customer', customerId }, process.env.JWT_SECRET,
-      { issuer: 'picpeak-auth', expiresIn: 120 });
-    const minted = await request(app).get(`/api/customer/events/${slug}/access-token`)
-      .set('Cookie', `customer_token=${portalSession}`);
-    expect(minted.status).toBe(200);
-    expect(jwt.decode(minted.body.token).exp).toBeLessThanOrEqual(jwt.decode(portalSession).exp);
   });
 });
 

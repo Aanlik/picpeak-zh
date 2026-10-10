@@ -19,7 +19,6 @@ process.env.TEST_DATABASE_PATH = path.join(
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'sqlitedot-test-secret';
 
 jest.mock('../../src/database/db', () => ({ db: jest.fn() }));
-jest.mock('../../src/services/emailProcessor', () => ({ queueEmail: jest.fn() }));
 jest.mock('../../src/utils/safeExec', () => ({
   spawnAsync: jest.fn(),
   spawnToFile: jest.fn(),

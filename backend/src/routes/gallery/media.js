@@ -36,31 +36,6 @@ function isPhotoOutsideGrant(req, photo) {
     && Number(photo.category_id) !== Number(req.event.show_category_id);
 }
 
-router.post('/:slug/photo/:photoId/view',
-  verifyGalleryAccess,
-  denySlideshowToken,
-  blockHiddenGallery,
-  async (req, res) => {
-    try {
-      const photo = await db('photos')
-        .where({ id: req.params.photoId, event_id: req.event.id })
-        .first('id', 'visibility', 'category_id');
-      if (!photo) {
-        return res.status(404).json({ error: 'Photo not found' });
-      }
-      if (isPhotoOutsideGrant(req, photo)) {
-        return res.status(403).json({ error: 'Photo not available' });
-      }
-      // Admin preview (#981 review) is excluded from per-photo view analytics.
-      if (!req.isAdminPreview) {
-        await db('photos').where('id', photo.id).increment('view_count', 1);
-      }
-      res.status(204).end();
-    } catch (error) {
-      errorResponse(res, error, 500, 'Failed to record view');
-    }
-  });
-
 // View single photo (with watermark if enabled)
 router.get('/:slug/photo/:photoId',
   verifyGalleryAccess,
@@ -710,8 +685,5 @@ router.get('/:slug/preview/:photoId',
 // galleryFeedback it shadowed the real handler — dropping the per-guest caps
 // (#655) from the guest payload, so the gallery could never render the
 // favorite/like limits or their counters (#1030).
-
-// Get photo stats. no-store: view/download/visitor counters are private
-// gallery analytics and change on every request.
 
 module.exports = router;

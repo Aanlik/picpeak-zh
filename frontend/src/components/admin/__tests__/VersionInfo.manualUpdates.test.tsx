@@ -11,8 +11,6 @@ vi.mock('../../../config/api', () => ({
   api: { get: vi.fn().mockResolvedValue({ data: { backend: '3.134.1', frontend: '3.134.1', node: 'v22', environment: 'production', channel: 'stable' } }) },
 }));
 
-vi.mock('../../../utils/githubReleaseUrl', () => ({ githubReleaseUrl: (version: string) => `https://example.invalid/${version}` }));
-
 import { api } from '../../../config/api';
 import { VersionInfo } from '../VersionInfo';
 
@@ -21,7 +19,7 @@ describe('VersionInfo manual update policy', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<QueryClientProvider client={client}><VersionInfo /></QueryClientProvider>);
 
-    await waitFor(() => expect(screen.getByText('v3.134.1')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText((_, element) => element?.textContent === 'Frontend v3.134.1')).toBeInTheDocument());
 
     expect(api.get).toHaveBeenCalledWith('/admin/system/version');
     expect(api.get).not.toHaveBeenCalledWith('/admin/system/updates');

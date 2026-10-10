@@ -8,7 +8,6 @@ const fs = require('fs').promises;
 const path = require('path');
 const logger = require('../utils/logger');
 const { buildShareLinkVariants } = require('./shareLinkService');
-const { queueEmail } = require('./emailProcessor');
 const { getStorage } = require('./storage');
 
 /**
@@ -378,29 +377,6 @@ class EventRenameService {
   }
 
   /**
-   * Send notification email about the rename
-   * @param {number} eventId - Event ID
-   * @param {string} newShareLink - New share link
-   */
-  async sendRenamedEventEmail(eventId, newShareLink) {
-    const event = await db('events').where({ id: eventId }).first();
-    if (!event) return;
-
-    const recipientEmail = event.customer_email || event.host_email;
-    if (!recipientEmail) return;
-
-    const recipientName = event.customer_name || event.host_name ||
-      (recipientEmail ? recipientEmail.split('@')[0] : 'Guest');
-
-    await queueEmail(eventId, recipientEmail, 'gallery_link_updated', {
-      customer_name: recipientName,
-      event_name: event.event_name,
-      new_gallery_link: newShareLink,
-      event_date: event.event_date
-    });
-  }
-
-  /**
    * Rollback a failed rename operation
    * @param {object} backupData - Backup data from the rename attempt
    */
@@ -434,11 +410,10 @@ class EventRenameService {
    * Main method to rename an event
    * @param {number} eventId - Event ID
    * @param {string} newEventName - New event name
-   * @param {boolean} resendEmail - Whether to resend invitation email
    * @param {object} adminUser - Admin user performing the action
    * @returns {Promise<{success: boolean, data?: object, error?: string}>}
    */
-  async renameEvent(eventId, newEventName, resendEmail = false, adminUser = null) {
+  async renameEvent(eventId, newEventName, adminUser = null) {
     const backupData = {};
 
     try {
@@ -500,8 +475,7 @@ class EventRenameService {
             new_name: newEventName.trim(),
             old_slug: oldSlug,
             new_slug: newSlug,
-            files_renamed: filesRenamed,
-            email_sent: resendEmail
+            files_renamed: filesRenamed
           }),
           event_id: eventId
         });
@@ -517,17 +491,6 @@ class EventRenameService {
           logger.info('Event objects moved', { oldSlug, newSlug, removed, total: backupData.moved.sourceKeys.length });
         }
 
-        // 10. Send email (after commit, non-critical)
-        let emailSent = false;
-        if (resendEmail) {
-          try {
-            await this.sendRenamedEventEmail(eventId, newShareLink);
-            emailSent = true;
-          } catch (error) {
-            logger.error('Failed to send rename notification email', { error: error.message });
-          }
-        }
-
         return {
           success: true,
           data: {
@@ -537,7 +500,6 @@ class EventRenameService {
             oldSlug,
             newSlug,
             newShareLink,
-            emailSent,
             filesRenamed
           }
         };

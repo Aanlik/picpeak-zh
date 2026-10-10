@@ -30,7 +30,7 @@ describe('guest merge feedback ownership (#1265)', () => {
     const [row] = await db('photo_feedback').insert({
       event_id: eventId, photo_id: photo.id, guest_id: guest.id,
       guest_identifier: guest.identifier, feedback_type: type,
-      is_hidden: false, is_approved: true, created_at: date(10), updated_at: date(10),
+      is_hidden: false, created_at: date(10), updated_at: date(10),
       ...extra,
     }).returning('id');
     return row.id ?? row;
@@ -43,7 +43,7 @@ describe('guest merge feedback ownership (#1265)', () => {
     service = require('../../src/services/feedbackService');
     const [event] = await db('events').insert({
       slug, event_type: 'project', event_name: 'Guest merge feedback',
-      event_date: '2026-09-15', host_email: 'host@example.com', admin_email: 'admin@example.com',
+      event_date: '2026-09-15',
       password_hash: 'x', share_link: `/gallery/${slug}/share`,
       expires_at: new Date(Date.now() + 86400000).toISOString(),
       is_active: true, is_archived: false, is_draft: false,
@@ -53,7 +53,7 @@ describe('guest merge feedback ownership (#1265)', () => {
       event_id: eventId, feedback_enabled: true, identity_mode: 'guest',
       allow_likes: true, allow_favorites: true, allow_ratings: true,
       allow_reactions: true, allow_color_labels: true, allow_comments: true,
-      show_feedback_to_guests: false, moderate_comments: false,
+      show_feedback_to_guests: false,
     });
     app = express();
     app.use(express.json());
@@ -155,20 +155,19 @@ describe('guest merge feedback ownership (#1265)', () => {
     }
   });
 
-  it('keeps comments, pending moderation and hidden rows while leaving other guests and shared labels alone', async () => {
+  it('keeps comments and hidden rows while leaving other guests and shared labels alone', async () => {
     const visible = await feedback(guests[0], photos[0]);
     const hidden = await feedback(guests[1], photos[0], 'like', { is_hidden: true, updated_at: date(13) });
     const comment = await feedback(guests[0], photos[0], 'comment', { comment_text: 'First comment' });
-    const pending = await feedback(guests[1], photos[0], 'comment', { comment_text: 'Second comment', is_approved: false });
+    const secondComment = await feedback(guests[1], photos[0], 'comment', { comment_text: 'Second comment' });
     const other = await feedback(guests[3], photos[0]);
     const { SHARED_COLOR_LABEL_IDENTITY } = require('../../src/constants/colorLabels');
     const shared = await feedback({ id: null, identifier: SHARED_COLOR_LABEL_IDENTITY }, photos[0], 'color_label', { color_label: 'blue' });
     expect((await merge()).status).toBe(200);
     const owned = await db('photo_feedback').where({ guest_id: guests[0].id });
-    expect(owned.map(row => row.id).sort()).toEqual([visible, hidden, comment, pending].sort());
+    expect(owned.map(row => row.id).sort()).toEqual([visible, hidden, comment, secondComment].sort());
     expect(owned.every(row => row.guest_identifier === guests[0].identifier)).toBe(true);
     expect(Boolean(owned.find(row => row.id === hidden).is_hidden)).toBe(true);
-    expect(Boolean(owned.find(row => row.id === pending).is_approved)).toBe(false);
     expect((await db('photo_feedback').where({ id: other }).first()).guest_id).toBe(guests[3].id);
     expect((await db('photo_feedback').where({ id: shared }).first()).guest_identifier).toBe(SHARED_COLOR_LABEL_IDENTITY);
     expect((await db('photos').where({ id: photos[0].id }).first()).like_count).toBe(2);
@@ -236,7 +235,7 @@ describe('guest merge feedback ownership (#1265)', () => {
       if (!otherEvent) {
         const [row] = await db('events').insert({
           slug: `${slug}-other`, event_type: 'project', event_name: 'Other event',
-          event_date: '2026-09-15', host_email: 'host@example.com', admin_email: 'admin@example.com',
+          event_date: '2026-09-15',
           password_hash: 'x', share_link: `/gallery/${slug}-other/share`,
           expires_at: new Date(Date.now() + 86400000).toISOString(),
           is_active: true, is_archived: false, is_draft: false,

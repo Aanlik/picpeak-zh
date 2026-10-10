@@ -59,8 +59,8 @@ describe('folder categories in the gallery payload (#1160)', () => {
       event_type: 'project',
       event_name: 'Folders',
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/s`,
       share_token: 'folders-share',

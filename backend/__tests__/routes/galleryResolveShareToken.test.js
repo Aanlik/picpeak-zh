@@ -36,8 +36,8 @@ describe('GET /api/gallery/resolve/:identifier (GHSA-rh8r)', () => {
       event_type: 'project',
       event_name: 'Resolve Test',
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/${SHARE_TOKEN}`,
       share_token: SHARE_TOKEN,

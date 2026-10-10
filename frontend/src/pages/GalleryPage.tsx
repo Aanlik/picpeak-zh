@@ -1,4 +1,4 @@
-import { NO_EMAIL_MODE } from '../config/communication';
+import { PHOTO_WORKFLOW_MODE } from '../config/photography';
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AlertCircle, Check, Clock, Copy } from 'lucide-react';
@@ -7,13 +7,12 @@ import { useTranslation } from 'react-i18next';
 import { useLocalizedDate } from '../hooks/useLocalizedDate';
 import { usePublicSettings } from '../hooks/usePublicSettings';
 
-import { Card, CardContent, Input, Button, ReCaptcha, PoweredBy } from '../components/common';
+import { Card, CardContent, Input, Button, PoweredBy } from '../components/common';
 import { useGalleryAuth, useTheme } from '../contexts';
 import { useGalleryInfo } from '../hooks/useGallery';
 import { GalleryView } from '../components/gallery';
 import { GallerySkeleton } from '../components/gallery/GallerySkeleton';
 import { PasswordChangeRequiredNotice } from '../components/gallery/PasswordChangeRequiredNotice';
-import { analyticsService } from '../services/analytics.service';
 import { galleryService } from '../services';
 import { GALLERY_THEME_PRESETS } from '../types/theme.types';
 import { buildResourceUrl } from '../utils/url';
@@ -30,7 +29,6 @@ export const GalleryPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
   // #868 admin preview: signalled by ?admin_preview=1 in the (dedicated) gallery
   // tab URL. It renders the gallery directly with NO gallery session — the
@@ -131,9 +129,9 @@ export const GalleryPage: React.FC = () => {
   React.useEffect(() => {
     setAutoLoginAttempted(false);
   }, [resolvedSlug]);
-  
+
   const { data: settingsData, isLoading: isLoadingSettings } = usePublicSettings();
-  
+
   // Set language from admin settings when on login page
   React.useEffect(() => {
     if (!isAuthenticated && settingsData?.default_language) {
@@ -219,7 +217,7 @@ export const GalleryPage: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation(); // Prevent any bubbling
-    
+
     if (requiresPassword && !password.trim()) {
       setLoginError(t('auth.pleaseEnterPassword'));
       return;
@@ -240,13 +238,9 @@ export const GalleryPage: React.FC = () => {
       // invisible Unicode from chat-app copy-paste is handled server-side as
       // a same-request compare fallback (see auth.js gallery/verify).
       const submittedPassword = requiresPassword ? password.trim() : '';
-      await login(resolvedSlug, submittedPassword, recaptchaToken);
+      await login(resolvedSlug, submittedPassword);
 
       if (requiresPassword) {
-        analyticsService.trackGalleryEvent('password_entry', {
-          gallery: resolvedSlug,
-          success: true
-        });
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -259,10 +253,6 @@ export const GalleryPage: React.FC = () => {
         // it). Falling through to "incorrect password" here sent #654
         // reporters chasing the wrong cause — name the real failure.
         setLoginError(t('auth.networkError', 'Connection failed. Please check your internet connection and try again.'));
-      } else if (statusCode === 400 && errorMessage.toLowerCase().includes('recaptcha')) {
-        // reCAPTCHA rejection is not a wrong password either — the widget
-        // regularly fails to load inside in-app webviews (#654).
-        setLoginError(t('auth.recaptchaFailed', 'Security verification failed. Please reload the page and try again.'));
       } else if (statusCode === 401 || errorMessage.toLowerCase().includes('invalid password')) {
         setLoginError(t('auth.wrongPassword'));
       } else if (statusCode === 429 || errorMessage.toLowerCase().includes('too many')) {
@@ -272,16 +262,11 @@ export const GalleryPage: React.FC = () => {
       } else {
         setLoginError(t('auth.invalidPassword'));
       }
-      
+
       // Track failed password entry
       if (requiresPassword) {
-        analyticsService.trackGalleryEvent('password_entry', {
-          gallery: resolvedSlug ?? rawSlug ?? 'unknown',
-          success: false,
-          statusCode
-        });
       }
-      
+
       // Keep the password field to allow retry
       // Do not clear the password
     } finally {
@@ -345,7 +330,7 @@ export const GalleryPage: React.FC = () => {
   }
 
   // A missing/expired gallery is a customer-facing state, so use the active
-  // locale here instead of the English-only CMS seed content.
+  // locale here instead of relying on the CMS content fallback.
   if (
     (identifierError && !resolvedSlug && !isResolvingIdentifier) ||
     infoError
@@ -368,14 +353,14 @@ export const GalleryPage: React.FC = () => {
           {/* Logo at top */}
           {settingsData?.branding_logo_url && (
             <div className="p-8 text-center">
-              <img 
-                src={buildResourceUrl(settingsData.branding_logo_url)} 
+              <img
+                src={buildResourceUrl(settingsData.branding_logo_url)}
                 alt={settingsData.branding_company_name || 'Company Logo'}
                 className="h-16 w-auto object-contain mx-auto"
               />
             </div>
           )}
-          
+
           <div className="flex-1 flex items-center justify-center">
             <Card className="max-w-md w-full mx-4">
               <CardContent className="text-center py-12">
@@ -392,19 +377,19 @@ export const GalleryPage: React.FC = () => {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* Legal Links */}
-          {!NO_EMAIL_MODE && (<div className="p-8 text-center">
+          {!PHOTO_WORKFLOW_MODE && (<div className="p-8 text-center">
             <div className="flex items-center justify-center gap-4">
-              <Link 
-                to="/impressum" 
+              <Link
+                to="/impressum"
                 className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
               >
                 {t('legal.impressum')}
               </Link>
               <span className="text-xs text-neutral-400">|</span>
-              <Link 
-                to="/datenschutz" 
+              <Link
+                to="/datenschutz"
                 className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
               >
                 {t('legal.datenschutz')}
@@ -609,11 +594,6 @@ export const GalleryPage: React.FC = () => {
                   className="text-sm sm:text-base"
                 />
 
-                <ReCaptcha
-                  onChange={setRecaptchaToken}
-                  onExpired={() => setRecaptchaToken(null)}
-                />
-
                 <Button
                   type="submit"
                   variant="primary"
@@ -636,17 +616,17 @@ export const GalleryPage: React.FC = () => {
           </Card>
 
           {/* Legal Links */}
-          {!NO_EMAIL_MODE && (<div className="text-center mt-4 sm:mt-6">
+          {!PHOTO_WORKFLOW_MODE && (<div className="text-center mt-4 sm:mt-6">
             <div className="flex items-center justify-center gap-4">
-              <Link 
-                to="/impressum" 
+              <Link
+                to="/impressum"
                 className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
               >
                 {t('legal.impressum')}
               </Link>
               <span className="text-xs text-neutral-400">|</span>
-              <Link 
-                to="/datenschutz" 
+              <Link
+                to="/datenschutz"
                 className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
               >
                 {t('legal.datenschutz')}

@@ -11,9 +11,6 @@ import {
   Edit,
   Download,
   Trash2,
-  Calendar,
-  Image,
-  Activity,
   Copy,
   CheckCircle,
   ChevronLeft,
@@ -29,7 +26,6 @@ import { BulkArchiveModal, BulkDeleteModal } from '../../components/admin';
 import { PermissionGate } from '../../components/admin/PermissionGate';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { eventsService, type EventStatusFilter } from '../../services/events.service';
-import { adminService } from '../../services/admin.service';
 import { isGalleryPublic } from '../../utils/accessControl';
 import { buildShareLinkUrl } from '../../utils/url';
 import type { Event } from '../../types';
@@ -43,7 +39,7 @@ export const EventsListPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEvents, setSelectedEvents] = useState<number[]>([]);
   // const [showFilters, setShowFilters] = useState(false);
@@ -134,7 +130,7 @@ export const EventsListPage: React.FC = () => {
 
     window.addEventListener('scroll', handleScrollOrResize, true);
     window.addEventListener('resize', handleScrollOrResize);
-    
+
     return () => {
       window.removeEventListener('scroll', handleScrollOrResize, true);
       window.removeEventListener('resize', handleScrollOrResize);
@@ -163,18 +159,10 @@ export const EventsListPage: React.FC = () => {
     }
   }, [data?.pagination, page]);
 
-  // Aggregate counters come from the dashboard stats endpoint so the cards
-  // and the "All (N)" filter button always reflect global totals, not the
-  // currently visible page.
-  const { data: dashboardStats } = useQuery({
-    queryKey: ['admin-dashboard-stats'],
-    queryFn: () => adminService.getDashboardStats(),
-  });
-
   // Archive mutation
   const archiveMutation = useMutationWithToast({
     mutationFn: eventsService.archiveEvent,
-    invalidateKeys: [['admin-events'], ['admin-dashboard-stats']],
+    invalidateKeys: [['admin-events']],
     successMessage: t('toast.eventArchived'),
     errorMessage: () => t('toast.saveError'),
   });
@@ -182,7 +170,7 @@ export const EventsListPage: React.FC = () => {
   // Delete mutation
   const deleteMutation = useMutationWithToast({
     mutationFn: eventsService.deleteEvent,
-    invalidateKeys: [['admin-events'], ['admin-dashboard-stats'], ['storage-info']],
+    invalidateKeys: [['admin-events'], ['storage-info']],
     successMessage: t('toast.deleteSuccess'),
     errorMessage: () => t('toast.deleteError'),
   });
@@ -192,7 +180,6 @@ export const EventsListPage: React.FC = () => {
     mutationFn: eventsService.bulkArchiveEvents,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
       setSelectedEvents([]);
       bulkArchiveModal.close();
 
@@ -213,7 +200,6 @@ export const EventsListPage: React.FC = () => {
     mutationFn: (eventIds: number[]) => eventsService.bulkDeleteEvents(eventIds),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-events'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['storage-info'] });
       setSelectedEvents([]);
       bulkDeleteModal.close();
@@ -255,8 +241,8 @@ export const EventsListPage: React.FC = () => {
   };
 
   const handleSelectEvent = (id: number) => {
-    setSelectedEvents(prev => 
-      prev.includes(id) 
+    setSelectedEvents(prev =>
+      prev.includes(id)
         ? prev.filter(i => i !== id)
         : [...prev, id]
     );
@@ -327,56 +313,6 @@ export const EventsListPage: React.FC = () => {
           </PermissionGate>
         </div>
 
-      {/* Statistics Cards — fed from /admin/dashboard/stats so the totals
-          stay accurate regardless of the visible page (#346). */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card padding="sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('events.stats.totalEvents')}</p>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{dashboardStats?.totalEvents ?? 0}</p>
-            </div>
-            <Calendar className="w-8 h-8 text-accent" />
-          </div>
-        </Card>
-
-        <Card padding="sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('events.stats.activeEvents')}</p>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                {dashboardStats?.activeEvents ?? 0}
-              </p>
-            </div>
-            <Activity className="w-8 h-8 text-green-600" />
-          </div>
-        </Card>
-
-        <Card padding="sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('events.stats.totalPhotos')}</p>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                {dashboardStats?.totalPhotos ?? 0}
-              </p>
-            </div>
-            <Image className="w-8 h-8 text-blue-600" />
-          </div>
-        </Card>
-
-        <Card padding="sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('events.stats.expiringEvents')}</p>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                {dashboardStats?.expiringEvents ?? 0}
-              </p>
-            </div>
-            <AlertTriangle className="w-8 h-8 text-orange-600" />
-          </div>
-        </Card>
-      </div>
-
       {/* Filters and Search */}
       <Card padding="sm" className="mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
@@ -401,7 +337,7 @@ export const EventsListPage: React.FC = () => {
                 setSearchParams(searchParams);
               }}
             >
-              {t('events.all')} ({dashboardStats?.totalEvents ?? 0})
+              {t('events.all')} ({pagination?.total ?? 0})
             </Button>
             <Button
               variant={statusFilter === 'active' ? 'primary' : 'outline'}
@@ -532,7 +468,6 @@ export const EventsListPage: React.FC = () => {
                       <td className="px-6 py-4">
                         <div>
                           <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{event.event_name}</p>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">{event.customer_email}</p>
                           <div className="mt-1">
                             <span
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${

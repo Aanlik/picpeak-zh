@@ -10,7 +10,6 @@ const jwt = require('jsonwebtoken');
 
 const mintSites = [
   'src/routes/auth.js',
-  'src/routes/customer.js',
   'src/routes/gallery/slideshow.js',
 ];
 

@@ -1,20 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { format as dateFnsFormat, formatDistanceToNow as dateFnsFormatDistanceToNow, isValid } from 'date-fns';
-import { de, enUS, es, fr, nl, ptBR, ru, sl, zhCN } from 'date-fns/locale';
+import { enUS, zhCN } from 'date-fns/locale';
 import type { Locale } from 'date-fns';
 import { usePublicSettings } from './usePublicSettings';
 
-// One entry per shipped UI locale (src/i18n/locales). Keyed by base
-// language so a regional tag like `de-DE` or `fr-CH` resolves too.
+// The app ships English and Simplified Chinese UI locales only.
 const DATE_LOCALES: Record<string, Locale> = {
-  de,
   en: enUS,
-  es,
-  fr,
-  nl,
-  pt: ptBR,
-  ru,
-  sl,
   zh: zhCN,
 };
 
@@ -67,7 +59,7 @@ export const useLocalizedDate = () => {
 
   // Time-format pattern: '24h' → 'HH:mm' (e.g. 14:32), '12h' →
   // 'h:mm a' (e.g. 2:32 PM). Defaults to 24h when the setting is
-  // missing or unrecognised — matches the operator's CH/DE locale.
+  // missing or unrecognised — 24-hour time is the product default.
   const timeFormatToken = settings?.general_time_format === '12h' ? 'h:mm a' : 'HH:mm';
 
   /**
@@ -138,7 +130,7 @@ export const useLocalizedDate = () => {
      *  without a custom date-picker component).
      *
      *  Mapping derives from the format string's first token:
-     *    DD/dd  → de-DE  (renders TT.MM.JJJJ)
+     *    DD/dd  → en-GB  (renders day/month/year)
      *    YYYY/yyyy → en-CA  (renders YYYY-MM-DD)
      *    MM     → en-US  (renders MM/DD/YYYY)
      *    fallback → i18n.language. */
@@ -147,7 +139,7 @@ export const useLocalizedDate = () => {
       const fmt = typeof raw === 'string' ? raw : raw?.format;
       if (fmt) {
         const head = fmt.trim().slice(0, 2).toUpperCase();
-        if (head === 'DD') return 'de-DE';
+        if (head === 'DD') return 'en-GB';
         if (head === 'YY') return 'en-CA';
         if (head === 'MM') return 'en-US';
       }

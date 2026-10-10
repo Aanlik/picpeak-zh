@@ -119,13 +119,6 @@ jest.mock('../../../services/storage', () => ({
   })),
 }));
 
-// webhookService.fire is wrapped in try/catch in the route, so a
-// missing mock would still let the test pass — but stubbing it
-// silences the predictable failure log so the test output stays clean.
-jest.mock('../../../services/webhookService', () => ({
-  fire: jest.fn().mockResolvedValue(undefined),
-}));
-
 const fsSync = require('fs');
 const { db } = require('../../../database/db');
 const eventsRouter = require('../events');

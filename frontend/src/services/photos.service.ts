@@ -16,8 +16,6 @@ export interface AdminPhoto {
   uploaded_at: string;
   media_type?: 'photo' | 'video';
   mime_type?: string | null;
-  view_count?: number;
-  download_count?: number;
   // Feedback fields
   has_feedback?: boolean;
   average_rating?: number;
@@ -70,7 +68,7 @@ class PhotosService {
 
   async getEventPhotos(eventId: number, filters?: PhotoFilters): Promise<AdminPhoto[]> {
     const params = new URLSearchParams();
-    
+
     if (filters) {
       if (filters.category_id !== undefined) {
         params.append('category_id', filters.category_id?.toString() || '');
@@ -94,13 +92,13 @@ class PhotosService {
       }
       if (filters.logic) params.append('logic', filters.logic);
     }
-    
+
     const queryString = params.toString();
     // Use admin photos router for listing to ensure URL alignment with media/thumbnail endpoints
     const url = `/admin/photos/${eventId}/photos${queryString ? `?${queryString}` : ''}`;
-    
+
     const response = await api.get(url);
-    
+
     // Return photos as-is, URLs are already relative API paths
     return response.data.photos;
   }

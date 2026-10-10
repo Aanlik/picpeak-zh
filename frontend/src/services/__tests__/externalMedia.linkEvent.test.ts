@@ -12,7 +12,7 @@ describe('NAS association partial failures', () => {
   it('reports an already completed import separately from a failed watcher update', async () => {
     vi.mocked(api.post).mockResolvedValueOnce({ data: { imported: 2, skipped: 0 } });
     vi.mocked(api.put).mockRejectedValueOnce(new Error('permission denied'));
-    await expect(externalMediaService.linkEvent(1, 'Camera/shoot', true)).rejects.toThrow('照片已导入');
+    await expect(externalMediaService.linkEvent(1, 'Camera/shoot', true)).rejects.toThrow('NAS_AUTO_IMPORT_SETTING_SAVE_FAILED');
     expect(api.post).toHaveBeenCalledTimes(1);
   });
   it('allows importing without automatically watching', async () => {

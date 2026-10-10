@@ -14,7 +14,7 @@ import { adminApiToken, publishEvent } from './_helpers/admin';
  * After landing usePublicSettings the count drops to 1.
  */
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin!234';
 const GALLERY_PASSWORD = process.env.GALLERY_PASSWORD || 'PlaywrightGallery123!';
 
@@ -36,7 +36,7 @@ test.describe('public settings dedup (#325)', () => {
     await page.goto('/admin/login');
     // Wait until the form is interactive — branding/theme/maintenance contexts
     // have all had a chance to mount by this point.
-    await page.waitForSelector('input[type="email"]', { state: 'visible' });
+    await page.locator('#username').waitFor({ state: 'visible' });
     await page.waitForLoadState('networkidle');
 
     expect(calls, calls.join('\n')).toHaveLength(1);
@@ -46,13 +46,13 @@ test.describe('public settings dedup (#325)', () => {
     const calls = attachSettingsCounter(page);
 
     await page.goto('/admin/login');
-    await page.waitForSelector('input[type="email"]', { state: 'visible' });
+    await page.locator('#username').waitFor({ state: 'visible' });
     await page.waitForLoadState('networkidle');
 
     // Sit on the page for ~5s to confirm no decorative consumer (favicon,
-    // robots tags, recaptcha probe, etc.) triggers a second fetch within
+    // robots tags, etc.) triggers a second fetch within
     // the hook's staleTime window. Pre-dedup, several call sites used a
-    // 5-minute staleTime but inconsistent queryKeys, so multiple fetches
+    // the staleTime but inconsistent queryKeys, so multiple fetches
     // would land within the first second and could re-fire on remount.
     await page.waitForTimeout(5000);
 
@@ -70,10 +70,7 @@ test.describe('public settings dedup (#325)', () => {
         event_name: `Dedup test ${Date.now()}`,
         event_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
         customer_name: 'Dedup Host',
-        customer_email: 'host@example.com',
         host_name: 'Dedup Host',
-        host_email: 'host@example.com',
-        admin_email: ADMIN_EMAIL,
         password: GALLERY_PASSWORD,
         expiration_days: 30,
       },

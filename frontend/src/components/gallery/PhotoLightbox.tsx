@@ -10,7 +10,6 @@ import { lightboxImageUrl } from './imageTiers';
 import { feedbackService, type ColorLabel, type KeybindMode } from '../../services/feedback.service';
 import { PhotoColorLabels } from './PhotoColorLabels';
 import { resolveFeedbackKey, colorShortcutHints } from '../../utils/feedbackKeybinds';
-import { galleryService } from '../../services/gallery.service';
 import { FeedbackIdentityModal } from './FeedbackIdentityModal';
 import { VideoPlayer } from './VideoPlayer';
 import { useGuestIdentityOptional } from '../../contexts/GuestIdentityContext';
@@ -100,7 +99,9 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
     allow_color_labels?: boolean;
     keybind_mode?: KeybindMode;
     show_feedback_to_guests?: boolean;
+    /** Legacy gallery setting now requires only a display name. */
     require_name_email?: boolean;
+
   } | null>(null);
   const [myLiked, setMyLiked] = useState<boolean>(false);
   const [myRating, setMyRating] = useState<number>(0);
@@ -109,7 +110,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
   const [likeCount, setLikeCount] = useState<number>(0);
   const [avgRating, setAvgRating] = useState<number>(0);
   const [totalRatings, setTotalRatings] = useState<number>(0);
-  const [savedIdentity, setSavedIdentity] = useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = useState<{ name: string } | null>(null);
   const [showIdentityModal, setShowIdentityModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<null | { type: 'like' | 'rating' | 'color_label'; rating?: number; color?: ColorLabel }>(null);
   const guestIdentity = useGuestIdentityOptional();
@@ -149,18 +150,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
     } else if (currentIndex > photos.length - 1) {
       setCurrentIndex(photos.length - 1);
     }
-  }, [photos.length, currentIndex]);
-
-  // View beacon (#895): count exactly the photo that became the visible
-  // slide. The image fetches themselves can't be counted — preloaded
-  // neighbours would inflate, and a neighbour promoted by a swipe is
-  // never re-fetched (#505).
-  const currentPhotoId = photos[currentIndex]?.id;
-  useEffect(() => {
-    if (currentPhotoId !== undefined) {
-      galleryService.trackPhotoView(slug, currentPhotoId);
-    }
-  }, [slug, currentPhotoId]);
+  }, [photos.length, currentIndex, onClose]);
 
 
   // Save-aware download. On mobile (where Web Share + files is supported)
@@ -175,6 +165,8 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
   // leaving currentIndex past the end. The effect below re-syncs the
   // index (or closes the lightbox when nothing is left).
   const currentPhoto = photos[currentIndex] ?? photos[photos.length - 1];
+  const currentPhotoId = currentPhoto?.id;
+  const currentPhotoRetouchEnabled = currentPhoto?.retouch_workflow_enabled;
 
   const { t } = useTranslation();
 
@@ -191,7 +183,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
   // Defaults true for uncategorised photos and pre-migration-135 categories.
   const photoAllowsDownload =
     allowDownloads && currentPhoto?.category_allow_downloads !== false;
-  
+
   // DevTools protection - enabled by individual setting OR legacy protection level
   const devToolsEnabled = enableDevtoolsProtection || (useEnhancedProtection && (protectionLevel === 'enhanced' || protectionLevel === 'maximum'));
 
@@ -200,16 +192,6 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
     detectionSensitivity: protectionLevel === 'maximum' ? 'high' : 'medium',
     onDevToolsDetected: () => {
       console.warn('DevTools detected in photo lightbox');
-
-      // Track analytics
-      if (typeof window !== 'undefined' && (window as any).umami) {
-        (window as any).umami.track('lightbox_devtools_detected', {
-          photoId: currentPhoto.id,
-          protectionLevel,
-          zoom,
-          gallery: slug
-        });
-      }
 
       // Close lightbox immediately for maximum protection
       if (protectionLevel === 'maximum') {
@@ -234,12 +216,15 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
     };
   }, [disableRightClick]);
 
-  // The keydown effect below is registered with [currentIndex] deps, so its
-  // closure would still hold the settings from the moment the lightbox
-  // opened — i.e. `null`, since they load asynchronously, leaving every
-  // proofing shortcut dead until the user changed photo. A ref refreshed on
-  // every render keeps the handler reading current state without
-  // re-registering the listener on each keystroke's worth of state change.
+  // The keyboard listener reads the latest callbacks without being
+  // re-registered whenever the lightbox state changes.
+  const keyboardActionsRef = useRef({
+    onClose,
+    goToPrevious: () => {},
+    goToNext: () => {},
+    handleZoomIn: () => {},
+    handleZoomOut: () => {},
+  });
   const proofingRef = useRef({
     feedbackEnabled: false,
     allowColorLabels: false,
@@ -251,23 +236,24 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
   });
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const actions = keyboardActionsRef.current;
       switch (e.key) {
         case 'Escape':
-          onClose();
+          actions.onClose();
           break;
         case 'ArrowLeft':
-          goToPrevious();
+          actions.goToPrevious();
           break;
         case 'ArrowRight':
-          goToNext();
+          actions.goToNext();
           break;
         case '+':
         case '=':
-          handleZoomIn();
+          actions.handleZoomIn();
           break;
         case '-':
         case '_':
-          handleZoomOut();
+          actions.handleZoomOut();
           break;
         default: {
           // Proofing shortcuts (#1044). Resolved from the event's keybind
@@ -298,22 +284,22 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
-    
-    // Add protection class to body for maximum security
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.remove('protection-maximum', 'protection-enhanced');
     if (protectionLevel === 'maximum') {
       document.body.classList.add('protection-maximum');
     } else if (protectionLevel === 'enhanced') {
       document.body.classList.add('protection-enhanced');
     }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-      
-      // Remove protection classes from body
-      document.body.classList.remove('protection-maximum', 'protection-enhanced');
-    };
-  }, [currentIndex]);
+    return () => document.body.classList.remove('protection-maximum', 'protection-enhanced');
+  }, [protectionLevel]);
 
   // Load feedback settings once
   useEffect(() => {
@@ -334,8 +320,8 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
     let mounted = true;
     (async () => {
       try {
-        if (!currentPhoto || (!feedbackSettings?.feedback_enabled && !currentPhoto.retouch_workflow_enabled)) return;
-        const data = await feedbackService.getPhotoFeedback(slug, String(currentPhoto.id));
+        if (currentPhotoId == null || (!feedbackSettings?.feedback_enabled && !currentPhotoRetouchEnabled)) return;
+        const data = await feedbackService.getPhotoFeedback(slug, String(currentPhotoId));
         if (!mounted) return;
         setMyLiked(!!data.my_feedback.liked);
         setMyRating(data.my_feedback.rating || 0);
@@ -349,11 +335,11 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
       }
     })();
     return () => { mounted = false; };
-  }, [slug, currentPhoto?.id, currentPhoto?.retouch_workflow_enabled, feedbackSettings?.feedback_enabled]);
+  }, [slug, currentPhotoId, currentPhotoRetouchEnabled, feedbackSettings?.feedback_enabled]);
 
   const submitLike = async () => {
     // Guest identity mode: ensure we have a per-person guest token. The
-    // server reads name/email from the token — body values are ignored.
+    // server reads the name from the token — body values are ignored.
     if (isGuestMode && guestIdentity) {
       try {
         await guestIdentity.ensureIdentity();
@@ -374,14 +360,14 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
       } catch (err) {
         // Per-guest cap reached (#655) surfaces the shared modal.
         if (handleLimitError(err)) return;
-        // eslint-disable-next-line no-console
+
         console.warn('Like submit failed', err);
       }
       return;
     }
 
     // Simple mode: legacy inline identity modal flow.
-    const needIdentity = feedbackSettings?.require_name_email && !savedIdentity;
+    const needIdentity = !!feedbackSettings?.require_name_email && !savedIdentity;
     if (needIdentity) {
       setPendingAction({ type: 'like' });
       setShowIdentityModal(true);
@@ -391,7 +377,6 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
       await feedbackService.submitFeedback(slug, String(currentPhoto.id), {
         feedback_type: 'like',
         guest_name: savedIdentity?.name,
-        guest_email: savedIdentity?.email,
       });
       setMyLiked(prev => {
         const next = !prev;
@@ -405,7 +390,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
       if (onFeedbackChange) onFeedbackChange();
     } catch (err) {
       if (handleLimitError(err)) return;
-      // eslint-disable-next-line no-console
+
       console.warn('Like submit failed', err);
     }
   };
@@ -431,14 +416,14 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
         } catch {}
         if (onFeedbackChange) onFeedbackChange();
       } catch (err) {
-        // eslint-disable-next-line no-console
+
         console.warn('Rating submit failed', err);
       }
       return;
     }
 
     // Simple mode: legacy inline identity modal flow.
-    const needIdentity = feedbackSettings?.require_name_email && !savedIdentity;
+    const needIdentity = !!feedbackSettings?.require_name_email && !savedIdentity;
     if (needIdentity) {
       setPendingAction({ type: 'rating', rating: value });
       setShowIdentityModal(true);
@@ -448,7 +433,6 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
       feedback_type: 'rating',
       rating: value,
       guest_name: savedIdentity?.name,
-      guest_email: savedIdentity?.email,
     });
     setMyRating(value);
     // Refresh current summary to reflect average and totals
@@ -500,7 +484,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
       return;
     }
 
-    const needIdentity = feedbackSettings?.require_name_email && !savedIdentity;
+    const needIdentity = !!feedbackSettings?.require_name_email && !savedIdentity;
     if (needIdentity) {
       setPendingAction({ type: 'color_label', color: value });
       setShowIdentityModal(true);
@@ -511,7 +495,6 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
         feedback_type: 'color_label',
         color_label: value,
         guest_name: savedIdentity?.name,
-        guest_email: savedIdentity?.email,
       });
       setMyColorLabel(resolve(result));
       if (onFeedbackChange) onFeedbackChange();
@@ -557,6 +540,14 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
     if (zoom - 0.5 <= 1) {
       setDragOffset({ x: 0, y: 0 });
     }
+  };
+
+  keyboardActionsRef.current = {
+    onClose,
+    goToPrevious,
+    goToNext,
+    handleZoomIn,
+    handleZoomOut,
   };
 
   const handleDownload = () => {
@@ -840,7 +831,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
     : null;
 
   // Apply protection class to the lightbox container
-  const lightboxClass = useEnhancedProtection ? 
+  const lightboxClass = useEnhancedProtection ?
     `fixed inset-0 bg-black z-50 flex items-center justify-center protected-image protection-${protectionLevel}` :
     'fixed inset-0 bg-black z-50 flex items-center justify-center';
 
@@ -988,7 +979,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
             </button>
 
             <div className="w-px h-6 bg-white/20 mx-2" />
-            
+
             {photoAllowsDownload && (
               <button
                 onClick={handleDownload}
@@ -1047,7 +1038,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                 )}
               </div>
             )}
-            
+
             {/* Inline color labels (#1044). In the toolbar rather than the
                 feedback panel: the whole point is a fast keyboard/click
                 proofing pass, which a panel toggle would interrupt. */}
@@ -1059,7 +1050,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                   myColorLabel={myColorLabel}
                   colorLabelCounts={feedbackSettings?.show_feedback_to_guests ? colorLabelCounts : {}}
                   isEnabled
-                  requireNameEmail={!currentPhoto.retouch_workflow_enabled && !!feedbackSettings?.require_name_email}
+                  requireGuestName={!currentPhoto.retouch_workflow_enabled && !!feedbackSettings?.require_name_email}
                   workflowOnly={!!currentPhoto.retouch_workflow_enabled}
                   shortcutHints={colorShortcutHints(keybindMode)}
                   onColorLabelChange={(label) => {
@@ -1206,15 +1197,6 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                 onProtectionViolation={(violationType) => {
                   console.warn(`Protection violation in lightbox for photo ${photo.id}: ${violationType}`);
 
-                  if (typeof window !== 'undefined' && (window as any).umami) {
-                    (window as any).umami.track('lightbox_protection_violation', {
-                      photoId: photo.id,
-                      violationType,
-                      protectionLevel,
-                      zoom
-                    });
-                  }
-
                   if (protectionLevel === 'maximum' &&
                       ['devtools_detected', 'print_screen_detected', 'canvas_access_blocked'].includes(violationType)) {
                     onClose();
@@ -1314,19 +1296,18 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
         </div>
       )}
 
-      {/* Identity Modal for required name/email */}
+      {/* Identity Modal for required name */}
       <FeedbackIdentityModal
         isOpen={showIdentityModal}
         onClose={() => { setShowIdentityModal(false); setPendingAction(null); }}
-        onSubmit={async (name, email) => {
-          setSavedIdentity({ name, email });
+        onSubmit={async (name) => {
+          setSavedIdentity({ name });
           setShowIdentityModal(false);
           if (pendingAction?.type === 'like') {
             try {
               await feedbackService.submitFeedback(slug, String(currentPhoto.id), {
                 feedback_type: 'like',
                 guest_name: name,
-                guest_email: email,
               });
               setMyLiked(true);
             } catch (err) {
@@ -1340,7 +1321,6 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
               feedback_type: 'rating',
               rating: pendingAction.rating,
               guest_name: name,
-              guest_email: email,
             });
             setMyRating(pendingAction.rating);
             // Refresh the visible average/count — parity with the direct
@@ -1357,7 +1337,6 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
                 feedback_type: 'color_label',
                 color_label: pendingAction.color,
                 guest_name: name,
-                guest_email: email,
               });
               setMyColorLabel(pendingAction.color === myColorLabel ? null : pendingAction.color);
             } catch (err) {

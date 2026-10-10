@@ -26,7 +26,6 @@ jest.mock('../../src/utils/safeExec', () => ({
   spawnToFile: jest.fn().mockResolvedValue({ stdout: '', stderr: '' }),
   spawnFromFile: jest.fn().mockResolvedValue({ stdout: '', stderr: '' }),
 }));
-jest.mock('../../src/services/emailProcessor', () => ({ queueEmail: jest.fn() }));
 
 const { bootTestDb } = require('../integration/helpers/sqliteTestDb');
 

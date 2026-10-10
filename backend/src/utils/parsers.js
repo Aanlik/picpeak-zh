@@ -129,21 +129,6 @@ const parseJsonInput = (value, defaultValue = null) => {
 };
 
 /**
- * Parse email input with validation
- *
- * @param {*} value - Input value
- * @returns {string|null} - Valid email or null
- */
-const parseEmailInput = (value) => {
-  const str = parseStringInput(value);
-  if (!str) return null;
-
-  // Basic email validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(str) ? str.toLowerCase() : null;
-};
-
-/**
  * Parse date input to ISO string
  *
  * @param {*} value - Date string, Date object, or timestamp
@@ -198,7 +183,6 @@ module.exports = {
   parseNumberInput,
   parseStringInput,
   parseJsonInput,
-  parseEmailInput,
   parseDateInput,
   parseArrayInput
 };

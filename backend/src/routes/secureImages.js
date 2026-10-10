@@ -31,7 +31,7 @@ router.post('/:slug/generate-token', async (req, res, next) => {
 }, verifyGalleryAccess, denySlideshowToken, blockHiddenGallery, async (req, res) => {
   try {
     const { photoId, accessType = 'view' } = req.body;
-    
+
     if (!photoId) {
       return res.status(400).json({ error: 'Photo ID required' });
     }
@@ -53,10 +53,10 @@ router.post('/:slug/generate-token', async (req, res, next) => {
 
     // Create client fingerprint
     const clientFingerprint = secureImageService.createClientFingerprint(req);
-    
+
     // Get protection level from event settings
     const protectionLevel = req.event.protection_level || 'standard';
-    
+
     // Generate secure token with appropriate settings
     const tokenOptions = {
       galleryAccess: req.galleryAccess,
@@ -82,9 +82,9 @@ router.post('/:slug/generate-token', async (req, res, next) => {
     await secureImageService.logImageAccess(
       photoId,
       req.event.id,
-      { 
-        ip: req.ip, 
-        userAgent: req.get('User-Agent'), 
+      {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
         fingerprint: clientFingerprint,
         rateLimitFingerprint: secureImageService.createRateLimitFingerprint(req)
       },
@@ -112,11 +112,11 @@ router.post('/:slug/generate-token', async (req, res, next) => {
 /**
  * Serve protected image with security measures
  */
-router.get('/:slug/secure/:photoId/:token', 
+router.get('/:slug/secure/:photoId/:token',
   secureImageMiddleware.secureImageAccess,
   async (req, res) => {
     const { slug, photoId, token } = req.params; // Move outside try block for error handler access
-    
+
     try {
       logger.debug('Secure image route hit', {
         slug,
@@ -144,7 +144,7 @@ router.get('/:slug/secure/:photoId/:token',
 
       // Get event from slug
       const event = await db('events')
-        .where({ 
+        .where({
           slug,
           is_active: formatBoolean(true),
           is_archived: formatBoolean(false)
@@ -193,7 +193,7 @@ router.get('/:slug/secure/:photoId/:token',
         return res.status(403).json({ error: 'Gallery is hidden until reveal', code: 'GALLERY_HIDDEN' });
       }
 
-      // Verify photo exists and belongs to event  
+      // Verify photo exists and belongs to event
       const photo = await db('photos')
         .where({ id: photoId, event_id: event.id })
         .first();
@@ -369,9 +369,6 @@ router.get('/:slug/secure-download/:photoId/:token',
         return res.status(404).json({ error: 'Photo file not found' });
       }
 
-      // Update download count
-      await db('photos').where('id', photoId).increment('download_count', 1);
-
       // Log download
       await secureImageService.logImageAccess(
         photoId,
@@ -406,81 +403,5 @@ router.get('/:slug/secure-download/:photoId/:token',
     }
   }
 );
-
-/**
- * Get security statistics for monitoring
- */
-const { adminAuth } = require('../middleware/auth');
-const { requirePermission } = require('../middleware/permissions');
-
-router.get('/security/stats', adminAuth, requirePermission('settings.view'), async (req, res) => {
-  try {
-
-    // Get security statistics
-    const stats = {
-      middleware: secureImageMiddleware.getSecurityStatus(),
-      recentAccess: await getRecentAccessStats(),
-      suspiciousActivity: await getSuspiciousActivityStats()
-    };
-
-    res.json(stats);
-
-  } catch (error) {
-    if (error.isOperational) return res.status(error.statusCode).json({ error: error.message, code: error.code });
-    logger.error('Error getting security stats', { error: error.message });
-    res.status(500).json({ error: 'Failed to get security stats' });
-  }
-});
-
-/**
- * Get recent access statistics
- */
-async function getRecentAccessStats() {
-  try {
-    const hourAgo = new Date(Date.now() - 3600000).toISOString();
-    
-    const stats = await db('image_access_logs')
-      .where('accessed_at', '>', hourAgo)
-      .select('access_type')
-      .count('* as count')
-      .groupBy('access_type');
-
-    return stats.reduce((acc, stat) => {
-      acc[stat.access_type] = parseInt(stat.count);
-      return acc;
-    }, {});
-  } catch (error) {
-    logger.error('Error getting recent access stats:', error);
-    return {};
-  }
-}
-
-/**
- * Get suspicious activity statistics
- */
-async function getSuspiciousActivityStats() {
-  try {
-    const hourAgo = new Date(Date.now() - 3600000).toISOString();
-    
-    const suspiciousCount = await db('image_access_logs')
-      .where('accessed_at', '>', hourAgo)
-      .where('access_type', 'like', '%suspicious%')
-      .count('* as count')
-      .first();
-
-    const uniqueIPs = await db('image_access_logs')
-      .where('accessed_at', '>', hourAgo)
-      .countDistinct('client_ip as count')
-      .first();
-
-    return {
-      suspiciousEvents: parseInt(suspiciousCount.count),
-      uniqueIPs: parseInt(uniqueIPs.count)
-    };
-  } catch (error) {
-    logger.error('Error getting suspicious activity stats:', error);
-    return { suspiciousEvents: 0, uniqueIPs: 0 };
-  }
-}
 
 module.exports = router;

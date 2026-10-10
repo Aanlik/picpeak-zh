@@ -2,7 +2,7 @@
  * Per-gallery guest identity persistence.
  *
  * Stores the guest JWT and profile in localStorage, keyed by gallery slug, so
- * a guest who closes the tab and comes back through the same emailed link is
+ * a guest who closes the tab and comes back through the same shared link is
  * still recognised as themselves.
  *
  * This used to be sessionStorage, which meant the practical lifetime of the
@@ -14,10 +14,8 @@
  * second gallery_guests row, so their earlier likes belonged to an identity
  * they could no longer act as (#1265).
  *
- * Why this does not reopen the objection #1216 raised: deduplicating on a
- * typed email was rejected because anyone who knows an address could claim
- * that person's identity. This grants nothing to anyone — it only stops the
- * browser discarding a token it was already given. Note also that gallery
+ * This only stops the browser discarding a guest token it was already given.
+ * Note that gallery
  * ACCESS lives in sessionStorage (galleryAuthStorage.ts) and is unaffected, so
  * a returning visitor still has to pass the gallery password before a stored
  * identity means anything.

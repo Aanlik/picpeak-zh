@@ -54,8 +54,8 @@ describe('gallery flags survive SQLite 0/1 storage (#1028)', () => {
       event_type: 'project',
       event_name: 'SQLite Flags',
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/s`,
       share_token: 'sqlite-flags-share',

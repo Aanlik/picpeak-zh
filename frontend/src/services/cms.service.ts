@@ -4,9 +4,9 @@ export interface CMSPage {
   id: number;
   slug: string;
   title_en: string;
-  title_de: string;
+  title_zh: string | null;
   content_en: string;
-  content_de: string;
+  content_zh: string | null;
   logo_url: string | null;
   use_external_url: boolean;
   external_url: string | null;

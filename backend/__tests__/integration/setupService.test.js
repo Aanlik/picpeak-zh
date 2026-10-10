@@ -65,7 +65,7 @@ describe('setupService (first-run bootstrap)', () => {
   it('rejects a wrong token', async () => {
     await setupService.ensureSetupToken();
     await expect(
-      setupService.createInitialAdmin({ token: 'nope', email: 'a@b.co', password: VALID_PW })
+      setupService.createInitialAdmin({ token: 'nope', username: 'adminA', password: VALID_PW })
     ).rejects.toMatchObject({ statusCode: 400 });
     expect(await setupService.getSetupStatus()).toEqual({ needsAdmin: true, complete: false });
   });
@@ -73,17 +73,17 @@ describe('setupService (first-run bootstrap)', () => {
   it('rejects a weak password', async () => {
     const token = await setupService.ensureSetupToken();
     await expect(
-      setupService.createInitialAdmin({ token, email: 'a@b.co', password: 'weak' })
+      setupService.createInitialAdmin({ token, username: 'adminA', password: 'weak' })
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
   it('creates the first admin as super_admin, issues a token, and burns the setup token', async () => {
     const token = await setupService.ensureSetupToken();
     const result = await setupService.createInitialAdmin({
-      token, email: 'Owner@Example.com', password: VALID_PW, ip: '203.0.113.7',
+      token, username: 'SetupOwner', password: VALID_PW, ip: '203.0.113.7',
     });
 
-    expect(result.user.email).toBe('owner@example.com'); // normalised
+    expect(result.user.username).toBe('SetupOwner');
     expect(result.user.role.name).toBe('super_admin');
     expect(result.token).toEqual(expect.any(String));
 
@@ -101,7 +101,7 @@ describe('setupService (first-run bootstrap)', () => {
     const tokenFile = path.join(tmpDir, 'SETUP_TOKEN');
     const token = await setupService.ensureSetupToken();
     expect(fs.readFileSync(tokenFile, 'utf8').trim()).toBe(token);
-    await setupService.createInitialAdmin({ token, email: 'owner@example.com', password: VALID_PW });
+    await setupService.createInitialAdmin({ token, username: 'owner', password: VALID_PW });
     expect(fs.existsSync(tokenFile)).toBe(false); // burned in DB + file removed
   });
 
@@ -234,17 +234,17 @@ describe('setupService (first-run bootstrap)', () => {
 
   it('refuses to create a second admin (setup already complete)', async () => {
     const token = await setupService.ensureSetupToken();
-    await setupService.createInitialAdmin({ token, email: 'first@example.com', password: VALID_PW });
+    await setupService.createInitialAdmin({ token, username: 'firstAdmin', password: VALID_PW });
     await expect(
-      setupService.createInitialAdmin({ token, email: 'second@example.com', password: VALID_PW })
+      setupService.createInitialAdmin({ token, username: 'secondAdmin', password: VALID_PW })
     ).rejects.toMatchObject({ statusCode: 409 });
   });
 
   it('serialises a double-submit — two concurrent valid-token calls create only one admin', async () => {
     const token = await setupService.ensureSetupToken();
     const results = await Promise.allSettled([
-      setupService.createInitialAdmin({ token, email: 'a@example.com', password: VALID_PW }),
-      setupService.createInitialAdmin({ token, email: 'b@example.com', password: VALID_PW }),
+      setupService.createInitialAdmin({ token, username: 'adminA', password: VALID_PW }),
+      setupService.createInitialAdmin({ token, username: 'adminB', password: VALID_PW }),
     ]);
     const fulfilled = results.filter((r) => r.status === 'fulfilled');
     expect(fulfilled).toHaveLength(1); // the atomic token claim lets exactly one win
@@ -254,7 +254,7 @@ describe('setupService (first-run bootstrap)', () => {
 
   it('ensureSetupToken clears any stale token once an admin exists', async () => {
     const token = await setupService.ensureSetupToken();
-    await setupService.createInitialAdmin({ token, email: 'first@example.com', password: VALID_PW });
+    await setupService.createInitialAdmin({ token, username: 'firstAdmin', password: VALID_PW });
     // Simulate a stale token left in settings, then re-run the boot hook.
     await upsertAppSetting('setup_token', JSON.stringify('stale'), 'string');
     expect(await setupService.ensureSetupToken()).toBeNull();
@@ -287,7 +287,7 @@ describe('setup routes', () => {
 
   it('POST /api/setup/verify-token is closed once an admin exists (409)', async () => {
     const token = await setupService.ensureSetupToken();
-    await setupService.createInitialAdmin({ token, email: 'first@example.com', password: VALID_PW });
+    await setupService.createInitialAdmin({ token, username: 'firstAdmin', password: VALID_PW });
     const res = await request(app).post('/api/setup/verify-token').send({ token });
     expect(res.status).toBe(409);
   });
@@ -296,7 +296,7 @@ describe('setup routes', () => {
     await setupService.ensureSetupToken();
     const res = await request(app)
       .post('/api/setup/admin')
-      .send({ token: 'nope', email: 'a@b.co', password: VALID_PW });
+      .send({ token: 'nope', username: 'adminA', password: VALID_PW });
     expect(res.status).toBe(400);
     expect(await setupService.getSetupStatus()).toMatchObject({ needsAdmin: true });
   });
@@ -305,7 +305,7 @@ describe('setup routes', () => {
     const token = await setupService.ensureSetupToken();
     const res = await request(app)
       .post('/api/setup/admin')
-      .send({ token, email: 'owner@example.com', password: VALID_PW });
+      .send({ token, username: 'owner', password: VALID_PW });
     expect(res.status).toBe(201);
     expect(res.body.user.role.name).toBe('super_admin');
     expect((res.headers['set-cookie'] || []).join(';')).toMatch(/admin_token/);
@@ -314,10 +314,10 @@ describe('setup routes', () => {
 
   it('POST /api/setup/admin is closed once an admin exists (409)', async () => {
     const token = await setupService.ensureSetupToken();
-    await setupService.createInitialAdmin({ token, email: 'first@example.com', password: VALID_PW });
+    await setupService.createInitialAdmin({ token, username: 'firstAdmin', password: VALID_PW });
     const res = await request(app)
       .post('/api/setup/admin')
-      .send({ token, email: 'second@example.com', password: VALID_PW });
+      .send({ token, username: 'secondAdmin', password: VALID_PW });
     expect(res.status).toBe(409);
   });
 });

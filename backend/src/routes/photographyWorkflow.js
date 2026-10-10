@@ -5,7 +5,6 @@ const path = require('path');
 const { requireEventOwnership } = require('../middleware/ownership');
 const { adminAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
-const { NO_EMAIL_MODE } = require('../utils/communicationProfile');
 const { db, logActivity } = require('../database/db');
 const { bridgeRequest, getProjectDetail } = require('../services/photographyWorkflowBridge');
 const { getExternalMediaRoot, resolveExternalPath } = require('../services/externalMediaService');
@@ -32,7 +31,6 @@ function cameraSubdirectory(event) {
 }
 
 router.get('/:eventId', (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
-  if (!NO_EMAIL_MODE) return res.sendStatus(404);
   const result = await getProjectDetail(req.params.eventId);
   if (!result.configured) return res.status(503).json({ error: '尚未连接精修同步服务' });
   if (result.status === 404) {
@@ -55,7 +53,6 @@ router.get('/:eventId', (req, res, next) => parseId(req.params.eventId) ? next()
 });
 
 router.get('/:eventId/requests', (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
-  if (!NO_EMAIL_MODE) return res.sendStatus(404);
   try {
     const rows = await db('photo_retouch_requests as r')
       .join('photos as p', 'p.id', 'r.photo_id')
@@ -69,7 +66,6 @@ router.get('/:eventId/requests', (req, res, next) => parseId(req.params.eventId)
 });
 
 router.post('/:eventId/bind', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
-  if (!NO_EMAIL_MODE) return res.sendStatus(404);
   const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
   const rawSubdir = typeof req.body?.raw_subdir === 'string' ? req.body.raw_subdir.trim() : '';
   if (!name || name.length > 120 || !rawSubdir || rawSubdir.length > 500) return res.status(400).json({ error: '请填写项目名称和 Camera 内 RAW 子目录' });
@@ -88,7 +84,6 @@ router.post('/:eventId/bind', requirePermission('events.edit'), (req, res, next)
 });
 
 router.post('/:eventId/auto-bind', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
-  if (!NO_EMAIL_MODE) return res.sendStatus(404);
   const eventId = Number(req.params.eventId);
   const event = await db('events').where({ id: eventId }).first();
   const rawSubdir = cameraSubdirectory(event);
@@ -111,28 +106,24 @@ router.post('/:eventId/auto-bind', requirePermission('events.edit'), (req, res, 
 });
 
 router.post('/:eventId/stage', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
-  if (!NO_EMAIL_MODE) return res.sendStatus(404);
   const result = await bridgeRequest(`/api/projects/${Number(req.params.eventId)}/stage`, { method: 'POST', body: { stage: req.body?.stage } });
   if (result.status !== 200) return res.status(result.status === 400 ? 400 : 503).json({ error: '无法更新项目阶段' });
   res.json(result.data);
 });
 
 router.post('/:eventId/sync', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
-  if (!NO_EMAIL_MODE) return res.sendStatus(404);
   const result = await bridgeRequest(`/api/projects/${Number(req.params.eventId)}/sync`, { method: 'POST', body: {} });
   if (result.status !== 200) return res.status(503).json({ error: '无法立即同步项目' });
   res.json(result.data);
 });
 
 router.post('/:eventId/rescan', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
-  if (!NO_EMAIL_MODE) return res.sendStatus(404);
   const result = await bridgeRequest(`/api/projects/${Number(req.params.eventId)}/rescan`, { method: 'POST', body: {} });
   if (result.status !== 200) return res.status(503).json({ error: '无法重新扫描项目目录' });
   res.json(result.data);
 });
 
 router.post('/:eventId/retry', requirePermission('events.edit'), (req, res, next) => parseId(req.params.eventId) ? next() : res.sendStatus(400), requireEventOwnership, async (req, res) => {
-  if (!NO_EMAIL_MODE) return res.sendStatus(404);
   const result = await bridgeRequest(`/api/projects/${Number(req.params.eventId)}/retry`, {
     method: 'POST', body: { confirm_unknown: req.body?.confirm_unknown === true },
   });
@@ -145,7 +136,6 @@ router.patch('/:eventId/requests/:requestId', requirePermission('events.edit'), 
   if (parseId(req.params.eventId) && parseId(req.params.requestId)) return next();
   return res.sendStatus(400);
 }, requireEventOwnership, async (req, res) => {
-  if (!NO_EMAIL_MODE) return res.sendStatus(404);
   const allowed = ['open', 'in_progress', 'waiting_customer', 'completed', 'closed', 'cancelled'];
   const status = req.body?.status;
   const reply = typeof req.body?.photographer_reply === 'string' ? req.body.photographer_reply.trim().slice(0, 1000) : '';

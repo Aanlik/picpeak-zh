@@ -65,8 +65,8 @@ async function seedPhoto(width, height) {
     event_type: 'project',
     event_name: 'scale',
     event_date: '2026-01-01',
-    host_email: 'h@example.com',
-    admin_email: 'a@example.com',
+
+
     password_hash: 'x',
     share_link: `scale-${Math.random()}`,
     expires_at: new Date().toISOString(),

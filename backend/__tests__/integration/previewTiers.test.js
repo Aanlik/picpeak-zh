@@ -79,8 +79,8 @@ describe('preview tiers (#1095)', () => {
         event_type: 'project',
         event_name: 'tier',
         event_date: '2026-01-01',
-        host_email: 'h@example.com',
-        admin_email: 'a@example.com',
+
+
         password_hash: 'x',
         share_link: `tier-${Math.random()}`,
         expires_at: new Date().toISOString(),
@@ -201,7 +201,7 @@ describe('preview tiers (#1095)', () => {
       const [e] = await db('events').insert({
         slug: `tt-${Math.random().toString(36).slice(2, 8)}`,
         event_type: 'project', event_name: 'tt', event_date: '2026-01-01',
-        host_email: 'h@example.com', admin_email: 'a@example.com',
+
         password_hash: 'x', share_link: `tt-${Math.random()}`,
         expires_at: new Date().toISOString(),
       }).returning('id');

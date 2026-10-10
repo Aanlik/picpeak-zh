@@ -108,7 +108,7 @@ async function withRetry(queryFn, retries = MAX_RETRIES) {
         error.message.includes('ECONNREFUSED') ||
         error.message.includes('ETIMEDOUT')
       );
-      
+
       if (isConnectionError && i < retries - 1) {
         logger.info(`Database connection error, retrying in ${RETRY_DELAY}ms... (attempt ${i + 1}/${retries})`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (i + 1)));
@@ -163,81 +163,6 @@ async function initializeDatabase() {
       table.integer('hero_photo_id');
       table.boolean('require_password').defaultTo(true);
     });
-  } else {
-    // Check if color_theme needs to be updated to TEXT type
-    // This is needed for larger theme configurations
-    const isPostgres = knexConfig.client === 'pg';
-    
-    if (!isPostgres) {
-      // SQLite-specific migration
-      try {
-        await db.raw(`
-          CREATE TABLE IF NOT EXISTS events_new (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            slug TEXT UNIQUE NOT NULL,
-            event_type TEXT NOT NULL,
-            event_name TEXT NOT NULL,
-            event_date DATE NOT NULL,
-            customer_name TEXT,
-            customer_email TEXT,
-            host_name TEXT,
-            host_email TEXT NOT NULL,
-            admin_email TEXT NOT NULL,
-            password_hash TEXT NOT NULL,
-            welcome_message TEXT,
-            color_theme TEXT,
-            share_link TEXT UNIQUE NOT NULL,
-            share_token TEXT UNIQUE,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            expires_at DATETIME NOT NULL,
-            is_active BOOLEAN DEFAULT 1,
-            is_archived BOOLEAN DEFAULT 0,
-            archive_path TEXT,
-            archived_at DATETIME,
-            allow_user_uploads BOOLEAN DEFAULT 0,
-            upload_category_id INTEGER,
-            allow_downloads BOOLEAN DEFAULT 1,
-            disable_right_click BOOLEAN DEFAULT 0,
-            watermark_downloads BOOLEAN DEFAULT 0,
-            watermark_text TEXT,
-            hero_photo_id INTEGER,
-            require_password BOOLEAN DEFAULT 1
-          )
-        `);
-        
-        const pragmaRows = await db.raw('PRAGMA table_info(\'events\')');
-        const existingColumns = pragmaRows.map(row => row.name);
-        const selectColumns = existingColumns.map((col) => {
-          switch (col) {
-          case 'allow_user_uploads':
-            return 'COALESCE(allow_user_uploads, 0) as allow_user_uploads';
-          case 'upload_category_id':
-            return 'upload_category_id';
-          case 'allow_downloads':
-            return 'COALESCE(allow_downloads, 1) as allow_downloads';
-          case 'disable_right_click':
-            return 'COALESCE(disable_right_click, 0) as disable_right_click';
-          case 'watermark_downloads':
-            return 'COALESCE(watermark_downloads, 0) as watermark_downloads';
-          case 'watermark_text':
-            return 'watermark_text';
-          case 'hero_photo_id':
-            return 'hero_photo_id';
-          case 'require_password':
-            return 'COALESCE(require_password, 1) as require_password';
-          default:
-            return col;
-          }
-        });
-
-        await db.raw(`INSERT INTO events_new (${existingColumns.join(', ')}) SELECT ${selectColumns.join(', ')} FROM events`);
-        await db.raw('DROP TABLE events');
-        await db.raw('ALTER TABLE events_new RENAME TO events');
-      } catch (error) {
-        // If the migration fails, it might already have been applied
-        logger.debug('Color theme migration may have already been applied');
-      }
-    }
   }
 
   const hasShareTokenColumn = await db.schema.hasColumn('events', 'share_token');
@@ -322,36 +247,6 @@ async function initializeDatabase() {
     });
   }
 
-  // Email queue table
-  const hasEmailQueueTable = await db.schema.hasTable('email_queue');
-  if (!hasEmailQueueTable) {
-    await db.schema.createTable('email_queue', (table) => {
-      table.increments('id').primary();
-      table.integer('event_id').references('id').inTable('events');
-      table.string('recipient_email').notNullable();
-      table.string('email_type').notNullable(); // 'creation', 'warning', 'expiration', 'archive_complete'
-      table.json('email_data');
-      table.string('status').defaultTo('pending'); // 'pending', 'sent', 'failed'
-      table.datetime('created_at').defaultTo(db.fn.now());
-      table.datetime('scheduled_at').defaultTo(db.fn.now());
-      table.datetime('sent_at');
-      table.text('error_message');
-      table.integer('retry_count').defaultTo(0);
-    });
-  } else {
-    const hasCreatedAt = await db.schema.hasColumn('email_queue', 'created_at');
-    if (!hasCreatedAt) {
-      await db.schema.alterTable('email_queue', (table) => {
-        table.datetime('created_at').defaultTo(db.fn.now());
-      });
-      try {
-        await db('email_queue').whereNull('created_at').update({ created_at: db.fn.now() });
-      } catch (updateError) {
-        logger.debug('Email queue created_at backfill skipped', { error: updateError.message });
-      }
-    }
-  }
-
   // Admin users table
   const hasAdminUsersTable = await db.schema.hasTable('admin_users');
   if (!hasAdminUsersTable) {
@@ -379,7 +274,7 @@ async function initializeDatabase() {
       // Set default value for existing rows
       await db('admin_users').update({ updated_at: new Date() });
     }
-    
+
     // Check if must_change_password column exists
     const hasMustChangePassword = await db.schema.hasColumn('admin_users', 'must_change_password');
     if (!hasMustChangePassword) {
@@ -387,7 +282,7 @@ async function initializeDatabase() {
         table.boolean('must_change_password').defaultTo(false);
       });
     }
-    
+
     // Check if password_changed_at column exists
     const hasPasswordChangedAt = await db.schema.hasColumn('admin_users', 'password_changed_at');
     if (!hasPasswordChangedAt) {
@@ -395,7 +290,7 @@ async function initializeDatabase() {
         table.datetime('password_changed_at');
       });
     }
-    
+
     // Check if last_login_ip column exists
     const hasLastLoginIp = await db.schema.hasColumn('admin_users', 'last_login_ip');
     if (!hasLastLoginIp) {
@@ -424,7 +319,7 @@ async function initializeDatabase() {
       table.timestamp('expires_at').nullable(); // NULL retains tokens without a known expiry
       table.string('reason', 100); // password_change, logout, compromised, etc.
       table.text('metadata'); // Additional JSON data
-      
+
       // Indexes for performance
       table.index('token_id');
       table.index('user_id');
@@ -438,39 +333,9 @@ async function initializeDatabase() {
       table.integer('user_id').primary();
       table.timestamp('revoked_at').notNullable();
       table.string('reason', 100);
-      
+
       // Index for quick lookups
       table.index('revoked_at');
-    });
-  }
-
-  // Email configuration table
-  const hasEmailConfigTable = await db.schema.hasTable('email_configs');
-  if (!hasEmailConfigTable) {
-    await db.schema.createTable('email_configs', (table) => {
-      table.increments('id').primary();
-      table.string('smtp_host').notNullable();
-      table.integer('smtp_port').notNullable();
-      table.boolean('smtp_secure').defaultTo(false);
-      table.string('smtp_user');
-      table.string('smtp_pass');
-      table.string('from_email').notNullable();
-      table.string('from_name');
-      table.datetime('updated_at').defaultTo(db.fn.now());
-    });
-  }
-
-  // Email templates table
-  const hasEmailTemplatesTable = await db.schema.hasTable('email_templates');
-  if (!hasEmailTemplatesTable) {
-    await db.schema.createTable('email_templates', (table) => {
-      table.increments('id').primary();
-      table.string('template_key').unique().notNullable(); // 'gallery_created', 'expiration_warning', etc.
-      table.string('subject').notNullable();
-      table.text('body_html').notNullable();
-      table.text('body_text');
-      table.json('variables'); // Available template variables
-      table.datetime('updated_at').defaultTo(db.fn.now());
     });
   }
 
@@ -485,7 +350,7 @@ async function initializeDatabase() {
       table.datetime('updated_at').defaultTo(db.fn.now());
     });
   }
-  
+
   const defaultLanguageSetting = await db('app_settings')
     .where('setting_key', 'default_language')
     .first();
@@ -553,9 +418,9 @@ async function ensureGlobalCategories() {
       table.increments('id').primary();
       table.string('slug', 100).unique().notNullable();
       table.text('title_en');
-      table.text('title_de');
+      table.text('title_zh');
       table.text('content_en');
-      table.text('content_de');
+      table.text('content_zh');
       table.string('logo_url').nullable();
       table.boolean('use_external_url').notNullable().defaultTo(false);
       table.string('external_url').nullable();
@@ -604,17 +469,17 @@ async function ensureGlobalCategories() {
     {
       slug: 'impressum',
       title_en: 'Legal Notice',
-      title_de: 'Impressum',
+      title_zh: '法律声明',
       content_en: '<h2>Legal Notice</h2><p>Please edit this content in the admin panel.</p>',
-      content_de: '<h2>Impressum</h2><p>Bitte bearbeiten Sie diesen Inhalt im Admin-Panel.</p>',
+      content_zh: '<h2>法律声明</h2><p>请在管理后台编辑此内容。</p>',
       updated_at: new Date(),
     },
     {
       slug: 'datenschutz',
       title_en: 'Privacy Policy',
-      title_de: 'Datenschutzerklärung',
+      title_zh: '隐私政策',
       content_en: '<h2>Privacy Policy</h2><p>Please edit this content in the admin panel.</p>',
-      content_de: '<h2>Datenschutzerklärung</h2><p>Bitte bearbeiten Sie diesen Inhalt im Admin-Panel.</p>',
+      content_zh: '<h2>隐私政策</h2><p>请在管理后台编辑此内容。</p>',
       updated_at: new Date(),
     },
     // Customisable error pages — issue #324. Generic copy by default;
@@ -622,17 +487,17 @@ async function ensureGlobalCategories() {
     {
       slug: 'not-found',
       title_en: 'Page Not Found',
-      title_de: 'Seite nicht gefunden',
+      title_zh: '页面不存在',
       content_en: '<h2>Page Not Found</h2><p>The page you are looking for does not exist or has been moved.</p>',
-      content_de: '<h2>Seite nicht gefunden</h2><p>Die gesuchte Seite existiert nicht oder wurde verschoben.</p>',
+      content_zh: '<h2>页面不存在</h2><p>你访问的页面不存在或已移动。</p>',
       updated_at: new Date(),
     },
     {
       slug: 'gallery-not-found',
       title_en: 'Gallery Not Found',
-      title_de: 'Galerie nicht gefunden',
+      title_zh: '选片项目不存在',
       content_en: '<h2>Gallery Not Found</h2><p>This gallery could not be found. The link may be incorrect, or the gallery may have expired or been archived. Please contact the organiser if you believe this is a mistake.</p>',
-      content_de: '<h2>Galerie nicht gefunden</h2><p>Diese Galerie konnte nicht gefunden werden. Der Link ist möglicherweise nicht korrekt, oder die Galerie ist abgelaufen oder wurde archiviert. Bitte kontaktieren Sie den Veranstalter, falls Sie glauben, dass dies ein Fehler ist.</p>',
+      content_zh: '<h2>选片项目不存在</h2><p>未找到此选片项目。链接可能有误，或项目已过期、归档。请联系摄影师确认。</p>',
       updated_at: new Date(),
     },
   ];

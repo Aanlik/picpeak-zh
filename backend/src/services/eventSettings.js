@@ -20,8 +20,6 @@ const getEventFieldRequirements = async () => {
     const settings = await db('app_settings')
       .whereIn('setting_key', [
         'event_require_customer_name',
-        'event_require_customer_email',
-        'event_require_admin_email',
         'event_require_event_date',
         'event_require_expiration'
       ])
@@ -29,8 +27,6 @@ const getEventFieldRequirements = async () => {
 
     const requirements = {
       require_customer_name: true,
-      require_customer_email: true,
-      require_admin_email: true,
       require_event_date: true,
       require_expiration: true
     };
@@ -45,20 +41,15 @@ const getEventFieldRequirements = async () => {
         }
       }
       if (s.setting_key === 'event_require_customer_name') requirements.require_customer_name = value;
-      if (s.setting_key === 'event_require_customer_email') requirements.require_customer_email = value;
-      if (s.setting_key === 'event_require_admin_email') requirements.require_admin_email = value;
       if (s.setting_key === 'event_require_event_date') requirements.require_event_date = value;
       if (s.setting_key === 'event_require_expiration') requirements.require_expiration = value;
     });
 
-    if (require('../utils/communicationProfile').NO_EMAIL_MODE) { requirements.require_customer_email = false; requirements.require_admin_email = false; }
     return requirements;
   } catch (error) {
     logger.error('Failed to get event field requirements', { error: error.message });
     return {
       require_customer_name: true,
-      require_customer_email: true,
-      require_admin_email: true,
       require_event_date: true,
       require_expiration: true
     };
@@ -304,7 +295,6 @@ const getBrandingDefaults = async () => {
 
 // Use parseStringInput from shared parsers for customer data extraction
 const getCustomerNameFromPayload = (payload = {}) => parseStringInput(payload.customer_name);
-const getCustomerEmailFromPayload = (payload = {}) => parseStringInput(payload.customer_email);
 const getCustomerPhoneFromPayload = (payload = {}) => parseStringInput(payload.customer_phone);
 
 // Whether the global "phone field" toggle (#322) is enabled. Cached for
@@ -334,9 +324,7 @@ const mapEventForApi = (event) => {
 
   const {
     host_name,
-    host_email,
     customer_name,
-    customer_email,
     customer_phone,
     // Bound only to exclude the secrets from `...rest` — never read.
     password_hash: _ph, client_password_hash: _cph,
@@ -346,11 +334,9 @@ const mapEventForApi = (event) => {
   // /:id/password. Removed by name (not destructured) so a secret scanner
   // does not read the binding as a hard-coded password.
   for (const column of RECOVERABLE_PASSWORD_COLUMNS) delete rest[column];
-
   return {
     ...rest,
     customer_name: customer_name ?? host_name ?? null,
-    customer_email: customer_email ?? host_email ?? null,
     customer_phone: customer_phone ?? null
   };
 };
@@ -362,13 +348,13 @@ const hasCustomerContactColumns = async () => {
   }
 
   try {
-    const hasColumn = await db.schema.hasColumn('events', 'customer_email');
+    const hasColumn = await db.schema.hasColumn('events', 'customer_name');
     if (hasColumn) {
       customerColumnCache = true;
     }
     return hasColumn;
   } catch (error) {
-    logger.debug('Failed to detect customer_email column', { error: error.message });
+    logger.debug('Failed to detect customer contact columns', { error: error.message });
     return false;
   }
 };
@@ -393,7 +379,6 @@ module.exports = {
   resolveImageSecurityColumns,
   getBrandingDefaults,
   getCustomerNameFromPayload,
-  getCustomerEmailFromPayload,
   getCustomerPhoneFromPayload,
   isPhoneFieldEnabled,
   mapEventForApi,

@@ -17,7 +17,7 @@ function applyFeedbackFilter(query, { filter, event, identity, sharedColorMode, 
       this.orWhereIn('photos.id', own(feedback(type)));
       if (showFeedbackToGuests) {
         if (column) this.orWhere(`photos.${column}`, '>', 0);
-        else this.orWhereIn('photos.id', feedback(type).where('is_approved', formatBoolean(true)));
+        else this.orWhereIn('photos.id', feedback(type));
       }
     }
     const colors = COLOR_LABELS.filter(color => tokens.has(`color:${color}`));

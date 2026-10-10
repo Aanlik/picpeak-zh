@@ -21,8 +21,8 @@ describe('batch gallery feedback', () => {
       event_type: 'project',
       event_name: 'Batch Feedback',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${slug}/share`,
       share_token: 'batch-feedback-share',
@@ -51,7 +51,6 @@ describe('batch gallery feedback', () => {
       allow_color_labels: true,
       allow_comments: true,
       identity_mode: 'shared',
-      moderate_comments: false,
       show_feedback_to_guests: true,
     });
     app = express();
@@ -112,7 +111,7 @@ describe('batch gallery feedback', () => {
     const body = { photo_ids: photoIds.slice(0, 2), feedback_type: 'comment', comment_text: '请统一精修色调' };
     const result = await post(body);
     expect(result.status).toBe(200);
-    expect(result.body).toMatchObject({ success: true, applied_count: 2, moderation_required: false });
+    expect(result.body).toMatchObject({ success: true, applied_count: 2 });
     expect(await db('photo_feedback').where({ event_id: eventId, feedback_type: 'comment', comment_text: body.comment_text })).toHaveLength(2);
     const consumed = await db('feedback_rate_limits').where({ event_id: eventId, action_type: 'comment' }).sum('action_count as total').first();
     // Guest and IP budgets each reserve the per-photo cost of this batch.

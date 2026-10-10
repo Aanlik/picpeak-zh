@@ -61,7 +61,6 @@ async function adminAuth(req, res, next) {
     req.admin = {
       id: admin.id,
       username: admin.username,
-      email: admin.email,
       roleId: admin.role_id,
       roleName: admin.role_name,
       mustChangePassword: !!admin.must_change_password,

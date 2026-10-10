@@ -3,8 +3,7 @@ const logger = require('./logger');
 
 // Default date format settings
 const DEFAULT_FORMAT = {
-  format: 'DD/MM/YYYY',
-  locale: 'en-GB'
+  format: 'DD/MM/YYYY'
 };
 
 // Format date based on system settings
@@ -51,38 +50,20 @@ async function formatDate(date, language = 'en') {
       throw new Error('Invalid date');
     }
     
-    // Use appropriate locale based on language
-    let locale = dateConfig.locale || 'en-GB';
-    if (language === 'de') {
-      locale = 'de-DE';
-    } else if (language === 'pt') {
-      locale = 'pt-BR';
-    } else if (language === 'en' && dateConfig.format === 'MM/DD/YYYY') {
-      locale = 'en-US';
-    }
+    // UI languages are Simplified Chinese and English. Keep locale tags out of
+    // this formatter; numeric date order comes from the configured format.
+    const locale = /^zh(?:-|$)/i.test(String(language || '')) ? 'zh-CN' : 'en';
     
     // Format based on the configured format
     switch (dateConfig.format) {
     case 'MM/DD/YYYY':
-      return dateObj.toLocaleDateString(locale, {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric'
-      });
+      return `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}/${dateObj.getFullYear()}`;
     case 'DD/MM/YYYY':
-      return dateObj.toLocaleDateString(locale, {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
+      return `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
     case 'YYYY-MM-DD':
       return dateObj.toISOString().split('T')[0];
     case 'DD.MM.YYYY':
-      return dateObj.toLocaleDateString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
+      return `${String(dateObj.getDate()).padStart(2, '0')}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${dateObj.getFullYear()}`;
     default:
       // Use long format as fallback
       return dateObj.toLocaleDateString(locale, {

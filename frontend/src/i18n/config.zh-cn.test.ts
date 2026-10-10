@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import en from './locales/en.json';
 import zhCN from './locales/zh-CN.json';
+import { SUPPORTED_LANGUAGES } from '../components/common/LanguageSelector';
 
 function flatten(value: Record<string, unknown>, prefix = ''): Record<string, string> {
   return Object.entries(value).reduce<Record<string, string>>((result, [key, child]) => {
@@ -47,6 +48,15 @@ describe('Simplified Chinese locale', () => {
     const { default: i18n } = await import('./config');
     expect(i18n.language).toBe('zh-CN');
     vi.restoreAllMocks();
+  });
+
+  it('ships only English and Simplified Chinese bundles and falls back from retired locales', async () => {
+    const { default: i18n } = await import('./config');
+    expect(Object.keys(i18n.options.resources || {}).sort()).toEqual(['en', 'zh-CN']);
+    expect(SUPPORTED_LANGUAGES.map(({ code }) => code)).toEqual(['zh-CN', 'en']);
+    expect(i18n.hasResourceBundle('de', 'translation')).toBe(false);
+    await i18n.changeLanguage('de-DE');
+    expect(i18n.resolvedLanguage).toBe('en');
   });
 
   it('keeps English and Chinese keys, interpolation variables, and plural forms aligned', () => {

@@ -226,21 +226,6 @@ async function deleteDuplicatePhotos(knex, doomedToSurvivor) {
     }
   }
 
-  // Real interactions, recorded per row. Deleting the duplicate would quietly
-  // lower the engagement the admin grid shows for a photo people did view and
-  // download.
-  if (await knex.schema.hasColumn('photos', 'view_count')) {
-    for (const [doomedId, survivorId] of doomedToSurvivor) {
-      const from = await knex('photos').where('id', doomedId)
-        .select('view_count', 'download_count').first();
-      if (!from) continue;
-      const add = {};
-      if (from.view_count) add.view_count = knex.raw('COALESCE(view_count, 0) + ?', [from.view_count]);
-      if (from.download_count) add.download_count = knex.raw('COALESCE(download_count, 0) + ?', [from.download_count]);
-      if (Object.keys(add).length) await knex('photos').where('id', survivorId).update(add);
-    }
-  }
-
   for (const ids of chunked(doomed)) await knex('photos').whereIn('id', ids).del();
 
   // The pre-built "download everything" zip still contains the rows just

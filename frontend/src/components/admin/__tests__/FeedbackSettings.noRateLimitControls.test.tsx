@@ -28,8 +28,6 @@ const settings = {
   allow_favorites: true,
   allow_reactions: false,
   allow_color_labels: false,
-  require_name_email: false,
-  moderate_comments: true,
   show_feedback_to_guests: false,
 };
 

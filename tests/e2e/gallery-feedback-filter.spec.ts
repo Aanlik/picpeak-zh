@@ -5,7 +5,7 @@ import path from 'path';
 import { adminApiToken, publishEvent, waitForPhotosProcessed } from './_helpers/admin';
 import { passGalleryPasswordPrompt } from './_helpers/gallery';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const GALLERY_PASSWORD = process.env.GALLERY_PASSWORD || 'PlaywrightGallery123!';
 
 interface GallerySetupResult {
@@ -18,7 +18,7 @@ interface GallerySetupResult {
   };
 }
 
-async function createGalleryWithModeratedComments(page: Page): Promise<GallerySetupResult> {
+async function createGalleryWithComments(page: Page): Promise<GallerySetupResult> {
   const token = await adminApiToken(page.request);
 
   const eventName = `Playwright Feedback Filter ${Date.now()}`;
@@ -36,8 +36,6 @@ async function createGalleryWithModeratedComments(page: Page): Promise<GallerySe
       event_name: eventName,
       event_date: eventDate,
       customer_name: 'Playwright Host',
-      customer_email: 'host@example.com',
-      admin_email: ADMIN_EMAIL,
       password: GALLERY_PASSWORD,
       expiration_days: 30,
       allow_user_uploads: false,
@@ -50,7 +48,6 @@ async function createGalleryWithModeratedComments(page: Page): Promise<GallerySe
       allow_comments: true,
       allow_favorites: true,
       require_name_email: false,
-      moderate_comments: true,
       show_feedback_to_guests: true,
     },
     failOnStatusCode: false,
@@ -107,7 +104,7 @@ async function createGalleryWithModeratedComments(page: Page): Promise<GallerySe
   const { token: galleryToken } = await galleryAuthResponse.json();
   expect(galleryToken).toBeTruthy();
 
-  // Submit an approved comment (after moderation)
+  // Submit a comment; comments are immediately visible without moderation.
   const approvedCommentResponse = await page.request.post(
     `/api/gallery/${createdEvent.slug}/photos/${photoIds[0]}/feedback`,
     {
@@ -119,44 +116,13 @@ async function createGalleryWithModeratedComments(page: Page): Promise<GallerySe
         feedback_type: 'comment',
         comment_text: 'Approved comment',
         guest_name: 'Approved Guest',
-        guest_email: 'approved@example.com',
       },
       failOnStatusCode: false,
     }
   );
   expect(approvedCommentResponse.ok()).toBeTruthy();
-  const approvedComment = await approvedCommentResponse.json();
-  expect(approvedComment?.id).toBeTruthy();
-
-  const approveModeration = await page.request.put(
-    `/api/admin/feedback/feedback/${approvedComment.id}/approve`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      failOnStatusCode: false,
-    }
-  );
-  expect(approveModeration.ok()).toBeTruthy();
-
-  // Submit a second comment that remains pending
-  const pendingCommentResponse = await page.request.post(
-    `/api/gallery/${createdEvent.slug}/photos/${photoIds[1]}/feedback`,
-    {
-      headers: {
-        Authorization: `Bearer ${galleryToken}`,
-        'Content-Type': 'application/json',
-      },
-      data: {
-        feedback_type: 'comment',
-        comment_text: 'Pending comment',
-        guest_name: 'Pending Guest',
-        guest_email: 'pending@example.com',
-      },
-      failOnStatusCode: false,
-    }
-  );
-  expect(pendingCommentResponse.ok()).toBeTruthy();
+  const submittedComment = await approvedCommentResponse.json();
+  expect(submittedComment?.id).toBeTruthy();
 
   const allPhotosResponse = await page.request.get(`/api/gallery/${createdEvent.slug}/photos`, {
     headers: {
@@ -176,11 +142,11 @@ async function createGalleryWithModeratedComments(page: Page): Promise<GallerySe
 }
 
 test.describe('Gallery feedback filter', () => {
-  test('Comment filter hides photos without approved comments', async ({ page }) => {
-    const { shareLink, slug, allPhotosData } = await createGalleryWithModeratedComments(page);
+  test('Commented filter hides photos without comments', async ({ page }) => {
+    const { shareLink, slug, allPhotosData } = await createGalleryWithComments(page);
 
-    const approvedPhotos = allPhotosData.photos.filter((photo) => (photo.comment_count || 0) > 0);
-    expect(approvedPhotos.length).toBeGreaterThan(0);
+    const commentedPhotos = allPhotosData.photos.filter((photo) => (photo.comment_count || 0) > 0);
+    expect(commentedPhotos.length).toBeGreaterThan(0);
 
     await page.route(`**/api/gallery/${slug}/photos**`, async (route) => {
       const url = new URL(route.request().url());
@@ -209,10 +175,10 @@ test.describe('Gallery feedback filter', () => {
 
     await page.getByRole('button', { name: /Commented/i }).click();
 
-    await expect(tiles).toHaveCount(approvedPhotos.length, { timeout: 20000 });
+    await expect(tiles).toHaveCount(commentedPhotos.length, { timeout: 20000 });
 
-    for (const pending of allPhotosData.photos.filter((photo) => (photo.comment_count || 0) === 0)) {
-      await expect(page.getByAltText(pending.filename)).not.toBeVisible({ timeout: 1000 });
+    for (const uncommented of allPhotosData.photos.filter((photo) => (photo.comment_count || 0) === 0)) {
+      await expect(page.getByAltText(uncommented.filename)).not.toBeVisible({ timeout: 1000 });
     }
   });
 });

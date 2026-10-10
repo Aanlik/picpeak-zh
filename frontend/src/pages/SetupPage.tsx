@@ -1,9 +1,7 @@
-import { NO_EMAIL_MODE, EMAIL_FEATURES } from '../config/communication';
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Key, Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, ArrowRight, Copy, Check, ExternalLink, Bug, Lightbulb, Star, Coffee } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Key, UserRound, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, ArrowRight, Copy, Check } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 
@@ -11,43 +9,10 @@ import { Button, Input, Card, Loading } from '../components/common';
 import { useAdminAuth } from '../contexts';
 import { setupService } from '../services/setup.service';
 import { settingsService } from '../services/settings.service';
-import { featureFlagsService, type FeatureFlags, type FeatureKey } from '../services/featureFlags.service';
-import { productUsageService } from '../services/productUsage.service';
-import { ProductUsageConsentDialog } from '../features/settings/components/ProductUsageConsentDialog';
 import { PicpeakRestoreCard } from '../components/admin/PicpeakBackupCard';
 import { SetupConfigStep } from '../components/admin/SetupConfigStep';
-import { UsageReportingPoints } from '../components/admin/UsageReportingPitch';
 import { resolveLoginLogoClasses } from '../utils/loginLogoSize';
 import type { AdminUser } from '../types';
-
-// Where the first-run setup is documented, for the case where the server logs
-// have already rotated away and the admin can no longer grep the token out.
-const SETUP_DOCS_URL =
-  'https://github.com/PicPeak/picpeak/blob/main/README.md#first-run--create-your-admin-account';
-
-// Final "own your data" thank-you step (#732). Link cards shown once, on
-// first-run only, before entering the app. Every link is optional and opens
-// in a new tab; nothing here makes an external call.
-const COMMUNITY_LINKS: {
-  key: string;
-  href: string;
-  icon: LucideIcon;
-}[] = [
-  { key: 'bug', href: 'https://github.com/PicPeak/picpeak/issues/new?template=bug_report.md', icon: Bug },
-  { key: 'feature', href: 'https://github.com/PicPeak/picpeak/issues/new?template=feature_request.md', icon: Lightbulb },
-  { key: 'star', href: 'https://github.com/PicPeak/picpeak', icon: Star },
-  { key: 'support', href: 'https://www.buymeacoffee.com/theluap', icon: Coffee },
-];
-
-// "How will you use PicPeak?" — the opt-in feature groups shown after the admin
-// account is created. galleries/analytics/userManagement are always on and not
-// listed. Labels/descriptions reuse the existing Settings→Features i18n keys
-// (`settings.features.<key>.title/description`) so translations stay in sync.
-const USAGE_GROUPS: { id: string; titleKey: string; features: FeatureKey[] }[] = [
-  { id: 'galleries', titleKey: 'setup.usageGroupGalleries', features: ['customerPortal', 'slideshow'] },
-  { id: 'automation', titleKey: 'setup.usageGroupAutomation', features: ['reminderEmails', 'workflows'] },
-];
-const ALL_USAGE_FEATURES: FeatureKey[] = USAGE_GROUPS.flatMap((g) => g.features);
 
 // First-run screen. Reached on a fresh instance where no admin account exists
 // yet — creates the first (super_admin) account from the browser using the
@@ -57,12 +22,11 @@ const ALL_USAGE_FEATURES: FeatureKey[] = USAGE_GROUPS.flatMap((g) => g.features)
 // Split into two steps so the token-recovery guidance gets the space it needs:
 //   1. paste the one-time setup token (with the `docker compose logs` recovery
 //      command shown prominently right under the field)
-//   2. choose the admin email + password
+//   2. choose the admin username + password
 export const SetupPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { login } = useAdminAuth();
-  const queryClient = useQueryClient();
 
   const { data: status, isLoading: statusLoading, isError: statusError } = useQuery({
     queryKey: ['setup-status'],
@@ -71,23 +35,13 @@ export const SetupPage: React.FC = () => {
     staleTime: Infinity,
   });
 
-  const [step, setStep] = useState<'token' | 'account' | 'usage' | 'restore' | 'config' | 'usageReporting' | 'community'>('token');
-  const [form, setForm] = useState({ token: '', email: '', password: '', confirm: '' });
+  const [step, setStep] = useState<'token' | 'account' | 'restore' | 'config'>('token');
+  const [form, setForm] = useState({ token: '', username: '', password: '', confirm: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVerifyingToken, setIsVerifyingToken] = useState(false);
   const [copied, setCopied] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedFeatures, setSelectedFeatures] = useState<Set<FeatureKey>>(new Set());
-  const [isSavingFeatures, setIsSavingFeatures] = useState(false);
-  const [showUsageConsent, setShowUsageConsent] = useState(false);
-  const [isEnablingUsageReporting, setIsEnablingUsageReporting] = useState(false);
-  const { data: usageStatus, isError: usageStatusError } = useQuery({
-    queryKey: ['productUsage'],
-    queryFn: productUsageService.status,
-    enabled: step === 'usageReporting',
-    retry: false,
-  });
 
   if (statusLoading) {
     return <Loading fullScreen />;
@@ -126,8 +80,8 @@ export const SetupPage: React.FC = () => {
 
   const validateAccount = (): boolean => {
     const next: Record<string, string> = {};
-    if (!form.email) next.email = NO_EMAIL_MODE ? t('setup.usernameRequired') : t('setup.emailRequired');
-    else if (!NO_EMAIL_MODE && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = t('setup.invalidEmail');
+    if (!form.username.trim()) next.username = t('setup.usernameRequired');
+    else if (!/^[\p{L}\p{N}_-]{3,50}$/u.test(form.username.trim())) next.username = t('setup.usernameInvalid', 'Use 3–50 letters, numbers, underscores or hyphens.');
     if (!form.password) next.password = t('setup.passwordRequired');
     // Mirror the server's rule (validatePassword): >=8 chars with upper, lower
     // and a digit — so the user isn't bounced by the server after a green client.
@@ -175,14 +129,13 @@ export const SetupPage: React.FC = () => {
     try {
       const { user } = await setupService.createInitialAdmin({
         token: form.token.trim(),
-        ...(NO_EMAIL_MODE ? { username: form.email.trim() } : { email: form.email.trim() }),
+        username: form.username.trim(),
         password: form.password,
       });
       // Cookie is set by the backend; register the session and enter the app.
       const adminUser: AdminUser = {
         id: user.id,
         username: user.username,
-        email: user.email,
         mustChangePassword: false,
         role: { name: user.role.name, displayName: user.role.displayName ?? user.role.name },
       };
@@ -190,7 +143,7 @@ export const SetupPage: React.FC = () => {
       // Persist the origin the admin is standing on as the public site URL
       // (#705). Doing it HERE, not in the optional config step, means an
       // install that skips the rest of the wizard still has a usable origin
-      // for background jobs (reminder emails, QR codes) that have no request
+      // for background jobs (QR codes) that have no request
       // to derive one from. Best-effort: never block entering the app, and
       // never overwrite a value the environment already pins.
       try {
@@ -202,10 +155,9 @@ export const SetupPage: React.FC = () => {
         }
       } catch { /* the config step offers the field again */ }
       toast.success(t('setup.success'));
-      // Admin now exists and we're logged in (cookie set) — advance to the
-      // opt-in "How will you use PicPeak?" step rather than jumping straight to
-      // the dashboard. Authenticated calls (feature flags) work from here.
-      setStep('usage');
+      // Admin now exists and we're logged in (cookie set). Continue to the
+      // optional public URL configuration step.
+      setStep('config');
     } catch (error: any) {
       const httpStatus = error.response?.status;
       const data = error.response?.data;
@@ -213,7 +165,7 @@ export const SetupPage: React.FC = () => {
       // rendering its raw English error verbatim.
       const fieldKey: Record<string, string> = {
         token: 'setup.invalidToken',
-        email: 'setup.invalidEmail',
+        username: 'setup.usernameInvalid',
         password: 'setup.passwordRequirements',
       };
       // A rejected token belongs to step 1 — send the user back there to fix it
@@ -245,64 +197,11 @@ export const SetupPage: React.FC = () => {
     }
   };
 
-  const toggleFeature = (key: FeatureKey) => {
-    setSelectedFeatures((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  // Persist the feature selection, then enter the app. Saving is best-effort —
-  // if it fails the admin can still flip features later in Settings, so we don't
-  // trap them on the setup screen.
-  const finishSetup = async () => {
-    setIsSavingFeatures(true);
-    try {
-      const flags: Partial<FeatureFlags> = {};
-      for (const key of ALL_USAGE_FEATURES) flags[key] = selectedFeatures.has(key);
-      await featureFlagsService.update(flags);
-    } catch {
-      toast.warn(t('setup.featuresSaveFailed'));
-    } finally {
-      setIsSavingFeatures(false);
-      setStep('config');
-    }
-  };
-
   // Always visit the config step (#705). It used to be skipped unless a
-  // feature the wizard can configure (invoicing, email) was selected, which
+  // feature the wizard can configure was selected, which
   // meant a gallery-only install never saw the two things EVERY install needs:
-  // the public address its client links are built from, and the SMTP settings
-  // that send them. Both sections are feature-independent; the invoicing block
-  // is still conditional inside the step.
-  // Best-effort, same as the feature-flag save above: a collector hiccup on a
-  // fresh install must not trap the admin here. They can always opt in later
-  // from Settings → Product usage, where the full disclosure lives.
-  const enableUsageReporting = async () => {
-    setIsEnablingUsageReporting(true);
-    try {
-      queryClient.setQueryData(['productUsage'], await productUsageService.enable());
-      toast.success(t('setup.usageReporting.enabled'));
-    } catch {
-      toast.warn(t('setup.usageReporting.enableFailed'));
-    } finally {
-      setIsEnablingUsageReporting(false);
-      setStep('community');
-    }
-  };
-
-  // Declining here still counts as having been asked (#1360): without this,
-  // the one-time post-update prompt would immediately re-ask the same admin
-  // the same question seconds later on their first dashboard visit.
-  const skipUsageReporting = async () => {
-    try {
-      queryClient.setQueryData(['productUsage'], await productUsageService.promptSeen());
-    } catch { /* best-effort — worst case the dashboard asks once more */ }
-    setStep('community');
-  };
-
+  // the public address its client links are built from. This is
+  // feature-independent; the invoicing block is still conditional inside the step.
   const stepNumber = step === 'token' ? 1 : step === 'account' ? 2 : 3;
 
   return (
@@ -329,15 +228,9 @@ export const SetupPage: React.FC = () => {
                 ? t('setup.accountStepSubtitle')
                 : step === 'restore'
                     ? t('setup.restoreStepSubtitle')
-                    : step === 'config'
-                      ? t('setup.config.subtitle')
-                      : step === 'usageReporting'
-                        ? t('setup.usageReporting.subtitle')
-                        : step === 'community'
-                          ? t('setup.community.subtitle')
-                          : t('setup.usageSubtitle')}
+                : t('setup.config.subtitle')}
           </p>
-          {(step === 'token' || step === 'account' || step === 'usage') && (
+          {(step === 'token' || step === 'account' || step === 'config') && (
             <p className="mt-3 text-xs font-medium tracking-wide uppercase" style={{ color: '#171717', opacity: 0.5 }}>
               {t('setup.stepOf', { current: stepNumber, total: 3 })}
             </p>
@@ -387,16 +280,6 @@ export const SetupPage: React.FC = () => {
                       {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                     </button>
                   </div>
-                  <a
-                    href={SETUP_DOCS_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1 text-xs hover:underline"
-                    style={{ color: 'var(--color-primary, #5C8762)' }}
-                  >
-                    {t('setup.tokenRotatedLink')}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
                 </div>
               </div>
 
@@ -407,18 +290,18 @@ export const SetupPage: React.FC = () => {
           ) : step === 'account' ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="setup-email" className="block text-sm font-medium text-neutral-700 mb-1">
-                  {NO_EMAIL_MODE ? t('setup.usernameLabel') : t('setup.emailLabel')}
+                <label htmlFor="setup-username" className="block text-sm font-medium text-neutral-700 mb-1">
+                  {t('setup.usernameLabel')}
                 </label>
                 <Input
-                  id="setup-email"
-                  type={NO_EMAIL_MODE ? "text" : "email"}
-                  value={form.email}
-                  onChange={setField('email')}
-                  error={errors.email}
-                  placeholder={NO_EMAIL_MODE ? t('setup.usernamePlaceholder') : t('setup.emailPlaceholder')}
-                  leftIcon={<Mail className="w-5 h-5 text-neutral-400" />}
-                  autoComplete={NO_EMAIL_MODE ? "username" : "email"}
+                  id="setup-username"
+                  type="text"
+                  value={form.username}
+                  onChange={setField('username')}
+                  error={errors.username}
+                  placeholder={t('setup.usernamePlaceholder')}
+                  leftIcon={<UserRound className="w-5 h-5 text-neutral-400" />}
+                  autoComplete="username"
                   autoFocus
                 />
               </div>
@@ -469,7 +352,7 @@ export const SetupPage: React.FC = () => {
                   label + loading spinner exceeded the card width when squeezed
                   next to Back, so the button overflowed the card outline while
                   submitting (#730). Full-width also keeps longer translations
-                  (e.g. German) inside the button. Matches every other step. */}
+                  (for example, Chinese or English) inside the button. Matches every other step. */}
               <div className="space-y-3">
                 <Button type="submit" variant="primary" size="lg" isLoading={isSubmitting} className="w-full">
                   {t('setup.submit')}
@@ -487,61 +370,6 @@ export const SetupPage: React.FC = () => {
                 </Button>
               </div>
             </form>
-          ) : step === 'usage' ? (
-            <div className="space-y-6">
-              <p className="rounded-lg bg-neutral-50 border border-neutral-200 px-3 py-2 text-xs text-neutral-600">
-                {t('setup.usageAlwaysOn')}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => setStep('restore')}
-                className="w-full rounded-lg border border-dashed border-neutral-300 p-3 text-left hover:bg-neutral-50 transition-colors"
-              >
-                <span className="block text-sm font-medium text-neutral-800">{t('setup.restoreEntry')}</span>
-                <span className="block text-xs text-neutral-500">{t('setup.restoreEntryHint')}</span>
-              </button>
-
-              {USAGE_GROUPS.map((group) => (
-                <div key={group.id}>
-                  <h3 className="text-sm font-semibold text-neutral-800 mb-2">{t(group.titleKey)}</h3>
-                  <div className="space-y-2">
-                    {group.features.filter(key => !NO_EMAIL_MODE || !EMAIL_FEATURES.has(key)).map((key) => (
-                      <label
-                        key={key}
-                        className="flex items-start gap-3 rounded-lg border border-neutral-200 p-3 cursor-pointer hover:bg-neutral-50 transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          className="mt-0.5 h-4 w-4 rounded border-neutral-300"
-                          checked={selectedFeatures.has(key)}
-                          onChange={() => toggleFeature(key)}
-                        />
-                        <span className="min-w-0">
-                          <span className="block text-sm font-medium text-neutral-800">
-                            {t(`settings.features.${key}.title`)}
-                          </span>
-                          <span className="block text-xs text-neutral-500">
-                            {t(`settings.features.${key}.description`)}
-                          </span>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
-
-              <Button
-                type="button"
-                variant="primary"
-                size="lg"
-                isLoading={isSavingFeatures}
-                className="w-full"
-                onClick={finishSetup}
-              >
-                {selectedFeatures.size > 0 ? t('setup.finish') : t('setup.usageSkip')}
-              </Button>
-            </div>
           ) : step === 'restore' ? (
             <div className="space-y-6">
               <p className="text-sm text-neutral-600">{t('setup.restoreIntro')}</p>
@@ -550,100 +378,15 @@ export const SetupPage: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="lg"
-                onClick={() => setStep('usage')}
+                onClick={() => setStep('config')}
                 leftIcon={<ArrowLeft className="w-4 h-4" />}
               >
                 {t('setup.back')}
               </Button>
             </div>
           ) : step === 'config' ? (
-            <SetupConfigStep
-              selectedFeatures={selectedFeatures}
-              onDone={() => setStep('usageReporting')}
-            />
-          ) : step === 'usageReporting' ? (
-            <div className="space-y-6">
-              <p className="text-sm text-neutral-700">{t('setup.usageReporting.intro')}</p>
-
-              <UsageReportingPoints />
-
-              {(usageStatusError || usageStatus?.collector_error) && (
-                <p role="alert" className="text-sm text-neutral-700">{t('setup.usageReporting.enableFailed')}</p>
-              )}
-
-              <div className="space-y-3">
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="lg"
-                  className="w-full"
-                  isLoading={isEnablingUsageReporting}
-                  disabled={!usageStatus?.collector_url}
-                  onClick={() => setShowUsageConsent(true)}
-                >
-                  {t('productUsage.review')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  className="w-full"
-                  disabled={isEnablingUsageReporting}
-                  onClick={skipUsageReporting}
-                >
-                  {t('setup.usageReporting.skip')}
-                </Button>
-              </div>
-              {showUsageConsent && usageStatus?.collector_url && (
-                <ProductUsageConsentDialog
-                  collector={usageStatus.collector_url}
-                  busy={isEnablingUsageReporting}
-                  close={() => setShowUsageConsent(false)}
-                  enable={enableUsageReporting}
-                />
-              )}
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <p className="text-sm text-neutral-700">{t('setup.community.mission')}</p>
-
-              <div className="space-y-3">
-                {COMMUNITY_LINKS.map(({ key, href, icon: Icon }) => (
-                  <a
-                    key={key}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-start gap-3 rounded-lg border border-neutral-200 p-3 hover:bg-neutral-50 transition-colors"
-                  >
-                    <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--color-primary, #5C8762)' }} />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium text-neutral-800">
-                        {t(`setup.community.${key}Title`)}
-                      </span>
-                      <span className="block text-xs text-neutral-500">
-                        {t(`setup.community.${key}Desc`)}
-                      </span>
-                    </span>
-                    <ExternalLink className="w-4 h-4 flex-shrink-0 text-neutral-400 self-center" aria-hidden="true" />
-                  </a>
-                ))}
-              </div>
-
-              <Button
-                type="button"
-                variant="primary"
-                size="lg"
-                className="w-full"
-                onClick={async () => {
-                  navigate('/admin/dashboard', { replace: true });
-                }}
-                rightIcon={<ArrowRight className="w-4 h-4" />}
-              >
-                {t('setup.community.finish')}
-              </Button>
-            </div>
-          )}
+            <SetupConfigStep onDone={() => navigate('/admin/dashboard', { replace: true })} />
+          ) : null}
         </Card>
       </div>
     </div>

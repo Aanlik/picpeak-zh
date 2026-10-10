@@ -9,8 +9,7 @@
  *  - a check-then-insert race that produced duplicate rows collapses on the
  *    next interaction instead of leaving a phantom count
  *  - denormalized photos.color_label_count and the per-colour tallies follow
- *    visibility: hidden-by-moderator labels disappear from both
- *  - the exports carry the colour
+ *    visible selections
  */
 
 const path = require('path');
@@ -61,8 +60,8 @@ beforeAll(async () => {
     event_type: 'project',
     event_name: 'Colour Labels Test',
     event_date: '2026-07-20',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: `/gallery/${EVENT_SLUG}/share`,
     share_token: 'color-labels-test-share',
@@ -153,24 +152,11 @@ describe('colour label submission (#1044)', () => {
     expect(Object.keys(counts).sort()).toEqual([...COLOR_LABELS].sort());
   });
 
-  it('hidden labels leave both the per-colour tallies and color_label_count', async () => {
-    const row = await db('photo_feedback')
-      .where({ photo_id: photoIds[0], feedback_type: 'color_label' })
-      .first();
-    await feedbackService.moderateFeedback(row.id, 'hide', 1);
-
-    expect(await feedbackService.getPhotoColorLabelCounts(photoIds[0])).toEqual({});
-    expect(await colorLabelCountOf(photoIds[0])).toBe(0);
-
-    await feedbackService.moderateFeedback(row.id, 'approve', 1);
-    expect(await colorLabelCountOf(photoIds[0])).toBe(1);
-  });
-
   it('toggle and switch collapse racy duplicate rows for the same guest', async () => {
     // Simulate the check-then-insert race: two rows for one guest+photo.
     const mk = (color) => ({
       photo_id: photoIds[1], event_id: eventId, feedback_type: 'color_label',
-      color_label: color, guest_identifier: 'dup-guest', is_approved: true, is_hidden: false,
+      color_label: color, guest_identifier: 'dup-guest', is_hidden: false,
       created_at: new Date(), updated_at: new Date(),
     });
     await db('photo_feedback').insert([mk('yellow'), mk('yellow')]);
@@ -217,17 +203,9 @@ describe('colour label submission (#1044)', () => {
     expect(await feedbackService.getEventColorLabelCounts(eventId, [])).toEqual({});
   });
 
-  it('summary and exports carry colour labels', async () => {
+  it('summary carries colour labels', async () => {
     const summary = await feedbackService.getEventFeedbackSummary(eventId);
     expect(Number(summary.stats.total_color_labels)).toBeGreaterThan(0);
-
-    const longRows = await feedbackService.exportEventFeedback(eventId);
-    const longLabel = longRows.find((r) => r.feedback_type === 'color_label');
-    expect(COLOR_LABELS).toContain(longLabel.color_label);
-
-    const pivotRows = await feedbackService.exportEventFeedbackPivoted(eventId);
-    const pivotWithLabel = pivotRows.find((r) => r.color_label);
-    expect(COLOR_LABELS).toContain(pivotWithLabel.color_label);
   });
 });
 

@@ -19,7 +19,7 @@ interface PhotoColorLabelsProps {
   /** Per-colour visible counts, e.g. { green: 3 }. */
   colorLabelCounts?: Partial<Record<ColorLabel, number>>;
   isEnabled: boolean;
-  requireNameEmail?: boolean;
+  requireGuestName?: boolean;
   /** Show only the workflow's green selection action with studio language. */
   workflowOnly?: boolean;
   /** Keyboard hint to show under each swatch, e.g. { green: '1' }. */
@@ -39,7 +39,7 @@ export const PhotoColorLabels: React.FC<PhotoColorLabelsProps> = ({
   myColorLabel,
   colorLabelCounts = {},
   isEnabled,
-  requireNameEmail = false,
+  requireGuestName = false,
   workflowOnly = false,
   shortcutHints = {},
   onColorLabelChange
@@ -49,18 +49,17 @@ export const PhotoColorLabels: React.FC<PhotoColorLabelsProps> = ({
   const guestIdentity = useGuestIdentityOptional();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showIdentityModal, setShowIdentityModal] = useState(false);
-  const [savedIdentity, setSavedIdentity] = useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = useState<{ name: string } | null>(null);
   const [pendingColor, setPendingColor] = useState<ColorLabel | null>(null);
 
   const colorName = (color: ColorLabel) => t(`feedback.colorLabels.${color}`, color);
 
   const submitColorLabelMutation = useMutation({
-    mutationFn: (data: { color: ColorLabel; guest_name?: string; guest_email?: string }) =>
+    mutationFn: (data: { color: ColorLabel; guest_name?: string }) =>
       feedbackService.submitFeedback(gallerySlug, photoId, {
         feedback_type: 'color_label',
         color_label: data.color,
         guest_name: data.guest_name || undefined,
-        guest_email: data.guest_email || undefined
       }),
     onMutate: async (data) => {
       setIsSubmitting(true);
@@ -106,7 +105,7 @@ export const PhotoColorLabels: React.FC<PhotoColorLabelsProps> = ({
     if (!isEnabled || isSubmitting) return;
 
     // Guest identity mode: ensure a per-person guest token; the server reads
-    // name/email from the token — body values are ignored.
+    // the name from the token — body values are ignored.
     if (guestIdentity?.identityMode === 'guest') {
       try {
         await guestIdentity.ensureIdentity();
@@ -118,22 +117,22 @@ export const PhotoColorLabels: React.FC<PhotoColorLabelsProps> = ({
     }
 
     // Simple mode: legacy inline prompt flow.
-    if (requireNameEmail && !workflowOnly && !savedIdentity) {
+    if (requireGuestName && !workflowOnly && !savedIdentity) {
       setPendingColor(color);
       setShowIdentityModal(true);
     } else {
       submitColorLabelMutation.mutate({
         color,
-        ...(savedIdentity ? { guest_name: savedIdentity.name, guest_email: savedIdentity.email } : {})
+        ...(savedIdentity ? { guest_name: savedIdentity.name } : {})
       });
     }
   };
 
-  const handleIdentitySubmit = (name: string, email: string) => {
-    setSavedIdentity({ name, email });
+  const handleIdentitySubmit = (name: string) => {
+    setSavedIdentity({ name });
     setShowIdentityModal(false);
     if (pendingColor) {
-      submitColorLabelMutation.mutate({ color: pendingColor, guest_name: name, guest_email: email });
+      submitColorLabelMutation.mutate({ color: pendingColor, guest_name: name });
       setPendingColor(null);
     }
   };

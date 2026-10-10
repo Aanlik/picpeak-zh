@@ -54,8 +54,8 @@ describe('regenerate-thumbnails script (#1148)', () => {
       event_type: 'project',
       event_name: 'Regen Script',
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: '/gallery/regen-script-event/share',
       expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),

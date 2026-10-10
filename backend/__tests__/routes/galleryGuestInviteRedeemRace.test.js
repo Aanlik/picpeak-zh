@@ -59,8 +59,8 @@ describe('guest invite redemption race', () => {
       event_type: 'project',
       event_name: 'Invite Redeem Race',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'invite-redeem-race-share',

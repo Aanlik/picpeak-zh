@@ -192,13 +192,8 @@ async function buildOgMetadata(slug, requestPath) {
   const title = titleParts.join(' — ');
 
   let description;
-  // Only explicitly password-free galleries may publish their welcome text.
-  // Missing/legacy values default to private, as they do in gallery auth.
-  const isPasswordFree = [false, 0, '0'].includes(event.require_password);
   const { isGalleryHidden } = require('../utils/revealMode');
-  if (isPasswordFree && !isGalleryHidden(event) && event.welcome_message) {
-    description = String(event.welcome_message).replace(/\s+/g, ' ').trim().slice(0, 200);
-  } else if (eventDate) {
+  if (eventDate) {
     description = `Photo gallery from ${eventName} on ${eventDate}.`;
   } else {
     description = `Photo gallery from ${eventName}.`;

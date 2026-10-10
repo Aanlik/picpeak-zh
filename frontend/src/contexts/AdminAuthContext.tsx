@@ -44,7 +44,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
         if (storedUser) {
           try {
             setUser(JSON.parse(storedUser));
-          } catch (err) {
+          } catch {
             sessionStorage.removeItem('admin_user');
           }
         }
@@ -71,7 +71,7 @@ export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }
           setIsAuthenticated(false);
           setUser(null);
         }
-      } catch (error) {
+      } catch {
         // Auth check failed - user needs to login
         sessionStorage.removeItem('admin_user');
         setIsAuthenticated(false);

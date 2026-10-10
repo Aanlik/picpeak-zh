@@ -1,11 +1,9 @@
-import { NO_EMAIL_MODE } from './config/communication';
 import { LocalUsersPage } from './pages/admin/LocalUsersPage';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { analyticsService, AnalyticsRouteTracker } from './services/analytics.service';
 
 import { GalleryAuthProvider, MaintenanceProvider } from './contexts';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -20,40 +18,18 @@ import {
   EventsListPage,
   CreateEventPage,
   EventDetailsPage,
-  EventFeedbackPage,
   ArchivesPage,
-  AnalyticsPage,
   SettingsPage,
-  SystemHealthPage,
-  UserManagementPage,
-  CustomerManagementPage,
-  CustomerDetailPage,
-  WebhookDeliveriesPage,
 } from './pages/admin';
-const MessagesPage = lazy(() => import('./pages/admin/messages/MessagesPage').then((m) => ({ default: m.MessagesPage })));
-import { WorkflowsListPage } from './pages/admin/workflows/WorkflowsListPage';
-import { WorkflowApprovalsPage } from './pages/admin/workflows/WorkflowApprovalsPage';
-import { WorkflowEditorPage } from './pages/admin/workflows/WorkflowEditorPage';
-import { AcceptInvitePage } from './pages/public/AcceptInvitePage';
 import { TransfersPage } from './pages/admin/transfers/TransfersPage';
 import { TransferDownloadPage } from './pages/public/TransferDownloadPage';
 import { TransferUploadPage } from './pages/public/TransferUploadPage';
-import {
-  CustomerLoginPage,
-  CustomerDashboardPage,
-  CustomerAcceptInvitePage,
-  CustomerLayout,
-  CustomerProfilePage,
-  CustomerResetPasswordPage,
-} from './pages/customer';
-import { CustomerAuthProvider } from './contexts/CustomerAuthContext';
 import { AdminLayout, AdminAuthWrapper } from './components/admin';
 import { RequireFeature } from './components/admin/RequireFeature';
 import { PageErrorBoundary, OfflineIndicator, SkipLink, DynamicFavicon, RobotsMetaTags, CMSContentBlock, Loading } from './components/common';
 import { MaintenanceWrapper } from './components/MaintenanceWrapper';
 import { GlobalThemeProvider } from './components/GlobalThemeProvider';
 import { ConfirmDialogProvider } from './components/common';
-import { usePublicSettings } from './hooks/usePublicSettings';
 import { SetupPage } from './pages/SetupPage';
 import { AdminAuthProvider } from './contexts';
 
@@ -66,84 +42,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-// Bootstraps the analytics tracker from /public/settings. Lives inside
-// QueryClientProvider so it shares the public-settings cache with every
-// other consumer of usePublicSettings. Dispatches based on the
-// `analytics_tracker_provider` switch (#663 Phase 1) — Umami / Rybbit /
-// Custom / None. Back-compat: when the provider field is missing or unset,
-// falls through to the legacy `umami_enabled`-based behaviour so installs
-// that haven't picked yet keep working.
-function AnalyticsBootstrap() {
-  const { data: settings, isError } = usePublicSettings();
-
-  useEffect(() => {
-    if (!settings && !isError) return;
-
-    const envUmamiUrl = import.meta.env.VITE_UMAMI_URL;
-    const envUmamiWebsiteId = import.meta.env.VITE_UMAMI_WEBSITE_ID;
-    const provider = settings?.analytics_tracker_provider;
-
-    if (provider === 'rybbit' && settings?.rybbit_url && settings.rybbit_website_id) {
-      analyticsService.initialize({
-        provider: 'rybbit',
-        hostUrl: settings.rybbit_url,
-        websiteId: settings.rybbit_website_id,
-        doNotTrack: true,
-        // Mask every /gallery/* path (they embed the share token) so Rybbit's
-        // auto-tracked page views never carry the secret (GHSA-7m6c). The
-        // other token-bearing pages never load the tracker at all (see
-        // isCredentialPath in analytics.service); they are listed here too
-        // so a page view recorded before a client-side navigation away from
-        // them cannot carry the token either.
-        maskPatterns: [
-          '/gallery/**', '/s/**', '/invite/**',
-          '/transfer/**', '/transfer-upload/**', '/customer/**',
-        ],
-      });
-      return;
-    }
-
-    if (provider === 'custom') {
-      analyticsService.initialize({
-        provider: 'custom',
-        customHeadHtml: settings?.analytics_custom_head_html || '',
-      });
-      return;
-    }
-
-    // Umami: explicit provider OR legacy umami_enabled path.
-    if (
-      (provider === 'umami' || settings?.umami_enabled)
-      && settings?.umami_url && settings?.umami_website_id
-    ) {
-      analyticsService.initialize({
-        provider: 'umami',
-        hostUrl: settings.umami_url,
-        websiteId: settings.umami_website_id,
-        // autoTrack omitted → data-auto-track="false": Umami must NOT read the
-        // raw window.location (token leak). Page views come from the manual,
-        // sanitized AnalyticsRouteTracker instead (GHSA-7m6c).
-        doNotTrack: true,
-      });
-      return;
-    }
-
-    // Env-var fallback (legacy deploys). Only when no DB config and
-    // analytics aren't disabled at the public-site level.
-    if (envUmamiUrl && envUmamiWebsiteId && (isError || settings?.enable_analytics !== false)) {
-      analyticsService.initialize({
-        provider: 'umami',
-        hostUrl: envUmamiUrl,
-        websiteId: envUmamiWebsiteId,
-        // autoTrack omitted → data-auto-track="false" (see above, GHSA-7m6c).
-        doNotTrack: true,
-      });
-    }
-  }, [settings, isError]);
-
-  return null;
-}
 
 function App() {
   // Track dark mode for toast theming
@@ -160,7 +58,6 @@ function App() {
   return (
     <PageErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AnalyticsBootstrap />
         <MaintenanceProvider>
           <ThemeProvider>
             <GlobalThemeProvider>
@@ -168,7 +65,6 @@ function App() {
               <DynamicFavicon />
               <RobotsMetaTags />
               <Router>
-                <AnalyticsRouteTracker />
                 <MaintenanceWrapper>
                   <SkipLink />
                   <Routes>
@@ -207,7 +103,6 @@ function App() {
                       <Route path="events" element={<EventsListPage />} />
                       <Route path="events/new" element={<CreateEventPage />} />
                       <Route path="events/:id" element={<EventDetailsPage />} />
-                      <Route path="events/:id/feedback" element={<EventFeedbackPage />} />
                       <Route path="archives" element={<ArchivesPage />} />
                       {/* PicTransfer (#997) — cross-event file transfers.
                           Gated by the `transfers` flag (strictly opt-in). */}
@@ -216,41 +111,16 @@ function App() {
                       </Route>
 
                       {/* Feature-gated surfaces — redirect to /admin/dashboard when flag is off. */}
-                      <Route element={<RequireFeature flag="analytics" />}>
-                        <Route path="analytics" element={<AnalyticsPage />} />
-                      </Route>
                       <Route element={<RequireFeature flag="userManagement" />}>
-                        <Route path="users" element={NO_EMAIL_MODE ? <LocalUsersPage /> : <UserManagementPage />} />
-                      </Route>
-                      <Route element={<RequireFeature flag="messaging" />}>
-                        <Route path="messages" element={
-                          <Suspense fallback={<Loading />}>
-                            <MessagesPage />
-                          </Suspense>
-                        } />
-                      </Route>
-
-                      <Route path="customers" element={<CustomerManagementPage />} />
-                      <Route path="customers/:id" element={<CustomerDetailPage />} />
-                      <Route path="clients/*" element={<Navigate to="/admin/customers" replace />} />
-
-                      {/* Workflows (automation engine) — top-level area gated
-                          by the `workflows` flag. */}
-                      <Route element={<RequireFeature flag="workflows" />}>
-                        <Route path="workflows" element={<WorkflowsListPage />} />
-                        <Route path="workflows/approvals" element={<WorkflowApprovalsPage />} />
-                        <Route path="workflows/:id" element={<WorkflowEditorPage />} />
+                        <Route path="users" element={<LocalUsersPage />} />
                       </Route>
 
                       <Route path="settings" element={<SettingsPage />} />
-                      <Route path="system-health" element={NO_EMAIL_MODE ? <Navigate to="/admin/settings?tab=status" replace /> : <SystemHealthPage />} />
-                      <Route path="webhooks/:id/deliveries" element={<WebhookDeliveriesPage />} />
 
                       {/* Old top-level routes — these surfaces now live as
                           Settings tabs (#feature-flags-settings-reorg).
                           Kept indefinitely as redirects so existing bookmarks
                           and external links don't 404. */}
-                      <Route path="email"        element={<Navigate to="/admin/settings?tab=email"      replace />} />
                       <Route path="branding"     element={<Navigate to="/admin/settings?tab=branding"   replace />} />
                       <Route path="backup"       element={<Navigate to="/admin/settings?tab=backup"     replace />} />
                       <Route path="cms"          element={<Navigate to="/admin/settings?tab=cms"        replace />} />
@@ -259,47 +129,12 @@ function App() {
                     </Route>
                   </Route>
 
-                  {/* Public invitation acceptance page */}
-                  <Route path="/invite/:token" element={<AcceptInvitePage />} />
-
                   {/* PicTransfer (#997) — recipient download + client upload,
                       token-only, no auth. */}
                   <Route path="/transfer/:token" element={<TransferDownloadPage />} />
                   <Route path="/transfer-upload/:token" element={<TransferUploadPage />} />
 
-                  {/* Customer surface (#354). Strictly separate provider /
-                      cookie / API surface from /admin/*. The customerPortal
-                      feature flag hides the *admin-side* surfaces (sidebar
-                      entry, /admin/customers routes, CustomerAccountPicker)
-                      via RequireFeature. The customer-side /customer/*
-                      tree stays publicly reachable so existing customers
-                      can still log in even if the admin temporarily flips
-                      the flag off — and because RequireFeature reads from
-                      FeatureFlagsProvider (admin-only context), gating
-                      these routes here would crash unauthenticated
-                      visitors with an unmounted-provider error. */}
-                  <Route path="/customer/*" element={
-                    <CustomerAuthProvider>
-                      <Routes>
-                        {/* Public surfaces: login, accept-invite, reset —
-                            no CustomerLayout (their own branded shells). */}
-                        <Route path="login" element={<CustomerLoginPage />} />
-                        <Route path="invite/:token" element={<CustomerAcceptInvitePage />} />
-                        <Route path="reset-password/:token" element={<CustomerResetPasswordPage />} />
-
-                        {/* Authenticated surfaces share the sidebar layout
-                            (Outlet pattern, mirrors AdminLayout). The
-                            CustomerLayout itself enforces auth — bouncing
-                            unauthenticated visitors to /customer/login. */}
-                        <Route element={<CustomerLayout />}>
-                          <Route path="dashboard" element={<CustomerDashboardPage />} />
-                          <Route path="profile" element={<CustomerProfilePage />} />
-                        </Route>
-
-                        <Route index element={<Navigate to="/customer/dashboard" replace />} />
-                      </Routes>
-                    </CustomerAuthProvider>
-                  } />
+                  <Route path="/customer/*" element={<Navigate to="/" replace />} />
 
                   {/* Public legal pages */}
                   <Route path="/impressum" element={<LegalPage />} />

@@ -19,11 +19,9 @@
  *
  * Config lives in app_settings (oidc_* keys, managed via the dedicated
  * /admin/settings/sso endpoints). The client secret is AES-256-GCM encrypted
- * at rest — same construction as mfaService, own salt, key from
+ * at rest — own salt, key from
  * OIDC_ENCRYPTION_KEY (fallback JWT_SECRET).
  *
- * MFA is delegated to the IdP for SSO logins: local TOTP protects the local
- * password path, which SSO users don't take.
  */
 
 const crypto = require('crypto');

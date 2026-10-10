@@ -66,8 +66,8 @@ beforeAll(async () => {
     event_type: 'project',
     event_name: 'Rating Removal Test',
     event_date: '2026-06-22',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: `/gallery/${EVENT_SLUG}/share`,
     share_token: 'rating-removal-share',
@@ -151,7 +151,6 @@ describe('rating removal (#884)', () => {
       event_id: eventId,
       feedback_type: 'rating',
       guest_identifier: GUEST_A,
-      is_approved: 1,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

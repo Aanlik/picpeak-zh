@@ -16,7 +16,6 @@ import { validateRateLimitSettings, type SecuritySettings, type RateLimitSetting
 const security: SecuritySettings = {
   password_min_length: 8, password_complexity: 'strong', session_timeout_minutes: 60,
   max_login_attempts: 5, attempt_window_minutes: 15, lockout_duration_minutes: 30,
-  enable_recaptcha: false, recaptcha_site_key: '', recaptcha_secret_key: '',
 };
 const rateLimit: RateLimitSettings = {
   rate_limit_enabled: true, rate_limit_window_minutes: 15, rate_limit_max_requests: 300,

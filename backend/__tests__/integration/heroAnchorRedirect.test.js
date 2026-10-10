@@ -44,8 +44,8 @@ describe('hero route focal-point URL (issue 1737)', () => {
       event_type: 'project',
       event_name: 'Hero Anchor',
       event_date: '2026-09-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'hero-anchor-share',

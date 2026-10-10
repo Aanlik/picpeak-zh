@@ -1,6 +1,6 @@
 import { expect, type APIRequestContext } from '@playwright/test';
 
-export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+export const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin!234';
 
 /**
@@ -12,7 +12,7 @@ export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin!234';
  */
 export async function adminApiToken(request: APIRequestContext): Promise<string> {
   const res = await request.post('/api/auth/admin/login', {
-    data: { username: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+    data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
   });
   expect(res.ok(), `admin login failed: ${res.status()} ${await res.text()}`).toBeTruthy();
   const { cookies } = await request.storageState();
@@ -23,13 +23,12 @@ export async function adminApiToken(request: APIRequestContext): Promise<string>
 
 /**
  * Publish an event created through the API. New events start as drafts, and a
- * draft's share link shows guests "Gallery Not Found". notify_customer=false
- * keeps the publish from queueing a customer email.
+ * draft's share link shows guests "Gallery Not Found".
  */
 export async function publishEvent(request: APIRequestContext, token: string, eventId: number): Promise<void> {
   const res = await request.post(`/api/admin/events/${eventId}/publish`, {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    data: { notify_customer: false },
+    data: {},
   });
   expect(res.ok(), `publish failed: ${res.status()} ${await res.text()}`).toBeTruthy();
 }

@@ -66,10 +66,10 @@ export interface FeedbackSettings {
   allow_color_labels: boolean;
   /** Which lightbox shortcut scheme this gallery uses (#1044). */
   keybind_mode?: KeybindMode;
-  require_name_email: boolean;
-  moderate_comments: boolean;
   show_feedback_to_guests: boolean;
   identity_mode?: IdentityMode;
+  /** Legacy setting kept for existing galleries; email collection was removed. */
+  require_name_email?: boolean;
   // Per-guest caps (#655). null or 0 = unlimited (preserves current
   // behaviour for installs that haven't enabled the cap). Positive
   // integers are enforced server-side — adds beyond the cap return a
@@ -90,8 +90,6 @@ export interface PhotoFeedback {
   reaction?: string;
   color_label?: ColorLabel | null;
   guest_name?: string;
-  guest_email?: string;
-  is_approved: boolean;
   is_hidden: boolean;
   created_at: string;
   updated_at?: string;
@@ -134,43 +132,6 @@ export interface FeedbackResponse {
   };
 }
 
-export interface FeedbackAnalytics {
-  summary: {
-    total_feedback: number;
-    total_ratings: number;
-    average_rating: number;
-    total_likes: number;
-    total_comments: number;
-    total_favorites: number;
-    total_reactions?: number;
-    pending_moderation: number;
-  };
-  topRated: Array<{
-    id: number;
-    filename: string;
-    average_rating: number;
-    feedback_count: number;
-    like_count: number;
-  }>;
-  mostLiked: Array<{
-    id: number;
-    filename: string;
-    like_count: number;
-    average_rating: number;
-  }>;
-  recentComments: Array<{
-    comment_text: string;
-    guest_name: string;
-    created_at: string;
-    filename: string;
-  }>;
-  timeline: Array<{
-    date: string;
-    count: number;
-    feedback_type: string;
-  }>;
-}
-
 class FeedbackService {
   // Admin endpoints
   async getEventFeedbackSettings(eventId: string): Promise<FeedbackSettings> {
@@ -194,64 +155,6 @@ class FeedbackService {
     return response.data;
   }
 
-  async moderateFeedback(feedbackId: string, action: 'approve' | 'hide' | 'reject') {
-    const response = await api.put(`/admin/feedback/feedback/${feedbackId}/${action}`);
-    return response.data;
-  }
-
-  async deleteFeedback(feedbackId: string) {
-    const response = await api.delete(`/admin/feedback/feedback/${feedbackId}`);
-    return response.data;
-  }
-
-  async getEventFeedbackAnalytics(eventId: string): Promise<FeedbackAnalytics> {
-    const response = await api.get(`/admin/feedback/events/${eventId}/feedback-analytics`);
-    return response.data;
-  }
-
-  // `shape` defaults to 'long' (one row per feedback action) for backward
-  // compatibility with anyone scripting against this endpoint. 'pivot' (per
-  // #640 #6) returns one row per (photo, guest_identifier) with boolean
-  // is_favorited / is_liked plus star_rating + comment. Hidden-by-moderator
-  // rows are excluded from the pivot.
-  async exportEventFeedback(
-    eventId: string,
-    format: 'json' | 'csv' = 'json',
-    shape: 'long' | 'pivot' = 'long',
-  ) {
-    const response = await api.get(`/admin/feedback/events/${eventId}/feedback/export`, {
-      params: { format, shape },
-      responseType: format === 'csv' ? 'blob' : 'json'
-    });
-    return response.data;
-  }
-
-  async getPendingModeration() {
-    const response = await api.get('/admin/feedback/feedback/pending-moderation');
-    return response.data;
-  }
-
-  // Word filter management
-  async getWordFilters() {
-    const response = await api.get('/admin/feedback/word-filters');
-    return response.data;
-  }
-
-  async addWordFilter(word: string, severity: string) {
-    const response = await api.post('/admin/feedback/word-filters', { word, severity });
-    return response.data;
-  }
-
-  async updateWordFilter(id: number, updates: { word?: string; severity?: string; is_active?: boolean }) {
-    const response = await api.put(`/admin/feedback/word-filters/${id}`, updates);
-    return response.data;
-  }
-
-  async deleteWordFilter(id: number) {
-    const response = await api.delete(`/admin/feedback/word-filters/${id}`);
-    return response.data;
-  }
-
   // Guest endpoints
   async getGalleryFeedbackSettings(slug: string): Promise<Partial<FeedbackSettings>> {
     const response = await api.get(`/gallery/${slug}/feedback-settings`);
@@ -270,7 +173,6 @@ class FeedbackService {
     reaction?: string;
     color_label?: ColorLabel;
     guest_name?: string;
-    guest_email?: string;
   }) {
     const response = await api.post(`/gallery/${slug}/photos/${photoId}/feedback`, feedback);
     return response.data;
@@ -282,8 +184,7 @@ class FeedbackService {
     color_label?: ColorLabel;
     comment_text?: string;
     guest_name?: string;
-    guest_email?: string;
-  }): Promise<{ success: boolean; applied_count: number; failed_photo_ids: number[]; moderation_required: boolean }> {
+  }): Promise<{ success: boolean; applied_count: number; failed_photo_ids: number[] }> {
     const response = await api.post(`/gallery/${slug}/photos/batch-feedback`, feedback);
     return response.data;
   }

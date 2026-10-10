@@ -65,8 +65,8 @@ describe('videos stay playable under enhanced/maximum protection (#1370)', () =>
       event_type: 'project',
       event_name: 'Protected Video',
       event_date: '2026-09-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/s`,
       share_token: 'protected-video-share',

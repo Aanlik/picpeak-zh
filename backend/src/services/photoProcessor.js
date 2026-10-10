@@ -65,21 +65,21 @@ async function processUploadedPhotos(files, eventId, uploadedBy = 'admin', categ
   if (!event) {
     throw new Error('Event not found');
   }
-  
+
   // Process each file
   for (const file of fileList) {
     const trx = await db.transaction();
-    
+
     try {
       // Count existing photos to generate sequence number
       let counter = 1;
       let photoType = 'individual'; // default type
-      
+
       // If categoryId is provided and matches photo types, use it as type
       if (categoryId === 'collage') {
         photoType = 'collage';
       }
-      
+
       // Count existing photos of the same type for numbering
       const existingCount = await trx('photos')
         .where({ event_id: eventId, type: photoType })
@@ -88,7 +88,7 @@ async function processUploadedPhotos(files, eventId, uploadedBy = 'admin', categ
 
       const existingCountValue = Number(existingCount?.count ?? 0);
       counter = existingCountValue + 1;
-      
+
       // Generate new filename
       const extension = path.extname(file.originalname);
       const categoryName = photoType === 'collage' ? 'collages' : 'individual';
@@ -98,7 +98,7 @@ async function processUploadedPhotos(files, eventId, uploadedBy = 'admin', categ
         counter,
         extension
       );
-      
+
       const tempPath = file?.path || file?.filepath || file?.tempFilePath;
 
       if (!tempPath) {
@@ -266,21 +266,6 @@ async function processUploadedPhotos(files, eventId, uploadedBy = 'admin', categ
       // Commit transaction
       await trx.commit();
 
-      // Webhook (#327) — fires for every entry path that lands in this
-      // service: guest upload + auto-import + admin upload via API.
-      try {
-        const webhookService = require('./webhookService');
-        await webhookService.fire('photo.uploaded', {
-          event: { id: event.id, slug: event.slug, event_name: event.event_name },
-          photo: {
-            id: photoId,
-            filename: newFilename,
-            original_filename: file.originalname,
-            size_bytes: file.size,
-            uploaded_by: uploadedBy,
-          },
-        });
-      } catch (e) { /* non-fatal */ }
 
       // Face detection (#1074). processPhoto() — the ASYNC path — enqueues on
       // completion, but this synchronous path (chunked-upload completion,
@@ -331,7 +316,7 @@ async function processUploadedPhotos(files, eventId, uploadedBy = 'admin', categ
       // Note: Individual file failures don't stop the entire upload batch
     }
   }
-  
+
   return uploadedPhotos;
 }
 
@@ -482,7 +467,7 @@ async function queueFilesForProcessing(files, options = {}) {
  * at its final storage key — this function reads it back, generates a
  * thumbnail, extracts EXIF + dimensions (or video metadata), then
  * updates the photo row to `complete` and fires the queued side
- * effects (watermark, webhook).
+ * effects (watermark, activity notification).
  *
  * Throwing causes the background processor to mark the row as
  * 'failed' with the error message; partial successes (e.g. thumbnail
@@ -611,21 +596,6 @@ async function processPhoto(photoId) {
     watermarkGeneratorService
       .generateForPhoto(photoId)
       .catch((err) => logger.warn(`processPhoto: watermark queue failed for ${photoId}`, { error: err.message }));
-  }
-
-  try {
-    const webhookService = require('./webhookService');
-    await webhookService.fire('photo.uploaded', {
-      event: { id: event.id, slug: event.slug, event_name: event.event_name },
-      photo: {
-        id: photo.id,
-        filename: photo.filename,
-        original_filename: photo.original_filename,
-        size_bytes: photo.size_bytes,
-      },
-    });
-  } catch (e) {
-    logger.warn(`processPhoto: webhook fire failed for ${photoId}`, { error: e.message });
   }
 
   return updateData;

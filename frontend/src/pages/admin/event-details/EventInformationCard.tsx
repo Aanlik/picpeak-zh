@@ -1,4 +1,3 @@
-import { NO_EMAIL_MODE } from '../../../config/communication';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -20,7 +19,6 @@ import {
 import type { Event } from '../../../types';
 import { Input, Card, Loading, MarkdownContent, LocalizedDateInput } from '../../../components/common';
 import { HeroPhotoSelector, FocalPointPicker, FeedbackSettings } from '../../../components/admin';
-import { CustomerAccountPicker } from '../../../components/admin/CustomerAccountPicker';
 import { api } from '../../../config/api';
 import { buildResourceUrl } from '../../../utils/url';
 import { useLocalizedDate } from '../../../hooks/useLocalizedDate';
@@ -70,7 +68,7 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
   // the backend gates on photos.upload like the Import button. Mirror that
   // here rather than letting the save bounce with a 403.
   const canEnableWatch = usePermission('photos.upload');
-  
+
   const { format } = useLocalizedDate();
   const queryClient = useQueryClient();
   const [logoUploading, setLogoUploading] = useState(false);
@@ -113,21 +111,6 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
 
       {isEditing ? (
         <div className="space-y-4">
-          {!NO_EMAIL_MODE && (<>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              {t('events.welcomeMessageLabel')}
-            </label>
-            <textarea
-              value={editForm.welcome_message}
-              onChange={(e) => setEditForm(prev => ({ ...prev, welcome_message: e.target.value }))}
-              className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-accent-dark"
-              rows={3}
-              placeholder={t('events.welcomeMessage')}
-            />
-          </div>
-          </>)}
-
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
               {t('events.hostName')}
@@ -139,18 +122,6 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
               placeholder={t('events.hostNamePlaceholder')}
             />
           </div>
-
-          {!NO_EMAIL_MODE && (<div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              {t('events.hostEmail')}
-            </label>
-            <Input
-              type="email"
-              value={editForm.customer_email}
-              onChange={(e) => setEditForm(prev => ({ ...prev, customer_email: e.target.value }))}
-              placeholder={t('events.hostEmailPlaceholder')}
-            />
-          </div>)}
 
           {phoneFieldEnabled && (
             <div>
@@ -165,13 +136,6 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
               />
             </div>
           )}
-
-          {/* Customer accounts (#354). Picker self-hides when the
-              customerPortal feature flag is off. */}
-          <CustomerAccountPicker
-            value={editForm.customer_accounts}
-            onChange={(next) => setEditForm((prev) => ({ ...prev, customer_accounts: next }))}
-          />
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
@@ -866,15 +830,6 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
               ) : null}
             </dd>
           </div>
-          {!NO_EMAIL_MODE && (<>
-          <div>
-            <dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{t('events.welcomeMessage')}</dt>
-            <dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100">
-              {event.welcome_message || <span className="text-neutral-400">{t('events.noWelcomeMessageSet')}</span>}
-            </dd>
-          </div>
-          </>)}
-
           <div>
             <dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{t('events.hostName')}</dt>
             <dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100">
@@ -882,19 +837,6 @@ export const EventInformationCard: React.FC<EventInformationCardProps> = ({
             </dd>
           </div>
 
-          {!NO_EMAIL_MODE && (<>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{t('events.hostEmail')}</dt>
-            <dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100">{event.customer_email}</dd>
-            </div>
-
-            {!NO_EMAIL_MODE && (<div>
-              <dt className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{t('events.adminEmail')}</dt>
-              <dd className="mt-1 text-sm text-neutral-900 dark:text-neutral-100">{event.admin_email}</dd>
-            </div>)}
-          </div>
-          </>)}
 
           {phoneFieldEnabled && (
             <div>

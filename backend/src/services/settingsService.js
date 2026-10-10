@@ -146,11 +146,7 @@ const getPublicSettings = async () => {
     'branding_primary_color',
     'branding_accent_color',
     'general_default_expiration_days',
-    'recaptcha_enabled',
-    'recaptcha_site_key',
     'event_require_customer_name',
-    'event_require_customer_email',
-    'event_require_admin_email'
   ];
 
   const settings = await db('settings')
@@ -171,14 +167,6 @@ const getPublicSettings = async () => {
  */
 const getBrandingSettings = async () => {
   return await getSettingsByPrefix('branding_');
-};
-
-/**
- * Get email settings
- * @returns {Promise<Object>}
- */
-const getEmailSettings = async () => {
-  return await getSettingsByPrefix('email_');
 };
 
 /**
@@ -262,6 +250,5 @@ module.exports = {
   deleteSetting,
   getPublicSettings,
   getBrandingSettings,
-  getEmailSettings,
   getStorageSettings
 };

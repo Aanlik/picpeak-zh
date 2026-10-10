@@ -21,14 +21,9 @@ interface GuestIdentityContextValue {
   identityMode: IdentityMode;
   isRequired: boolean;            // true when mode='guest' AND no identity yet
   promptOpen: boolean;
-  recoveryOpen: boolean;
   openPrompt: () => void;
   closePrompt: () => void;
-  openRecovery: () => void;
-  closeRecovery: () => void;
-  register: (name: string, email?: string) => Promise<GuestIdentity>;
-  recoverRequest: (email: string) => Promise<void>;
-  recoverVerify: (email: string, code: string) => Promise<GuestIdentity>;
+  register: (name: string) => Promise<GuestIdentity>;
   forget: () => Promise<void>;
   /**
    * Drop the stored identity on THIS device without touching the server.
@@ -66,7 +61,6 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
   const [identity, setIdentity] = useState<GuestIdentity | null>(() => getGuestIdentity(slug));
   const [savedRoles, setSavedRoles] = useState<SavedGuestRole[]>(() => getGuestRoles(slug));
   const [promptOpen, setPromptOpen] = useState(false);
-  const [recoveryOpen, setRecoveryOpen] = useState(false);
 
   // Pending promise resolvers for ensureIdentity() calls waiting on prompt.
   const pendingResolvers = useRef<Array<(identity: GuestIdentity) => void>>([]);
@@ -100,7 +94,6 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
         // register() does — otherwise the action hangs forever and submitting
         // the still-open prompt registers a second guest.
         setPromptOpen(false);
-        setRecoveryOpen(false);
         pendingResolvers.current.forEach((r) => r(next));
         pendingResolvers.current = [];
         pendingRejecters.current = [];
@@ -197,7 +190,7 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
         window.history.replaceState({}, '', newUrl);
       } catch (error) {
         // A spent (409) or revoked (410) invite is the normal way a guest comes
-        // back through their own emailed link, and the identity this device
+        // back through their own shared link, and the identity this device
         // holds is then theirs — keep it. But the same link opened on a shared
         // device that holds SOMEONE ELSE's identity must not quietly act as
         // that someone: the server names the invite's guest on those two
@@ -217,7 +210,7 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
           }
         }
         // Otherwise fail silently; the visitor falls back to the normal prompt.
-        // eslint-disable-next-line no-console
+
         console.warn('Failed to redeem invite token', error);
       } finally {
         invitePromiseRef.current = null;
@@ -234,40 +227,14 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
     pendingRejecters.current = [];
   }, []);
 
-  const openRecovery = useCallback(() => setRecoveryOpen(true), []);
-  const closeRecovery = useCallback(() => setRecoveryOpen(false), []);
-
   const register = useCallback(
-    async (name: string, email?: string): Promise<GuestIdentity> => {
-      const response = await guestsService.registerGuest(slug, { name, email });
+    async (name: string): Promise<GuestIdentity> => {
+      const response = await guestsService.registerGuest(slug, { name });
       storeGuestIdentity(slug, response.guest, response.token);
       setIdentity(response.guest);
       setSavedRoles(getGuestRoles(slug));
       setPromptOpen(false);
       // Resolve pending ensureIdentity() promises.
-      pendingResolvers.current.forEach((r) => r(response.guest));
-      pendingResolvers.current = [];
-      pendingRejecters.current = [];
-      return response.guest;
-    },
-    [slug]
-  );
-
-  const recoverRequest = useCallback(
-    async (email: string): Promise<void> => {
-      await guestsService.requestRecoveryCode(slug, email);
-    },
-    [slug]
-  );
-
-  const recoverVerify = useCallback(
-    async (email: string, code: string): Promise<GuestIdentity> => {
-      const response = await guestsService.verifyRecoveryCode(slug, email, code);
-      storeGuestIdentity(slug, response.guest, response.token);
-      setIdentity(response.guest);
-      setSavedRoles(getGuestRoles(slug));
-      setPromptOpen(false);
-      setRecoveryOpen(false);
       pendingResolvers.current.forEach((r) => r(response.guest));
       pendingResolvers.current = [];
       pendingRejecters.current = [];
@@ -313,7 +280,6 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
       return Promise.resolve({
         id: 0,
         name: '',
-        email: null,
         identifier: '',
       } as GuestIdentity);
     }
@@ -348,14 +314,9 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
       identityMode,
       isRequired,
       promptOpen,
-      recoveryOpen,
       openPrompt,
       closePrompt,
-      openRecovery,
-      closeRecovery,
       register,
-      recoverRequest,
-      recoverVerify,
       forget,
       signOut,
       switchRole,
@@ -368,14 +329,9 @@ export const GuestIdentityProvider: React.FC<GuestIdentityProviderProps> = ({
       identityMode,
       isRequired,
       promptOpen,
-      recoveryOpen,
       openPrompt,
       closePrompt,
-      openRecovery,
-      closeRecovery,
       register,
-      recoverRequest,
-      recoverVerify,
       forget,
       signOut,
       switchRole,

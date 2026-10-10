@@ -1,11 +1,10 @@
 import { NasFolderSelection } from '../../components/admin/NasFolderSelection';
 import { externalMediaService } from '../../services/externalMedia.service';
-import { NO_EMAIL_MODE } from '../../config/communication';
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { PHOTO_WORKFLOW_MODE } from '../../config/photography';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
+import {
   Calendar,
-  Mail,
   Lock,
   Clock,
   ArrowLeft,
@@ -19,8 +18,7 @@ import { addDays } from 'date-fns';
 import { toast } from 'react-toastify';
 
 import { Button, Input, Card, PasswordGenerator, LocalizedDateInput, TimeField } from '../../components/common';
-import { ThemeCustomizerEnhanced, GalleryPreview, WelcomeMessageEditor, FeedbackSettings } from '../../components/admin';
-import { CustomerAccountPicker } from '../../components/admin/CustomerAccountPicker';
+import { ThemeCustomizerEnhanced, GalleryPreview, FeedbackSettings } from '../../components/admin';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { eventsService } from '../../services/events.service';
 import { useLocalizedDate } from '../../hooks/useLocalizedDate';
@@ -28,8 +26,6 @@ import { categoriesService } from '../../services/categories.service';
 import { settingsService } from '../../services/settings.service';
 import { usePublicSettings } from '../../hooks/usePublicSettings';
 import { cssTemplatesService } from '../../services/cssTemplates.service';
-import { userManagementService } from '../../services/userManagement.service';
-import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { useTranslation } from 'react-i18next';
 import { ThemeConfig, GALLERY_THEME_PRESETS } from '../../types/theme.types';
 import { Code } from 'lucide-react';
@@ -45,13 +41,10 @@ interface FormData {
   event_time_end: string;
   is_full_day: boolean;
   customer_name: string;
-  customer_email: string;
   customer_phone: string;
-  admin_email: string;
   require_password: boolean;
   password: string;
   confirm_password: string;
-  welcome_message: string;
   theme_preset: string;
   theme_config: ThemeConfig;
   expires_in_days: number;
@@ -70,8 +63,6 @@ interface FormData {
     // Optional, mirroring the shared FeedbackSettings contract — the
     // <FeedbackSettings> editor's onChange emits that shape.
     keybind_mode?: 'colors' | 'lightroom';
-    require_name_email: boolean;
-    moderate_comments: boolean;
     show_feedback_to_guests: boolean;
     identity_mode?: 'simple' | 'guest' | 'shared';
   };
@@ -80,10 +71,6 @@ interface FormData {
   client_password: string;
   // Default photo sort
   default_photo_sort: string;
-  // Customer accounts assigned to this event (#354). The state holds
-  // the full picker selection so chips render without an extra fetch;
-  // only the ids are sent to the backend on submit.
-  customer_accounts: Array<{ id: number; email: string; displayName: string | null }>;
 }
 
 export const CreateEventPage: React.FC = () => {
@@ -99,13 +86,13 @@ export const CreateEventPage: React.FC = () => {
   const isSubmittingRef = useRef(false);
   const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
   // const [showPreview, setShowPreview] = useState(false);
-  
+
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
     };
   }, []);
-  
+
   const [formData, setFormData] = useState<FormData>({
     event_name: '',
     event_date: new Date().toISOString().split('T')[0], // Initialize with ISO date format
@@ -113,13 +100,10 @@ export const CreateEventPage: React.FC = () => {
     event_time_end: '',
     is_full_day: true,
     customer_name: '',
-    customer_email: '',
     customer_phone: '',
-    admin_email: '',
     require_password: true,
     password: '',
     confirm_password: '',
-    welcome_message: '',
     theme_preset: 'default',
     theme_config: GALLERY_THEME_PRESETS.default.config,
     expires_in_days: 30,
@@ -136,15 +120,12 @@ export const CreateEventPage: React.FC = () => {
       allow_reactions: true,
       allow_color_labels: false,
       keybind_mode: 'colors',
-      require_name_email: false,
-      moderate_comments: true,
       show_feedback_to_guests: true,
       identity_mode: 'simple',
     },
     client_access_enabled: false,
     client_password: '',
     default_photo_sort: 'upload_date_desc',
-    customer_accounts: [],
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
@@ -170,46 +151,9 @@ export const CreateEventPage: React.FC = () => {
 
   const { data: publicSettings } = usePublicSettings();
 
-  // Current logged-in admin (used to prefill the admin email field)
-  const { user: currentAdmin } = useAdminAuth();
-
-  // Optional: list of admin users — used to populate the email picker when
-  // there are multiple admins. Falls back to an empty list silently if the
-  // current user lacks `users.view` permission, so basic admins still get
-  // the auto-prefill from `currentAdmin` without errors surfacing.
-  const { data: adminUsers } = useQuery({
-    queryKey: ['admin-users-list'],
-    queryFn: async () => {
-      try {
-        return await userManagementService.getUsers();
-      } catch {
-        return [];
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-    retry: false
-  });
-
-  const activeAdmins = useMemo(
-    () => (adminUsers || []).filter(u => u.isActive !== false && !!u.email),
-    [adminUsers]
-  );
-
-  // Auto-prefill admin email with the current user's email exactly once,
-  // and only if the field is still empty (don't clobber typed input).
-  const didPrefillAdminEmailRef = useRef(false);
-  useEffect(() => {
-    if (didPrefillAdminEmailRef.current) return;
-    if (NO_EMAIL_MODE || !currentAdmin?.email) return;
-    didPrefillAdminEmailRef.current = true;
-    setFormData(prev => (prev.admin_email ? prev : { ...prev, admin_email: currentAdmin.email }));
-  }, [currentAdmin?.email]);
-
   // Get field requirements (default to true if not set)
   const requireCustomerName = publicSettings?.event_require_customer_name !== false;
-  const requireCustomerEmail = !NO_EMAIL_MODE && publicSettings?.event_require_customer_email !== false;
   const phoneFieldEnabled = publicSettings?.event_phone_field_enabled === true;
-  const requireAdminEmail = !NO_EMAIL_MODE && publicSettings?.event_require_admin_email !== false;
   const requireEventDate = publicSettings?.event_require_event_date !== false;
   const requireExpiration = publicSettings?.event_require_expiration !== false;
 
@@ -312,7 +256,7 @@ export const CreateEventPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: eventsService.createEvent,
     onSuccess: async (data) => {
-      if (NO_EMAIL_MODE && nasFolder) {
+      if (PHOTO_WORKFLOW_MODE && nasFolder) {
         try { await externalMediaService.linkEvent(data.id, nasFolder, nasWatch); }
         catch { toast.error(t('nasFolder.linkFailedAfterCreate')); }
       }
@@ -323,7 +267,7 @@ export const CreateEventPage: React.FC = () => {
     },
     onError: (error: any) => {
       const errorMessage = t('errors.eventCreationFailed');
-      
+
       // If validation errors exist, show them
       if (error.response?.data?.errors) {
         const validationErrors = error.response.data.errors;
@@ -353,28 +297,6 @@ export const CreateEventPage: React.FC = () => {
     // Conditional validation based on settings
     if (requireCustomerName && !formData.customer_name) {
       newErrors.customer_name = t('validation.hostNameRequired');
-    }
-
-    if (requireCustomerEmail) {
-      if (!formData.customer_email) {
-        newErrors.customer_email = t('validation.hostEmailRequired');
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customer_email)) {
-        newErrors.customer_email = t('validation.invalidEmailFormat');
-      }
-    } else if (formData.customer_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customer_email)) {
-      // Still validate format if value is provided, even if optional
-      newErrors.customer_email = t('validation.invalidEmailFormat');
-    }
-
-    if (requireAdminEmail) {
-      if (!formData.admin_email) {
-        newErrors.admin_email = t('validation.adminEmailRequired');
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.admin_email)) {
-        newErrors.admin_email = t('validation.invalidEmailFormat');
-      }
-    } else if (formData.admin_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.admin_email)) {
-      // Still validate format if value is provided, even if optional
-      newErrors.admin_email = t('validation.invalidEmailFormat');
     }
 
     if (formData.require_password) {
@@ -423,12 +345,9 @@ export const CreateEventPage: React.FC = () => {
       event_time_end: formData.is_full_day ? undefined : formData.event_time_end,
       is_full_day: formData.is_full_day,
       customer_name: formData.customer_name,
-      customer_email: formData.customer_email,
       ...(phoneFieldEnabled && formData.customer_phone ? { customer_phone: formData.customer_phone.trim() } : {}),
-      admin_email: formData.admin_email,
       require_password: formData.require_password,
       password: formData.require_password ? formData.password : undefined,
-      welcome_message: formData.welcome_message || '',
       color_theme: JSON.stringify(formData.theme_config),
       header_style: formData.theme_config.headerStyle || 'standard',
       hero_divider_style: formData.theme_config.heroDividerStyle || 'wave',
@@ -445,8 +364,6 @@ export const CreateEventPage: React.FC = () => {
       allow_reactions: feedbackSettings.allow_reactions,
       allow_color_labels: feedbackSettings.allow_color_labels,
       keybind_mode: feedbackSettings.keybind_mode,
-      require_name_email: feedbackSettings.require_name_email,
-      moderate_comments: feedbackSettings.moderate_comments,
       show_feedback_to_guests: feedbackSettings.show_feedback_to_guests,
       // The chooser has always been on this form; the value was never sent, so
       // the gallery came out in the default mode whatever was picked (#1197).
@@ -456,10 +373,6 @@ export const CreateEventPage: React.FC = () => {
       client_password: formData.client_access_enabled ? formData.client_password : undefined,
       // Default photo sort
       default_photo_sort: formData.default_photo_sort,
-      // Customer accounts assigned to this event (#354). Sent as a flat
-      // array of ids; the backend service diffs against the existing
-      // assignments and applies adds/removes inside one transaction.
-      customer_account_ids: formData.customer_accounts.map((c) => c.id),
     };
 
     isSubmittingRef.current = true;
@@ -492,18 +405,18 @@ export const CreateEventPage: React.FC = () => {
   };
 
   const handlePasswordGenerated = (password: string) => {
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       password: password,
-      confirm_password: password 
+      confirm_password: password
     }));
-    
+
     // Clear password errors since we generated a valid one
     if (errors.password || errors.confirm_password) {
-      setErrors(prev => ({ 
-        ...prev, 
+      setErrors(prev => ({
+        ...prev,
         password: undefined,
-        confirm_password: undefined 
+        confirm_password: undefined
       }));
     }
   };
@@ -551,7 +464,7 @@ export const CreateEventPage: React.FC = () => {
               />
             </div>
 
-            {!NO_EMAIL_MODE && (<>
+            {!PHOTO_WORKFLOW_MODE && (<>
             {/* Migration 137 — calendar time fields. Full-day events stay
                 full-day; admins who unchecks "Full day" get two HH:MM
                 inputs that flow into the events row's event_time_start /
@@ -584,22 +497,11 @@ export const CreateEventPage: React.FC = () => {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                {t('events.welcomeMessage')}
-              </label>
-              <WelcomeMessageEditor
-                value={formData.welcome_message}
-                onChange={(value) => setFormData(prev => ({ ...prev, welcome_message: value }))}
-                placeholder={t('events.welcomeMessagePlaceholder')}
-                rows={4}
-              />
-            </div>
             </>)}
           </div>
         </Card>
 
-        {NO_EMAIL_MODE && <Card><div className="p-6 space-y-3">
+        {PHOTO_WORKFLOW_MODE && <Card><div className="p-6 space-y-3">
           <h2 className="text-lg font-semibold">{t('nasFolder.titleOptional')}</h2>
           <NasFolderSelection value={nasFolder} onChange={setNasFolder} watch={nasWatch} onWatchChange={setNasWatch} />
         </div></Card>}
@@ -631,11 +533,11 @@ export const CreateEventPage: React.FC = () => {
                     {t(`events.themePresets.${formData.theme_preset}`, { defaultValue: GALLERY_THEME_PRESETS[formData.theme_preset]?.name || t('events.themePresets.custom') })}
                   </h3>
                   <div className="flex gap-2">
-                    <div 
+                    <div
                       className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
                       style={{ backgroundColor: formData.theme_config.primaryColor }}
                     />
-                    <div 
+                    <div
                       className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
                       style={{ backgroundColor: formData.theme_config.accentColor }}
                     />
@@ -691,12 +593,12 @@ export const CreateEventPage: React.FC = () => {
                       toast.success(t('toast.brandingPaletteSynced', 'Palette synced from Branding.'));
                     }}
                   />
-                  
+
                   {/* Gallery Preview */}
                   <div className="lg:sticky lg:top-4 lg:h-fit">
-                    <GalleryPreview 
-                      theme={formData.theme_config} 
-                      className="shadow-lg" 
+                    <GalleryPreview
+                      theme={formData.theme_config}
+                      className="shadow-lg"
                     />
                   </div>
                 </div>
@@ -773,15 +675,6 @@ export const CreateEventPage: React.FC = () => {
                   leftIcon={<Calendar className="w-5 h-5" />}
                 />
 
-                <Input
-                  type="email"
-                  label={requireCustomerEmail ? t('events.hostEmail') : `${t('events.hostEmail')} (${t('common.optional')})`}
-                  placeholder={t('events.hostEmailPlaceholder')}
-                  value={formData.customer_email}
-                  onChange={handleInputChange('customer_email')}
-                  error={errors.customer_email}
-                  leftIcon={<Mail className="w-5 h-5" />}
-                />
               </div>
 
               {phoneFieldEnabled && (
@@ -794,49 +687,6 @@ export const CreateEventPage: React.FC = () => {
                 />
               )}
 
-              {/* Customer accounts (#354). The picker is decoupled from
-                  the freeform customer_name / customer_email fields above
-                  — those stay as the event's primary contact while
-                  customer_account_ids drives login-level access. */}
-              <CustomerAccountPicker
-                value={formData.customer_accounts}
-                onChange={(next) => setFormData((prev) => ({ ...prev, customer_accounts: next }))}
-              />
-
-              <Input
-                type="email"
-                label={requireAdminEmail ? t('events.adminEmail') : `${t('events.adminEmail')} (${t('common.optional')})`}
-                placeholder={t('events.adminEmailPlaceholder')}
-                value={formData.admin_email}
-                onChange={handleInputChange('admin_email')}
-                error={errors.admin_email}
-                leftIcon={<Mail className="w-5 h-5" />}
-              />
-              {!NO_EMAIL_MODE && activeAdmins.length > 1 && (
-                <div className="flex items-center gap-2 -mt-1">
-                  <label htmlFor="admin-email-picker" className="text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                    {t('events.adminEmailPickFromAdmins', 'Pick from admins:')}
-                  </label>
-                  <select
-                    id="admin-email-picker"
-                    value={activeAdmins.some(a => a.email === formData.admin_email) ? formData.admin_email : ''}
-                    onChange={(e) => {
-                      const email = e.target.value;
-                      if (email) {
-                        setFormData(prev => ({ ...prev, admin_email: email }));
-                      }
-                    }}
-                    className="text-xs px-2 py-1 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded focus:ring-2 focus:ring-primary-500 focus:border-accent-dark"
-                  >
-                    <option value="">{t('events.adminEmailCustom', 'Custom email')}</option>
-                    {activeAdmins.map(a => (
-                      <option key={a.id} value={a.email}>
-                        {a.username} ({a.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
             </div>
 
             <div className="space-y-3">
@@ -870,7 +720,7 @@ export const CreateEventPage: React.FC = () => {
 
               {!formData.require_password && (
                 <div className="rounded-md border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/30 p-3 text-xs text-orange-800 dark:text-orange-300">
-                  {t('events.publicGalleryWarning', 'Public galleries are accessible to anyone with the link. Consider enabling download watermarks and monitoring activity.')} 
+                  {t('events.publicGalleryWarning', 'Public galleries are accessible to anyone with the link. Consider enabling download watermarks and monitoring activity.')}
                 </div>
               )}
             </div>
@@ -897,7 +747,7 @@ export const CreateEventPage: React.FC = () => {
                       </button>
                     }
                   />
-                  
+
                   {/* Password Generator */}
                   <div className="mt-2">
                     <PasswordGenerator

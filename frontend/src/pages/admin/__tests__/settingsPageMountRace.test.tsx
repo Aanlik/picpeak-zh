@@ -43,24 +43,19 @@ vi.mock('../../../features/settings', () => {
     SecurityTab: Stub,
     ImageSecurityTab: Stub,
     CategoriesTab: Stub,
-    AnalyticsTab: Stub,
-    ModerationTab: Stub,
     StylingTab: Stub,
     SEOTab: Stub,
     ThumbnailsTab: Stub,
     DownloadsTab: Stub,
     ApiTokensTab: Stub,
-    WebhooksTab: Stub,
     SsoTab: Stub,
   };
 });
 
-vi.mock('../EmailConfigPage', () => ({ EmailConfigPage: () => null }));
 vi.mock('../BrandingPage', () => ({ BrandingPage: () => null }));
 vi.mock('../SlideshowSettingsPage', () => ({ SlideshowSettingsPage: () => null }));
 vi.mock('../BackupManagement', () => ({ BackupManagement: () => null }));
 vi.mock('../CMSPage', () => ({ CMSPage: () => null }));
-vi.mock('../settings/ReminderTemplatesPage', () => ({ ReminderTemplatesPage: () => null }));
 
 import { SettingsPage } from '../SettingsPage';
 
@@ -85,20 +80,20 @@ describe('SettingsPage fresh-mount permission race (QA J.08)', () => {
     permissionsState.isLoading = true;
     permissionsState.hasAnyPermission = () => false;
 
-    expect(() => renderAt('webhooks')).not.toThrow();
+    expect(() => renderAt('downloads')).not.toThrow();
     expect(screen.getByText('settings.loadingSettings')).toBeInTheDocument();
   });
 
   it('still lands on the deep-linked tab once permissions arrive', () => {
-    renderAt('webhooks');
+    renderAt('downloads');
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Webhooks' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Download resolutions' })).toBeInTheDocument();
   });
 
   it('does not crash when the role has no settings tab permissions at all', () => {
     permissionsState.hasAnyPermission = () => false;
 
-    expect(() => renderAt('webhooks')).not.toThrow();
+    expect(() => renderAt('downloads')).not.toThrow();
     expect(screen.getByText('settings.title')).toBeInTheDocument();
   });
 });

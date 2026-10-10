@@ -49,8 +49,8 @@ describe('Reveal mode (#838)', () => {
       event_type: 'project',
       event_name: 'Reveal Test',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'reveal-test-share',
@@ -171,7 +171,6 @@ describe('Reveal mode (#838)', () => {
         `/api/gallery/${SLUG}/photo/${photoIds[0]}`,
         `/api/gallery/${SLUG}/download/${photoIds[0]}`,
         `/api/gallery/${SLUG}/download-all`,
-        `/api/gallery/${SLUG}/stats`,
         `/api/gallery/${SLUG}/hero/${photoIds[0]}`,
       ]) {
         const res = await request(app).get(url).set('Authorization', `Bearer ${galleryToken()}`);
@@ -250,28 +249,6 @@ describe('Reveal mode (#838)', () => {
         .send({ photoId: photoIds[0] });
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('GALLERY_HIDDEN');
-    });
-
-    it('customer-portal tokens (via:customer, no accessLevel) bypass reveal mode', async () => {
-      const acct = await db('customer_accounts').insert({
-        email: 'portal-customer@example.com',
-        password_hash: 'x',
-        is_active: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }).returning('id');
-      const customerId = acct[0]?.id ?? acct[0];
-      await db('event_customer_assignments').insert({
-        event_id: eventId,
-        customer_account_id: customerId,
-      });
-
-      const res = await request(app)
-        .get(`/api/gallery/${SLUG}/photos`)
-        .set('Authorization', `Bearer ${galleryToken({ via: 'customer', customerId })}`);
-      expect(res.status).toBe(200);
-      expect(res.body.hidden_until_reveal).toBe(false);
-      expect(res.body.photos).toHaveLength(2);
     });
 
     it('a reveal_at in the past opens the gate without any stamp', async () => {

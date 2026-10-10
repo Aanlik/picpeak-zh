@@ -1,7 +1,7 @@
 /**
  * Permanent archive delete clears every row the event owns before the events
- * row goes (issue 1733). activity_logs, access_logs and email_queue reference
- * events without ON DELETE CASCADE, so on PostgreSQL the events delete failed
+ * row goes (issue 1733). activity_logs and access_logs reference events
+ * without ON DELETE CASCADE, so on PostgreSQL the events delete failed
  * on the foreign key; SQLite never enforces the keys, which is why the
  * explicit deletes are what this test can observe.
  */
@@ -48,7 +48,7 @@ describe('DELETE /admin/archives/:id', () => {
   it('removes the event and every child row that references it', async () => {
     const [ev] = await db('events').insert({
       slug: 'perm-delete', event_type: 'project', event_name: 'Perm Delete', event_date: '2026-01-01',
-      host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
+      password_hash: 'x',
       share_link: '/gallery/perm-delete/tok', share_token: 'perm-delete-tok',
       is_active: 0, is_archived: 1, is_draft: 0, archive_path: 'archives/perm-delete.zip',
       created_at: new Date().toISOString(),
@@ -58,12 +58,11 @@ describe('DELETE /admin/archives/:id', () => {
     await db('photos').insert({ event_id: eventId, filename: 'a.jpg', path: 'events/perm/a.jpg', type: 'individual', uploaded_at: now });
     await db('activity_logs').insert({ event_id: eventId, activity_type: 'event_created', actor_type: 'admin', actor_id: 1, created_at: now });
     await db('access_logs').insert({ event_id: eventId, action: 'view', ip_address: '127.0.0.1', timestamp: now });
-    await db('email_queue').insert({ event_id: eventId, recipient_email: 'h@example.com', email_type: 'gallery_created', email_data: '{}', status: 'pending', created_at: now });
 
     const res = await request(app).delete(`/admin/archives/${eventId}`);
     expect(res.status).toBe(200);
 
-    for (const table of ['photos', 'activity_logs', 'access_logs', 'email_queue']) {
+    for (const table of ['photos', 'activity_logs', 'access_logs']) {
       const [{ n }] = await db(table).where('event_id', eventId).count('* as n');
       expect({ table, n: Number(n) }).toEqual({ table, n: 0 });
     }

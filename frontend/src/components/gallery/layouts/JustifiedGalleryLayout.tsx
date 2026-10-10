@@ -46,9 +46,9 @@ interface JustifiedPhotoProps {
     allowLikes?: boolean;
     allowRatings?: boolean;
     allowComments?: boolean;
-    requireNameEmail?: boolean;
+    requireGuestName?: boolean;
   };
-  savedIdentity?: { name: string; email: string } | null;
+  savedIdentity?: { name: string } | null;
   onRequireIdentity?: (action: 'like', photoId: number) => void;
   onQuickComment?: () => void;
   onFeedbackChange?: () => void;
@@ -315,7 +315,7 @@ export const JustifiedGalleryLayout: React.FC<JustifiedGalleryLayoutProps> = ({
     setLikedPhotoIds(new Set(photos.filter(p => p.is_liked).map(p => p.id)));
     likedSeededRef.current = true;
   }, [photos]);
-  const [savedIdentity, setSavedIdentity] = useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = useState<{ name: string } | null>(null);
 
   // Track container width with ResizeObserver
   useEffect(() => {
@@ -547,14 +547,13 @@ export const JustifiedGalleryLayout: React.FC<JustifiedGalleryLayoutProps> = ({
             setShowIdentityModal(false);
             setPendingAction(null);
           }}
-          onSubmit={async (name, email) => {
-            setSavedIdentity({ name, email });
+          onSubmit={async (name) => {
+            setSavedIdentity({ name });
             setShowIdentityModal(false);
             if (pendingAction) {
               await feedbackService.submitFeedback(slug, String(pendingAction.photoId), {
                 feedback_type: pendingAction.type,
                 guest_name: name,
-                guest_email: email,
               });
               // Toggle for consistency (#590).
               if (pendingAction.type === 'like') {

@@ -33,7 +33,7 @@ interface MosaicPhotoProps {
   feedbackOptions?: {
     allowLikes?: boolean;
     allowComments?: boolean;
-    requireNameEmail?: boolean;
+    requireGuestName?: boolean;
   };
   onQuickComment?: () => void;
 }
@@ -54,7 +54,7 @@ const MosaicPhoto: React.FC<MosaicPhotoProps> = ({
   const { t: tAudit } = useTranslation();
   const [showIdentityModal, setShowIdentityModal] = React.useState(false);
   const [pendingAction, setPendingAction] = React.useState<null | { type: 'like'; photoId: number }>(null);
-  const [savedIdentity, setSavedIdentity] = React.useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = React.useState<{ name: string } | null>(null);
   // Seed from server is_liked (#590 follow-up). useState's initializer
   // fires once on mount, so subsequent prop updates don't reseed.
   const [likedLocal, setLikedLocal] = React.useState(photo.is_liked ?? false);
@@ -136,14 +136,13 @@ const MosaicPhoto: React.FC<MosaicPhotoProps> = ({
       <FeedbackIdentityModal
         isOpen={showIdentityModal}
         onClose={() => { setShowIdentityModal(false); setPendingAction(null); }}
-        onSubmit={async (name, email) => {
-          setSavedIdentity({ name, email });
+        onSubmit={async (name) => {
+          setSavedIdentity({ name });
           setShowIdentityModal(false);
           if (pendingAction) {
             await feedbackService.submitFeedback(slug!, String(pendingAction.photoId), {
               feedback_type: pendingAction.type,
               guest_name: name,
-              guest_email: email,
             });
             setPendingAction(null);
           }

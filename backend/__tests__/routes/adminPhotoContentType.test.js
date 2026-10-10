@@ -72,8 +72,8 @@ describe('admin photo view Content-Type (#908)', () => {
       event_type: 'project',
       event_name: 'Admin CT Test',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'admin-ct-share',

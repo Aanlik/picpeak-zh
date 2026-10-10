@@ -45,8 +45,8 @@ beforeAll(async () => {
     event_type: 'project',
     event_name: 'Watcher Dedupe',
     event_date: '2026-08-29',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: `/gallery/${EVENT_SLUG}/share`,
     share_token: 'watcher-dedupe-share',
@@ -141,8 +141,8 @@ describe('fileWatcher existence check (#1226)', () => {
       event_type: 'project',
       event_name: 'Other',
       event_date: '2026-08-29',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: '/gallery/other-watcher-event/share',
       share_token: 'other-watcher-share',

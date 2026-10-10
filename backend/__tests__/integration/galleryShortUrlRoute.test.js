@@ -79,7 +79,7 @@ async function seedEventAndShortUrl({ slug = `evt-${Date.now()}`, shortSlug }) {
     is_archived: false,
     share_link: slug,
     share_token: `tok${Math.random().toString(36).slice(2, 12)}`,
-    welcome_message: null,
+
   });
   const row = await service.createShortUrl({
     eventId, customSlug: shortSlug,

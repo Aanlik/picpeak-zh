@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin!234';
 
 // Helper to login and navigate to settings
 async function loginAndGoToSeoSettings(page) {
   await page.goto('/admin/login');
-  await page.getByLabel(/Email|E-Mail/i).fill(ADMIN_EMAIL);
+  await page.getByLabel(/Username|Benutzername/i).fill(ADMIN_USERNAME);
   await page.getByLabel(/Password|Passwort/i).fill(ADMIN_PASSWORD);
   await page.getByRole('button', { name: /^(Sign In|Log in|Anmelden)$/i }).click();
   await expect(page.getByRole('heading', { name: /Dashboard|Übersicht/i })).toBeVisible({ timeout: 20000 });

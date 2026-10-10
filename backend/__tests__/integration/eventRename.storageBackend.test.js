@@ -63,8 +63,8 @@ describe('event rename through the storage backend', () => {
       event_type: 'project',
       event_name: 'Old Name',
       event_date: `2026-01-0${seq}`,
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `${slug}/tok`,
       share_token: `tok-${seq}`,
@@ -148,14 +148,14 @@ describe('event rename through the storage backend', () => {
     }
     // The half-finished copy is cleaned up, so a retry is not refused for
     // finding the target occupied.
-    const newPrefix = path.posix.join('events/active', renameService.generateSlug('wedding', 'New Name', event.event_date));
+    const newPrefix = path.posix.join('events/active', renameService.generateSlug('New Name', event.event_date));
     expect(await storage.list(newPrefix)).toEqual([]);
   });
 
   it('refuses a target prefix that already holds objects', async () => {
     const { eventId } = await seedEvent(1);
     const event = await db('events').where({ id: eventId }).first();
-    const occupied = path.posix.join('events/active', renameService.generateSlug('wedding', 'New Name', event.event_date), 'stray.jpg');
+    const occupied = path.posix.join('events/active', renameService.generateSlug('New Name', event.event_date), 'stray.jpg');
     await storage.put(occupied, Buffer.from('stray'));
 
     const result = await renameService.renameEvent(eventId, 'New Name');

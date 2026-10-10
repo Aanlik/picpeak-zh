@@ -2,7 +2,7 @@
 
 /**
  * Script to create an admin user
- * Usage: node scripts/create-admin.js --email admin@example.com --username admin --password yourpassword
+ * Usage: node scripts/create-admin.js --username admin --password yourpassword
  * 
  * If no password is provided, a random one will be generated and displayed
  */
@@ -19,13 +19,11 @@ const getArg = (name) => {
   return index !== -1 && args[index + 1] ? args[index + 1] : null;
 };
 
-const email = getArg('email');
-const username = getArg('username') || email?.split('@')[0] || 'admin';
+const username = getArg('username');
 let password = getArg('password');
 
-// Validate email
-if (!email) {
-  console.error('Error: Email is required. Use --email admin@example.com');
+if (!username || !/^[\p{L}\p{N}_-]{3,50}$/u.test(username)) {
+  console.error('Error: Provide a username of 3–50 letters, numbers, underscores or hyphens with --username.');
   process.exit(1);
 }
 
@@ -40,8 +38,7 @@ async function createAdmin() {
   try {
     // Check if user already exists
     const existingUser = await db('admin_users')
-      .where('email', email)
-      .orWhere('username', username)
+      .where('username', username)
       .first();
 
     // Hash password
@@ -57,7 +54,6 @@ async function createAdmin() {
         });
 
       console.log(`✅ Admin user updated successfully!`);
-      console.log(`   Email: ${existingUser.email}`);
       console.log(`   Username: ${existingUser.username}`);
       console.log(`   Password has been reset to the provided value`);
       console.log(`   Login URL: ${process.env.ADMIN_URL || 'http://localhost:3000'}/admin/login`);
@@ -65,7 +61,9 @@ async function createAdmin() {
       // Create new admin user
       await db('admin_users').insert({
         username,
-        email,
+        // Older databases retain a required email column for compatibility;
+        // the placeholder cannot receive mail and is never used for login.
+        email: `${crypto.randomUUID()}@accounts.invalid`,
         password_hash: passwordHash,
         is_active: true,
         created_at: new Date(),
@@ -73,7 +71,6 @@ async function createAdmin() {
       });
 
       console.log(`✅ Admin user created successfully!`);
-      console.log(`   Email: ${email}`);
       console.log(`   Username: ${username}`);
       console.log(`   Login URL: ${process.env.ADMIN_URL || 'http://localhost:3000'}/admin/login`);
     }

@@ -119,7 +119,6 @@ router.get('/', adminAuth, requirePermission('archives.view'), async (req, res) 
         slug: archive.slug,
         eventName: archive.event_name,
         eventDate: archive.event_date,
-        hostEmail: archive.host_email,
         archivedAt: archive.archived_at ? new Date(archive.archived_at).toISOString() : null,
         expiresAt: archive.expires_at ? new Date(archive.expires_at).toISOString() : null,
         photoCount: archive.photo_count || 0,
@@ -192,9 +191,6 @@ router.get('/:id', adminAuth, requirePermission('archives.view'), requireEventOw
       slug: archive.slug,
       eventName: archive.event_name,
       eventDate: archive.event_date,
-      hostEmail: archive.host_email,
-      adminEmail: archive.admin_email,
-      welcomeMessage: archive.welcome_message,
       colorTheme: archive.color_theme,
       createdAt: archive.created_at,
       expiresAt: archive.expires_at,
@@ -480,7 +476,7 @@ router.post('/:id/restore', adminAuth, requirePermission('archives.restore'), re
         if (manifestEntry || RESTORABLE_EXTENSIONS.has(extension)) {
           const dirPath = path.dirname(entry.name);
           const actualFilePath = path.join(eventDir, entry.name);
-          
+
           try {
             // Check if file was extracted successfully
             const stats = await fs.stat(actualFilePath);
@@ -578,21 +574,21 @@ router.post('/:id/restore', adminAuth, requirePermission('archives.restore'), re
           }
         }
       }
-      
+
       // Insert new photos if any
       if (extractedPhotos.length > 0) {
         await db('photos').insert(extractedPhotos);
       }
-      
+
     } catch (extractError) {
       logger.error('Archive extraction error:', extractError);
       return res.status(500).json({ error: 'Failed to extract archive: ' + extractError.message });
     }
-    
+
     // Update event status
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
-    
+
     await db('events')
       .where('id', req.params.id)
       .update({
@@ -648,7 +644,7 @@ router.get('/:id/download', adminAuth, requirePermission('archives.download'), r
     // Check if file exists
     const storagePath = process.env.STORAGE_PATH || path.join(__dirname, '../../../storage');
     const fullArchivePath = path.join(storagePath, archive.archive_path);
-    
+
     try {
       await fs.access(fullArchivePath);
     } catch (error) {
@@ -704,7 +700,7 @@ router.delete('/:id', adminAuth, requirePermission('archives.delete'), requireEv
     // Delete thumbnails for this event
     const photos = await db('photos').where('event_id', req.params.id).select('thumbnail_path');
     const storagePath = process.env.STORAGE_PATH || path.join(__dirname, '../../../storage');
-    
+
     for (const photo of photos) {
       if (photo.thumbnail_path) {
         try {
@@ -718,7 +714,7 @@ router.delete('/:id', adminAuth, requirePermission('archives.delete'), requireEv
 
     // The child rows, explicitly, then the event. This used to delete the
     // event row alone and rely on the FK cascade, but activity_logs,
-    // access_logs and email_queue reference events WITHOUT ON DELETE CASCADE
+    // access_logs reference events WITHOUT ON DELETE CASCADE
     // (db.js), so on PostgreSQL the delete failed on the foreign key. SQLite
     // never enforces the keys (PicPeak does not set `PRAGMA foreign_keys =
     // ON`), which is why it went unnoticed there — and why the declared
@@ -731,7 +727,6 @@ router.delete('/:id', adminAuth, requirePermission('archives.delete'), requireEv
     await db.transaction(async (trx) => {
       await trx('activity_logs').where('event_id', req.params.id).del();
       await trx('access_logs').where('event_id', req.params.id).del();
-      await trx('email_queue').where('event_id', req.params.id).del();
       // Face data (#1074, #1132): archiveEvent's purge step is deliberately
       // nonfatal, so an event can still be carrying it here.
       await trx('photo_faces').where('event_id', req.params.id).del();
@@ -751,9 +746,9 @@ router.delete('/:id', adminAuth, requirePermission('archives.delete'), requireEv
       actor_type: 'admin',
       actor_id: req.admin.id,
       actor_name: req.admin.username,
-      metadata: JSON.stringify({ 
+      metadata: JSON.stringify({
         event_name: archive.event_name,
-        archived_date: archive.archived_at 
+        archived_date: archive.archived_at
       })
     });
 

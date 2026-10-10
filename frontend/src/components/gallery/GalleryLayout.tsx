@@ -1,4 +1,4 @@
-import { NO_EMAIL_MODE } from '../../config/communication';
+import { PHOTO_WORKFLOW_MODE } from '../../config/photography';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -41,7 +41,6 @@ interface GalleryLayoutProps {
   brandingSettings?: {
     company_name?: string;
     company_tagline?: string;
-    support_email?: string;
     footer_text?: string;
     favicon_url?: string;
     logo_url?: string;
@@ -168,7 +167,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
   const isNoHeader = headerStyle === 'none';
   const fontFamily = theme.fontFamily || 'Inter, sans-serif';
   const headingFontFamily = theme.headingFontFamily || fontFamily;
-  
+
   // Calculate logo size classes based on settings
   const getLogoDimensions = (context: 'header' | 'hero'): { className: string; style?: React.CSSProperties } => {
     // #756: the hero logo uses the backend-resolved per-event size (override,
@@ -196,7 +195,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
       style: undefined
     };
   };
-  
+
   // Determine logo position classes. 'sidepanel' is an admin-chrome
   // option (logo lives in the admin sidebar) and has no analogue in
   // the gallery — fall back to 'left' here so customer galleries keep
@@ -210,12 +209,12 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
       right: 'justify-end'
     }[position];
   };
-  
+
   // Check if logo should be displayed
   const shouldShowLogo = (context: 'header' | 'hero') => {
     const displayMode = brandingSettings?.logo_display_mode || 'logo_and_text';
     if (displayMode === 'text_only') return false;
-    
+
     if (context === 'header') {
       return brandingSettings?.logo_display_header !== false;
     } else {
@@ -225,7 +224,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
       return brandingSettings?.logo_display_hero !== false;
     }
   };
-  
+
   // Check if company name should be displayed
   const shouldShowCompanyName = () => {
     const displayMode = brandingSettings?.logo_display_mode || 'logo_and_text';
@@ -321,8 +320,8 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
   // Legal links per #441: each CMS page has show_in_footer (default true).
   // When BOTH are hidden we still render the surrounding row only if
   // there's a guest "Forget me" button or socials to show.
-  const showImpressum = !!impressumPage && impressumPage.show_in_footer !== false && !NO_EMAIL_MODE;
-  const showDatenschutz = !!datenschutzPage && datenschutzPage.show_in_footer !== false && !NO_EMAIL_MODE;
+  const showImpressum = !!impressumPage && impressumPage.show_in_footer !== false && !PHOTO_WORKFLOW_MODE;
+  const showDatenschutz = !!datenschutzPage && datenschutzPage.show_in_footer !== false && !PHOTO_WORKFLOW_MODE;
   const hasLegalLinks = showImpressum || showDatenschutz;
   const hasFooterRow = hasLegalLinks || socialLinks.length > 0 || !!guestIdentity?.identity;
 
@@ -378,10 +377,10 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
                   </div>
                 )}
               </div>
-              
+
               {/* Center - Event info */}
               <div className="flex-1 min-w-0 text-center sm:text-left">
-                <h1 
+                <h1
                   className="text-base sm:text-lg lg:text-xl font-bold text-theme leading-tight truncate"
                   style={{ fontFamily: headingFontFamily }}
                 >
@@ -404,12 +403,12 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
                   </div>
                 )}
               </div>
-              
+
               {/* Right side - Action buttons */}
               <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 {/* Extra header items (upload button, etc.) */}
                 {headerExtra}
-                
+
                 {/* Download all button - hidden on mobile when sidebar is shown */}
                 {showDownloadAll && onDownloadAll && (
                   <Button
@@ -453,7 +452,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
                 )}
               </div>
             </div>
-            
+
             {/* Mobile dates row */}
             {(event.event_date || event.expires_at) && (
               <div className="flex sm:hidden justify-center gap-x-3 mt-2 text-xs text-muted-theme">
@@ -636,7 +635,7 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
           className="gallery-hero relative text-white overflow-hidden"
           style={{
             backgroundColor: theme.accentColor || '#22c55e',
-            backgroundImage: theme.backgroundPattern !== 'none' 
+            backgroundImage: theme.backgroundPattern !== 'none'
               ? `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`
               : undefined
           }}
@@ -673,18 +672,18 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
                   {brandingSettings.company_name || 'PicPeak'}
                 </div>
               )}
-              
+
               {/* Event Name */}
-              <h1 
+              <h1
                 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4"
-                style={{ 
+                style={{
                   fontFamily: headingFontFamily,
                   textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
                 }}
               >
                 {event.event_name}
               </h1>
-              
+
               {/* Event Details */}
               {(event.event_date || event.expires_at) && (
                 <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-white/80" style={{ textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)' }}>
@@ -704,11 +703,11 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
               )}
             </div>
           </div>
-          
+
           {/* Decorative bottom wave */}
           <div className="absolute bottom-0 left-0 right-0">
             <svg className="w-full h-12 sm:h-16" viewBox="0 0 1200 120" preserveAspectRatio="none">
-              <path d="M0,60 C150,90 350,30 600,60 C850,90 1050,30 1200,60 L1200,120 L0,120 Z" 
+              <path d="M0,60 C150,90 350,30 600,60 C850,90 1050,30 1200,60 L1200,120 L0,120 Z"
                 fill="var(--color-background, #fafafa)" />
             </svg>
           </div>
@@ -728,17 +727,6 @@ export const GalleryLayout: React.FC<GalleryLayoutProps> = ({
       {/* Footer */}
       <footer className="gallery-footer mt-8 sm:mt-12 py-6 sm:py-8 border-t border-surface">
         <div className="container text-center px-4">
-          {!NO_EMAIL_MODE && brandingSettings?.support_email && (
-            <p className="text-xs sm:text-sm text-muted-theme mb-2">
-              {t('gallery.needHelp')}{' '}
-              <a
-                href={`mailto:${brandingSettings.support_email}`}
-                className="text-accent hover:opacity-80 break-all"
-              >
-                {brandingSettings.support_email}
-              </a>
-            </p>
-          )}
           <p className="text-xs sm:text-sm text-muted-theme">
             {brandingSettings?.footer_text || `© ${new Date().getFullYear()}${brandingSettings?.company_name ? ` ${brandingSettings.company_name}` : ''}. All rights reserved.`}
             <PoweredBy inline />

@@ -32,7 +32,7 @@ export const SsoTab: React.FC = () => {
   const { t } = useTranslation();
   // Repointing the provider (issuer URL, client ID) is a super-admin decision
   // on the backend (PUT /sso answers 403 otherwise): the provider is the trust
-  // anchor for every SSO login and email linking hands out matching local
+  // anchor for every SSO login and linking matches an existing local
   // accounts. Everything else on this tab stays editable with settings.security.
   const { isSuperAdmin } = usePermissions();
   const queryClient = useQueryClient();
@@ -139,7 +139,7 @@ export const SsoTab: React.FC = () => {
               same `settings.sso.title` key, so repeating it stacked two
               identical H2s on top of each other (QA warning). */}
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            {t('settings.sso.intro', 'Let admins sign in through your identity provider (Keycloak, Authentik, Pocket ID, or any OIDC-compliant IdP). Local email/password login stays available as a fallback.')}
+            {t('settings.sso.intro', 'Let admins sign in through your identity provider (Keycloak, Authentik, Pocket ID, or any OIDC-compliant IdP). Local username/password login stays available as a fallback.')}
           </p>
           {!isSuperAdmin && (
             <div className="flex items-start gap-2 rounded-lg border border-line bg-subtle p-3 text-sm text-body">

@@ -92,8 +92,8 @@ describe('external media symlink containment', () => {
       event_type: 'project',
       event_name: 'extlink',
       event_date: '2026-01-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `extlink-${Math.random()}`,
       expires_at: new Date().toISOString(),

@@ -34,7 +34,7 @@ import path from 'path';
  * via the /health endpoint, so it's safe to leave in the shared E2E suite.
  */
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin!234';
 const GALLERY_PASSWORD = process.env.GALLERY_PASSWORD || 'PlaywrightGallery123!';
 const TEST_ASSET = path.join(__dirname, '..', '..', 'test-assets', 'img1.png');
@@ -66,7 +66,7 @@ test.describe('S3 storage round-trip (#328)', () => {
     // Admin login — auth lives in the HttpOnly admin_token cookie which the
     // request fixture retains across subsequent calls automatically.
     const loginRes = await request.post('/api/auth/admin/login', {
-      data: { username: ADMIN_EMAIL, password: ADMIN_PASSWORD },
+      data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
     });
     expect(loginRes.ok(), `login failed: ${loginRes.status()}`).toBeTruthy();
 
@@ -80,10 +80,7 @@ test.describe('S3 storage round-trip (#328)', () => {
         event_name: eventName,
         event_date: eventDate,
         customer_name: 'S3 Host',
-        customer_email: 'host@example.com',
         host_name: 'S3 Host',
-        host_email: 'host@example.com',
-        admin_email: ADMIN_EMAIL,
         password: GALLERY_PASSWORD,
         expiration_days: 30,
       },

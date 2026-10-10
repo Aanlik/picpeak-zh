@@ -14,7 +14,7 @@ interface PhotoFavoritesProps {
   isFavorited: boolean;
   favoriteCount: number;
   isEnabled: boolean;
-  requireNameEmail?: boolean;
+  requireGuestName?: boolean;
   onFavoriteChange?: (favorited: boolean) => void;
 }
 
@@ -24,7 +24,7 @@ export const PhotoFavorites: React.FC<PhotoFavoritesProps> = ({
   isFavorited,
   favoriteCount,
   isEnabled,
-  requireNameEmail = false,
+  requireGuestName = false,
   onFavoriteChange
 }) => {
   const { t } = useTranslation();
@@ -34,14 +34,13 @@ export const PhotoFavorites: React.FC<PhotoFavoritesProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [animating, setAnimating] = useState(false);
   const [showIdentityModal, setShowIdentityModal] = useState(false);
-  const [savedIdentity, setSavedIdentity] = useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = useState<{ name: string } | null>(null);
 
   const submitFavoriteMutation = useMutation({
-    mutationFn: (data: { guest_name?: string; guest_email?: string } = {}) => 
+    mutationFn: (data: { guest_name?: string } = {}) =>
       feedbackService.submitFeedback(gallerySlug, photoId, {
         feedback_type: 'favorite',
         guest_name: data.guest_name || undefined,
-        guest_email: data.guest_email || undefined
       }),
     onMutate: async () => {
       setIsSubmitting(true);
@@ -87,20 +86,20 @@ export const PhotoFavorites: React.FC<PhotoFavoritesProps> = ({
       return;
     }
 
-    if (requireNameEmail && !savedIdentity) {
+    if (requireGuestName && !savedIdentity) {
       setShowIdentityModal(true);
     } else {
       const identityPayload = savedIdentity
-        ? { guest_name: savedIdentity.name, guest_email: savedIdentity.email }
+        ? { guest_name: savedIdentity.name }
         : {};
       submitFavoriteMutation.mutate(identityPayload);
     }
   };
 
-  const handleIdentitySubmit = (name: string, email: string) => {
-    setSavedIdentity({ name, email });
+  const handleIdentitySubmit = (name: string) => {
+    setSavedIdentity({ name });
     setShowIdentityModal(false);
-    submitFavoriteMutation.mutate({ guest_name: name, guest_email: email });
+    submitFavoriteMutation.mutate({ guest_name: name });
   };
 
   if (!isEnabled) return null;
@@ -111,8 +110,8 @@ export const PhotoFavorites: React.FC<PhotoFavoritesProps> = ({
       onClick={handleFavoriteClick}
       disabled={isSubmitting}
       className={`group flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-        isFavorited 
-          ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' 
+        isFavorited
+          ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
           : 'bg-surface text-muted-theme hover:bg-black/10'
       } ${isSubmitting ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
       aria-label={isFavorited ? t('feedback.unfavorite', 'Remove from favorites') : t('feedback.favorite', 'Add to favorites')}

@@ -78,7 +78,6 @@ async function apiTokenAuth(req, res, next) {
         .select(
           'admin_users.id',
           'admin_users.username',
-          'admin_users.email',
           'admin_users.must_change_password',
           'roles.id as role_id',
           'roles.name as role_name'
@@ -98,7 +97,7 @@ async function apiTokenAuth(req, res, next) {
       // same reason and nulls the field afterwards.
       admin = await db('admin_users')
         .where({ id: row.created_by, is_active: formatBoolean(true) })
-        .select('id', 'username', 'email', 'must_change_password')
+        .select('id', 'username', 'must_change_password')
         .first();
       if (admin) {
         admin.role_id = null;
@@ -123,7 +122,6 @@ async function apiTokenAuth(req, res, next) {
     req.admin = {
       id: admin.id,
       username: admin.username,
-      email: admin.email,
       roleId: admin.role_id,
       roleName: admin.role_name
     };

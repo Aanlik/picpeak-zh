@@ -101,8 +101,8 @@ describe('deferred photos do not block the queue', () => {
       event_type: 'project',
       event_name: 'defer',
       event_date: '2026-01-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `defer-${Math.random()}`,
       expires_at: new Date().toISOString(),
@@ -155,8 +155,8 @@ describe('deferred photos do not block the queue', () => {
         event_type: 'project',
         event_name: name,
         event_date: '2026-01-01',
-        host_email: 'h@example.com',
-        admin_email: 'a@example.com',
+
+
         password_hash: 'x',
         share_link: `cd-${name}-${Math.random()}`,
         expires_at: new Date().toISOString(),
@@ -200,8 +200,8 @@ describe('deferred photos do not block the queue', () => {
       event_type: 'project',
       event_name: 'mix',
       event_date: '2026-01-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_link: `mix-${Math.random()}`,
       expires_at: new Date().toISOString(),

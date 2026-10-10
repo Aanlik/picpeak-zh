@@ -4,7 +4,7 @@ import path from 'path';
 import { adminApiToken, publishEvent, waitForPhotosProcessed } from './_helpers/admin';
 import { passGalleryPasswordPrompt } from './_helpers/gallery';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const GALLERY_PASSWORD = process.env.GALLERY_PASSWORD || 'PlaywrightGallery123!';
 
 async function getAdminToken(page: Page): Promise<string> {
@@ -24,8 +24,6 @@ async function createGalleryPremiumEvent(page: Page) {
       event_name: eventName,
       event_date: eventDate,
       customer_name: 'Playwright Host',
-      customer_email: 'host@example.com',
-      admin_email: ADMIN_EMAIL,
       password: GALLERY_PASSWORD,
       expiration_days: 90,
       allow_downloads: true,

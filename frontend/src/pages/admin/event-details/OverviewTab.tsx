@@ -1,10 +1,8 @@
 import { PhotographyWorkflowCard } from '../../../components/admin/PhotographyWorkflowCard';
-import { NO_EMAIL_MODE } from '../../../config/communication';
+import { PHOTO_WORKFLOW_MODE } from '../../../config/photography';
 import React from 'react';
 import type { Event } from '../../../types';
-import { FeedbackModerationPanel } from '../../../components/admin';
 import { PermissionGate } from '../../../components/admin/PermissionGate';
-import { EventReminderOverrideCard } from '../../../components/admin/EventReminderOverrideCard';
 import { SlideshowSettingsCard } from '../../../components/admin/SlideshowSettingsCard';
 import { DownloadResolutionCard } from '../../../components/admin/DownloadResolutionCard';
 import { FaceRecognitionCard } from '../../../components/admin/FaceRecognitionCard';
@@ -14,15 +12,13 @@ import type { AdminPhoto } from '../../../services/photos.service';
 import type { FeedbackSettings as FeedbackSettingsType } from '../../../services/feedback.service';
 import type { EnabledTemplate } from '../../../services/cssTemplates.service';
 import { ThemeConfig } from '../../../types/theme.types';
-import type { EditFormState, EventDetailsTab } from './types';
+import type { EditFormState } from './types';
 import { EventInformationCard } from './EventInformationCard';
 import { ShareLinkCard } from './ShareLinkCard';
 import { ClientAccessCard } from './ClientAccessCard';
 import { EventActionsCard } from './EventActionsCard';
-import { PhotoStatisticsCard } from './PhotoStatisticsCard';
 import { EventThemeSection } from './EventThemeSection';
 import { ArchiveStatusCard } from './ArchiveStatusCard';
-import { toBoolean } from '../../../utils/parsers';
 
 interface OverviewTabProps {
   event: Event;
@@ -41,11 +37,8 @@ interface OverviewTabProps {
   daysUntilExpiration: number | null;
   onRevealNow?: () => void;
   refetchEvent: () => void;
-  setActiveTab: (tab: EventDetailsTab) => void;
   setShowPasswordReset: (show: boolean) => void;
   setShowPublishDialog: (show: boolean) => void;
-  onSendGalleryEmail: () => void;
-  isSendingGalleryEmail: boolean;
   setShowDuplicateDialog: (show: boolean) => void;
   onArchive: () => void;
   isArchiving: boolean;
@@ -76,11 +69,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   daysUntilExpiration,
   onRevealNow,
   refetchEvent,
-  setActiveTab,
   setShowPasswordReset,
   setShowPublishDialog,
-  onSendGalleryEmail,
-  isSendingGalleryEmail,
   setShowDuplicateDialog,
   onArchive,
   isArchiving,
@@ -117,7 +107,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           onRevealNow={onRevealNow}
         />
 
-        {NO_EMAIL_MODE && <PhotographyWorkflowCard eventId={event.id} />}
+        {PHOTO_WORKFLOW_MODE && <PhotographyWorkflowCard eventId={event.id} />}
 
         {/* Share Link */}
         <ShareLinkCard event={event} setShowPasswordReset={setShowPasswordReset} passwordVersion={passwordVersion} />
@@ -125,7 +115,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         {/* Branded short URLs (#699). Sits between the canonical share-link
             card and the Client Access card — same "things you share with
             the customer" cluster. */}
-        {!NO_EMAIL_MODE && <ShortUrlsCard eventId={event.id} />}
+        {!PHOTO_WORKFLOW_MODE && <ShortUrlsCard eventId={event.id} />}
 
         {/* Client Access (#172) */}
         <ClientAccessCard event={event} refetchEvent={refetchEvent} />
@@ -162,21 +152,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         />
         )}
 
-        {/* Pre-event reminder override (migration 143). Hidden when
-            the reminderEmails master flag is off — the override here
-            would never fire since the cron itself no-ops. */}
-        {flags.reminderEmails && (
-          <EventReminderOverrideCard
-            eventId={event.id}
-            initial={{
-              event_reminder_disabled: event.event_reminder_disabled,
-              event_reminder_offset_days: event.event_reminder_offset_days,
-              event_reminder_body_override: event.event_reminder_body_override,
-            }}
-            onSaved={() => refetchEvent()}
-          />
-        )}
-
         {/* Actions */}
         {!event.is_archived && (
           <PermissionGate permissions={['events.edit', 'events.archive', 'events.create']}>
@@ -188,25 +163,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               isPublishing={isPublishing}
               setShowDuplicateDialog={setShowDuplicateDialog}
               isDuplicating={isDuplicating}
-              onSendGalleryEmail={onSendGalleryEmail}
-              isSendingGalleryEmail={isSendingGalleryEmail}
-              assignedCustomerCount={
-                ((event as {
-                  customer_accounts?: Array<{
-                    id: number; email?: string; is_active?: unknown; can_sign_in?: unknown
-                  }>
-                }).customer_accounts || [])
-                  // Only accounts the endpoint would actually mail count, or
-                  // the button appears and then 400s. Mirrors
-                  // canReceiveGalleryNotice in crud.js: active, holding an
-                  // address, and able to sign in — a PASSIVE customer
-                  // (never invited, so no password) would get a portal link
-                  // to a door that will not open. toBoolean rather than
-                  // `!== false` because SQLite returns 0/1.
-                  .filter((c) => toBoolean(c.is_active, true)
-                    && toBoolean(c.can_sign_in, true)
-                    && !!c.email).length
-              }
             />
           </PermissionGate>
         )}
@@ -215,7 +171,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       {/* Right Column - Statistics, Theme, and Actions */}
       <div className="space-y-6">
         {/* Photo Statistics */}
-        <PhotoStatisticsCard event={event} categories={categories} setActiveTab={setActiveTab} />
 
         {/* Theme & Style / Theme Display */}
         <EventThemeSection
@@ -230,15 +185,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           setThemeChanged={setThemeChanged}
           cssTemplates={cssTemplates}
         />
-
-        {/* Feedback Moderation Panel */}
-        {!event.is_archived && feedbackSettings?.feedback_enabled && (
-          <FeedbackModerationPanel
-            eventId={parseInt(id!)}
-            compact={true}
-            maxItems={3}
-          />
-        )}
 
         {/* Archive Status */}
         {event.is_archived ? (

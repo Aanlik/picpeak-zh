@@ -8,7 +8,6 @@ const { adminAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
 const { ensureThumbnail } = require('../services/imageProcessor');
 const { isVideoMimeType } = require('../services/videoProcessor');
-const { acceptedUpload, capabilityEvidence } = require('../usage/capabilityEvidence');
 const { generatePhotoFilename, buildContentDisposition } = require('../utils/filenameSanitizer');
 const {
   getUseOriginalFilenames,
@@ -202,12 +201,12 @@ const uploadTimeout = (timeout = 300000) => { // 5 minutes default
         res.status(408).json({ error: 'Upload request timed out' });
       }
     });
-    
+
     // Set response timeout as well
     res.setTimeout(timeout, () => {
       logger.error('Upload response timed out');
     });
-    
+
     next();
   };
 };
@@ -305,7 +304,7 @@ router.post('/:eventId/upload', adminAuth, requirePermission('photos.upload'), r
       logger.error('Request body keys:', Object.keys(req.body));
       return res.status(400).json({ error: 'No files uploaded' });
     }
-    
+
     // Parse category_id to number if provided (handle string values like 'individual', 'collage')
     // Same 0-is-not-a-category rule as the PATCH route below: '0' is truthy, so
     // it parsed to 0 and the scope-validation guard (`if (parsedCategoryId && ...)`)
@@ -338,11 +337,11 @@ router.post('/:eventId/upload', adminAuth, requirePermission('photos.upload'), r
       photoType = 'collage';
       categoryName = 'collages';
     }
-    
+
     // Final destination key prefix under the storage backend (no local mkdir
     // needed — LocalFsStorage creates the parent dir on put, S3 has no dirs).
     const finalDestPathRel = path.posix.join('events/active', event.slug);
-    
+
     const uploadedPhotos = [];
     const replacedPhotos = [];
     const skippedReplacements = [];
@@ -364,12 +363,6 @@ router.post('/:eventId/upload', adminAuth, requirePermission('photos.upload'), r
             event,
           });
           if (result.success) {
-            capabilityEvidence(res, 'photo_replacement');
-            acceptedUpload(res, {
-              video: isVideoMimeType(file.mimetype),
-              raw: path.extname(file.originalname).toLowerCase() === '.dng',
-              s3: process.env.STORAGE_BACKEND === 's3'
-            });
             replacedPhotos.push({
               id: result.photo.id,
               filename: result.photo.filename,
@@ -401,7 +394,7 @@ router.post('/:eventId/upload', adminAuth, requirePermission('photos.upload'), r
     //   1. Move each file to its final storage location.
     //   2. Insert a photo row with processing_status='pending' and a
     //      shared upload_id. EXIF / sharp / thumbnails / ffmpeg /
-    //      watermark / webhook all happen in the background worker
+    //      watermark / activity notification happen in the background worker
     //      (services/backgroundProcessor.js) so the request returns in
     //      seconds even on NFS-backed storage.
     //
@@ -484,7 +477,6 @@ router.post('/:eventId/upload', adminAuth, requirePermission('photos.upload'), r
           .returning('id');
         const photoId = inserted[0]?.id || inserted[0];
 
-        acceptedUpload(res, { video: isVideo, raw: extension.toLowerCase() === '.dng', s3: process.env.STORAGE_BACKEND === 's3' });
 
         uploadedPhotos.push({
           id: photoId,
@@ -497,7 +489,7 @@ router.post('/:eventId/upload', adminAuth, requirePermission('photos.upload'), r
         errors.push({ filename: file.originalname, error: err.message });
       }
     }
-    
+
     // Log activity
     await logActivity('photos_uploaded',
       { count: uploadedPhotos.length, replacedCount: replacedPhotos.length, eventName: event.event_name },
@@ -737,16 +729,16 @@ router.post(
 router.delete('/:eventId/photos/:photoId', adminAuth, requirePermission('photos.delete'), requireEventOwnership, async (req, res) => {
   try {
     const { eventId, photoId } = req.params;
-    
+
     // Get photo details
     const photo = await db('photos')
       .where({ id: photoId, event_id: eventId })
       .first();
-    
+
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
-    
+
     // Delete original + thumbnail through the storage backend.
     const storage = getStorage();
     const { resolvePhotoStorageKey } = require('../services/photoResolver');
@@ -811,15 +803,6 @@ router.delete('/:eventId/photos/:photoId', adminAuth, requirePermission('photos.
       { type: 'admin', id: req.admin.id, name: req.admin.username }
     );
 
-    // Webhook (#327): single-photo delete.
-    try {
-      const webhookService = require('../services/webhookService');
-      await webhookService.fire('photo.deleted', {
-        event: { id: parseInt(eventId, 10), slug: event?.slug, event_name: event?.event_name },
-        photo: { id: parseInt(photoId, 10), filename: photo.filename },
-      });
-    } catch (e) { /* non-fatal */ }
-
     downloadZipService.invalidate(parseInt(eventId));
     res.json({ message: 'Photo deleted successfully' });
   } catch (error) {
@@ -869,7 +852,6 @@ router.put('/:eventId/photos/:photoId/mark', adminAuth, requirePermission('photo
       parseInt(eventId, 10), photoId, req.admin.id, mark,
     );
 
-    capabilityEvidence(res, 'photo_admin_marks');
     res.json({ success: true, mark: result });
   } catch (error) {
     // Validation errors from the service are the caller's fault, not a 500.
@@ -979,20 +961,20 @@ router.post('/:eventId/photos/bulk-delete', adminAuth, requirePermission('photos
   try {
     const { eventId } = req.params;
     const { photoIds } = req.body;
-    
+
     if (!Array.isArray(photoIds) || photoIds.length === 0) {
       return res.status(400).json({ error: 'Invalid photo IDs' });
     }
-    
+
     // Get all photos to delete
     const photos = await db('photos')
       .whereIn('id', photoIds)
       .where('event_id', eventId);
-    
+
     if (photos.length === 0) {
       return res.status(404).json({ error: 'No photos found' });
     }
-    
+
     // Delete original + thumbnail + hero through the storage backend.
     const storage = getStorage();
     const event = await db('events').where({ id: eventId }).first();
@@ -1050,24 +1032,13 @@ router.post('/:eventId/photos/bulk-delete', adminAuth, requirePermission('photos
       .where('event_id', eventId)
       .delete();
 
-    // Webhook (#327): one photo.deleted per row in the bulk batch.
-    try {
-      const webhookService = require('../services/webhookService');
-      for (const photo of photos) {
-        await webhookService.fire('photo.deleted', {
-          event: { id: parseInt(eventId, 10), slug: event?.slug, event_name: event?.event_name },
-          photo: { id: photo.id, filename: photo.filename },
-        });
-      }
-    } catch (e) { /* non-fatal */ }
-
     // Log activity
     await logActivity('photos_bulk_deleted',
       { count: photos.length, eventName: event.event_name },
       eventId,
       { type: 'admin', id: req.admin.id, name: req.admin.username }
     );
-    
+
     downloadZipService.invalidate(parseInt(eventId));
     res.json({ message: `${photos.length} photos deleted successfully` });
   } catch (error) {
@@ -1080,22 +1051,22 @@ router.post('/:eventId/photos/bulk-update', adminAuth, requirePermission('photos
   try {
     const { eventId } = req.params;
     const { photoIds, updates } = req.body;
-    
+
     if (!Array.isArray(photoIds) || photoIds.length === 0) {
       return res.status(400).json({ error: 'Invalid photo IDs' });
     }
-    
+
     // Verify all photos belong to the event
     const photoCount = await db('photos')
       .whereIn('id', photoIds)
       .where('event_id', eventId)
       .count('id as count')
       .first();
-    
+
     if (parseInt(photoCount.count) !== photoIds.length) {
       return res.status(400).json({ error: 'Some photos do not belong to this event' });
     }
-    
+
     // Prepare update data
     const updateData = {};
 
@@ -1161,15 +1132,15 @@ router.post('/:eventId/photos/bulk-update', adminAuth, requirePermission('photos
 router.get('/:eventId/photos/:photoId/download', adminAuth, requirePermission('photos.download'), requireEventOwnership, async (req, res) => {
   try {
     const { eventId, photoId } = req.params;
-    
+
     const photo = await db('photos')
       .where({ id: photoId, event_id: eventId })
       .first();
-    
+
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
-    
+
     const { resolvePhotoFilePath, resolvePhotoStorageKey } = require('../services/photoResolver');
     const event = await db('events').where('id', eventId).first();
     const storage = getStorage();
@@ -1350,18 +1321,17 @@ router.get('/:eventId/photos', adminAuth, requirePermission('photos.view'), requ
     } else if (sort === 'size') {
       orderByColumn = 'photos.size_bytes';
     }
-    
+
     const photos = await query.orderBy(orderByColumn, order);
-    
+
     // Get comment counts separately
     const commentCounts = await db('photo_feedback')
       .whereIn('photo_id', photos.map(p => p.id))
       .where('feedback_type', 'comment')
-      .where('is_approved', true)
       .where('is_hidden', false)
       .groupBy('photo_id')
       .select('photo_id', db.raw('COUNT(*) as comment_count'));
-    
+
     // Create a map for quick lookup
     const commentMap = {};
     commentCounts.forEach(c => {
@@ -1381,7 +1351,7 @@ router.get('/:eventId/photos', adminAuth, requirePermission('photos.view'), requ
       req.admin.id,
       photos.map(p => p.id),
     );
-    
+
     res.json({
       photos: photos.map(photo => ({
         id: photo.id,
@@ -1422,12 +1392,6 @@ router.get('/:eventId/photos', adminAuth, requirePermission('photos.view'), requ
         // shown to guests.
         my_rating: myMarks[photo.id]?.rating ?? null,
         my_color_label: myMarks[photo.id]?.color_label ?? null,
-        // Engagement counters (#895 follow-up): the grid reads these, but
-        // this explicit mapper never included them — so the Engagement
-        // column showed 0 regardless of what the DB counted. This, not
-        // stale data, was why per-image downloads always displayed 0.
-        view_count: photo.view_count || 0,
-        download_count: photo.download_count || 0
       }))
     });
   } catch (error) {
@@ -1498,7 +1462,7 @@ router.get('/:eventId/photo/:photoId', adminAuth, requirePermission('photos.view
 router.get('/:eventId/thumbnail/:photoId', adminAuth, requirePermission('photos.view'), requireEventOwnership, async (req, res) => {
   try {
     const { eventId, photoId } = req.params;
-    
+
     const photo = await db('photos')
       .where({ id: photoId, event_id: eventId })
       .first();
@@ -1607,7 +1571,7 @@ router.get('/:eventId/preview/:photoId', adminAuth, requirePermission('photos.vi
 router.get('/:eventId/debug', adminAuth, requirePermission('photos.view'), requireEventOwnership, async (req, res) => {
   try {
     const { eventId } = req.params;
-    
+
     const eventRow = await db('events').where({ id: eventId }).first();
     const photoCount = await db('photos').where({ event_id: eventId }).count('id as count').first();
     const photos = await db('photos').where({ event_id: eventId }).limit(5);
@@ -1618,7 +1582,7 @@ router.get('/:eventId/debug', adminAuth, requirePermission('photos.view'), requi
       event = { ...eventRow };
       for (const column of ['password_hash', 'client_password_hash', ...RECOVERABLE_PASSWORD_COLUMNS]) delete event[column];
     }
-    
+
     res.json({
       event: event || 'Not found',
       photoCount: photoCount.count,
@@ -1797,11 +1761,6 @@ router.post('/:eventId/chunked-upload/:uploadId/complete', adminAuth, requirePer
       'admin',
       category_id || null
     );
-    if (uploadedPhotos.length) acceptedUpload(res, {
-      video: isVideoMimeType(fileObj.mimetype),
-      raw: path.extname(fileObj.originalname).toLowerCase() === '.dng',
-      s3: process.env.STORAGE_BACKEND === 's3'
-    });
 
     // Clean up temp directory
     try {

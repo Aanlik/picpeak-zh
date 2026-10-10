@@ -57,10 +57,7 @@ function parseByteRange(header, size) {
   return { start, end: Math.min(end, size - 1) };
 }
 function galleryActor(req) {
-  // Portal tokens run as accessLevel 'guest' but carry via:'customer'
-  // (req.viaCustomer); PIN-client logins carry accessLevel 'client'.
-  // Both are customers, not guests (codex review of #849, final round).
-  const isCustomer = !!(req && (req.viaCustomer || req.accessLevel === 'client'));
+  const isCustomer = !!(req && req.accessLevel === 'client');
   return { type: isCustomer ? 'customer' : 'guest' };
 }
 const SINGLE_DOWNLOAD_DEBOUNCE_MS = 60 * 60 * 1000;
@@ -157,21 +154,6 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, denySlideshowToken, 
       return res.end();
     }
 
-    // Admin preview (#868) downloads are excluded from the download count +
-    // guest analytics — kept out of client-facing stats.
-    if (!req.isAdminPreview) {
-      // Update download count
-      await db('photos').where('id', photoId).increment('download_count', 1);
-
-      // Log download
-      await db('access_logs').insert({
-        event_id: req.event.id,
-        ip_address: req.ip,
-        user_agent: req.headers['user-agent'],
-        action: 'download',
-        photo_id: photoId
-      });
-    }
     // Surface in the admin notification bell (#746) — debounced, and only
     // once the response actually finished: notifying up-front would log a
     // download that then 404s/fails and the debounce would suppress the
@@ -179,7 +161,7 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, denySlideshowToken, 
     res.on('finish', () => {
       if (res.statusCode < 400 && !req.isAdminPreview) notifySinglePhotoDownload(req.event, req);
     });
-    
+
     // #493: if the admin enabled "use original filenames", surface the
     // pre-rename camera filename in Content-Disposition. Storage path is
     // unchanged — only the user-visible download name is swapped.
@@ -470,23 +452,7 @@ async function finalizeOrClose(archive, res) {
   await Promise.race([finalized, new Promise((resolve) => res.once('close', resolve))]);
 }
 
-// Download all photos as ZIP
-// Zip downloads count toward each contained photo's download_count (#895)
-// — previously only single-photo downloads did, so galleries whose guests
-// grab the zip showed 0 per-photo downloads forever. Used by the
-// pre-generated-zip branches only: it mirrors downloadZipService._build,
-// which zips EVERY event photo with no per-category allow_downloads
-// filter — the counter has to reflect what actually shipped. (Because of
-// that, the route only serves the prebuilt zip when no photo sits in a
-// category with downloads turned off.) Known approximation: _build skips entries whose
-// WATERMARK step fails and still publishes the zip; counting those
-// would need a persisted archive manifest, which isn't worth it for
-// that tail case. Fire-and-forget at the call sites: counters must
-// never fail a download.
-async function bumpEventDownloadCounts(eventId) {
-  await db('photos').where('event_id', eventId).increment('download_count', 1);
-}
-
+// Download all photos as ZIP.
 router.get('/:slug/download-all', verifyGalleryAccess, denySlideshowToken, blockHiddenGallery, async (req, res) => {
   // Hoisted so the catch can reclaim reads opened before the failure.
   let guard = null;
@@ -543,13 +509,6 @@ router.get('/:slug/download-all', verifyGalleryAccess, denySlideshowToken, block
 
       // Log bulk download (admin preview #868 excluded — stats stay client-only).
       if (!req.isAdminPreview) {
-        db('access_logs').insert({
-          event_id: req.event.id,
-          ip_address: req.ip,
-          user_agent: req.headers['user-agent'],
-          action: 'download_all'
-        }).catch(() => {});
-        bumpEventDownloadCounts(req.event.id).catch(() => {});
         // Surface in the admin notification bell (#746) — only once the
         // stream actually finished; logging at pipe-time would report
         // downloads that then broke mid-transfer (codex review of #849).
@@ -731,27 +690,6 @@ router.get('/:slug/download-all', verifyGalleryAccess, denySlideshowToken, block
     // A failed or abandoned archive is not a download.
     if (cancelled) return;
 
-    if (!req.isAdminPreview) {
-      // Log bulk download
-      await db('access_logs').insert({
-        event_id: req.event.id,
-        ip_address: req.ip,
-        user_agent: req.headers['user-agent'],
-        action: 'download_all'
-      })
-        // The archive is complete by now; a failed log write must not reach
-        // the catch below, which would destroy a response still draining.
-        .catch((err) => logger.warn('Gallery download log write failed', {
-          eventId: req.event.id,
-          error: err?.code || err?.name || 'Error',
-        }));
-      // Exactly the photos that made it into this archive (#895) — skipped
-      // (missing/corrupt) sources don't count.
-      if (appendedIds.length > 0) {
-        db('photos').whereIn('id', appendedIds)
-          .increment('download_count', 1).catch(() => {});
-      }
-    }
   } catch (error) {
     if (guard) guard.destroyAll();
     if (admission) admission();
@@ -926,26 +864,6 @@ router.post('/:slug/download-selected', verifyGalleryAccess, denySlideshowToken,
     await finalizeOrClose(archive, res);
     if (selectedCancelled) return;
 
-    if (!req.isAdminPreview) {
-      await db('access_logs').insert({
-        event_id: req.event.id,
-        ip_address: req.ip,
-        user_agent: req.headers['user-agent'],
-        action: 'download_selected'
-      })
-        // The archive is complete by now; a failed log write must not reach
-        // the catch below, which would destroy a response still draining.
-        .catch((err) => logger.warn('Gallery download log write failed', {
-          eventId: req.event.id,
-          error: err?.code || err?.name || 'Error',
-        }));
-      // Exactly the photos that made it into this archive (#895) — skipped
-      // (missing/corrupt) sources don't count.
-      if (appendedIds.length > 0) {
-        db('photos').whereIn('id', appendedIds)
-          .increment('download_count', 1).catch(() => {});
-      }
-    }
   } catch (error) {
     if (selectedGuard) selectedGuard.destroyAll();
     if (selectedAdmission) selectedAdmission();
@@ -1086,26 +1004,9 @@ router.get('/:slug/download-jobs/:token/file', verifyGalleryAccess, denySlidesho
       return res.status(410).json({ error: 'This download is no longer available' });
     }
 
-    // Stats parity with the other bulk paths (#895): only count once the
-    // response actually completed, and keep admin previews out of guest stats.
+    // Record a completed download for the photographer's notification feed.
     res.on('finish', () => {
       if (res.statusCode >= 400 || req.isAdminPreview) return;
-      // The DELIVERED set, not the requested one: a photo whose source was
-      // missing at build time isn't in the zip and must not be counted.
-      let ids = [];
-      try {
-        ids = JSON.parse(job.delivered_photo_ids || job.photo_ids || '[]');
-      } catch (_) { /* malformed row — skip counting rather than fail */ }
-      if (ids.length > 0) {
-        db('photos').whereIn('id', ids).increment('download_count', 1).catch(() => {});
-      }
-      db('access_logs').insert({
-        event_id: req.event.id,
-        ip_address: req.ip,
-        user_agent: req.headers['user-agent'],
-        action: 'download',
-        photo_id: null,
-      }).catch(() => {});
       logActivity('gallery_downloaded', { scope: 'all', resolution: job.resolution },
         req.event.id, galleryActor(req));
     });

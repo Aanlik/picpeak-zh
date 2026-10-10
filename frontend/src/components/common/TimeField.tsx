@@ -68,7 +68,10 @@ export const TimeField: React.FC<TimeFieldProps> = ({
   const display = (v: string) => (/^\d{1,2}:\d{2}/.test(v) ? fmtTime(v) : (v || ''));
   const [text, setText] = useState(() => display(value));
   // Re-sync when the external value or the format setting changes.
-  useEffect(() => { setText(display(value)); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [value, timeFormat]);
+  useEffect(() => {
+    const formattedValue = /^\d{1,2}:\d{2}/.test(value) ? fmtTime(value) : (value || '');
+    setText((current) => (current === formattedValue ? current : formattedValue));
+  }, [value, timeFormat, fmtTime]);
 
   const commit = () => {
     const parsed = parseTimeToHHMM(text);

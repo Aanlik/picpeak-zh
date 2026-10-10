@@ -43,8 +43,6 @@ const ADMIN_FORM_BODY = {
   allow_comments: true,
   allow_favorites: true,
   allow_reactions: true,
-  require_name_email: false,
-  moderate_comments: true,
   show_feedback_to_guests: true,
   enable_rate_limiting: false,
   rate_limit_window_minutes: 15,
@@ -61,8 +59,8 @@ async function insertEvent(slug) {
     event_type: 'project',
     event_name: 'Feedback Settings Test',
     event_date: '2026-06-22',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: `/gallery/${slug}/share`,
     share_token: `${slug}-share`,

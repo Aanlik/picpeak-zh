@@ -44,8 +44,8 @@ describe('gallery/verify invisible-Unicode fallback (#654)', () => {
       event_type: 'project',
       event_name: `Sanitize ${slug}`,
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: await bcrypt.hash(password, 4),
       share_link: `/gallery/${slug}/share`,
       share_token: `${slug}-share`,

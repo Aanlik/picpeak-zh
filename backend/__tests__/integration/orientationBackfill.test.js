@@ -83,7 +83,7 @@ describe('orientation backfill (#1198)', () => {
     await db('events').del();
     const [e] = await db('events').insert({
       slug: 'orientbf', event_type: 'project', event_name: 'orientbf', event_date: '2026-01-01',
-      host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
+        password_hash: 'x',
       share_link: `orientbf-${Math.random()}`, expires_at: new Date().toISOString(),
       is_archived: archived,
     }).returning('id');

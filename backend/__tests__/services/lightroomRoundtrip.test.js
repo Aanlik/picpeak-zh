@@ -53,9 +53,9 @@ beforeAll(async () => {
     event_name: 'Round-trip Event',
     event_type: 'project',
     event_date: '2026-08-25',
-    host_email: 'host@example.com',
+
     password_hash: 'not-a-real-hash',
-    admin_email: 'admin@example.com',
+
     share_link: 'lr-roundtrip-event',
     expires_at: '2027-08-25',
   }).returning('id');

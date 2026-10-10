@@ -1,7 +1,7 @@
 /**
  * Login-page logo sizing (#354 follow-up).
  *
- * Used ONLY on /admin/login and /customer/login. The rest of the app
+ * Used on the admin login and setup screens. The rest of the app
  * (gallery headers, admin chrome) keeps its own `branding_logo_size` /
  * `branding_logo_max_height` knobs — kept separate so admins can have a
  * compact logo in the in-app header but a hero-sized one on the login

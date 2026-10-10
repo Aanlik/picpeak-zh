@@ -1,14 +1,11 @@
 const archiver = require('archiver');
-const { neutralizeSpreadsheetFormula } = require('../utils/spreadsheetSafe');
 const fs = require('fs');
 const fsp = require('fs').promises;
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
 const { db } = require('../database/db');
-const { queueEmail, getSupportEmail } = require('./emailProcessor');
 const logger = require('../utils/logger');
-const feedbackService = require('./feedbackService');
 const { getStorage } = require('./storage');
 const { resolvePhotoStorageKey } = require('./photoResolver');
 const { getUseOriginalFilenames } = require('./downloadFilenameService');
@@ -99,36 +96,6 @@ async function archiveEvent(event) {
       // for events archived without a manifest, same as the legacy behaviour.
     }
 
-    // Collect feedback data first so it can be included as in-memory entries.
-    const feedbackEntries = [];
-    const feedbackSettings = await feedbackService.getEventFeedbackSettings(event.id);
-    if (feedbackSettings.feedback_enabled) {
-      try {
-        logger.info(`Exporting feedback data for event ${event.slug}`);
-        const feedbackData = await feedbackService.exportEventFeedback(event.id);
-
-        if (feedbackData && feedbackData.length > 0) {
-          feedbackEntries.push({
-            name: 'feedback_data.json',
-            buffer: Buffer.from(JSON.stringify(feedbackData, null, 2), 'utf8'),
-          });
-          feedbackEntries.push({
-            name: 'feedback_data.csv',
-            buffer: Buffer.from(convertToCSV(feedbackData), 'utf8'),
-          });
-          const summary = await feedbackService.getEventFeedbackSummary(event.id);
-          feedbackEntries.push({
-            name: 'feedback_summary.json',
-            buffer: Buffer.from(JSON.stringify(summary, null, 2), 'utf8'),
-          });
-          logger.info(`Feedback data exported: ${feedbackData.length} entries`);
-        }
-      } catch (error) {
-        logger.error(`Error exporting feedback for event ${event.slug}:`, error);
-        // Continue with archiving even if feedback export fails
-      }
-    }
-
     // Stream every photo (and any other content under events/active/{slug}/) into
     // the zip directly from the storage backend.
     let photoEntries = await storage.list(eventPrefix);
@@ -199,9 +166,6 @@ async function archiveEvent(event) {
           if (!await guard.acquire()) return;
           archive.append(guard.track(await storage.get(entry.key)), { name: nameInZip });
         }
-        for (const f of feedbackEntries) {
-          archive.append(f.buffer, { name: f.name });
-        }
         if (photosManifestEntry) {
           archive.append(photosManifestEntry.buffer, { name: photosManifestEntry.name });
         }
@@ -228,37 +192,11 @@ async function archiveEvent(event) {
     await db('events').where('id', event.id).update({
       is_archived: true,
       archive_path: archiveRelKey,
-      // The zip's own byte size — the same number the completion email
-      // reports below. Persisted so the archives list can sort and display it
+      // The zip's own byte size. Persisted so the archives list can sort and display it
       // without statting every archive on every request.
       archive_size: totalBytes,
       archived_at: new Date(),
     });
-
-    // Fire event.archived webhook (#327). Receivers infer per-photo loss
-    // from this event — we deliberately do NOT fire photo.deleted for each
-    // archived photo to avoid flooding subscribers on bulk archives.
-    // Canonical event subject (#341) so the shape matches event.created /
-    // event.published / event.expired; archive_path is an event.archived-
-    // specific extra.
-    try {
-      const webhookService = require('./webhookService');
-      await webhookService.fire('event.archived', {
-        event: {
-          ...webhookService.buildEventSubject({
-            id: event.id,
-            slug: event.slug,
-            event_name: event.event_name,
-            event_date: event.event_date,
-            share_token: event.share_token,
-            customer_name: event.customer_name || event.host_name,
-            customer_email: event.customer_email || event.host_email,
-            customer_phone: event.customer_phone,
-          }),
-          archive_path: archiveRelKey,
-        },
-      });
-    } catch (e) { /* non-fatal */ }
 
     // Delete the originals from storage.
     for (const entry of photoEntries) {
@@ -323,54 +261,12 @@ async function archiveEvent(event) {
       );
     }
 
-    // Queue completion email — admin_email is nullable on events (migration 073);
-    // skip queueing rather than violating email_queue.recipient_email NOT NULL.
-    //
-    // The shipped EN/DE templates (legacy 028) and NL/PT/RU (core 075) reference
-    // {{host_name}}, {{photo_count}}, {{archive_date}} and {{support_email}};
-    // without these the recipient saw literal {{...}} placeholders.
-    if (event.admin_email) {
-      const supportEmail = await getSupportEmail();
-      await queueEmail(event.id, event.admin_email, 'archive_complete', {
-        host_name: event.customer_name || event.host_name || 'Admin',
-        event_name: event.event_name,
-        event_date: event.event_date,
-        photo_count: photoEntries.length,
-        archive_size: (totalBytes / 1024 / 1024).toFixed(2) + ' MB',
-        archive_date: new Date(),
-        support_email: supportEmail
-      });
-    } else {
-      logger.info(`Skipping archive_complete email for event ${event.slug}: no admin_email set`);
-    }
   } catch (error) {
     logger.error(`Error archiving event ${event.slug}:`, error);
     throw error;
   } finally {
     await fsp.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
   }
-}
-
-// Helper function to convert JSON to CSV
-function convertToCSV(data) {
-  if (!data || data.length === 0) return '';
-
-  const headers = Object.keys(data[0]);
-  const csvHeaders = headers.join(',');
-
-  const csvRows = data.map(row => {
-    return headers.map(header => {
-      // Formula-neutralize before quoting (guest_name/comment_text are
-      // user-controlled); the old check didn't even escape \n/\r (GHSA-q82f).
-      const value = neutralizeSpreadsheetFormula(row[header]);
-      if (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes('\r')) {
-        return `"${value.replace(/"/g, '""')}"`;
-      }
-      return value;
-    }).join(',');
-  });
-
-  return [csvHeaders, ...csvRows].join('\n');
 }
 
 module.exports = { archiveEvent, filterDeliveredPhotoEntries };

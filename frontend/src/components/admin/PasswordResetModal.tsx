@@ -1,6 +1,5 @@
-import { NO_EMAIL_MODE } from '../../config/communication';
 import React, { useState } from 'react';
-import { X, Key, Copy, CheckCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { X, Key, Copy, CheckCircle, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { Button, Card, Input, PasswordGenerator } from '../common';
@@ -8,7 +7,7 @@ import { Button, Card, Input, PasswordGenerator } from '../common';
 interface PasswordResetModalProps {
   eventName: string;
   eventDate?: string;
-  onConfirm: (sendEmail: boolean, password?: string) => Promise<{ newPassword: string; emailSent: boolean }>;
+  onConfirm: (password?: string) => Promise<{ newPassword: string }>;
   onClose: () => void;
 }
 
@@ -22,14 +21,10 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [sendEmail, setSendEmail] = useState(!NO_EMAIL_MODE);
   const [isResetting, setIsResetting] = useState(false);
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
   const [resultPassword, setResultPassword] = useState<string | null>(null);
   const [resultWasGenerated, setResultWasGenerated] = useState(false);
-  // What the server did, not what was asked: the event may have no address,
-  // or the queue write may have failed after the password changed.
-  const [resultEmailSent, setResultEmailSent] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const validate = (): boolean => {
@@ -52,10 +47,9 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
     setIsResetting(true);
     try {
       const supplied = password.length > 0 ? password : undefined;
-      const result = await onConfirm(sendEmail, supplied);
+      const result = await onConfirm(supplied);
       setResultPassword(result.newPassword);
       setResultWasGenerated(!supplied);
-      setResultEmailSent(result.emailSent === true);
       if (supplied) {
         toast.success(t('events.passwordReset.toastSuccess'));
       }
@@ -159,28 +153,6 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
               )}
             </div>
 
-            {!NO_EMAIL_MODE && (<div className="mb-4">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={sendEmail}
-                  onChange={(e) => setSendEmail(e.target.checked)}
-                  className="w-4 h-4 text-accent bg-neutral-100 dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 rounded focus:ring-primary-500 focus:ring-2"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-neutral-500" />
-                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                      {t('events.passwordReset.sendEmail')}
-                    </span>
-                  </div>
-                  <p className="text-xs text-neutral-500 mt-1">
-                    {t('events.passwordReset.sendEmailHelp')}
-                  </p>
-                </div>
-              </label>
-            </div>)}
-
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
               <p className="text-sm text-amber-800">
                 {t('events.passwordReset.warning')}
@@ -215,16 +187,6 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
                 <CheckCircle className="w-5 h-5 text-green-600" />
                 <p className="font-medium text-green-900">{t('events.passwordReset.successHeading')}</p>
               </div>
-              {sendEmail && resultEmailSent && (
-                <p className="text-sm text-green-700">
-                  {t('events.passwordReset.emailSentNote')}
-                </p>
-              )}
-              {sendEmail && !resultEmailSent && (
-                <p className="text-sm text-amber-700" role="status">
-                  {t('events.passwordReset.emailNotSentNote')}
-                </p>
-              )}
             </div>
 
             {resultWasGenerated && (

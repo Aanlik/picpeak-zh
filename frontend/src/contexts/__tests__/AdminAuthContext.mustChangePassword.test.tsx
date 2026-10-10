@@ -30,7 +30,7 @@ function session(mustChangePassword: boolean) {
     data: {
       valid: true,
       type: 'admin',
-      adminUser: { id: 1, username: 'admin', email: 'a@example.com', mustChangePassword, role: null },
+      adminUser: { id: 1, username: 'admin', mustChangePassword, role: null },
     },
   };
 }

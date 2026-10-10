@@ -34,8 +34,8 @@ async function insertEvent(db, adminId, eventName) {
     event_type: 'project',
     event_name: eventName,
     event_date: '2026-05-29',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: `/gallery/share-${rand}`,
     share_token: `st-${rand}`,

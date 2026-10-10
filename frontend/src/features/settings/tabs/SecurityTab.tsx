@@ -1,5 +1,5 @@
 import React from 'react';
-import { Save, Key, AlertCircle, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Save, AlertTriangle, AlertCircle } from 'lucide-react';
 import { Button, Card, Input } from '../../../components/common';
 import { useTranslation } from 'react-i18next';
 import type { SecuritySettings, RateLimitSettings } from '../hooks/useSettingsState';
@@ -22,7 +22,6 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
   setRateLimitSettings,
   saveSecurityMutation,
 }) => {
-  const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const setRateLimit = <K extends keyof RateLimitSettings>(key: K, value: RateLimitSettings[K]) =>
     setRateLimitSettings((prev) => ({ ...prev, [key]: value }));
@@ -147,15 +146,6 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
             </div>
           </div>
 
-          <div className="p-4 bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700 rounded-lg">
-            <div className="flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-neutral-700 dark:text-neutral-300">
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">{t('settings.security.twoFactorTitle')}</p>
-                <p className="mt-1">{t('settings.security.twoFactorNote')}</p>
-              </div>
-            </div>
-          </div>
         </div>
       </Card>
 
@@ -248,58 +238,6 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
       </Card>
 
       <Card padding="md">
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">{t('settings.security.recaptchaSettings')}</h2>
-
-        <div className="space-y-4">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={securitySettings.enable_recaptcha}
-              onChange={(e) => setSecuritySettings(prev => ({ ...prev, enable_recaptcha: e.target.checked }))}
-              className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-            />
-            <span className="ml-2 text-sm text-neutral-700 dark:text-neutral-300">{t('settings.security.enableRecaptcha')}</span>
-          </label>
-
-          {securitySettings.enable_recaptcha && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                  {t('settings.security.siteKey')}
-                </label>
-                <Input
-                  type="text"
-                  value={securitySettings.recaptcha_site_key}
-                  onChange={(e) => setSecuritySettings(prev => ({ ...prev, recaptcha_site_key: e.target.value }))}
-                  placeholder={t('settings.security.siteKey')}
-                  leftIcon={<Key className="w-5 h-5 text-neutral-400" />}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                  {t('settings.security.secretKey')}
-                </label>
-                <Input
-                  type="password"
-                  value={securitySettings.recaptcha_secret_key}
-                  onChange={(e) => setSecuritySettings(prev => ({ ...prev, recaptcha_secret_key: e.target.value }))}
-                  placeholder={t('settings.security.secretKey')}
-                  leftIcon={<Key className="w-5 h-5 text-neutral-400" />}
-                />
-              </div>
-            </>
-          )}
-
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-              <div className="text-sm text-blue-800 dark:text-blue-200">
-                <p>{t('settings.security.recaptchaHelp')} <a href="https://www.google.com/recaptcha/admin" target="_blank" rel="noopener noreferrer" className="underline">{tAudit("ui.recaptchaAdmin")}</a></p>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="mt-6">
           <Button
             variant="primary"

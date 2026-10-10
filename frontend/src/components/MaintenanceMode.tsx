@@ -1,4 +1,3 @@
-import { NO_EMAIL_MODE } from '../config/communication';
 import React, { useEffect } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -23,13 +22,13 @@ export const MaintenanceMode: React.FC = () => {
       <div className="bg-white border-b border-neutral-200 py-4">
         <div className="container">
           <div className="flex items-center justify-center">
-            <img 
-              src={settings?.branding_logo_url ? 
-                (settings.branding_logo_url.startsWith('http') 
-                  ? settings.branding_logo_url 
+            <img
+              src={settings?.branding_logo_url ?
+                (settings.branding_logo_url.startsWith('http')
+                  ? settings.branding_logo_url
                   : buildResourceUrl(settings.branding_logo_url))
                 : '/picpeak-logo-transparent.png'
-              } 
+              }
               alt={settings?.branding_company_name || 'PicPeak'}
               className="h-12 w-auto object-contain"
             />
@@ -51,26 +50,15 @@ export const MaintenanceMode: React.FC = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-amber-100 rounded-full mb-6">
             <AlertTriangle className="w-10 h-10 text-amber-600" />
           </div>
-          
+
           <h1 className="text-3xl font-bold text-neutral-900 mb-4">
             {t('maintenance.title')}
           </h1>
-          
+
           <p className="text-lg text-neutral-600 mb-8">
             {t('maintenance.message')}
           </p>
-          
-          {!NO_EMAIL_MODE && settings?.branding_support_email && (
-            <p className="text-sm text-neutral-500 mt-8">
-              {t('maintenance.urgentMatters')}{' '}
-              <a 
-                href={`mailto:${settings.branding_support_email}`}
-                className="text-primary-600 hover:text-primary-700"
-              >
-                {settings.branding_support_email}
-              </a>
-            </p>
-          )}
+
         </div>
       </div>
 

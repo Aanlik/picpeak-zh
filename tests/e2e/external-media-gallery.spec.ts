@@ -4,7 +4,7 @@ import path from 'path';
 import { adminApiToken, publishEvent } from './_helpers/admin';
 import { passGalleryPasswordPrompt } from './_helpers/gallery';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const GALLERY_PASSWORD = process.env.GALLERY_PASSWORD || 'ExternalMediaPass!1';
 
 async function createExternalGallery(page) {
@@ -42,8 +42,6 @@ async function createExternalGallery(page) {
       event_name: eventName,
       event_date: eventDate,
       customer_name: 'External Host',
-      customer_email: 'host@example.com',
-      admin_email: ADMIN_EMAIL,
       password: GALLERY_PASSWORD,
       expiration_days: 30,
       allow_user_uploads: false,
@@ -56,7 +54,6 @@ async function createExternalGallery(page) {
       allow_comments: true,
       allow_favorites: true,
       require_name_email: false,
-      moderate_comments: false,
       show_feedback_to_guests: true,
       source_mode: 'reference',
       external_path: 'picsum-demo'
@@ -103,7 +100,6 @@ async function createExternalGallery(page) {
       allow_comments: true,
       allow_favorites: true,
       require_name_email: false,
-      moderate_comments: false,
       show_feedback_to_guests: true,
     },
   });

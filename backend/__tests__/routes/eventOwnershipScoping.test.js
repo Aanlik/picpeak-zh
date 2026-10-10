@@ -58,8 +58,8 @@ describe('event visibility and gallery links by role', () => {
       event_type: 'project',
       event_name: slug,
       event_date: '2026-08-01',
-      host_email: 'h@example.com',
-      admin_email: 'a@example.com',
+
+
       password_hash: 'x',
       share_token: `st-${slug}`,
       share_link: `/gallery/${slug}/st-${slug}`,
@@ -114,7 +114,6 @@ describe('event visibility and gallery links by role', () => {
     app.use('/api/admin/archives', require('../../src/routes/adminArchives'));
     app.use('/api/admin/categories', require('../../src/routes/adminCategories'));
     app.use('/api/admin/photos', require('../../src/routes/adminPhotos'));
-    app.use('/api/admin/dashboard', require('../../src/routes/adminDashboard'));
     // eslint-disable-next-line no-unused-vars
     app.use((err, req, res, next) => {
       res.status(err.statusCode || err.status || 500).json({ error: err.message });
@@ -247,13 +246,4 @@ describe('event visibility and gallery links by role', () => {
     expect(own.body.photos[0].filename).toBe('ed.jpg');
   });
 
-  it('scopes the dashboard totals for roles other than super_admin and admin', async () => {
-    const viewer = await as(request(app).get('/api/admin/dashboard/stats'), 'viewer');
-    expect(viewer.status).toBe(200);
-    expect(Number(viewer.body.totalPhotos)).toBe(0);
-
-    const admin = await as(request(app).get('/api/admin/dashboard/stats'), 'admin');
-    expect(admin.status).toBe(200);
-    expect(Number(admin.body.totalPhotos)).toBe(2);
-  });
 });

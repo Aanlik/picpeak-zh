@@ -116,7 +116,7 @@ describe('authorization / ownership gaps', () => {
       const seedShareToken = 'orig-share-token';
       const ins = await db('events').insert({
         slug: 'authz-mass-assign', event_type: 'project', event_name: 'Before',
-        event_date: '2026-08-01', host_email: 'h@example.com', admin_email: 'a@example.com',
+        event_date: '2026-08-01',
         password_hash: 'orig-hash', share_link: '/gallery/authz/share', share_token: seedShareToken, expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
         is_active: 1, is_archived: 0, is_draft: 0, created_by: superId,
         created_at: new Date().toISOString(),
@@ -162,7 +162,7 @@ describe('authorization / ownership gaps', () => {
     it('returns 200 (no-op) when the body contains only protected fields', async () => {
       const ins = await db('events').insert({
         slug: 'authz-empty-update', event_type: 'project', event_name: 'Keep',
-        event_date: '2026-08-01', host_email: 'h@example.com', admin_email: 'a@example.com',
+        event_date: '2026-08-01',
         password_hash: 'x', share_link: '/gallery/authz-empty/share', share_token: 'authz-empty-share',
         expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
         is_active: 1, is_archived: 0, is_draft: 0, created_by: superId,
@@ -183,7 +183,7 @@ describe('authorization / ownership gaps', () => {
     it('rejects a hero photo that is not in the category', async () => {
       const evIns = await db('events').insert({
         slug: 'authz-cat', event_type: 'project', event_name: 'Cat Event',
-        event_date: '2026-08-01', host_email: 'h@example.com', admin_email: 'a@example.com',
+        event_date: '2026-08-01',
         password_hash: 'x', share_link: '/gallery/authz-cat/share', share_token: 'authz-cat-share', expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
         is_active: 1, is_archived: 0, is_draft: 0, created_by: superId,
         created_at: new Date().toISOString(),

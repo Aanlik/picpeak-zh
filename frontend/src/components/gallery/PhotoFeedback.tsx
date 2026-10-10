@@ -124,7 +124,7 @@ export const PhotoFeedback: React.FC<PhotoFeedbackProps> = ({
           averageRating={Number(feedbackData?.summary?.average_rating) || 0}
           totalRatings={Number(feedbackData?.summary?.total_ratings) || 0}
           isEnabled={true}
-          requireNameEmail={settings.require_name_email || false}
+          requireGuestName={!!settings?.require_name_email}
           onRatingChange={handleRatingChange}
         />
       )}
@@ -139,7 +139,7 @@ export const PhotoFeedback: React.FC<PhotoFeedbackProps> = ({
               isLiked={isLiked}
               likeCount={likeCount}
               isEnabled={true}
-              requireNameEmail={settings.require_name_email || false}
+              requireGuestName={!!settings?.require_name_email}
               onLikeChange={handleLikeChange}
             />
           )}
@@ -151,7 +151,7 @@ export const PhotoFeedback: React.FC<PhotoFeedbackProps> = ({
               isFavorited={isFavorited}
               favoriteCount={favoriteCount}
               isEnabled={true}
-              requireNameEmail={settings.require_name_email || false}
+              requireGuestName={!!settings?.require_name_email}
               onFavoriteChange={handleFavoriteChange}
             />
           )}
@@ -166,7 +166,7 @@ export const PhotoFeedback: React.FC<PhotoFeedbackProps> = ({
           myReaction={myReaction}
           reactionCounts={reactionCounts}
           isEnabled={true}
-          requireNameEmail={settings.require_name_email || false}
+          requireGuestName={!!settings?.require_name_email}
           onReactionChange={handleReactionChange}
         />
       )}
@@ -179,7 +179,7 @@ export const PhotoFeedback: React.FC<PhotoFeedbackProps> = ({
             gallerySlug={gallerySlug}
             comments={feedbackData?.feedback?.filter(f => f.feedback_type === 'comment') || []}
             isEnabled={true}
-            requireNameEmail={settings.require_name_email || false}
+            requireGuestName={!!settings?.require_name_email}
             showToGuests={settings.show_feedback_to_guests || false}
             onCommentAdded={() => {
               if (onFeedbackUpdate) onFeedbackUpdate();

@@ -391,7 +391,7 @@ async function main() {
   console.log('\n  Exporting rows from SQLite…');
   const archive = runPhase('export', 'sqlite3');
   // From here on, every exit path must remove the archive: it holds password
-  // hashes, SMTP credentials and API keys in plaintext.
+  // hashes and API keys in plaintext.
   archiveToClean = args.keepArchive ? null : archive;
   const sizeMb = (fs.statSync(archive).size / 1024 / 1024).toFixed(1);
   console.log(`  archive: ${archive} (${sizeMb} MB)`);

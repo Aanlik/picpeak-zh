@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { adminApiToken, waitForPhotosProcessed } from './_helpers/admin';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const GALLERY_PASSWORD = process.env.GALLERY_PASSWORD || 'PlaywrightGallery123!';
 
 async function getAdminToken(page: Page): Promise<string> {
@@ -29,8 +29,6 @@ test.describe('Admin video upload (#203)', () => {
         event_name: eventName,
         event_date: eventDate,
         customer_name: 'Playwright Host',
-        customer_email: 'host@example.com',
-        admin_email: ADMIN_EMAIL,
         password: GALLERY_PASSWORD,
         expiration_days: 90,
         allow_downloads: true,

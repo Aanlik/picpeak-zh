@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { publishEvent, waitForPhotosProcessed } from './_helpers/admin';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin!234';
 const GALLERY_PASSWORD = process.env.GALLERY_PASSWORD || 'PlaywrightGallery123!';
 
@@ -14,7 +14,7 @@ async function createEventWithPhotos(page: Page, adminToken?: string, attempt = 
   if (!token) {
     const loginResponse = await api.post('/api/auth/admin/login', {
       data: {
-        username: ADMIN_EMAIL,
+        username: ADMIN_USERNAME,
         password: ADMIN_PASSWORD,
       },
     });
@@ -43,10 +43,7 @@ async function createEventWithPhotos(page: Page, adminToken?: string, attempt = 
       event_name: eventName,
       event_date: eventDate,
       customer_name: 'Playwright Host',
-      customer_email: 'host@example.com',
       host_name: 'Playwright Host',
-      host_email: 'host@example.com',
-      admin_email: ADMIN_EMAIL,
       password: GALLERY_PASSWORD,
       expiration_days: 30,
       allow_user_uploads: false,
@@ -148,11 +145,11 @@ test('admin login and gallery viewing smoke test @smoke', async ({ page }) => {
   // The API login above already put the admin cookie in this context, so the
   // login page may redirect to the dashboard. Wait for one or the other.
   await page.goto('/admin/login');
-  const emailField = page.getByLabel(/Email/i);
+  const usernameField = page.getByLabel(/Username/i);
   const dashboard = page.getByRole('heading', { name: /Dashboard/i });
-  await expect(emailField.or(dashboard).first()).toBeVisible({ timeout: 20000 });
-  if (await emailField.isVisible()) {
-    await emailField.fill(ADMIN_EMAIL);
+  await expect(usernameField.or(dashboard).first()).toBeVisible({ timeout: 20000 });
+  if (await usernameField.isVisible()) {
+    await usernameField.fill(ADMIN_USERNAME);
     await page.getByLabel(/Password/i).fill(ADMIN_PASSWORD);
     await page.getByRole('button', { name: /^(Sign In|Log in|Anmelden)$/i }).click();
   }

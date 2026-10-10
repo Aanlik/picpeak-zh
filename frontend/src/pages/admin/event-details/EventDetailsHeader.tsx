@@ -1,4 +1,3 @@
-import { NO_EMAIL_MODE } from '../../../config/communication';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +10,6 @@ import {
   Save,
   X,
   AlertTriangle,
-  MessageSquare,
   Type,
   Send
 } from 'lucide-react';
@@ -21,7 +19,6 @@ import { PermissionGate } from '../../../components/admin/PermissionGate';
 import { useLocalizedDate } from '../../../hooks/useLocalizedDate';
 import { buildShareLinkUrl } from '../../../utils/url';
 import { isGalleryPublic } from '../../../utils/accessControl';
-import type { FeedbackSettings as FeedbackSettingsType } from '../../../services/feedback.service';
 import { safeParseDate } from './utils';
 
 interface EventDetailsHeaderProps {
@@ -32,7 +29,6 @@ interface EventDetailsHeaderProps {
   handleStartEdit: () => void;
   handleSaveEdit: () => void;
   isSaving: boolean;
-  feedbackSettings: FeedbackSettingsType;
   setShowRenameDialog: (show: boolean) => void;
   setShowPublishDialog: (show: boolean) => void;
   isPublishing: boolean;
@@ -44,13 +40,11 @@ interface EventDetailsHeaderProps {
 
 export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({
   event,
-  id,
   isEditing,
   setIsEditing,
   handleStartEdit,
   handleSaveEdit,
   isSaving,
-  feedbackSettings,
   setShowRenameDialog,
   setShowPublishDialog,
   isPublishing,
@@ -153,16 +147,6 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({
                         {t('events.rename.button', 'Rename')}
                       </Button>
                     </PermissionGate>
-                    {feedbackSettings?.feedback_enabled && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        leftIcon={<MessageSquare className="w-4 h-4" />}
-                        onClick={() => navigate(`/admin/events/${id}/feedback`)}
-                      >
-                        {t('feedback.manage', 'Manage Feedback')}
-                      </Button>
-                    )}
                   </>
                 )}
               </>
@@ -210,7 +194,7 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({
                 onClick={() => setShowPublishDialog(true)}
                 isLoading={isPublishing}
               >
-                {NO_EMAIL_MODE ? t('events.publishButton') : t('events.publishAndNotify')}
+                {t('events.publishButton')}
               </Button>
             </PermissionGate>
           </div>
@@ -232,7 +216,7 @@ export const EventDetailsHeader: React.FC<EventDetailsHeaderProps> = ({
               <p className={`text-sm mt-1 ${isExpired ? 'text-red-700' : 'text-orange-700'}`}>
                 {isExpired
                   ? t('events.guestsCannotAccessGallery')
-                  : (NO_EMAIL_MODE ? t('events.customerCannotAccessYet') : t('events.warningEmailsHaveBeenSent'))}
+                  : t('events.customerCannotAccessYet')}
               </p>
             </div>
             {!isExpired && (

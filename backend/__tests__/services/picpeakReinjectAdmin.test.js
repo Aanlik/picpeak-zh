@@ -26,9 +26,6 @@ beforeEach(async () => {
     t.boolean('must_change_password').defaultTo(false);
     t.integer('role_id');
     t.integer('created_by');
-    t.boolean('two_factor_enabled').defaultTo(false);
-    t.string('two_factor_secret');
-    t.text('two_factor_recovery_codes');
   });
 });
 
@@ -37,14 +34,12 @@ afterEach(async () => { await db.destroy(); });
 const operator = {
   id: 1, username: 'admin', email: 'op@example.com',
   password_hash: 'OP_HASH', is_active: 1, must_change_password: 0, role_id: 1, created_by: 99,
-  two_factor_enabled: 1, two_factor_secret: 'OP_SECRET', two_factor_recovery_codes: '["a","b"]',
 };
 
-test('restores login + MFA in place, keeping the row id and its FK columns (FK-safe)', async () => {
+test('restores login credentials in place, keeping the row id and its FK columns (FK-safe)', async () => {
   await db('admin_users').insert({
     id: 7, username: 'someoneelse', email: 'OP@example.com',
     password_hash: 'ATTACKER', is_active: 1, must_change_password: 0, role_id: 4, created_by: 5,
-    two_factor_enabled: 0, two_factor_secret: 'ATTACKER_SECRET', two_factor_recovery_codes: null,
   });
   await db.transaction((trx) => reinjectCurrentAdmin(trx, operator));
 
@@ -54,9 +49,6 @@ test('restores login + MFA in place, keeping the row id and its FK columns (FK-s
   expect(row.id).toBe(7);                            // id preserved → FK refs hold
   expect(row.username).toBe('admin');
   expect(row.password_hash).toBe('OP_HASH');
-  expect(Boolean(row.two_factor_enabled)).toBe(true);
-  expect(row.two_factor_secret).toBe('OP_SECRET');   // attacker MFA secret gone
-  expect(row.two_factor_recovery_codes).toBe('["a","b"]');
   // Relationship/audit FKs are NOT forced from the operator snapshot (avoids
   // dangling role_id/created_by on a cross-instance restore) — the restored
   // row keeps its own already-valid values.

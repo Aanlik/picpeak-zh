@@ -87,8 +87,8 @@ describe('guest filters and show_feedback_to_guests (#1044)', () => {
       event_type: 'project',
       event_name: 'Filter Visibility',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'filter-visibility-share',
@@ -121,7 +121,6 @@ describe('guest filters and show_feedback_to_guests (#1044)', () => {
       allow_ratings: true,
       allow_favorites: true,
       allow_color_labels: true,
-      moderate_comments: false,
       show_feedback_to_guests: true,
     });
 
@@ -143,7 +142,6 @@ describe('guest filters and show_feedback_to_guests (#1044)', () => {
       // that is the column the viewer's own half resolves through.
       guest_id: who === ME ? myGuestRowId : null,
       feedback_type: type,
-      is_approved: true,
       is_hidden: false,
       created_at: new Date().toISOString(),
       ...extra,

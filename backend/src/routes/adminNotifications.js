@@ -4,12 +4,12 @@ const { adminAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/permissions');
 const { seesAllEvents } = require('../middleware/ownership');
 const logger = require('../utils/logger');
-const { toUtcIso } = require('../utils/queueTimestamps');
+const { toUtcIso } = require('../utils/dateNormalize');
 const router = express.Router();
 
 /**
  * Restrict an activity_logs query to the rows the caller may see — the same
- * scope the dashboard activity feed applies (adminDashboard.applyEventScope):
+ * scope the events list applies:
  * every role except super_admin and the roles that see all events is limited
  * to its own events plus ownerless ones. `activity_logs.event_id` is NULLABLE;
  * system-level entries (logins, settings changes) carry no event and are
@@ -50,7 +50,7 @@ router.get('/', adminAuth, requirePermission(['settings.view', 'notifications.vi
       .leftJoin('events', 'activity_logs.event_id', 'events.id')
       .orderBy('activity_logs.created_at', 'desc')
       .limit(parseInt(limit));
-    
+
     // By default, only show unread notifications
     if (includeRead !== 'true') {
       query = query.whereNull('activity_logs.read_at');

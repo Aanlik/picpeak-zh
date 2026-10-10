@@ -37,8 +37,8 @@ describe('guest token event binding', () => {
     event_type: 'project',
     event_name: name,
     event_date: '2026-08-01',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: `/gallery/${slug}/share`,
     share_token: `${slug}-share`,
@@ -64,10 +64,8 @@ describe('guest token event binding', () => {
     allow_comments: true,
     allow_ratings: true,
     allow_favorites: true,
-    moderate_comments: false,
     show_feedback_to_guests: true,
     identity_mode: identityMode,
-    require_name_email: false,
   });
 
   beforeAll(async () => {
@@ -125,7 +123,6 @@ describe('guest token event binding', () => {
       feedback_type: 'favorite',
       guest_identifier: 'foreign-device',
       guest_id: guestA,
-      is_approved: true,
       is_hidden: false,
       created_at: new Date().toISOString(),
     });

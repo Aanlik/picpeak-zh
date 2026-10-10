@@ -56,8 +56,8 @@ describe('hidden-photo access control (GHSA cluster)', () => {
       event_type: 'project',
       event_name: 'Hidden Photo Test',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'hidden-photo-share',

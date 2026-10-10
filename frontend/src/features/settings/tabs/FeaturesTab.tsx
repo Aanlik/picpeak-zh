@@ -1,6 +1,5 @@
-import { NO_EMAIL_MODE } from '../../../config/communication';
 import React from 'react';
-import { ToggleRight, Save, AlertCircle, Images, BellRing, MessageSquare, BarChart3, Users, MonitorPlay, Send, Workflow } from 'lucide-react';
+import { ToggleRight, Save, AlertCircle, Images, Users, MonitorPlay, Send } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Button, Card } from '../../../components/common';
@@ -50,19 +49,12 @@ export const FeaturesTab: React.FC = () => {
         <Section title={t('settings.features.sections.core', 'Core')}>
           <FeatureCard icon={Images} title={t('settings.features.galleries.title', 'Galleries')} description={t('settings.features.galleries.description', 'The core PicPeak surface. Always available.')} status="stable" statusLabel={statusLabel('stable')} sidebarLabel={t('navigation.events')} enabled={staged.galleries} onToggle={() => {}} disabled lockedReason={t('settings.features.galleries.locked', "Galleries are the foundation of PicPeak and can't be turned off.")} />
           <FeatureCard icon={MonitorPlay} title={t('settings.features.slideshow.title', 'Live Slideshow')} description={t('settings.features.slideshow.description', 'A fullscreen slideshow link for an event.')} status="new" statusLabel={statusLabel('new')} sidebarHidden sidebarHiddenLabel={sidebarHiddenLabel} enabled={staged.slideshow} onToggle={(next) => setFlag('slideshow', next)} />
-          {!NO_EMAIL_MODE && <FeatureCard icon={Send} title={t('settings.features.transfers.title', 'PicTransfer')} description={t('settings.features.transfers.description', 'Send original files through a protected download link, with optional client uploads.')} status="new" statusLabel={statusLabel('new')} sidebarLabel={t('settings.features.transfers.sidebar', 'PicTransfer')} enabled={staged.transfers} onToggle={(next) => setFlag('transfers', next)} />}
+          <FeatureCard icon={Send} title={t('settings.features.transfers.title', 'PicTransfer')} description={t('settings.features.transfers.description', 'Send original files through a protected download link, with optional client uploads.')} status="new" statusLabel={statusLabel('new')} sidebarLabel={t('settings.features.transfers.sidebar', 'PicTransfer')} enabled={staged.transfers} onToggle={(next) => setFlag('transfers', next)} />
           <FeatureCard icon={Users} title={t('settings.features.faces.title', 'People in galleries')} description={t('settings.features.faces.description', 'Group gallery photos by the people in them. Face processing stays off until enabled for a gallery.')} status="new" statusLabel={statusLabel('new')} sidebarHidden sidebarHiddenLabel={sidebarHiddenLabel} enabled={staged.faces} onToggle={(next) => setFlag('faces', next)} disabled={isSingleContainer} lockedReason={isSingleContainer ? t('settings.features.faces.lockedSingleContainer') : undefined} />
         </Section>
 
-        {!NO_EMAIL_MODE && <Section title={t('settings.features.sections.communication', 'Communication')}>
-          <FeatureCard icon={BellRing} title={t('settings.features.reminderEmails.title', 'Reminder Emails')} description={t('settings.features.reminderEmails.description', 'Send a general reminder before an event date.')} status="beta" statusLabel={statusLabel('beta')} sidebarHidden sidebarHiddenLabel={sidebarHiddenLabel} enabled={staged.reminderEmails} onToggle={(next) => setFlag('reminderEmails', next)} />
-          <FeatureCard icon={MessageSquare} title={t('settings.features.messaging.title', 'Messaging')} description={t('settings.features.messaging.description', 'Manage sent and received messages in one place.')} status="new" statusLabel={statusLabel('new')} sidebarLabel={t('settings.features.messaging.sidebar', 'Messages')} enabled={staged.messaging} onToggle={(next) => setFlag('messaging', next)} />
-        </Section>}
-
-        <Section title={t('settings.features.sections.insights', 'Insights & Access')}>
-          <FeatureCard icon={BarChart3} title={t('settings.features.analytics.title', 'Analytics')} description={t('settings.features.analytics.description', 'Storage usage, gallery views, download counts, and per-event stats.')} status="stable" statusLabel={statusLabel('stable')} sidebarLabel={t('admin.analytics', 'Analytics')} enabled={staged.analytics} onToggle={(next) => setFlag('analytics', next)} />
+        <Section title={t('settings.features.sections.access', 'Access')}>
           <FeatureCard icon={Users} title={t('settings.features.userManagement.title', 'User Management')} description={t('settings.features.userManagement.description', 'Multi-admin support with role-based permissions.')} status="stable" statusLabel={statusLabel('stable')} sidebarLabel={t('navigation.users', 'Users')} enabled={staged.userManagement} onToggle={(next) => setFlag('userManagement', next)} />
-          <FeatureCard icon={Workflow} title={t('settings.features.workflows.title', 'Workflows')} description={t('settings.features.workflows.description', 'Automate gallery and notification tasks.')} status="new" statusLabel={statusLabel('new')} sidebarLabel={t('navigation.workflows', 'Workflows')} enabled={staged.workflows} onToggle={(next) => setFlag('workflows', next)} />
         </Section>
       </Card>
 

@@ -1,7 +1,6 @@
-import { NO_EMAIL_MODE } from '../../config/communication';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, User, LogOut, Settings, Bell, Lock, CheckCircle, Trash2, Sun, Moon, Globe, ChevronDown, Eye, Download, Heart, Calendar, Image, Archive, AlertCircle, Clock, Database, FileText, Folder, Key, Mail, Tag, ToggleRight, UserCog, Webhook } from 'lucide-react';
+import { Menu, User, LogOut, Settings, Bell, Lock, CheckCircle, Trash2, Sun, Moon, Globe, ChevronDown, Eye, Download, Heart, Calendar, Image, Archive, AlertCircle, Clock, Database, FileText, Folder, Key, Tag, ToggleRight, UserCog } from 'lucide-react';
 
 // getNotificationStyle returns an icon NAME — map the ones we render to
 // components; anything unmapped keeps the Bell (codex review of #849:
@@ -10,8 +9,8 @@ import { Menu, User, LogOut, Settings, Bell, Lock, CheckCircle, Trash2, Sun, Moo
 // style renders its declared icon (codex review of #849 round 2).
 const NOTIFICATION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   Bell, Eye, Download, Heart, Calendar, Image, Archive, AlertCircle, Clock, Lock,
-  CheckCircle, Database, FileText, Folder, Globe, Key, LogOut, Mail, Settings,
-  Tag, ToggleRight, Trash2, User, UserCog, Webhook,
+  CheckCircle, Database, FileText, Folder, Globe, Key, LogOut, Settings,
+  Tag, ToggleRight, Trash2, User, UserCog,
 };
 import { useTranslation } from 'react-i18next';
 import { useLocalizedDate } from '../../hooks/useLocalizedDate';
@@ -45,7 +44,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
   const queryClient = useQueryClient();
 
   const { data: brandingSettings, isLoading: brandingLoading } = usePublicSettings();
-  const currentLanguage = SUPPORTED_LANGUAGES.find(lang => lang.code === i18n.language) || SUPPORTED_LANGUAGES[0];
+  const currentLanguage = SUPPORTED_LANGUAGES.find(lang => lang.code === i18n.resolvedLanguage) || SUPPORTED_LANGUAGES[1];
 
   const companyName = brandingSettings?.branding_company_name?.trim() || 'PicPeak';
   // Dark-mode logo variant. Symmetric fallback: if only one logo is set,
@@ -195,8 +194,32 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
     },
   });
 
-  const notifications = notificationsData?.notifications || [];
+  const notifications = useMemo(() => notificationsData?.notifications ?? [], [notificationsData?.notifications]);
   const unreadCount = notificationsData?.unreadCount || 0;
+
+  // Surface new in-app activity as a toast as well as in the bell menu.
+  // Seed the ID set from the first response so opening the app does not replay
+  // old unread activity as a burst of popups.
+  const seenNotificationIdsRef = useRef<Set<number> | null>(null);
+  useEffect(() => {
+    if (!notificationsData) return;
+
+    const previousIds = seenNotificationIdsRef.current;
+    if (previousIds) {
+      notifications
+        .filter((notification) => !notification.isRead && !previousIds.has(notification.id))
+        .slice()
+        .reverse()
+        .forEach((notification) => {
+          toast.info(notificationsService.formatNotificationMessage(notification), {
+            toastId: `admin-notification-${notification.id}`,
+            autoClose: 8000,
+          });
+        });
+    }
+
+    seenNotificationIdsRef.current = new Set(notifications.map((notification) => notification.id));
+  }, [notificationsData, notifications]);
 
   return (
     // border-b is on the OUTER <header> so it spans the full header
@@ -403,7 +426,6 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
               >
                 <div className="text-right hidden sm:block">
                   <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{user?.username}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{NO_EMAIL_MODE ? "" : user?.email}</p>
                 </div>
                 <div className="w-8 h-8 bg-accent-dark rounded-full flex items-center justify-center">
                   <User className="w-5 h-5 text-white" />
@@ -415,7 +437,6 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 py-1">
                   <div className="px-4 py-2 border-b border-neutral-100 dark:border-neutral-700 sm:hidden">
                     <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{user?.username}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{NO_EMAIL_MODE ? "" : user?.email}</p>
                   </div>
                   {/* Language sub-section — phone-only (#523 follow-up).
                       Rekoo-PS asked for language to live inside the profile
@@ -440,7 +461,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
                             key={language.code}
                             onClick={() => handleUserMenuLangSelect(language.code)}
                             className={`w-full pl-11 pr-4 py-2 text-left text-sm flex items-center gap-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 ${
-                              language.code === i18n.language
+                        language.code === i18n.resolvedLanguage
                                 ? 'text-accent bg-accent-dark/15'
                                 : 'text-neutral-700 dark:text-neutral-300'
                             }`}
@@ -485,7 +506,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick }) => {
           </div>
         </div>
       </div>
-      
+
       {/* Password Change Modal */}
       <PasswordChangeModal
         isOpen={passwordModal.isOpen}

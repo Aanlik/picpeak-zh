@@ -38,12 +38,6 @@ export interface TransferExtraFile {
   mime_type: string | null;
 }
 
-export interface TransferRecipient {
-  id: number;
-  email: string;
-  last_sent_at: string | null;
-}
-
 export interface Transfer {
   id: number;
   token: string;
@@ -58,7 +52,6 @@ export interface Transfer {
   grace_days: number;
   deleted_at: string | null;
   allow_uploads: boolean;
-  delivery_method: 'link' | 'email';
   upload_token: string | null;
   upload_expires_at: string | null;
   created_at: string;
@@ -70,7 +63,6 @@ export interface Transfer {
   upload_count: number;
   files?: TransferFile[];
   extra_files?: TransferExtraFile[];
-  recipients?: TransferRecipient[];
   uploads?: TransferUpload[];
 }
 
@@ -83,9 +75,6 @@ export interface CreateTransferInput {
   allowUploads?: boolean;
   uploadExpiresInDays?: number;
   photoIds?: number[];
-  /** 'link' (default) or 'email' — email the download link to recipientEmails. */
-  deliveryMethod?: 'link' | 'email';
-  recipientEmails?: string[];
   /** The operator's own files to include in the transfer as deliverables. */
   files?: File[];
 }
@@ -151,8 +140,6 @@ export const transfersService = {
     form.append('allowUploads', String(!!input.allowUploads));
     if (input.uploadExpiresInDays != null) form.append('uploadExpiresInDays', String(input.uploadExpiresInDays));
     form.append('photoIds', JSON.stringify(input.photoIds || []));
-    form.append('deliveryMethod', input.deliveryMethod || 'link');
-    form.append('recipientEmails', JSON.stringify(input.recipientEmails || []));
     (input.files || []).forEach((f) => form.append('files', f));
     const res = await api.post('/admin/transfers', form, {
       onUploadProgress: (e) => {

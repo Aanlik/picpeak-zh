@@ -44,9 +44,6 @@ vi.mock('../../../../services/feedback.service', () => ({
 vi.mock('../../../../services/gallery.service', () => ({
   galleryService: { downloadSelectedPhotos: vi.fn() },
 }));
-vi.mock('../../../../services/analytics.service', () => ({
-  analyticsService: { trackGalleryEvent: vi.fn() },
-}));
 
 // Mirrors a real upload: the stored name is the renamed one, the camera name
 // survives in original_filename and is what the guest sees.

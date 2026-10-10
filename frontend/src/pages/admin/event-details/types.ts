@@ -1,7 +1,6 @@
 export type EventDetailsTab = 'overview' | 'photos' | 'categories' | 'guests';
 
 export type EditFormState = {
-  welcome_message: string;
   color_theme: string;
   css_template_id: number | null;
   expires_at: string;
@@ -12,7 +11,6 @@ export type EditFormState = {
   upload_category_id: number | null;
   hero_photo_id: number | null;
   customer_name: string;
-  customer_email: string;
   customer_phone: string;
   source_mode: 'managed' | 'reference';
   external_path: string;
@@ -48,16 +46,11 @@ export type EditFormState = {
   // Info banner (#932) — same three-way mode, rendered above the grid.
   info_mode: 'inherit' | 'custom' | 'off';
   info_markdown: string;
-  // Customer accounts assigned to this event (#354). Hydrated from
-  // the GET /admin/events/:id response and sent back as a flat id
-  // array on save.
-  customer_accounts: Array<{ id: number; email: string; displayName: string | null }>;
   // Per-event opt-in for hero photo as social-share preview (#474).
   og_image_share_enabled: boolean;
 };
 
 export const INITIAL_EDIT_FORM: EditFormState = {
-  welcome_message: '',
   color_theme: '',
   css_template_id: null,
   expires_at: '',
@@ -67,7 +60,6 @@ export const INITIAL_EDIT_FORM: EditFormState = {
   upload_category_id: null,
   hero_photo_id: null,
   customer_name: '',
-  customer_email: '',
   customer_phone: '',
   source_mode: 'managed',
   external_path: '',
@@ -98,8 +90,6 @@ export const INITIAL_EDIT_FORM: EditFormState = {
   promo_markdown: '',
   info_mode: 'inherit',
   info_markdown: '',
-  // Customer accounts (#354) — hydrated from event response.
-  customer_accounts: [],
   // Per-event social-share opt-in (#474). Default false everywhere
   // so a freshly opened editor never displays "on" against the saved
   // (off) state.

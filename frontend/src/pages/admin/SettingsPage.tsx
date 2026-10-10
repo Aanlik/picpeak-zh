@@ -1,5 +1,4 @@
-import { NO_EMAIL_MODE } from '../../config/communication';
-import React, { lazy, Suspense, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -13,19 +12,14 @@ import {
   Search,
   Tags,
   Download as DownloadIcon,
-  BarChart3,
-  Flag,
   Code,
   KeyRound,
-  Webhook,
-  Mail,
   Palette,
   FileText,
   HardDrive,
   type LucideIcon,
 } from 'lucide-react';
 import { Loading } from '../../components/common';
-const ProductUsageTab = lazy(() => import('../../features/settings/tabs/ProductUsageTab'));
 import {
   useSettingsState,
   FeaturesTab,
@@ -35,22 +29,17 @@ import {
   SecurityTab,
   ImageSecurityTab,
   CategoriesTab,
-  AnalyticsTab,
-  ModerationTab,
   StylingTab,
   SEOTab,
   ThumbnailsTab,
   DownloadsTab,
   ApiTokensTab,
-  WebhooksTab,
   SsoTab,
 } from '../../features/settings';
-import { EmailConfigPage } from './EmailConfigPage';
 import { BrandingPage } from './BrandingPage';
 import { SlideshowSettingsPage } from './SlideshowSettingsPage';
 import { BackupManagement } from './BackupManagement';
 import { CMSPage } from './CMSPage';
-import { ReminderTemplatesPage } from './settings/ReminderTemplatesPage';
 import { useFeatureFlags } from '../../contexts/FeatureFlagsContext';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { MonitorPlay } from 'lucide-react';
@@ -58,7 +47,6 @@ import { MonitorPlay } from 'lucide-react';
 // Tab keys driving the inner-nav. Must include every key used in
 // `navGroups` below and in the switch at the bottom of the component.
 type TabType =
-  | 'usage'
   | 'features'
   | 'general'
   | 'events'
@@ -68,18 +56,13 @@ type TabType =
   | 'downloads'
   | 'styling'
   | 'cms'
-  | 'email'
-  | 'moderation'
   | 'security'
   | 'sso'
   | 'imageSecurity'
   | 'seo'
   | 'apiTokens'
-  | 'webhooks'
   | 'status'
-  | 'analytics'
   | 'backup'
-  | 'reminderTemplates'
   | 'slideshow';
 
 interface NavItem {
@@ -94,14 +77,10 @@ interface NavGroup {
 }
 
 const ALL_TAB_KEYS: TabType[] = [
-  'usage',
   'features', 'general', 'events',
   'branding', 'categories', 'thumbnails', 'downloads', 'styling', 'cms',
-  'email', 'moderation',
   'security', 'sso', 'imageSecurity', 'seo',
-  'apiTokens', 'webhooks',
-  'status', 'analytics', 'backup',
-  'reminderTemplates',
+  'apiTokens', 'status', 'backup',
   'slideshow',
 ];
 
@@ -117,7 +96,6 @@ function isValidTab(value: string | null): value is TabType {
 // Settings via the broadened sidebar gate and sees only the tabs whose specific
 // permission it holds. Backend routes enforce the same perms regardless of UI.
 const TAB_PERMISSIONS: Record<TabType, string[]> = {
-  usage:            ['settings.edit'],
   features:          ['settings.view', 'settings.features'],
   general:           ['settings.view', 'settings.domains'],
   events:            ['settings.view'],
@@ -127,18 +105,13 @@ const TAB_PERMISSIONS: Record<TabType, string[]> = {
   downloads:         ['settings.view'],
   styling:           ['settings.view', 'branding.edit'],
   cms:               ['settings.view', 'cms.view', 'cms.edit'],
-  email:             ['settings.view', 'email.view', 'email.edit'],
-  moderation:        ['settings.view'],
   security:          ['settings.view', 'settings.security'],
   sso:               ['settings.view', 'settings.security'],
   imageSecurity:     ['settings.view', 'image_security.view', 'image_security.manage'],
   seo:               ['settings.view'],
   apiTokens:         ['settings.view', 'settings.integrations'],
-  webhooks:          ['settings.view', 'settings.integrations'],
   status:            ['settings.view', 'system.view', 'system.manage'],
-  analytics:         ['settings.view', 'analytics.view'],
   backup:            ['settings.view', 'backup.view'],
-  reminderTemplates: ['settings.view', 'email.view', 'email.edit'],
   slideshow:         ['settings.view'],
 };
 
@@ -191,8 +164,6 @@ export const SettingsPage: React.FC = () => {
     rateLimitSettings,
     setRateLimitSettings,
     setSecuritySettings,
-    analyticsSettings,
-    setAnalyticsSettings,
     eventSettings,
     setEventSettings,
     accountForm,
@@ -216,7 +187,6 @@ export const SettingsPage: React.FC = () => {
     saveCapacityOverrideMutation,
     saveGeneralMutation,
     saveSecurityMutation,
-    saveAnalyticsMutation,
     saveEventSettingsMutation,
     seoSettings,
     setSeoSettings,
@@ -224,7 +194,7 @@ export const SettingsPage: React.FC = () => {
   } = useSettingsState();
 
   // If the active tab refers to an item that's now hidden (e.g. admin
-  // landed on ?tab=reminderTemplates after disabling reminderEmails),
+  // landed on a removed settings tab),
   // snap to the first key that the dependency-rule flags allow. Effect
   // re-fires when flags toggle live. MUST stay above the isLoading early
   // return so React's rules-of-hooks count stays consistent across renders
@@ -237,16 +207,14 @@ export const SettingsPage: React.FC = () => {
     // placeholder which would falsely snap-back away from a tab the server
     // has actually enabled.
     if (flagsLoading) return;
-    if (NO_EMAIL_MODE && ["email", "reminderTemplates", "sso"].includes(activeTab)) { setActiveTab("general"); return; }
     const gatedOff: Record<string, boolean> = {
-      reminderTemplates: !flags.reminderEmails,
       slideshow: !flags.slideshow,
     };
     if (gatedOff[activeTab]) {
       setActiveTab('features');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flagsLoading, flags.reminderEmails, flags.slideshow, activeTab]);
+
+  }, [flagsLoading, flags.slideshow, activeTab]);
 
   // Permission snap-back: if the active tab isn't permitted for this role (e.g.
   // a deep-linked ?tab=security a photographer can't access), move to the first
@@ -254,10 +222,8 @@ export const SettingsPage: React.FC = () => {
   // isLoading early return to keep hook ordering stable.
   useEffect(() => {
     if (flagsLoading) return;
-    if (NO_EMAIL_MODE && ["email", "reminderTemplates", "sso"].includes(activeTab)) { setActiveTab("general"); return; }
     if (hasAnyPermission(TAB_PERMISSIONS[activeTab] ?? ['settings.view'])) return;
     const flagOff: Partial<Record<TabType, boolean>> = {
-      reminderTemplates: !flags.reminderEmails,
       slideshow: !flags.slideshow,
     };
     const firstVisible = ALL_TAB_KEYS.find(
@@ -265,7 +231,7 @@ export const SettingsPage: React.FC = () => {
     );
     if (firstVisible && firstVisible !== activeTab) setActiveTab(firstVisible);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flagsLoading, activeTab, flags.reminderEmails, flags.slideshow]);
+  }, [flagsLoading, activeTab, flags.slideshow]);
 
   // Wait for the permissions context too: on a fresh/hard mount it starts out
   // empty, which filters every nav group down to nothing and left `activeItem`
@@ -279,10 +245,7 @@ export const SettingsPage: React.FC = () => {
     );
   }
 
-  // Six-group inner nav. Items that previously lived as top-level admin
-  // routes (Email Settings, Branding, Backup, CMS Pages) now
-  // appear inside their thematic group. The old top-level routes still
-  // resolve via redirects (App.tsx) so existing bookmarks keep working.
+  // Settings navigation for the remaining operational and appearance tools.
   const navGroups: NavGroup[] = [
     {
       label: t('settings.groups.general', 'General'),
@@ -307,13 +270,6 @@ export const SettingsPage: React.FC = () => {
       ],
     },
     {
-      label: t('settings.groups.communication', 'Communication'),
-      items: [
-        { key: 'email',      label: t('settings.email.title',      'Email Settings'), icon: Mail },
-        { key: 'moderation', label: t('settings.moderation.title', 'Moderation'),     icon: Flag },
-      ],
-    },
-    {
       label: t('settings.groups.privacySecurity', 'Privacy & Security'),
       items: [
         { key: 'security',      label: t('settings.security.title'),                   icon: Lock },
@@ -326,19 +282,12 @@ export const SettingsPage: React.FC = () => {
       label: t('settings.groups.integrations', 'Integrations'),
       items: [
         { key: 'apiTokens', label: t('settings.apiTokens.title', 'API Tokens'), icon: KeyRound },
-        { key: 'webhooks',  label: t('settings.webhooks.title',  'Webhooks'),   icon: Webhook },
       ],
     },
-    ...(flags.reminderEmails ? [{
-      label: t('settings.groups.communication', 'Communication'),
-      items: [{ key: 'reminderTemplates' as const, label: t('settings.reminderTemplates.title', 'Reminder emails'), icon: Mail }],
-    }] : []),
     {
       label: t('settings.groups.system', 'System'),
       items: [
         { key: 'status',    label: t('settings.systemStatus.title'),               icon: Activity },
-        { key: 'analytics', label: t('settings.analytics.title'),                  icon: BarChart3 },
-        { key: 'usage', label: t('productUsage.title'), icon: Shield },
         { key: 'backup',    label: t('settings.backup.title',   'Backup'),         icon: HardDrive },
       ],
     },
@@ -348,7 +297,7 @@ export const SettingsPage: React.FC = () => {
   // shown when the user holds any of its TAB_PERMISSIONS (super_admin bypasses
   // in the context). See TAB_PERMISSIONS above.
   const visibleGroups = navGroups
-    .map((g) => ({ ...g, items: g.items.filter((i) => (!NO_EMAIL_MODE || !['email', 'reminderTemplates', 'sso'].includes(i.key)) && hasAnyPermission(TAB_PERMISSIONS[i.key] ?? ['settings.view'])) }))
+    .map((g) => ({ ...g, items: g.items.filter((i) => hasAnyPermission(TAB_PERMISSIONS[i.key] ?? ['settings.view'])) }))
     .filter((g) => g.items.length > 0);
 
   const allItems = visibleGroups.flatMap((g) => g.items);
@@ -360,7 +309,7 @@ export const SettingsPage: React.FC = () => {
   // header (FeaturesTab has its own icon+title+description block), skip
   // the Settings shell's section heading so the layout doesn't double
   // up.
-  const TABS_WITH_OWN_HEADER: TabType[] = ['features', 'email', 'branding', 'backup', 'cms', 'reminderTemplates'];
+  const TABS_WITH_OWN_HEADER: TabType[] = ['features', 'branding', 'backup', 'cms'];
   const showSectionHeading = !TABS_WITH_OWN_HEADER.includes(activeTab);
 
   return (
@@ -486,10 +435,7 @@ export const SettingsPage: React.FC = () => {
           {activeTab === 'slideshow' && <SlideshowSettingsPage />}
           {activeTab === 'branding' && <BrandingPage />}
           {activeTab === 'cms' && <CMSPage />}
-          {!NO_EMAIL_MODE && activeTab === 'email' && <EmailConfigPage />}
           {activeTab === 'backup' && <BackupManagement />}
-          {activeTab === 'reminderTemplates' && <ReminderTemplatesPage />}
-          {activeTab === 'usage' && hasAnyPermission(['settings.edit']) && <Suspense fallback={<Loading />}><ProductUsageTab /></Suspense>}
 
           {activeTab === 'status' && (
             <StatusTab
@@ -536,18 +482,8 @@ export const SettingsPage: React.FC = () => {
           {activeTab === 'downloads' && <DownloadsTab />}
           {activeTab === 'categories' && <CategoriesTab />}
 
-          {activeTab === 'analytics' && (
-            <AnalyticsTab
-              analyticsSettings={analyticsSettings}
-              setAnalyticsSettings={setAnalyticsSettings}
-              saveAnalyticsMutation={saveAnalyticsMutation}
-            />
-          )}
-
-          {activeTab === 'moderation' && <ModerationTab />}
           {activeTab === 'styling' && <StylingTab />}
           {activeTab === 'apiTokens' && <ApiTokensTab />}
-          {activeTab === 'webhooks' && <WebhooksTab />}
         </div>
       </div>
     </div>

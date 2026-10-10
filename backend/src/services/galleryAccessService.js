@@ -1,4 +1,3 @@
-const { db } = require('../database/db');
 const { userHasAllPermissions } = require('../middleware/permissions');
 const { canAccessEvent } = require('../middleware/ownership');
 const { assertGalleryAvailable, requiresGalleryPassword } = require('../utils/galleryLifecycle');
@@ -12,7 +11,7 @@ const sessions = require('./sessionAccessService');
 // enters a media URL. Only use grants from this service or a verified signature.
 // parentIat/parentJti identify the portal session a gallery token was minted from.
 // showLink names the slideshow link a slideshow session was opened with.
-const CLAIMS = ['type', 'id', 'customerId', 'eventId', 'eventSlug', 'iat', 'exp', 'jti', 'via', 'accessLevel',
+const CLAIMS = ['type', 'id', 'eventId', 'eventSlug', 'iat', 'exp', 'jti', 'via', 'accessLevel',
   'parentIat', 'parentJti', 'showLink'];
 
 class GalleryAccessService {
@@ -60,20 +59,15 @@ class GalleryAccessService {
         throw new AppError('Token does not match requested gallery', 403, 'INVALID_GALLERY_GRANT');
       }
       assertGalleryCredentialCurrent(event, session);
+      if (session.via === 'customer') {
+        throw new AppError('Customer-account access is no longer supported', 401, 'CUSTOMER_PORTAL_DISABLED');
+      }
       // The slideshow feature flag is a master kill-switch for /show/ links;
       // a session derived from one dies with it. Same carve-out as the link
       // check for a session minted before the claim existed.
       if (session.accessLevel === 'slideshow' && session.showLink !== undefined
         && !(await isFeatureEnabled('slideshow'))) {
         throw new AppError('Slideshow disabled', 401, 'SLIDESHOW_DISABLED');
-      }
-      if (session.via === 'customer') {
-        await sessions.customer(session, { derived: true });
-        const assignment = await db('event_customer_assignments')
-          .where({ event_id: event.id, customer_account_id: session.customerId }).first();
-        if (!assignment) {
-          throw new AppError('Access to this gallery has been revoked', 403, 'CUSTOMER_ASSIGNMENT_REVOKED');
-        }
       }
     } else if (requiresGalleryPassword(event)) {
       throw new AppError('No token provided', 401, 'NO_TOKEN');

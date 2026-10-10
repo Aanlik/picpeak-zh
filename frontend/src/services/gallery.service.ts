@@ -1,7 +1,7 @@
 import type { AxiosResponse } from 'axios';
 import { api } from '../config/api';
 import type {
-  GalleryInfo, GalleryData, GalleryStats, ResolvedGalleryIdentifier,
+  GalleryInfo, GalleryData, ResolvedGalleryIdentifier,
   DownloadJobStatus, DownloadJobState, GalleryPeopleResponse,
 } from '../types';
 import { normalizeRequirePassword } from '../utils/accessControl';
@@ -106,8 +106,7 @@ export const galleryService = {
     base_version?: number;
     message: string;
     guest_name?: string;
-    guest_email?: string;
-  }): Promise<{ request: RetouchRequestSummary; moderation_required: boolean }> {
+  }): Promise<{ request: RetouchRequestSummary }> {
     const response = await api.post(`/gallery/${slug}/photos/${photoId}/retouch-requests`, payload);
     return response.data;
   },
@@ -325,15 +324,6 @@ export const galleryService = {
     this.triggerBrowserDownload(fetched.blob, fetched.serverFilename || filename);
   },
 
-  // Per-photo view beacon (#895). Fired by the lightbox when a photo
-  // becomes the visible slide — request-level counting on the image
-  // endpoints can't tell the current slide from its preloaded
-  // neighbours. Fire-and-forget: view counting must never surface an
-  // error to the guest.
-  trackPhotoView(slug: string, photoId: number): void {
-    api.post(`/gallery/${slug}/photo/${photoId}/view`).catch(() => {});
-  },
-
   // Download all photos as ZIP
   // When a pre-generated zip is available, use native browser download (Content-Length → progress bar).
   // Otherwise fall back to blob download.
@@ -420,12 +410,6 @@ export const galleryService = {
   // Bulk toggle photo visibility (client-only)
   async bulkToggleVisibility(slug: string, photoIds: number[], visibility: 'visible' | 'hidden'): Promise<void> {
     await api.patch(`/gallery/${slug}/photos/visibility/bulk`, { photoIds, visibility });
-  },
-
-  // Get gallery statistics
-  async getGalleryStats(slug: string): Promise<GalleryStats> {
-    const response = await api.get<GalleryStats>(`/gallery/${slug}/stats`);
-    return response.data;
   },
 
   async resolveIdentifier(identifier: string): Promise<ResolvedGalleryIdentifier> {

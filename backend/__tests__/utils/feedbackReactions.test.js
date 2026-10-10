@@ -6,9 +6,7 @@
  *  - per-guest scoping mirrors likes: guest_id when present, else the
  *    device-hash guest_identifier — two token-guests on one device react
  *    independently
- *  - denormalized photos.reaction_count and the per-emoji tallies follow
- *    visibility: hidden-by-moderator reactions disappear from both
- *  - the long and pivoted exports carry the reaction
+ *  - denormalized photos.reaction_count and per-emoji tallies track reactions
  */
 
 const path = require('path');
@@ -58,8 +56,8 @@ beforeAll(async () => {
     event_type: 'project',
     event_name: 'Reactions Test',
     event_date: '2026-07-20',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: `/gallery/${EVENT_SLUG}/share`,
     share_token: 'reactions-test-share',
@@ -148,24 +146,11 @@ describe('reaction submission (#839)', () => {
     expect(Object.keys(counts)).toHaveLength(REACTION_EMOJIS.length);
   });
 
-  it('hidden reactions leave both the per-emoji tallies and reaction_count', async () => {
-    const row = await db('photo_feedback')
-      .where({ photo_id: photoIds[0], feedback_type: 'reaction' })
-      .first();
-    await feedbackService.moderateFeedback(row.id, 'hide', 1);
-
-    expect(await feedbackService.getPhotoReactionCounts(photoIds[0])).toEqual({});
-    expect(await reactionCountOf(photoIds[0])).toBe(0);
-
-    await feedbackService.moderateFeedback(row.id, 'approve', 1);
-    expect(await reactionCountOf(photoIds[0])).toBe(1);
-  });
-
   it('toggle and switch collapse racy duplicate rows for the same guest', async () => {
     // Simulate the check-then-insert race: two rows for one guest+photo.
     const mk = (emoji) => ({
       photo_id: photoIds[1], event_id: eventId, feedback_type: 'reaction',
-      reaction: emoji, guest_identifier: 'dup-guest', is_approved: true, is_hidden: false,
+      reaction: emoji, guest_identifier: 'dup-guest', is_hidden: false,
       created_at: new Date(), updated_at: new Date(),
     });
     await db('photo_feedback').insert([mk('❤️'), mk('❤️')]);
@@ -187,16 +172,8 @@ describe('reaction submission (#839)', () => {
     expect(rows).toHaveLength(0);
   });
 
-  it('summary and exports carry reactions', async () => {
+  it('summary carries reactions', async () => {
     const summary = await feedbackService.getEventFeedbackSummary(eventId);
     expect(Number(summary.stats.total_reactions)).toBeGreaterThan(0);
-
-    const longRows = await feedbackService.exportEventFeedback(eventId);
-    const longReaction = longRows.find((r) => r.feedback_type === 'reaction');
-    expect(longReaction.reaction).toBeTruthy();
-
-    const pivotRows = await feedbackService.exportEventFeedbackPivoted(eventId);
-    const pivotWithReaction = pivotRows.find((r) => r.reaction);
-    expect(REACTION_EMOJIS).toContain(pivotWithReaction.reaction);
   });
 });

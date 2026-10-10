@@ -80,9 +80,6 @@ export const AdminGuestDetail: React.FC<AdminGuestDetailProps> = ({ eventId, gue
         <div className="p-4 border-b border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{guest.name}</h2>
-            {guest.email && (
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{guest.email}</p>
-            )}
           </div>
           <button
             type="button"

@@ -1,5 +1,3 @@
-const { changedEvidence } = require('../usage/adoptionEvidence');
-const { capabilityEvidence } = require('../usage/capabilityEvidence');
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { safeValidationErrors } = require('../utils/routeHelpers');
@@ -78,10 +76,10 @@ router.post('/', adminAuth, requirePermission('settings.edit'), [
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: safeValidationErrors(errors) });
     }
-    
+
     const { name, slug, is_global = true, event_id = null, is_folder = false } = req.body;
     if (!is_global && await refuseForeignCategoryEvent(req, res, event_id)) return;
-    
+
     // Generate slug if not provided
     const categorySlug = slug || name
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -90,7 +88,7 @@ router.post('/', adminAuth, requirePermission('settings.edit'), [
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim();
-    
+
     // Check if slug already exists for this scope
     const existing = await db('photo_categories')
       .where('slug', categorySlug)
@@ -102,11 +100,11 @@ router.post('/', adminAuth, requirePermission('settings.edit'), [
         }
       })
       .first();
-    
+
     if (existing) {
       return res.status(400).json({ error: 'Category with this slug already exists' });
     }
-    
+
     // Append to the end of its scope so a new category doesn't jump to the
     // top of an admin-defined order (#782).
     const maxRow = await db('photo_categories')
@@ -134,19 +132,18 @@ router.post('/', adminAuth, requirePermission('settings.edit'), [
       // asking for a filter would silently get a folder.
       is_folder: formatBoolean(parseBooleanInput(is_folder, false))
     }).returning('id');
-    
+
     const categoryId = insertResult[0]?.id || insertResult[0];
-    
+
     const category = await db('photo_categories').where('id', categoryId).first();
-    
+
     // Log activity
-    await logActivity('category_created', 
+    await logActivity('category_created',
       { categoryName: name, isGlobal: is_global },
       event_id,
       { type: 'admin', id: req.admin.id, name: req.admin.username }
     );
-    
-    capabilityEvidence(res, 'category_editing');
+
     res.json(category);
   } catch (error) {
     logger.error('Error creating category:', error);
@@ -231,8 +228,6 @@ router.put('/:id', adminAuth, requirePermission('settings.edit'), [
       { type: 'admin', id: req.admin.id, name: req.admin.username }
     );
 
-    changedEvidence(res, 'category_editing', category, updated,
-      ['name', 'slug', 'hero_photo_id', 'allow_downloads', 'is_folder']);
     res.json(updated);
   } catch (error) {
     logger.error('Error updating category:', error);
@@ -288,7 +283,6 @@ router.put('/:id/hero', adminAuth, requirePermission('settings.edit'), [
       { type: 'admin', id: req.admin.id, name: req.admin.username }
     );
 
-    changedEvidence(res, 'category_editing', category, updated, ['hero_photo_id']);
     res.json(updated);
   } catch (error) {
     logger.error('Error updating category hero:', error);
@@ -300,31 +294,30 @@ router.put('/:id/hero', adminAuth, requirePermission('settings.edit'), [
 router.delete('/:id', adminAuth, requirePermission('settings.edit'), async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const category = await db('photo_categories').where('id', id).first();
     if (!category) {
       return res.status(404).json({ error: 'Category not found' });
     }
     if (await refuseForeignCategoryEvent(req, res, category.event_id)) return;
-    
+
     // Check if category has photos
     const photoCount = await db('photos').where('category_id', id).count('id as count').first();
     if (photoCount.count > 0) {
-      return res.status(400).json({ 
-        error: 'Cannot delete category with photos. Please reassign photos first.' 
+      return res.status(400).json({
+        error: 'Cannot delete category with photos. Please reassign photos first.'
       });
     }
-    
+
     await db('photo_categories').where('id', id).delete();
-    
+
     // Log activity
     await logActivity('category_deleted',
       { categoryName: category.name },
       category.event_id,
       { type: 'admin', id: req.admin.id, name: req.admin.username }
     );
-    
-    capabilityEvidence(res, 'category_editing');
+
     res.json({ message: 'Category deleted successfully' });
   } catch (error) {
     logger.error('Error deleting category:', error);
@@ -377,14 +370,12 @@ router.post('/reorder', adminAuth, requirePermission('settings.edit'), [
       return res.status(400).json({ error: 'One or more categories are not available for this event' });
     }
 
-    const before = await db('event_category_order').where('event_id', eventId).orderBy('position', 'asc').pluck('category_id');
     await db.transaction(async (trx) => {
       await trx('event_category_order').where('event_id', eventId).del();
       await trx('event_category_order').insert(
         orderedIds.map((id, i) => ({ event_id: eventId, category_id: id, position: i + 1 }))
       );
     });
-    changedEvidence(res, 'category_editing', { order: before }, { order: orderedIds }, ['order']);
 
     // Log activity after commit (avoids a SQLite in-transaction global write).
     await logActivity('event_category_order_set',
@@ -404,8 +395,7 @@ router.post('/reorder', adminAuth, requirePermission('settings.edit'), [
 router.delete('/reorder/:eventId', adminAuth, requirePermission('settings.edit'), requireEventOwnership, async (req, res) => {
   try {
     const eventId = parseInt(req.params.eventId, 10);
-    const removed = await db('event_category_order').where('event_id', eventId).del();
-    if (removed > 0) capabilityEvidence(res, 'category_editing');
+    await db('event_category_order').where('event_id', eventId).del();
 
     await logActivity('event_category_order_reset',
       { eventId },
@@ -458,7 +448,6 @@ router.post('/reorder-global', adminAuth, requirePermission('settings.edit'), [
       .where('is_global', formatBoolean(true))
       .orderBy('display_order', 'asc')
       .orderBy('name', 'asc');
-    changedEvidence(res, 'category_editing', { order: globals }, { order: categories.map((category) => category.id) }, ['order']);
     res.json(categories);
   } catch (error) {
     logger.error('Error reordering global categories:', error);

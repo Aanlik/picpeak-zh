@@ -25,7 +25,7 @@ describe('migration 167', () => {
     const p = await db('projects').insert({name:'bf',status:'active',created_at:new Date(),updated_at:new Date()}).returning('id');
     const pid = p[0]?.id ?? p[0];
     await db('events').insert({slug:'bf-ev',event_type:'wedding',event_name:'bf',event_date:'2026-08-01',
-      host_email:'h@e.com',admin_email:'a@e.com',password_hash:'x',share_token:'t1',share_link:'/g/bf-ev/t1',
+      password_hash:'x',share_token:'t1',share_link:'/g/bf-ev/t1',
       created_by: 4242, project_id: pid, expires_at:new Date(Date.now()+864e5).toISOString(),
       is_active:1,is_archived:0,is_draft:0,created_at:new Date().toISOString()});
     await mig.up(db);

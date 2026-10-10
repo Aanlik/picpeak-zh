@@ -11,20 +11,10 @@ const downloadZipService = require('../../services/downloadZipService');
 const GALLERY_OPENED_DEBOUNCE_MS = 6 * 60 * 60 * 1000;
 const galleryOpenedNotifiedAt = new Map();
 function galleryActor(req) {
-  // Portal tokens run as accessLevel 'guest' but carry via:'customer'
-  // (req.viaCustomer); PIN-client logins carry accessLevel 'client'.
-  // Both are customers, not guests (codex review of #849, final round).
-  const isCustomer = !!(req && (req.viaCustomer || req.accessLevel === 'client'));
+  const isCustomer = !!(req && req.accessLevel === 'client');
   return { type: isCustomer ? 'customer' : 'guest' };
 }
 function notifyGalleryOpened(event, req) {
-  // Customer-PORTAL opens already log `customer_event_access` on the
-  // access-token mint — a second `gallery_opened` per portal click would
-  // double-notify. Keyed on the portal provenance (req.viaCustomer), NOT
-  // on accessLevel: PIN-client logins are 'client' without any other
-  // open signal and must keep notifying (codex review of #849, final
-  // round — the previous check had this inverted).
-  if (req && req.viaCustomer) return;
   const now = Date.now();
   const last = galleryOpenedNotifiedAt.get(event.id) || 0;
   if (now - last < GALLERY_OPENED_DEBOUNCE_MS) return;
@@ -42,22 +32,12 @@ router.get('/:slug/photos', verifyGalleryAccess, resolveGuest, noStoreCache, asy
       accessLevel: req.accessLevel, adminPreview: req.isAdminPreview,
       hiddenForGuest: guestBlockedByReveal(req),
     });
-    // Log view — but NOT for the Live Slideshow kiosk. A running projector
-    // refetches this list on every new-upload poll, which would massively
-    // inflate total_views / unique_visitors. The slideshow is explicitly
-    // excluded from real visitor analytics (migration 138 design).
-    // Admin preview (#868) is excluded from guest analytics + the "gallery
-    // opened" bell — it's the photographer looking at their own gallery.
+    // Notify the photographer about a real gallery visit. This is an
+    // operational notification, not visitor analytics.
     if (req.accessLevel !== 'slideshow' && !req.isAdminPreview && !(Number(req.query.page) > 1)) {
-      await db('access_logs').insert({
-        event_id: req.event.id,
-        ip_address: req.ip,
-        user_agent: req.headers['user-agent'],
-        action: 'view'
-      });
       notifyGalleryOpened(req.event, req);
     }
-    
+
     res.json(payload);
   } catch (error) { errorResponse(res, error, 500, 'Failed to fetch photos'); }
 });

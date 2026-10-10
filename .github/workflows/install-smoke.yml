@@ -102,7 +102,7 @@ jobs:
             -e DB_USER=picpeak \
             -e DB_PASSWORD=smokepass \
             -e DB_NAME=picpeak_prod \
-            -e ADMIN_EMAIL=admin@smoke.local \
+            -e ADMIN_USERNAME=admin \
             -e ADMIN_PASSWORD=smokeAdminPass12345 \
             -e STORAGE_PATH=/app/storage \
             -v "$PWD/smoke-mounts/storage:/app/storage" \

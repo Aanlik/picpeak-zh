@@ -186,10 +186,6 @@ The system includes comprehensive CSS protection located in `src/styles/image-pr
   detectPrintScreen={true}
   detectDevTools={protectionLevel === 'maximum'}
   watermarkText="Protected"
-  onProtectionViolation={(violation) => {
-    // Track analytics
-    umami.track('protection_violation', { violation, protectionLevel });
-  }}
 />
 ```
 
@@ -230,22 +226,6 @@ The system tracks various protection violations:
 - `canvas_rendering_error` - Canvas rendering failure
 - `image_load_error` - Image loading failure
 
-## Analytics Integration
-
-The protection system integrates with Umami analytics:
-
-```typescript
-// Automatic tracking of violations
-if (window.umami) {
-  window.umami.track('protection_violation', {
-    type: violationType,
-    protectionLevel: 'enhanced',
-    photoId: photo.id,
-    context: 'gallery'
-  });
-}
-```
-
 ## Performance Considerations
 
 - **Basic/Standard**: Minimal performance impact
@@ -283,7 +263,6 @@ Client-side protection has inherent limitations:
 
 - [ ] Import protection CSS in main stylesheet
 - [ ] Configure protection levels based on content sensitivity
-- [ ] Set up analytics tracking for violations
 - [ ] Test across different devices and browsers
 - [ ] Document protection policies for users
 - [ ] Train administrators on protection settings

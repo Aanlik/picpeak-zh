@@ -144,14 +144,14 @@ function resetSecurityConfigCache() {
 
 /**
  * Track failed login attempt
- * @param {string} identifier - Username or email
+ * @param {string} identifier - Login identifier
  * @param {string} ipAddress - IP address of the attempt
  * @param {string} userAgent - User agent string
  */
 async function trackFailedAttempt(identifier, ipAddress, userAgent) {
   try {
     await assertAuthSecuritySchema();
-    
+
     await db('login_attempts').insert({
       identifier,
       ip_address: ipAddress,
@@ -174,7 +174,7 @@ async function trackFailedAttempt(identifier, ipAddress, userAgent) {
 
 /**
  * Track successful login
- * @param {string} identifier - Username or email
+ * @param {string} identifier - Login identifier
  * @param {string} ipAddress - IP address
  * @param {string} userAgent - User agent string
  */
@@ -187,7 +187,7 @@ async function trackSuccessfulLogin(identifier, ipAddress, userAgent) {
     }
 
     const { attemptWindowMs } = await getSecurityConfig();
-    
+
     await db('login_attempts').insert({
       identifier,
       ip_address: ipAddress,
@@ -210,7 +210,7 @@ async function trackSuccessfulLogin(identifier, ipAddress, userAgent) {
 
 /**
  * Check if account is locked due to too many failed attempts
- * @param {string} identifier - Username or email
+ * @param {string} identifier - Login identifier
  * @param {string} [ipAddress] - Optional IP address scope
  * @returns {Promise<{isLocked: boolean, remainingTime?: number}>}
  */
@@ -219,9 +219,9 @@ async function checkAccountLockout(identifier, ipAddress) {
     await assertAuthSecuritySchema();
 
     const { attemptWindowMs, maxAttempts, lockoutDurationMs } = await getSecurityConfig();
-    
+
     const recentWindow = new Date(Date.now() - attemptWindowMs);
-    
+
     // Get recent failed attempts
     const failedAttemptsQuery = db('login_attempts')
       .where('identifier', identifier)
@@ -259,7 +259,7 @@ async function checkAccountLockout(identifier, ipAddress) {
 
 /**
  * Check for suspicious login patterns
- * @param {string} identifier - Username or email
+ * @param {string} identifier - Login identifier
  * @param {string} ipAddress - Current IP address
  * @returns {Promise<boolean>} - True if suspicious
  */
@@ -270,10 +270,10 @@ async function checkSuspiciousActivity(identifier, ipAddress) {
     if (!tableExists) {
       return false;
     }
-    
+
     // Check for rapid attempts from different IPs
     const recentWindow = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes
-    
+
     const recentAttempts = await db('login_attempts')
       .where('identifier', identifier)
       .where('attempt_time', '>=', recentWindow.toISOString())
@@ -316,9 +316,9 @@ async function cleanupOldAttempts() {
       // Table doesn't exist, skip cleanup
       return;
     }
-    
+
     const cutoffDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days
-    
+
     const deleted = await db('login_attempts')
       .where('attempt_time', '<', cutoffDate.toISOString())
       .delete();

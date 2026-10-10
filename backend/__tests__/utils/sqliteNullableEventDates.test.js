@@ -36,8 +36,8 @@ beforeAll(async () => {
     event_type: 'project',
     event_name: 'Nullable Dates Test',
     event_date: '2026-06-22',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: '/gallery/nullable-dates-test/share',
     share_token: 'nullable-dates-share',
@@ -75,8 +75,8 @@ describe('events date columns are nullable on SQLite (#1029)', () => {
       event_type: 'project',
       event_name: 'Never Expires',
       event_date: null,
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: '/gallery/never-expires-test/share',
       share_token: 'never-expires-share',

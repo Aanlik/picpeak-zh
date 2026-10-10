@@ -40,9 +40,6 @@ vi.mock('../../../services/settings.service', () => ({
 vi.mock('../../../services/cssTemplates.service', () => ({
   cssTemplatesService: { getEnabledTemplates: vi.fn(async () => []) },
 }));
-vi.mock('../../../services/userManagement.service', () => ({
-  userManagementService: { getUsers: vi.fn(async () => []) },
-}));
 
 // Every "is this field required" flag off, so the only thing validateForm
 // needs is the event name.
@@ -51,8 +48,6 @@ vi.mock('../../../hooks/usePublicSettings', () => ({
   usePublicSettings: () => ({
     data: {
       event_require_customer_name: false,
-      event_require_customer_email: false,
-      event_require_admin_email: false,
       event_require_event_date: false,
       event_require_expiration: false,
       event_default_require_password: false,
@@ -60,9 +55,6 @@ vi.mock('../../../hooks/usePublicSettings', () => ({
   }),
 }));
 
-vi.mock('../../../contexts/AdminAuthContext', () => ({
-  useAdminAuth: () => ({ user: null }),
-}));
 
 vi.mock('../../../contexts/FeatureFlagsContext', () => ({
   useFeatureFlags: () => ({ flags: {}, isLoading: false }),
@@ -76,13 +68,9 @@ vi.mock('../../../components/admin', async () => {
     ...actual,
     ThemeCustomizerEnhanced: () => null,
     GalleryPreview: () => null,
-    WelcomeMessageEditor: () => null,
     FeedbackSettings: () => null,
   };
 });
-vi.mock('../../../components/admin/CustomerAccountPicker', () => ({
-  CustomerAccountPicker: () => null,
-}));
 
 import { CreateEventPage } from '../CreateEventPage';
 

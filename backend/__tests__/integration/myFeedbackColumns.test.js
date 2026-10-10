@@ -1,10 +1,10 @@
 /**
  * /my-feedback returns what the gallery reads, not the whole feedback row.
  *
- * photo_feedback also stores guest_email, guest_name, ip_address and
- * user_agent. A guest merge moves rows to the surviving guest without
- * rewriting those columns, so returning photo_feedback.* handed the survivor
- * another person's email address and IP.
+ * photo_feedback stores guest_name, ip_address and user_agent. A guest merge
+ * moves rows to the surviving guest without rewriting those columns, so
+ * returning photo_feedback.* could expose another person's identity and IP.
+ * The legacy guest_email column is removed by the current schema migration.
  */
 
 const request = require('supertest');
@@ -27,7 +27,7 @@ describe('/my-feedback columns', () => {
 
     const [ev] = await db('events').insert({
       slug: SLUG, event_type: 'project', event_name: 'My feedback columns',
-      event_date: '2026-09-16', host_email: 'h@example.com', admin_email: 'a@example.com',
+      event_date: '2026-09-16',
       password_hash: 'x', share_link: `/gallery/${SLUG}/share`,
       expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
       is_active: 1, is_archived: 0, is_draft: 0, created_at: new Date().toISOString(),
@@ -63,9 +63,8 @@ describe('/my-feedback columns', () => {
     // columns still describing the merged-away identity.
     await db('photo_feedback').insert({
       photo_id: photoId, event_id: eventId, guest_id: guestId, guest_identifier: 'guest-survivor',
-      feedback_type: 'like', guest_name: 'Source', guest_email: 'source@example.com',
-      ip_address: '203.0.113.7', user_agent: 'Source Browser',
-      is_approved: true, is_hidden: false, created_at: new Date().toISOString(),
+      feedback_type: 'like', guest_name: 'Source',
+      ip_address: '203.0.113.7', user_agent: 'Source Browser', is_hidden: false, created_at: new Date().toISOString(),
     });
 
     const res = await request(app)

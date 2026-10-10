@@ -51,8 +51,8 @@ describe('gallery media routes while storage cannot be reached', () => {
       event_type: 'project',
       event_name: 'Media Storage Unavailable',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'media-storage-unavailable-share',

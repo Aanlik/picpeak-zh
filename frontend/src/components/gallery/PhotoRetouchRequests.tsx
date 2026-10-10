@@ -35,9 +35,9 @@ export function PhotoRetouchRequests({ slug, photo }: {
         message,
       });
     },
-    onSuccess: async (result) => {
+    onSuccess: async () => {
       setMessage('');
-      toast.success(result.moderation_required ? t('retouchRequest.moderation') : t('retouchRequest.submitted'));
+      toast.success(t('retouchRequest.submitted'));
       await queryClient.invalidateQueries({ queryKey: ['gallery-retouch-workflow', slug] });
     },
     onError: (error: any) => {

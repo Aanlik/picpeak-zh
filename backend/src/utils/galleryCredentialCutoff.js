@@ -32,8 +32,8 @@ async function credentialChangeColumns(...kinds) {
 
 /**
  * Does a submitted gallery or client password equal the one already stored?
- * Resubmitting the current password (e.g. in "Send gallery email") is not a
- * change and must not end the sessions opened with it.
+ * Resubmitting the current password is not a change and must not end the
+ * sessions opened with it.
  */
 async function sameAsStored(plain, storedHash) {
   if (!plain || !storedHash) return false;

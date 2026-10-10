@@ -1,4 +1,3 @@
-const { changedEvidence } = require('../usage/adoptionEvidence');
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
@@ -13,6 +12,10 @@ const logger = require('../utils/logger');
 const router = express.Router();
 
 const getStoragePath = () => process.env.STORAGE_PATH || path.join(__dirname, '../../../storage');
+const CMS_PAGE_COLUMNS = [
+  'id', 'slug', 'title_en', 'title_zh', 'content_en', 'content_zh', 'logo_url',
+  'use_external_url', 'external_url', 'show_in_footer', 'updated_at',
+];
 
 // Multer config for per-page logo uploads. Stores into the same
 // /uploads/logos directory the global branding logo uses, with a
@@ -45,7 +48,7 @@ const pageLogoUpload = multer({
 // Get all CMS pages
 router.get('/pages', adminAuth, requirePermission('cms.view'), async (req, res) => {
   try {
-    const pages = await db('cms_pages').select('*').orderBy('slug', 'asc');
+    const pages = await db('cms_pages').select(CMS_PAGE_COLUMNS).orderBy('slug', 'asc');
     res.json(pages);
   } catch (error) {
     logger.error('Error fetching CMS pages:', error);
@@ -57,7 +60,7 @@ router.get('/pages', adminAuth, requirePermission('cms.view'), async (req, res) 
 router.get('/pages/:slug', adminAuth, requirePermission('cms.view'), async (req, res) => {
   try {
     const { slug } = req.params;
-    const page = await db('cms_pages').where('slug', slug).first();
+    const page = await db('cms_pages').select(CMS_PAGE_COLUMNS).where('slug', slug).first();
 
     if (!page) {
       return res.status(404).json({ error: 'Page not found' });
@@ -73,9 +76,9 @@ router.get('/pages/:slug', adminAuth, requirePermission('cms.view'), async (req,
 // Update a CMS page
 router.put('/pages/:slug', adminAuth, requirePermission('cms.edit'), [
   body('title_en').optional().isString(),
-  body('title_de').optional().isString(),
+  body('title_zh').optional().isString(),
   body('content_en').optional().isString(),
-  body('content_de').optional().isString(),
+  body('content_zh').optional().isString(),
   body('logo_url').optional({ nullable: true }).isString(),
   body('use_external_url').optional().isBoolean(),
   body('external_url').optional({ nullable: true }).isString(),
@@ -88,7 +91,7 @@ router.put('/pages/:slug', adminAuth, requirePermission('cms.edit'), [
     }
 
     const { slug } = req.params;
-    const { title_en, title_de, content_en, content_de, logo_url, use_external_url, external_url } = req.body;
+    const { title_en, title_zh, content_en, content_zh, logo_url, use_external_url, external_url } = req.body;
 
     // When the external-URL toggle is on, the URL must parse and use https://.
     // express-validator's isURL() is too permissive (allows http:, ftp:, etc.) —
@@ -116,9 +119,9 @@ router.put('/pages/:slug', adminAuth, requirePermission('cms.edit'), [
 
     const updateFields = {
       title_en,
-      title_de,
+      title_zh,
       content_en,
-      content_de,
+      content_zh,
       updated_at: new Date()
     };
     // Only touch logo_url when explicitly present so partial updates
@@ -139,7 +142,7 @@ router.put('/pages/:slug', adminAuth, requirePermission('cms.edit'), [
 
     await db('cms_pages').where('slug', slug).update(updateFields);
 
-    const updated = await db('cms_pages').where('slug', slug).first();
+    const updated = await db('cms_pages').select(CMS_PAGE_COLUMNS).where('slug', slug).first();
 
     await logActivity('cms_page_updated',
       { page: slug },
@@ -147,8 +150,6 @@ router.put('/pages/:slug', adminAuth, requirePermission('cms.edit'), [
       { type: 'admin', id: req.admin.id, name: req.admin.username }
     );
 
-    if (!updated.use_external_url) changedEvidence(res, 'cms_content_editing', page, updated,
-      ['title_en', 'title_de', 'content_en', 'content_de']);
     res.json(updated);
   } catch (error) {
     logger.error('Error updating CMS page:', error);

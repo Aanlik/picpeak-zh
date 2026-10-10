@@ -122,9 +122,7 @@ const photoUpload = async (req, res, next) => {
  *               event_name: { type: string }
  *               event_date: { type: string, format: date, nullable: true }
  *               customer_name: { type: string, nullable: true }
- *               customer_email: { type: string, format: email, nullable: true }
  *               customer_phone: { type: string, nullable: true, description: "Only persisted when the global phone-field setting is enabled." }
- *               admin_email: { type: string, format: email, nullable: true }
  *               require_password: { type: boolean, nullable: true, description: "When omitted, falls back to the global event_default_require_password setting." }
  *               password: { type: string, nullable: true, description: "Required when require_password resolves to true." }
  *               expires_at: { type: string, format: date-time, nullable: true }
@@ -162,9 +160,7 @@ router.post(
     body('event_name').isString().trim().notEmpty(),
     body('event_date').optional({ nullable: true, checkFalsy: true }).isISO8601(),
     body('customer_name').optional({ nullable: true }).isString(),
-    body('customer_email').optional({ nullable: true, checkFalsy: true }).isEmail(),
     body('customer_phone').optional({ nullable: true, checkFalsy: true }).isString().isLength({ max: 32 }),
-    body('admin_email').optional({ nullable: true, checkFalsy: true }).isEmail(),
     body('require_password').optional().isBoolean(),
     body('password').optional({ nullable: true }).isString().isLength({ min: 6 }),
     body('expires_at').optional({ nullable: true, checkFalsy: true }).isISO8601(),
@@ -542,16 +538,6 @@ router.post(
       await logActivity('photo_uploaded', { via: 'api_v1', filename: finalName }, event.id, {
         type: 'admin', id: req.admin.id, name: req.admin.username
       });
-
-      // Webhook (#327): one event per uploaded photo so receivers get a
-      // 1:1 stream they can react to.
-      try {
-        const webhookService = require('../../services/webhookService');
-        await webhookService.fire('photo.uploaded', {
-          event: { id: event.id, slug: event.slug, event_name: event.event_name },
-          photo: { id, filename: finalName, original_filename: req.file.originalname, size_bytes: stat.size, width, height },
-        });
-      } catch (e) { /* non-fatal */ }
 
       res.status(201).json({
         id,

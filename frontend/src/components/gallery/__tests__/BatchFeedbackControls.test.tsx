@@ -17,11 +17,11 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); });
 describe('batch proofing actions', () => {
   it('submits an idempotent green proofing mark for the selected photos', async () => {
     vi.mocked(feedbackService.submitBatchFeedback).mockResolvedValue({
-      success: true, applied_count: 2, failed_photo_ids: [], moderation_required: false,
+      success: true, applied_count: 2, failed_photo_ids: []
     });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(<QueryClientProvider client={queryClient}>
-      <BatchFeedbackControls slug="gallery" photoIds={[12, 15]} colorLabelsEnabled commentsEnabled requireNameEmail={false} />
+      <BatchFeedbackControls slug="gallery" photoIds={[12, 15]} colorLabelsEnabled commentsEnabled requireGuestName={false} />
     </QueryClientProvider>);
 
     fireEvent.click(screen.getByRole('button', { name: 'gallery.batchMarkForEditing' }));

@@ -100,8 +100,7 @@
 }
 
 /* 13rem collapsed so the placeholder still fits in the longest locale —
-   "Rechercher des souvenirs..." (fr) measures ~11rem at 0.875rem, and the
-   old 8rem clipped even the German string. */
+   Longer translated prompts need room to fit at the compact gallery size. */
 .story-nav-search input {
   background: transparent;
   border: none;

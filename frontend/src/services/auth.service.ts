@@ -1,5 +1,5 @@
 import { api } from '../config/api';
-import type { LoginResponse, AdminLoginResponse, GalleryAuthResponse, AdminUser } from '../types';
+import type { LoginResponse, GalleryAuthResponse, AdminUser } from '../types';
 import { normalizeRequirePassword } from '../utils/accessControl';
 
 const normalizeGalleryResponse = (response: GalleryAuthResponse): GalleryAuthResponse => ({
@@ -15,30 +15,15 @@ const normalizeGalleryResponse = (response: GalleryAuthResponse): GalleryAuthRes
 export const authService = {
   // Admin authentication
   async adminLogin(credentials: {
-    email: string;
+    username: string;
     password: string;
-    recaptchaToken?: string | null;
     rememberMe?: boolean;
-  }): Promise<AdminLoginResponse> {
-    // Backend expects 'username' field, but we accept email.
-    // Returns either { user } (session set) or an MFA challenge { mfaRequired, mfaToken }.
-    const response = await api.post<AdminLoginResponse>('/auth/admin/login', {
-      username: credentials.email,
+  }): Promise<LoginResponse> {
+    const response = await api.post<LoginResponse>('/auth/admin/login', {
+      username: credentials.username,
       password: credentials.password,
-      recaptchaToken: credentials.recaptchaToken,
-      // Only sent when checked (#1186). Omitted otherwise, so the backend's
-      // default 24h session is what an untouched form still gets. The MFA
-      // step does not resend it — it rides along inside the mfa_pending token.
       remember_me: credentials.rememberMe === true
     });
-    return response.data;
-  },
-
-  // Second step of the two-step admin login. `code` accepts a 6-digit TOTP
-  // or a recovery code (e.g. "awzq-jca3-va"). On success the session cookie
-  // is set server-side and the user object is returned.
-  async adminLoginMfa(payload: { mfaToken: string; code: string }): Promise<LoginResponse> {
-    const response = await api.post<LoginResponse>('/auth/admin/login/mfa', payload);
     return response.data;
   },
 
@@ -50,20 +35,19 @@ export const authService = {
       // URL — navigate there so the IdP session ends too; the IdP returns
       // to /admin/login afterwards.
       window.location.href = response.data?.ssoLogoutUrl || '/admin/login';
-    } catch (err) {
+    } catch {
       // Ignore logout errors; fallback to redirect
       window.location.href = '/admin/login';
     }
   },
 
   // Gallery authentication
-  async verifyGalleryPassword(slug: string, password?: string, recaptchaToken?: string | null): Promise<GalleryAuthResponse> {
+  async verifyGalleryPassword(slug: string, password?: string): Promise<GalleryAuthResponse> {
     const response = await api.post<GalleryAuthResponse>('/auth/gallery/verify', {
       slug,
-      password,
-      recaptchaToken
+      password
     });
-    
+
     // Token is now handled by GalleryAuthContext with slug-specific storage
     return normalizeGalleryResponse(response.data);
   },
@@ -86,12 +70,12 @@ export const authService = {
   async galleryLogout(slug?: string | null) {
     try {
       await api.post('/auth/gallery/logout', { slug });
-    } catch (err) {
+    } catch {
       // Ignore; cookie will naturally expire if removal fails
     }
   },
 
-  async updateAdminProfile(profile: { username: string; email: string }): Promise<AdminUser> {
+  async updateAdminProfile(profile: { username: string }): Promise<AdminUser> {
     const response = await api.put<{ user: AdminUser }>('/auth/admin/profile', profile);
     return response.data.user;
   },

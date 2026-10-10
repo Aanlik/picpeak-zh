@@ -65,7 +65,7 @@ describe('thumbnail settings and regeneration permissions', () => {
     const mkEvent = async (slug, createdBy) => {
       const rows = await db('events').insert({
         slug, event_type: 'project', event_name: slug, event_date: '2026-01-01',
-        host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
+          password_hash: 'x',
         share_link: `${slug}-share`, expires_at: new Date(Date.now() + 864e5).toISOString(),
         created_by: createdBy, created_at: new Date().toISOString(),
       }).returning('id');

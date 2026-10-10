@@ -15,7 +15,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { GeneralTab } from '../tabs/GeneralTab';
 import type { GeneralSettings } from '../hooks/useSettingsState';
 
-vi.mock('../components/MfaSettingsCard', () => ({ MfaSettingsCard: () => null }));
 
 const base: GeneralSettings = {
   site_url: '',
@@ -27,7 +26,6 @@ const base: GeneralSettings = {
   max_files_per_upload: 500,
   allowed_file_types: 'jpg,png',
   max_upload_batch_size_mb: 95,
-  enable_analytics: true,
   enable_registration: false,
   maintenance_mode: false,
   short_gallery_urls: false,
@@ -48,7 +46,7 @@ function renderTab(overrides: Partial<GeneralSettings>) {
       generalSettings={settings}
       setGeneralSettings={setGeneralSettings as never}
       saveGeneralMutation={{ mutate: vi.fn(), isPending: false }}
-      accountForm={{ username: 'a', email: 'a@b.c' }}
+      accountForm={{ username: 'a' }}
       accountErrors={{}}
       handleAccountChange={() => () => {}}
       handleAccountSubmit={() => {}}

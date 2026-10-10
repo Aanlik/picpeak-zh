@@ -26,7 +26,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
   const { currentPhoto, currentIndex, setCurrentIndex } = usePhotoSelection(photos);
   const [isPlaying, setIsPlaying] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  
+
   const gallerySettings = theme.gallerySettings || {};
   const autoplay = gallerySettings.carouselAutoplay || false;
   const interval = gallerySettings.carouselInterval || 5000;
@@ -41,7 +41,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-    
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
@@ -68,7 +68,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
 
   const [showIdentityModal, setShowIdentityModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<null | { type: 'like'; photoId: number }>(null);
-  const [savedIdentity, setSavedIdentity] = useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = useState<{ name: string } | null>(null);
   const guestIdentity = useGuestIdentityOptional();
   const [likedIds, setLikedIds] = useState<Set<number>>(new Set());
   // Seed from server is_liked on first non-empty payload (#590 follow-up).
@@ -114,7 +114,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
-          
+
           <button
             onClick={goToNext}
             className="p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
@@ -123,7 +123,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
             <ChevronRight className="w-6 h-6" />
           </button>
         </div>
-        
+
         {/* Top Controls */}
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
               </span>
             )}
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -147,7 +147,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
             >
               {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -157,7 +157,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
             >
               <Maximize2 className="w-5 h-5" />
             </Button>
-            
+
             {allowDownloads && (
               <Button
                 variant="ghost"
@@ -191,10 +191,10 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                       await feedbackService.submitFeedback(slug!, String(currentPhoto.id), {
                         feedback_type: 'like',
                       });
-                    } catch (_) {}
+                    } catch {}
                     return;
                   }
-                  if (feedbackOptions?.requireNameEmail && !savedIdentity) {
+                  if (feedbackOptions?.requireGuestName && !savedIdentity) {
                     setPendingAction({ type: 'like', photoId: currentPhoto.id });
                     setShowIdentityModal(true);
                     return;
@@ -210,9 +210,8 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                     await feedbackService.submitFeedback(slug!, String(currentPhoto.id), {
                       feedback_type: 'like',
                       guest_name: savedIdentity?.name,
-                      guest_email: savedIdentity?.email,
                     });
-                  } catch (_) {}
+                  } catch {}
                 }}
                 className={`bg-black/30 hover:bg-black/50 rounded-full border border-white/40 ${likedIds.has(currentPhoto.id) ? 'text-red-400' : 'text-white'}`}
                 title={tAudit("ui.likePhoto")}
@@ -235,11 +234,11 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
             )}
           </div>
         </div>
-        
+
         {/* Progress Bar */}
         {isPlaying && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-            <div 
+            <div
               className="h-full bg-white transition-all duration-1000 ease-linear"
               style={{
                 width: '100%',
@@ -249,7 +248,7 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
           </div>
         )}
       </div>
-      
+
       {/* Thumbnails */}
       {showThumbnails && photos.length > 1 && (
         <div className="mt-4 relative">
@@ -259,8 +258,8 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
                 key={photo.id}
                 onClick={() => setCurrentIndex(index)}
                 className={`relative flex-shrink-0 w-20 h-20 rounded overflow-hidden transition-all ${
-                  index === currentIndex 
-                    ? 'ring-2 ring-primary-600 scale-110' 
+                  index === currentIndex
+                    ? 'ring-2 ring-primary-600 scale-110'
                     : 'opacity-70 hover:opacity-100'
                 }`}
               >
@@ -287,18 +286,17 @@ export const CarouselGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
           </div>
         </div>
       )}
-      
+
       <FeedbackIdentityModal
         isOpen={showIdentityModal}
         onClose={() => { setShowIdentityModal(false); setPendingAction(null); }}
-        onSubmit={async (name, email) => {
-          setSavedIdentity({ name, email });
+        onSubmit={async (name) => {
+          setSavedIdentity({ name });
           setShowIdentityModal(false);
           if (pendingAction) {
             await feedbackService.submitFeedback(slug!, String(pendingAction.photoId), {
               feedback_type: pendingAction.type,
               guest_name: name,
-              guest_email: email,
             });
             setPendingAction(null);
           }

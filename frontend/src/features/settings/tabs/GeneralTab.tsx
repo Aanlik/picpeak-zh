@@ -1,12 +1,10 @@
-import { NO_EMAIL_MODE } from '../../../config/communication';
 import React from 'react';
-import { Save, Globe, Mail, User } from 'lucide-react';
+import { Save, Globe, User } from 'lucide-react';
 import { Button, Card, Input, Loading } from '../../../components/common';
 import { useTranslation } from 'react-i18next';
 import type { GeneralSettings } from '../hooks/useSettingsState';
 import { MAX_FILES_PER_UPLOAD_LIMIT } from '../hooks/useSettingsState';
 import { SUPPORTED_LANGUAGES } from "../../../components/common/LanguageSelector.tsx";
-import { MfaSettingsCard } from '../components/MfaSettingsCard';
 import { isAbsoluteHttpUrl } from '../../../utils/url';
 
 interface GeneralTabProps {
@@ -16,9 +14,9 @@ interface GeneralTabProps {
     mutate: () => void;
     isPending: boolean;
   };
-  accountForm: { username: string; email: string };
+  accountForm: { username: string };
   accountErrors: Record<string, string>;
-  handleAccountChange: (field: 'username' | 'email') => (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleAccountChange: (field: 'username') => (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleAccountSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   updateAdminProfileMutation: { isPending: boolean };
   adminProfileLoading: boolean;
@@ -39,7 +37,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
   const { t } = useTranslation();
 
   // The public address reaches the CORS allowlist and the
-  // Access-Control-Allow-Origin header since #705, not just email links — and
+  // Access-Control-Allow-Origin header since #705, as well as share links — and
   // the `type="url"` constraint never fires because this input isn't inside a
   // <form>. Validate it here so a schemeless value can't be saved, mirroring
   // the server-side check in adminSettings.js (#1104).
@@ -86,24 +84,6 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
               </p>
             </div>
 
-            {!NO_EMAIL_MODE && (<div>
-              <label htmlFor="admin-account-email" className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                {t('settings.general.accountEmail')}
-              </label>
-              <Input
-                id="admin-account-email"
-                type="email"
-                value={accountForm.email}
-                onChange={handleAccountChange('email')}
-                placeholder="admin@example.com"
-                leftIcon={<Mail className="w-5 h-5 text-neutral-400" />}
-                error={accountErrors.email}
-              />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                {t('settings.general.accountEmailHelp')}
-              </p>
-            </div>)}
-
             <div className="pt-2">
               <Button
                 type="submit"
@@ -117,10 +97,6 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
           </form>
         )}
       </Card>
-
-      {/* Per-user two-factor authentication (issue #738) — lives beside the
-          admin's own account details rather than the admin-wide Security tab. */}
-      <MfaSettingsCard />
 
       <Card padding="md">
         <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4">{t('settings.general.siteConfiguration')}</h2>
@@ -258,16 +234,6 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
           <label className="flex items-center">
             <input
               type="checkbox"
-              checked={generalSettings.enable_analytics}
-              onChange={(e) => setGeneralSettings(prev => ({ ...prev, enable_analytics: e.target.checked }))}
-              className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
-            />
-            <span className="ml-2 text-sm text-neutral-700 dark:text-neutral-300">{t('settings.general.enableAnalytics')}</span>
-          </label>
-
-          <label className="flex items-center">
-            <input
-              type="checkbox"
               checked={generalSettings.enable_registration}
               onChange={(e) => setGeneralSettings(prev => ({ ...prev, enable_registration: e.target.checked }))}
               className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
@@ -326,7 +292,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
               {t('settings.general.language')}
             </label>
             <select
-              value={generalSettings.default_language}
+              value={generalSettings.default_language === 'zh-CN' ? 'zh-CN' : 'en'}
               onChange={(e) => setGeneralSettings(prev => ({ ...prev, default_language: e.target.value }))}
               className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
@@ -366,7 +332,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = ({
               <option value="dd/MM/yyyy">{tAudit("ui.dateEuropean")}</option>
               <option value="MM/dd/yyyy">{tAudit("ui.dateUs")}</option>
               <option value="yyyy-MM-dd">{tAudit("ui.dateIso")}</option>
-              <option value="dd.MM.yyyy">{tAudit("ui.dateGerman")}</option>
+              <option value="dd.MM.yyyy">{tAudit("ui.dateDayMonthYear")}</option>
             </select>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
               {t('settings.general.dateFormatHelp')}

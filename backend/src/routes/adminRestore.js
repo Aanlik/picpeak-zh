@@ -51,14 +51,14 @@ router.get('/status', requirePermission('backup.view'), async (req, res) => {
   try {
     const { limit } = getPagination(req, { limit: 10 });
     const history = await restoreService.getRestoreHistory(limit);
-    
+
     const status = {
       isRunning: restoreService.isRunning,
       currentProgress: restoreService.getProgress(),
       history: history,
       settings: await getRestoreSettings()
     };
-    
+
     res.json({
       success: true,
       data: status
@@ -199,7 +199,7 @@ router.post('/start', requireSuperAdmin(), [
 
     // Log restore attempt
     logger.warn('Restore operation started', {
-      user: req.admin.email,
+      user: req.admin.username,
       ip: req.ip,
       restoreType: req.body.restoreType,
       source: req.body.source
@@ -248,7 +248,7 @@ router.get('/progress', requirePermission('backup.view'), async (req, res) => {
   try {
     const progress = restoreService.getProgress();
     const logs = restoreService.restoreLog.slice(-50); // Last 50 log entries
-    
+
     res.json({
       success: true,
       data: {
@@ -274,36 +274,36 @@ router.get('/run/:id', requirePermission('backup.view'), async (req, res) => {
     const run = await db('restore_runs')
       .where('id', req.params.id)
       .first();
-    
+
     if (!run) {
       return res.status(404).json({
         success: false,
         error: 'Restore run not found'
       });
     }
-    
+
     // Parse JSON fields
     if (run.statistics) run.statistics = JSON.parse(run.statistics);
     if (run.restore_log) run.restore_log = JSON.parse(run.restore_log);
     if (run.metadata) run.metadata = JSON.parse(run.metadata);
-    
+
     // Get validation results
     const validations = await db('restore_validation_results')
       .where('restore_run_id', run.id)
       .select('*');
-    
+
     validations.forEach(v => {
       if (v.errors) v.errors = JSON.parse(v.errors);
       if (v.warnings) v.warnings = JSON.parse(v.warnings);
       if (v.checksums) v.checksums = JSON.parse(v.checksums);
     });
-    
+
     // Get file operations summary
     const fileOps = await db('restore_file_operations')
       .where('restore_run_id', run.id)
       .select('status', db.raw('COUNT(*) as count'))
       .groupBy('status');
-    
+
     res.json({
       success: true,
       data: {
@@ -329,18 +329,18 @@ router.get('/run/:id/report', requirePermission('backup.view'), async (req, res)
     const run = await db('restore_runs')
       .where('id', req.params.id)
       .first();
-    
+
     if (!run) {
       return res.status(404).json({
         success: false,
         error: 'Restore run not found'
       });
     }
-    
+
     // Parse JSON fields
     if (run.statistics) run.statistics = JSON.parse(run.statistics);
     if (run.restore_log) run.restore_log = JSON.parse(run.restore_log);
-    
+
     // Generate report
     const report = restoreService.generateRestoreReport({
       success: run.status === 'completed',
@@ -349,7 +349,7 @@ router.get('/run/:id/report', requirePermission('backup.view'), async (req, res)
       result: run.statistics,
       logs: run.restore_log || []
     });
-    
+
     res.type('text/plain').send(report);
   } catch (error) {
     logger.error('Failed to generate restore report:', error);
@@ -687,7 +687,6 @@ router.put('/settings', requirePermission('backup.restore'), [
   body('restore_require_pre_backup').optional().isBoolean(),
   body('restore_max_file_size_mb').optional().isInt({ min: 1 }),
   body('restore_verify_checksums').optional().isBoolean(),
-  body('restore_email_on_completion').optional().isBoolean(),
   body('restore_retention_days').optional().isInt({ min: 1 })
 ], async (req, res) => {
   const errors = validationResult(req);
@@ -709,12 +708,12 @@ router.put('/settings', requirePermission('backup.restore'), [
           updated_at: db.fn.now()
         });
     }
-    
+
     logger.info('Restore settings updated', {
-      user: req.user.email,
+      user: req.user.username,
       settings: req.body
     });
-    
+
     res.json({
       success: true,
       message: 'Settings updated successfully'
@@ -762,7 +761,7 @@ async function getBackupConfig() {
   const settings = await db('app_settings')
     .where('setting_type', 'backup')
     .select('setting_key', 'setting_value');
-  
+
   const config = {};
   settings.forEach(setting => {
     try {
@@ -771,7 +770,7 @@ async function getBackupConfig() {
       config[setting.setting_key] = setting.setting_value;
     }
   });
-  
+
   return config;
 }
 

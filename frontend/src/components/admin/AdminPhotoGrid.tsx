@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Download, Trash2, Eye, EyeOff, Heart, Package, MessageSquare, Star, Video, FolderOpen, Cog, AlertTriangle, RefreshCw, LayoutGrid, List } from 'lucide-react';
+import { Check, Download, Trash2, Eye, EyeOff, Package, MessageSquare, Star, Video, FolderOpen, Cog, AlertTriangle, RefreshCw, LayoutGrid, List } from 'lucide-react';
 import { COLOR_LABEL_SWATCHES, type ColorLabel } from '../../services/feedback.service';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
@@ -132,7 +132,7 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
 
   const handleDeleteSingle = async (photo: AdminPhoto, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!confirm(t('photos.confirmDeleteOne', 'Delete “{{name}}”?', { name: photo.filename }))) {
       return;
     }
@@ -163,7 +163,7 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
     setIsDeleting(true);
     const selectedIds = Array.from(selectedPhotos);
     setDeletingPhotos(new Set(selectedIds));
-    
+
     try {
       await photosService.deletePhotos(eventId, selectedIds);
       toast.success(t('photos.deleted', { count }));
@@ -242,7 +242,7 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
           >
             {isSelectionMode ? t('gallery.cancelSelection', 'Cancel Selection') : t('gallery.selectPhotos', 'Select Photos')}
           </Button>
-          
+
           {(isSelectionMode || selectedPhotos.size > 0) && (
             <>
               <Button
@@ -252,7 +252,7 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
               >
                 {selectedPhotos.size === photos.length ? t('gallery.deselectAll', 'Deselect All') : t('gallery.selectAll', 'Select All')}
               </Button>
-              
+
               {selectedPhotos.size > 0 && (
                 <>
                   <span className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -311,7 +311,7 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
             </>
           )}
         </div>
-        
+
         <div className="flex items-center gap-3">
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
             {t('gallery.photosCount', { count: photos.length })}
@@ -480,7 +480,7 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
                 <p className="text-white/80 text-xs mb-2">
                   {photosService.formatBytes(photo.size)}
                 </p>
-                
+
                 {!isSelectionMode && (
                   <div className="flex gap-1">
                     <PermissionGate permission="photos.download">
@@ -522,7 +522,7 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
                 </span>
               </div>
             )}
-            
+
             {/* Color label (#1044). Bottom-left, opposite the rating/comment
                 indicators, so a labelled photo reads at a glance in the
                 admin grid the same way it does in the client's gallery. */}
@@ -612,9 +612,6 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
               <th className="hidden md:table-cell px-3 py-2 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('admin.photos.columns.uploaded', 'Uploaded')}
               </th>
-              <th className="hidden xl:table-cell px-3 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
-                {t('admin.photos.columns.engagement', 'Engagement')}
-              </th>
               <th className="hidden sm:table-cell px-3 py-2 text-right text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
                 {t('admin.photos.columns.feedback', 'Feedback')}
               </th>
@@ -631,9 +628,6 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
               const isRowDeleting = deletingPhotos.has(photo.id);
               const commentCount = photo.comment_count ?? 0;
               const averageRating = photo.average_rating ?? 0;
-              const viewCount = photo.view_count ?? 0;
-              const downloadCount = photo.download_count ?? 0;
-              const likeCount = photo.like_count ?? 0;
               const isSelected = selectedPhotos.has(photo.id);
               const isVideo = (photo.media_type === 'video') ||
                 (photo.mime_type && photo.mime_type.startsWith('video/')) ||
@@ -737,24 +731,6 @@ export const AdminPhotoGrid: React.FC<AdminPhotoGridProps> = ({
                   {/* Uploaded date */}
                   <td className="hidden md:table-cell px-3 py-2 whitespace-nowrap text-sm text-neutral-600 dark:text-neutral-400">
                     {photo.uploaded_at ? formatDate(photo.uploaded_at) : '—'}
-                  </td>
-
-                  {/* Engagement: views / downloads / likes */}
-                  <td className="hidden xl:table-cell px-3 py-2 text-right text-xs text-neutral-500 dark:text-neutral-400 tabular-nums">
-                    <div className="flex items-center justify-end gap-3">
-                      <span className="inline-flex items-center gap-1" title={t('admin.photos.columns.views', 'Views')}>
-                        <Eye className="w-3.5 h-3.5" />
-                        {viewCount}
-                      </span>
-                      <span className="inline-flex items-center gap-1" title={t('admin.photos.columns.downloads', 'Downloads')}>
-                        <Download className="w-3.5 h-3.5" />
-                        {downloadCount}
-                      </span>
-                      <span className="inline-flex items-center gap-1" title={t('admin.photos.columns.likes', 'Likes')}>
-                        <Heart className="w-3.5 h-3.5" />
-                        {likeCount}
-                      </span>
-                    </div>
                   </td>
 
                   {/* Feedback: rating + comments */}

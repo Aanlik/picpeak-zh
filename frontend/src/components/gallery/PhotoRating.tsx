@@ -14,7 +14,7 @@ interface PhotoRatingProps {
   averageRating?: number;
   totalRatings?: number;
   isEnabled: boolean;
-  requireNameEmail?: boolean;
+  requireGuestName?: boolean;
   onRatingChange?: (rating: number) => void;
 }
 
@@ -25,7 +25,7 @@ export const PhotoRating: React.FC<PhotoRatingProps> = ({
   averageRating = 0,
   totalRatings = 0,
   isEnabled,
-  requireNameEmail = false,
+  requireGuestName = false,
   onRatingChange
 }) => {
   // Ensure averageRating is a valid number
@@ -37,15 +37,14 @@ export const PhotoRating: React.FC<PhotoRatingProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showIdentityModal, setShowIdentityModal] = useState(false);
   const [pendingRating, setPendingRating] = useState(0);
-  const [savedIdentity, setSavedIdentity] = useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = useState<{ name: string } | null>(null);
 
   const submitRatingMutation = useMutation({
-    mutationFn: (data: { rating: number; guest_name?: string; guest_email?: string }) => 
+    mutationFn: (data: { rating: number; guest_name?: string }) =>
       feedbackService.submitFeedback(gallerySlug, photoId, {
         feedback_type: 'rating',
         rating: data.rating,
         guest_name: data.guest_name || undefined,
-        guest_email: data.guest_email || undefined
       }),
     onMutate: async (data) => {
       setIsSubmitting(true);
@@ -96,25 +95,23 @@ export const PhotoRating: React.FC<PhotoRatingProps> = ({
       return;
     }
 
-    if (requireNameEmail && !savedIdentity) {
+    if (requireGuestName && !savedIdentity) {
       setPendingRating(newRating);
       setShowIdentityModal(true);
     } else {
       submitRatingMutation.mutate({
         rating: newRating,
         guest_name: savedIdentity?.name,
-        guest_email: savedIdentity?.email
       });
     }
   };
 
-  const handleIdentitySubmit = (name: string, email: string) => {
-    setSavedIdentity({ name, email });
+  const handleIdentitySubmit = (name: string) => {
+    setSavedIdentity({ name });
     setShowIdentityModal(false);
-    submitRatingMutation.mutate({ 
+    submitRatingMutation.mutate({
       rating: pendingRating,
       guest_name: name,
-      guest_email: email
     });
   };
 

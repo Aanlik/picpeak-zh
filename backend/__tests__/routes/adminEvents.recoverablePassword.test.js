@@ -1,11 +1,11 @@
 /**
  * Opt-in recoverable gallery passwords (#1271).
  *
- * Off by default: nothing reversible is stored, the view route says so, and
- * resend falls back to the security sentinel. On: every path that hashes a
- * gallery or client password keeps an encrypted copy, the view route returns
- * it and logs the reveal, resend uses it unchanged, disabling the gallery
- * password clears it, and switching the setting off purges every copy.
+ * Off by default: nothing reversible is stored and the view route says so.
+ * When enabled, every path that hashes a gallery or client password keeps an
+ * encrypted copy, and the view route returns it and logs the reveal. Disabling
+ * the gallery password clears its copy, and switching the setting off purges
+ * every copy.
  */
 const path = require('path');
 const fs = require('fs');
@@ -34,7 +34,7 @@ describe('recoverable gallery passwords', () => {
   }).onConflict('setting_key').merge({ setting_value: JSON.stringify(value) });
   const createEvent = (over = {}) => auth(request(app).post('/api/admin/events')).send({
     event_type: 'project', event_name: 'Recover Wedding', event_date: '2026-09-07',
-    customer_name: 'Ada', customer_email: 'ada@example.com', admin_email: 'admin@example.com',
+    customer_name: 'Ada',
     require_password: true, password: PASSWORD, expiration_days: 30,
     client_access_enabled: true, client_password: PIN, ...over,
   });
@@ -117,21 +117,8 @@ describe('recoverable gallery passwords', () => {
       expect(String(log.event_id)).toBe(String(id));
     });
 
-    it('resend uses the stored password instead of the security sentinel', async () => {
-      const res = await auth(request(app).post(`/api/admin/events/${id}/resend-email`)).send({});
-      expect(res.status).toBe(200);
-      expect(res.body.usedStoredPassword).toBe(true);
-      const mail = await db('email_queue').where({ event_id: id, email_type: 'gallery_created' }).orderBy('id', 'desc').first();
-      const data = JSON.parse(mail.email_data);
-      expect(data.gallery_password).toBe(PASSWORD);
-      // client access is on for this event: the resend carries the stored PIN
-      // and the client link, as the creation mail did
-      expect(data.client_password).toBe(PIN);
-      expect(data.client_link).toMatch(/\/client-access\?token=[0-9a-f]+$/);
-    });
-
     it('a reset replaces the stored copy', async () => {
-      const res = await auth(request(app).post(`/api/admin/events/${id}/reset-password`)).send({ sendEmail: false, password: 'Harbour-Light-91!' });
+      const res = await auth(request(app).post(`/api/admin/events/${id}/reset-password`)).send({ password: 'Harbour-Light-91!' });
       expect(res.status).toBe(200);
       expect(vault.decryptPassword((await stored(id)).password_recoverable)).toBe('Harbour-Light-91!');
     });
@@ -204,9 +191,6 @@ describe('recoverable gallery passwords', () => {
       }
       const view = await auth(request(app).get(`/api/admin/events/${other.body.id}/password`));
       expect(view.body.enabled).toBe(false);
-      // and resend is back to the sentinel
-      const resend = await auth(request(app).post(`/api/admin/events/${other.body.id}/resend-email`)).send({});
-      expect(resend.body.usedStoredPassword).toBe(false);
     });
   });
 });

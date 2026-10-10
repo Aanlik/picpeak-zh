@@ -27,7 +27,7 @@ export interface PhotoCardFeedbackOptions {
   allowFavorites?: boolean;
   allowRatings?: boolean;
   allowComments?: boolean;
-  requireNameEmail?: boolean;
+  requireGuestName?: boolean;
 }
 
 export interface PhotoCardProps {
@@ -76,7 +76,7 @@ export interface PhotoCardProps {
   onLikeSuccess?: () => void;
   /** 'self': card owns the identity modal; 'parent': delegate via onRequireIdentity. */
   identityMode?: 'self' | 'parent';
-  savedIdentity?: { name: string; email: string } | null;
+  savedIdentity?: { name: string } | null;
   onRequireIdentity?: (action: 'like', photoId: number) => void;
   /** Use Like/Unlike toggle labels on the like button (Masonry columns). */
   likeToggleLabels?: boolean;
@@ -140,7 +140,7 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
   // Self-managed identity modal state (identityMode === 'self')
   const [showIdentityModal, setShowIdentityModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<null | { type: 'like'; photoId: number }>(null);
-  const [selfIdentity, setSelfIdentity] = useState<{ name: string; email: string } | null>(null);
+  const [selfIdentity, setSelfIdentity] = useState<{ name: string } | null>(null);
 
   const savedIdentityValue = identityMode === 'self' ? selfIdentity : savedIdentity;
 
@@ -323,7 +323,7 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
       return;
     }
     if (
-      feedbackOptions?.requireNameEmail &&
+      feedbackOptions?.requireGuestName &&
       !savedIdentityValue &&
       (identityMode === 'self' || onRequireIdentity)
     ) {
@@ -342,7 +342,6 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
       await feedbackService.submitFeedback(slug!, String(photo.id), {
         feedback_type: 'like',
         guest_name: savedIdentityValue?.name,
-        guest_email: savedIdentityValue?.email,
       });
     } catch (err) {
       // Keep optimistic state; a refresh will reconcile
@@ -520,8 +519,8 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
             <FeedbackIdentityModal
               isOpen={showIdentityModal}
               onClose={() => { setShowIdentityModal(false); setPendingAction(null); }}
-              onSubmit={async (name, email) => {
-                setSelfIdentity({ name, email });
+              onSubmit={async (name) => {
+                setSelfIdentity({ name });
                 setShowIdentityModal(false);
                 if (pendingAction) {
                   if (pendingAction.type === 'like' && onLikeSuccess) {
@@ -530,7 +529,6 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
                   await feedbackService.submitFeedback(slug!, String(pendingAction.photoId), {
                     feedback_type: pendingAction.type,
                     guest_name: name,
-                    guest_email: email,
                   });
                   setPendingAction(null);
                 }

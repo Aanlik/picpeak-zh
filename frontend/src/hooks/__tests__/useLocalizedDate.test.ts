@@ -1,8 +1,6 @@
 /**
- * useLocalizedDate knew date-fns locales for de, pt and fr only, so Spanish,
- * Dutch, Russian and Slovenian screens got English month names and relative
- * times, and a regional tag such as `de-DE` fell to English as well. The
- * hook now resolves every shipped UI locale by its base language.
+ * The product ships English and Simplified Chinese UI languages; unsupported
+ * legacy locale codes safely use English date names.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
@@ -23,16 +21,9 @@ const date = new Date(2026, 2, 4, 12, 0, 0);
 
 describe('useLocalizedDate locale resolution', () => {
   it.each([
-    ['de', 'März', 'Mittwoch'],
     ['en', 'March', 'Wednesday'],
-    ['es', 'marzo', 'miércoles'],
-    ['fr', 'mars', 'mercredi'],
-    ['nl', 'maart', 'woensdag'],
-    ['pt', 'março', 'quarta-feira'],
-    ['ru', 'марта', 'среда'],
-    ['sl', 'marec', 'sreda'],
-    ['de-DE', 'März', 'Mittwoch'],
-    ['pt-BR', 'março', 'quarta-feira'],
+    ['en-US', 'March', 'Wednesday'],
+    ['zh', '三月', '星期三'],
     ['zh-CN', '三月', '星期三'],
   ])('%s → month %s, weekday %s', (lang, month, weekday) => {
     language = lang;
@@ -47,10 +38,10 @@ describe('useLocalizedDate locale resolution', () => {
     expect(result.current.format(date, 'EEEE')).toBe('Wednesday');
   });
 
-  it('localises relative times too', () => {
-    language = 'nl';
+  it('localises Chinese relative times too', () => {
+    language = 'zh-CN';
     const { result } = renderHook(() => useLocalizedDate());
     const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
-    expect(result.current.formatDistanceToNow(twoDaysAgo, { addSuffix: true })).toBe('2 dagen geleden');
+    expect(result.current.formatDistanceToNow(twoDaysAgo, { addSuffix: true })).toBe('2 天前');
   });
 });

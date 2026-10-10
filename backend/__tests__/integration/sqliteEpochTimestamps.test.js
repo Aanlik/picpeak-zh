@@ -43,8 +43,8 @@ describe('SQLite epoch timestamp normalization', () => {
       event_type: 'project',
       event_name: 'Epoch Test',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'epoch-test-share',

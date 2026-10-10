@@ -6,13 +6,10 @@ const router = express.Router();
 // Get public settings (branding and theme)
 router.get('/', async (req, res) => {
   try {
-    // Fetch branding, theme, general, security, analytics, and event settings
-    // Note: We include analytics in the query but it might not exist yet
     const settings = await withRetry(async () => {
       return await db('app_settings')
         .where(function() {
-          this.whereIn('setting_type', ['branding', 'theme', 'general', 'security', 'analytics', 'boolean'])
-            .orWhere('setting_key', 'like', 'analytics_%')
+          this.whereIn('setting_type', ['branding', 'theme', 'general', 'security', 'boolean'])
             .orWhere('setting_key', 'like', 'event_require_%')
             .orWhereIn('setting_key', [
               'seo_meta_noindex', 'seo_meta_nofollow', 'seo_meta_noai',
@@ -52,7 +49,7 @@ router.get('/', async (req, res) => {
         })
         .select('setting_key', 'setting_value');
     });
-    
+
     // Convert to object format
     const settingsObject = {};
     settings.forEach(setting => {
@@ -79,7 +76,6 @@ router.get('/', async (req, res) => {
     const publicSettings = {
       branding_company_name: settingsObject.branding_company_name || '',
       branding_company_tagline: settingsObject.branding_company_tagline || '',
-      branding_support_email: settingsObject.branding_support_email || '',
       branding_footer_text: settingsObject.branding_footer_text || '',
       branding_watermark_enabled: settingsObject.branding_watermark_enabled || false,
       branding_watermark_logo_url: settingsObject.branding_watermark_logo_url || '',
@@ -125,8 +121,8 @@ router.get('/', async (req, res) => {
         : settingsObject.branding_force_color_mode === 'light'
           ? 'light'
           : null,
-      // Login-page-only branding (#354 follow-up). Applies exclusively
-      // to /admin/login and /customer/login — the rest of the app keeps
+      // Login-page-only branding (#354 follow-up). Applies to the admin
+      // login and setup screens — the rest of the app keeps
       // using branding_logo_size / branding_logo_max_height. Default
       // true / 'medium' preserves the visual state shipped before the
       // toggles existed.
@@ -135,8 +131,9 @@ router.get('/', async (req, res) => {
         ? settingsObject.branding_login_logo_size
         : 'medium',
       theme_config: settingsObject.theme_config || null,
-      default_language: settingsObject.general_default_language || process.env.DEFAULT_LANGUAGE || 'en',
-      enable_analytics: settingsObject.general_enable_analytics !== false,
+      default_language: /^zh(?:-|$)/i.test(String(settingsObject.general_default_language || process.env.DEFAULT_LANGUAGE || ''))
+        ? 'zh-CN'
+        : 'en',
       general_date_format: settingsObject.general_date_format || 'PPP',
       // '12h' / '24h' — controls how times are rendered in admin +
       // customer views via the useLocalizedDate hook. The underlying
@@ -154,53 +151,9 @@ router.get('/', async (req, res) => {
       // Cached (10s TTL): this endpoint is unauthenticated and hit by every
       // new client; the login route itself always checks uncached.
       oidc_local_login_disabled: await require('../services/oidcService').isLocalLoginDisabledCached().catch(() => false),
-      enable_recaptcha: settingsObject.security_enable_recaptcha === true || settingsObject.security_enable_recaptcha === 'true',
-      recaptcha_site_key: settingsObject.security_recaptcha_site_key || null,
       maintenance_mode: settingsObject.general_maintenance_mode === true || settingsObject.general_maintenance_mode === 'true',
-      // Umami analytics configuration (only if enabled). Kept for
-      // back-compat: pre-#663 installs without `analytics_tracker_provider`
-      // still surface Umami settings under their original keys so the
-      // frontend tracker script switches over cleanly.
-      umami_enabled: settingsObject.analytics_umami_enabled === true || settingsObject.analytics_umami_enabled === 'true',
-      umami_url: (settingsObject.analytics_umami_enabled === true || settingsObject.analytics_umami_enabled === 'true') ? (settingsObject.analytics_umami_url || null) : null,
-      umami_website_id: (settingsObject.analytics_umami_enabled === true || settingsObject.analytics_umami_enabled === 'true') ? (settingsObject.analytics_umami_website_id || null) : null,
-      // The share URL is the bearer link to the whole Umami dashboard, not
-      // tracker bootstrap; the admin analytics page reads it from
-      // /admin/settings, so it never leaves the authenticated API.
-      // Tracker-provider switch (#663 Phase 1). Drives which provider's
-      // script gets injected into the gallery <head>. 'none' / unset =
-      // no tracker. The frontend tracker service picks the right shape
-      // from the (provider, *_url, *_website_id) tuple below.
-      analytics_tracker_provider: (() => {
-        const explicit = settingsObject.analytics_tracker_provider;
-        if (typeof explicit === 'string' && ['none', 'umami', 'rybbit', 'custom'].includes(explicit)) {
-          return explicit;
-        }
-        // Back-compat with installs that haven't picked yet.
-        return (settingsObject.analytics_umami_enabled === true || settingsObject.analytics_umami_enabled === 'true')
-          ? 'umami'
-          : 'none';
-      })(),
-      // Rybbit native provider (#663). Only exposed when actively chosen
-      // — otherwise hidden so the front-end never tries to inject a
-      // stale tracker.
-      rybbit_url: settingsObject.analytics_tracker_provider === 'rybbit'
-        ? (settingsObject.analytics_rybbit_url || null)
-        : null,
-      rybbit_website_id: settingsObject.analytics_tracker_provider === 'rybbit'
-        ? (settingsObject.analytics_rybbit_website_id || null)
-        : null,
-      // Custom-mode pre-sanitised HTML snippet (#663). Sanitised at save
-      // time via customScriptSanitiser; surfaced as-is here so the
-      // gallery <head> can render it without re-sanitising on every
-      // request.
-      analytics_custom_head_html: settingsObject.analytics_tracker_provider === 'custom'
-        ? (settingsObject.analytics_custom_head_html || '')
-        : '',
       // Event field requirements
       event_require_customer_name: settingsObject.event_require_customer_name !== false,
-      event_require_customer_email: settingsObject.event_require_customer_email !== false,
-      event_require_admin_email: settingsObject.event_require_admin_email !== false,
       event_require_event_date: settingsObject.event_require_event_date !== false,
       event_require_expiration: settingsObject.event_require_expiration !== false,
       // Default value for "Require password" toggle in event creation form

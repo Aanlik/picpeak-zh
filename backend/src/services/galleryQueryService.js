@@ -147,11 +147,10 @@ async function getGalleryPhotos({ event, query = {}, identity, accessLevel, admi
   const commentCounts = await db('photo_feedback')
     .whereIn('photo_id', photos.map(p => p.id))
     .where('feedback_type', 'comment')
-    .where('is_approved', formatBoolean(true))
     .where('is_hidden', formatBoolean(false))
     .groupBy('photo_id')
     .select('photo_id', db.raw('COUNT(*) as comment_count'));
-    
+
   // Create a map for quick lookup
   const commentMap = {};
   commentCounts.forEach(c => {
@@ -348,7 +347,7 @@ async function getGalleryPhotos({ event, query = {}, identity, accessLevel, admi
   categories.forEach(cat => {
     categoryMap[cat.id] = cat;
   });
-    
+
   // Include protection settings in response
   const protectionSettings = {
     protection_level: event.protection_level || 'standard',
@@ -398,7 +397,6 @@ async function getGalleryPhotos({ event, query = {}, identity, accessLevel, admi
       id: event.id,
       event_name: event.event_name,
       event_date: event.event_date,
-      welcome_message: event.welcome_message,
       color_theme: event.color_theme,
       expires_at: event.expires_at,
       hero_photo_id: event.hero_photo_id,

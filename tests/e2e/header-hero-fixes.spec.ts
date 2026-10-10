@@ -4,7 +4,7 @@ import path from 'path';
 import { adminApiToken, publishEvent, waitForPhotosProcessed } from './_helpers/admin';
 import { passGalleryPasswordPrompt } from './_helpers/gallery';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin!234';
 const GALLERY_PASSWORD = process.env.GALLERY_PASSWORD || 'PlaywrightGallery123!';
 
@@ -30,10 +30,7 @@ async function createEventWithStyle(
       event_name: eventName,
       event_date: eventDate,
       customer_name: 'E2E Host',
-      customer_email: 'host@example.com',
       host_name: 'E2E Host',
-      host_email: 'host@example.com',
-      admin_email: ADMIN_EMAIL,
       password: GALLERY_PASSWORD,
       expiration_days: 30,
       allow_user_uploads: false,
@@ -276,11 +273,11 @@ test.describe('Gallery preview in admin (#158 preview)', () => {
     // this context, so the login page may redirect to the dashboard — wait for
     // whichever arrives instead of racing the redirect with a fill().
     await page.goto('/admin/login');
-    const emailField = page.getByLabel(/Email/i);
+    const usernameField = page.getByLabel(/Username/i);
     const dashboard = page.getByRole('heading', { name: /Dashboard/i });
-    await expect(emailField.or(dashboard).first()).toBeVisible({ timeout: 20000 });
-    if (await emailField.isVisible()) {
-      await emailField.fill(ADMIN_EMAIL);
+    await expect(usernameField.or(dashboard).first()).toBeVisible({ timeout: 20000 });
+    if (await usernameField.isVisible()) {
+      await usernameField.fill(ADMIN_USERNAME);
       await page.getByLabel(/Password/i).fill(ADMIN_PASSWORD);
       await page.getByRole('button', { name: /^(Sign In|Log in|Anmelden)$/i }).click();
     }

@@ -25,8 +25,8 @@ async function insertEvent(db, adminId, over = {}) {
     event_type: 'project',
     event_name: 'QR Test Wedding',
     event_date: '2026-05-29',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: `/gallery/share-${Math.random().toString(16).slice(2)}`,
     share_token: `st-${Math.random().toString(16).slice(2)}`,

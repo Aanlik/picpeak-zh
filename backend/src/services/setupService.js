@@ -219,7 +219,7 @@ function tokensMatch(provided, expected) {
 
 // Pre-flight check for the two-step wizard: lets step 1 confirm the token is
 // valid before advancing to the account step, so a wrong token is caught at
-// "Continue" rather than after the user has filled in email + password. Does
+// "Continue" rather than after the user has filled in a username + password. Does
 // NOT burn the token — createInitialAdmin still claims it atomically on submit.
 // Rate-limited at the mount point (same as /admin) so it can't be used to
 // brute-force the token; the token is also 24 random bytes, so guessing is
@@ -236,7 +236,7 @@ async function verifySetupToken(token) {
 
 // Creates the first admin as super_admin (the highest role) and returns a
 // ready-to-set admin JWT so the browser flows straight into the wizard.
-async function createInitialAdmin({ token, email, username, password, ip }) {
+async function createInitialAdmin({ token, username, password, ip }) {
   if (!(await noAdminExists())) {
     throw new ConflictError('Setup already completed — an admin account exists');
   }
@@ -245,13 +245,11 @@ async function createInitialAdmin({ token, email, username, password, ip }) {
     throw new ValidationError('Invalid setup token', 'token');
   }
 
-  const local = require('../utils/communicationProfile').NO_EMAIL_MODE;
-  const cleanUsername = local ? String(username || '').trim() : String(email || '').trim().toLowerCase();
-  if (local && !/^[\p{L}\p{N}_-]{3,50}$/u.test(cleanUsername)) throw new ValidationError('Invalid username', 'username');
-  const cleanEmail = local ? `${require('crypto').randomUUID()}@accounts.invalid` : String(email || '').trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cleanEmail)) {
-    throw new ValidationError('A valid email address is required', 'email');
-  }
+  const cleanUsername = String(username || '').trim();
+  if (!/^[\p{L}\p{N}_-]{3,50}$/u.test(cleanUsername)) throw new ValidationError('Invalid username', 'username');
+  // Older PicPeak schemas require an email column. Store a non-routable value
+  // for schema compatibility; it is not used for login or communication.
+  const cleanEmail = `${require('crypto').randomUUID()}@accounts.invalid`;
   const strength = validatePassword(password);
   if (!strength.valid) {
     throw new ValidationError(strength.errors[0] || 'Password does not meet requirements', 'password');
@@ -298,7 +296,7 @@ async function createInitialAdmin({ token, email, username, password, ip }) {
   // left lying there is a live-looking credential that no longer works: an
   // operator would paste it, be rejected, and have nothing to fall back on.
   try { fs.unlinkSync(setupTokenFilePath()); } catch (_) { /* best-effort */ }
-  logger.info(`[setup] Initial super_admin created (id=${id}, email=${cleanEmail})`);
+  logger.info(`[setup] Initial super_admin created (id=${id}, username=${cleanUsername})`);
 
   const authToken = jwt.sign(
     { id, username: cleanUsername, type: 'admin', role: role.name, ip: ip || null, loginTime: Date.now() },
@@ -311,7 +309,6 @@ async function createInitialAdmin({ token, email, username, password, ip }) {
     user: {
       id,
       username: cleanUsername,
-      email: cleanEmail,
       role: { name: role.name, displayName: role.display_name },
     },
   };

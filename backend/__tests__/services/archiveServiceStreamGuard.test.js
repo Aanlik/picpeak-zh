@@ -55,10 +55,6 @@ jest.mock('../../src/services/storage', () => ({
   getStorage: () => mockStorage,
   initStorage: async () => mockStorage,
 }));
-jest.mock('../../src/services/emailProcessor', () => ({
-  queueEmail: jest.fn(async () => undefined),
-  getSupportEmail: jest.fn(async () => 'support@example.com'),
-}));
 
 const { bootTestDb, seedMinimal } = require('../integration/helpers/sqliteTestDb');
 
@@ -73,8 +69,8 @@ describe('archiveService storage reads', () => {
       event_type: 'project',
       event_name: `Archive ${slug}`,
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: null,
+
+
       password_hash: 'x',
       share_link: `/gallery/${slug}/share`,
       share_token: `${slug}-share`,

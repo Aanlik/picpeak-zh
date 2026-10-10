@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/pages/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    const { lang = 'en' } = req.query;
+    const lang = /^zh(?:-|$)/i.test(String(req.query.lang || '')) ? 'zh-CN' : 'en';
     
     const page = await db('cms_pages').where('slug', slug).first();
     
@@ -16,8 +16,8 @@ router.get('/pages/:slug', async (req, res) => {
     }
     
     // Return the appropriate language version
-    const title = lang === 'de' ? page.title_de : page.title_en;
-    const content = lang === 'de' ? page.content_de : page.content_en;
+    const title = lang === 'zh-CN' ? (page.title_zh || page.title_en) : page.title_en;
+    const content = lang === 'zh-CN' ? (page.content_zh || page.content_en) : page.content_en;
     
     res.json({
       title,

@@ -24,9 +24,9 @@ interface GridPhotoProps {
     allowLikes?: boolean;
     allowRatings?: boolean;
     allowComments?: boolean;
-    requireNameEmail?: boolean;
+    requireGuestName?: boolean;
   };
-  savedIdentity?: { name: string; email: string } | null;
+  savedIdentity?: { name: string } | null;
   onRequireIdentity?: (action: 'like', photoId: number) => void;
   onQuickComment?: () => void;
   onFeedbackChange?: () => void;
@@ -224,7 +224,7 @@ export const GridGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
     setLikedPhotoIds(new Set(photos.filter(p => p.is_liked).map(p => p.id)));
     likedSeededRef.current = true;
   }, [photos]);
-  const [savedIdentity, setSavedIdentity] = React.useState<{ name: string; email: string } | null>(null);
+  const [savedIdentity, setSavedIdentity] = React.useState<{ name: string } | null>(null);
 
   const spacingClass = spacing === 'tight' ? 'gap-2' : spacing === 'relaxed' ? 'gap-6' : 'gap-4';
 
@@ -295,14 +295,13 @@ export const GridGalleryLayout: React.FC<BaseGalleryLayoutProps> = ({
       <FeedbackIdentityModal
         isOpen={showIdentityModal}
         onClose={() => { setShowIdentityModal(false); setPendingAction(null); }}
-        onSubmit={async (name, email) => {
-          setSavedIdentity({ name, email });
+        onSubmit={async (name) => {
+          setSavedIdentity({ name });
           setShowIdentityModal(false);
           if (pendingAction) {
             await feedbackService.submitFeedback(slug, String(pendingAction.photoId), {
               feedback_type: pendingAction.type,
               guest_name: name,
-              guest_email: email,
             });
             // Immediately reflect like UI — toggle for consistency (#590).
             if (pendingAction.type === 'like') {

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Download, Upload, AlertTriangle, ShieldAlert, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Download, Upload, AlertTriangle, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 
@@ -49,7 +49,7 @@ export const PicpeakExportCard: React.FC = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (_) {
+    } catch {
       toast.error(t('backup.picpeak.downloadFailed', 'Could not create the backup file.'));
     } finally {
       setDownloading(false);
@@ -78,7 +78,7 @@ export const PicpeakExportCard: React.FC = () => {
         <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/50 dark:bg-amber-900/20">
           <ShieldAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
           <p className="text-xs text-amber-800 dark:text-amber-200">
-            {t('backup.picpeak.secretsWarning', 'This file contains secrets in plain text (email password, admin credentials, API keys). Store it securely and only transfer it over trusted channels.')}
+            {t('backup.picpeak.secretsWarning', 'This file contains sensitive information in plain text (legacy settings, admin credentials, API keys). Store it securely and only transfer it over trusted channels.')}
           </p>
         </div>
         <Button
@@ -193,16 +193,7 @@ export const PicpeakRestoreCard: React.FC = () => {
                 <p className="mt-2 flex items-start gap-1 text-xs text-amber-800 dark:text-amber-300">
                   <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                   <span>
-                    {t('backup.picpeak.externalMediaNote', 'This backup references an external-media library. Make sure external-media routing is configured on this instance.')}{' '}
-                    <a
-                      href="https://github.com/PicPeak/picpeak/blob/main/README.md"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-0.5 underline"
-                    >
-                      {t('backup.picpeak.externalMediaLink', 'Setup guide')}
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
+                    {t('backup.picpeak.externalMediaNote', 'This backup references an external-media library. Make sure external-media routing is configured on this instance.')}
                   </span>
                 </p>
               )}

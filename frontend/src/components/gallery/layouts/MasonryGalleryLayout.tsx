@@ -57,7 +57,7 @@ interface MasonryPhotoProps {
   feedbackOptions?: {
     allowLikes?: boolean;
     allowComments?: boolean;
-    requireNameEmail?: boolean;
+    requireGuestName?: boolean;
   };
   onQuickComment?: () => void;
   // Column width for calculating proper aspect-ratio-based height

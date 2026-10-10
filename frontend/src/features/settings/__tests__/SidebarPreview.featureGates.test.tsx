@@ -32,10 +32,7 @@ describe('SidebarPreview feature gates (QA J.14)', () => {
   });
 
   it.each([
-    ['workflows', 'navigation.workflows'],
     ['transfers', 'navigation.transfers'],
-    ['messaging', 'navigation.messages'],
-    ['analytics', 'admin.analytics'],
     ['userManagement', 'navigation.users'],
   ] as const)('reflects the %s toggle', (flag, label) => {
     const { unmount } = render(<SidebarPreview staged={staged({ [flag]: false })} />);

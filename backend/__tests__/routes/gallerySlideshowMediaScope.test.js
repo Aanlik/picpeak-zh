@@ -24,7 +24,7 @@ const LINK = 'c'.repeat(64);
 
 describe('slideshow session media scope', () => {
   let db; let cleanup; let app; let eventId;
-  let shownPhoto; let otherPhoto; let slideshowToken;
+  let shownPhoto; let otherPhoto; let shownCategory; let otherCategory; let slideshowToken;
 
   const unwrap = (rows) => (typeof rows[0] === 'object' && rows[0] !== null ? rows[0].id : rows[0]);
 
@@ -48,8 +48,8 @@ describe('slideshow session media scope', () => {
       event_type: 'project',
       event_name: 'Slideshow Media Scope',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'slideshow-media-scope-share',
@@ -64,8 +64,8 @@ describe('slideshow session media scope', () => {
     const addCategory = async (name) => unwrap(await db('photo_categories').insert({
       name, slug: name, is_global: 0, event_id: eventId, display_order: 0,
     }).returning('id'));
-    const shownCategory = await addCategory('ceremony');
-    const otherCategory = await addCategory('party');
+    shownCategory = await addCategory('ceremony');
+    otherCategory = await addCategory('party');
     await db('events').where({ id: eventId }).update({ show_category_id: shownCategory });
 
     const addPhoto = async (filename, categoryId) => unwrap(await db('photos').insert({
@@ -83,6 +83,7 @@ describe('slideshow session media scope', () => {
     app.use(express.json());
     app.use(cookieParser());
     app.use('/api/gallery', require('../../src/routes/gallery'));
+    app.use('/api/images', require('../../src/routes/protectedImages'));
 
     const session = await request(app).get(`/api/gallery/${SLUG}/show/${LINK}/session`);
     expect(session.status).toBe(200);
@@ -99,13 +100,34 @@ describe('slideshow session media scope', () => {
     },
   );
 
-  it('answers 403 to the view beacon for a photo outside the shown category', async () => {
+  it('denies a protected image request for a photo outside the shown category', async () => {
     const res = await request(app)
-      .post(`/api/gallery/${SLUG}/photo/${otherPhoto}/view`)
+      .get(`/api/images/${SLUG}/photo/${otherPhoto}/view`)
       .set('Authorization', `Bearer ${slideshowToken}`);
     expect(res.status).toBe(403);
-    const row = await db('photos').where({ id: otherPhoto }).first('view_count');
-    expect(Number(row.view_count) || 0).toBe(0);
+  });
+
+  it('does not mint protected-image URLs or tokens outside the shown category', async () => {
+    for (const route of ['generate-url', 'generate-secure-token']) {
+      const res = await request(app)
+        .post(`/api/images/${SLUG}/photo/${otherPhoto}/${route}`)
+        .set('Authorization', `Bearer ${slideshowToken}`)
+        .send({});
+      expect(res.status).toBe(403);
+    }
+  });
+
+  it('rechecks the current category when serving an already minted signed URL', async () => {
+    const minted = await request(app)
+      .post(`/api/images/${SLUG}/photo/${shownPhoto}/generate-url`)
+      .set('Authorization', `Bearer ${slideshowToken}`)
+      .send({});
+    expect(minted.status).toBe(200);
+
+    await db('events').where({ id: eventId }).update({ show_category_id: otherCategory });
+    const served = await request(app).get(minted.body.url).redirects(0);
+    expect(served.status).toBe(403);
+    await db('events').where({ id: eventId }).update({ show_category_id: shownCategory });
   });
 
   it.each(['thumbnail', 'hero', 'preview'])(

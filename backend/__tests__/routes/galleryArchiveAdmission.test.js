@@ -113,7 +113,7 @@ describe('gallery ZIP routes under the shared admission', () => {
 
     const ev = await db('events').insert({
       slug: SLUG, event_type: 'project', event_name: 'Archive admission', event_date: '2026-08-01',
-      host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
+        password_hash: 'x',
       share_link: `/gallery/${SLUG}/s`, share_token: 'archive-admission-share',
       expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
       is_active: 1, is_archived: 0, is_draft: 0, require_password: 0, allow_downloads: 1,

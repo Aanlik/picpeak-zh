@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { FileText, Globe, Clock, Sparkles, ShieldCheck, Image as ImageIcon, Trash2 } from 'lucide-react';
@@ -21,7 +21,7 @@ export const CMSPage: React.FC = () => {
   const { formatDateTime: fmtDateTime, formatTime: fmtTime } = useLocalizedDate();
   const queryClient = useQueryClient();
   const [selectedPage, setSelectedPage] = useState<string>('impressum');
-  const [editingLang, setEditingLang] = useState<'en' | 'de'>('en');
+  const [editingLang, setEditingLang] = useState<'en' | 'zh'>('en');
   const [editForm, setEditForm] = useState<Partial<CMSPageType>>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -115,17 +115,19 @@ export const CMSPage: React.FC = () => {
   });
 
   // Auto-save functionality
-  const autoSave = useCallback(
-    debounce(() => {
-      if (hasUnsavedChanges && !updateMutation.isPending) {
+  const updatePublicSite = updateMutation.mutate;
+  const isUpdatingPublicSite = updateMutation.isPending;
+  const autoSave = useMemo(
+    () => debounce(() => {
+      if (hasUnsavedChanges && !isUpdatingPublicSite) {
         setIsAutoSaving(true);
-        updateMutation.mutate({
+        updatePublicSite({
           slug: selectedPage,
           data: editForm,
         });
       }
     }, 3000),
-    [hasUnsavedChanges, editForm, selectedPage]
+    [hasUnsavedChanges, editForm, selectedPage, isUpdatingPublicSite, updatePublicSite]
   );
 
   useEffect(() => {
@@ -175,13 +177,13 @@ export const CMSPage: React.FC = () => {
   };
 
   const handleContentChange = (content: string) => {
-    const field = editingLang === 'de' ? 'content_de' : 'content_en';
+    const field = editingLang === 'zh' ? 'content_zh' : 'content_en';
     setEditForm(prev => ({ ...prev, [field]: content }));
     setHasUnsavedChanges(true);
   };
 
   const handleTitleChange = (title: string) => {
-    const field = editingLang === 'de' ? 'title_de' : 'title_en';
+    const field = editingLang === 'zh' ? 'title_zh' : 'title_en';
     setEditForm(prev => ({ ...prev, [field]: title }));
     setHasUnsavedChanges(true);
   };
@@ -297,10 +299,9 @@ export const CMSPage: React.FC = () => {
     const tokens: Record<string, string> = {
       company_name: branding.companyName || '',
       company_tagline: branding.companyTagline || '',
-      support_email: branding.supportEmail || '',
     };
 
-    return html.replace(/\{\{\s*(company_name|company_tagline|support_email)\s*\}\}/gi, (_, key: string) => tokens[key] || '');
+    return html.replace(/\{\{\s*(company_name|company_tagline)\s*\}\}/gi, (_, key: string) => tokens[key] || '');
   };
 
   const publicSitePreview = useMemo(() => {
@@ -315,7 +316,6 @@ export const CMSPage: React.FC = () => {
 
     const logo = branding?.logoUrl ? `<img src="${branding.logoUrl}" alt="${branding.companyName || t('cms.preview.brandLogo')}" class="brand-logo" loading="lazy" decoding="async" />` : '';
     const tagline = branding?.companyTagline ? `<p class="brand-tagline">${branding.companyTagline}</p>` : '';
-    const support = branding?.supportEmail ? `<a href="mailto:${branding.supportEmail}">${branding.supportEmail}</a>` : '';
     const footerNote = branding?.footerText ? `<p>${branding.footerText}</p>` : '';
 
     const displayName = branding?.companyName || 'Celebration Stories';
@@ -356,7 +356,6 @@ export const CMSPage: React.FC = () => {
           ${footerNote}
         </div>
         <div class="footer-contact">
-          <span>${support}</span>
         </div>
       </div>
     </footer>
@@ -622,14 +621,14 @@ export const CMSPage: React.FC = () => {
                   English
                 </button>
                 <button
-                  onClick={() => setEditingLang('de')}
+                  onClick={() => setEditingLang('zh')}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    editingLang === 'de'
+                    editingLang === 'zh'
                       ? 'bg-accent-dark/15 text-accent-dark'
                       : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
                   }`}
                 >
-                  Deutsch
+                  简体中文
                 </button>
               </div>
             </div>
@@ -695,10 +694,10 @@ export const CMSPage: React.FC = () => {
               {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                  {t('cms.pageTitle')} ({editingLang === 'en' ? 'English' : 'German'})
+                  {t('cms.pageTitle')} ({editingLang === 'en' ? 'English' : '简体中文'})
                 </label>
                 <Input
-                  value={editingLang === 'en' ? editForm.title_en || '' : editForm.title_de || ''}
+                  value={editingLang === 'en' ? editForm.title_en || '' : editForm.title_zh || ''}
                   onChange={(e) => handleTitleChange(e.target.value)}
                   placeholder={t('cms.pageTitlePlaceholder')}
                 />
@@ -707,10 +706,10 @@ export const CMSPage: React.FC = () => {
               {/* Content */}
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                  {t('cms.pageContent')} ({editingLang === 'en' ? 'English' : 'German'})
+                  {t('cms.pageContent')} ({editingLang === 'en' ? 'English' : '简体中文'})
                 </label>
                 <CMSEditor
-                  content={editingLang === 'en' ? editForm.content_en || '' : editForm.content_de || ''}
+                  content={editingLang === 'en' ? editForm.content_en || '' : editForm.content_zh || ''}
                   onChange={handleContentChange}
                   onSave={handleSave}
                   isSaving={updateMutation.isPending}

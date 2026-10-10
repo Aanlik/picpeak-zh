@@ -5,7 +5,6 @@ export interface Archive {
   slug: string;
   eventName: string;
   eventDate: string;
-  hostEmail: string;
   archivedAt: string;
   expiresAt: string;
   photoCount: number;
@@ -15,8 +14,6 @@ export interface Archive {
 }
 
 export interface ArchiveDetails extends Archive {
-  adminEmail: string;
-  welcomeMessage?: string;
   colorTheme?: string;
   createdAt: string;
   photos: Array<{

@@ -47,8 +47,8 @@ describe('migration 176 — schema', () => {
       event_type: 'project',
       event_name: 'Info Default Test',
       event_date: '2026-06-22',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: '/gallery/info-default-test/share',
       share_token: 'info-default-test-share',
@@ -133,8 +133,8 @@ describe('per-event persistence', () => {
       event_type: 'project',
       event_name: 'Info Persist Test',
       event_date: '2026-06-22',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: '/gallery/info-persist-test/share',
       share_token: 'info-persist-test-share',

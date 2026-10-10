@@ -61,7 +61,7 @@ function validatePassword(password, options = {}) {
       feedback: {},
     };
   }
-  
+
   // Check if password exists
   if (!password || typeof password !== 'string') {
     return {
@@ -71,32 +71,32 @@ function validatePassword(password, options = {}) {
       feedback: {}
     };
   }
-  
+
   // Check minimum length
   if (password.length < config.minLength) {
     errors.push(`Password must be at least ${config.minLength} characters long`);
   }
-  
+
   // Check uppercase requirement
   if (config.requireUppercase && !/[A-Z]/.test(password)) {
     errors.push('Password must contain at least one uppercase letter');
   }
-  
+
   // Check lowercase requirement
   if (config.requireLowercase && !/[a-z]/.test(password)) {
     errors.push('Password must contain at least one lowercase letter');
   }
-  
+
   // Check number requirement
   if (config.requireNumbers && !/[0-9]/.test(password)) {
     errors.push('Password must contain at least one number');
   }
-  
+
   // Check special character requirement
   if (config.requireSpecialChars && !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
     errors.push('Password must contain at least one special character');
   }
-  
+
   // Check against common passwords
   if (config.preventCommonPasswords) {
     const lowerPassword = password.toLowerCase();
@@ -104,7 +104,7 @@ function validatePassword(password, options = {}) {
       errors.push('This password is too common. Please choose a more unique password');
     }
   }
-  
+
   // Skip zxcvbn check if explicitly disabled (for gallery passwords)
   if (options.skipStrengthCheck) {
     return {
@@ -114,10 +114,10 @@ function validatePassword(password, options = {}) {
       feedback: {}
     };
   }
-  
+
   // Use zxcvbn for strength analysis
   const strength = zxcvbn(password);
-  
+
   // Check minimum strength score
   if (strength.score < config.minStrengthScore) {
     errors.push('Password is too weak. Please choose a stronger password');
@@ -130,7 +130,7 @@ function validatePassword(password, options = {}) {
       errors.push(...strength.feedback.suggestions);
     }
   }
-  
+
   return {
     valid: errors.length === 0,
     errors,
@@ -150,7 +150,7 @@ function validatePassword(password, options = {}) {
 async function getPasswordComplexitySettings() {
   try {
     const { db, withRetry } = require('../database/db');
-    
+
     // Use retry wrapper to handle connection failures
     const settings = await withRetry(async () => {
       // Key must match what the settings UI writes: `security_` prefix +
@@ -161,7 +161,7 @@ async function getPasswordComplexitySettings() {
         .where('setting_key', 'security_password_complexity')
         .first();
     });
-    
+
     if (!settings || !settings.setting_value) {
       return 'moderate'; // Default
     }
@@ -229,7 +229,7 @@ function getPasswordConfigForComplexity(complexityLevel) {
       minStrengthScore: 3
     }
   };
-  
+
   return configs[complexityLevel] || configs.moderate;
 }
 
@@ -245,16 +245,16 @@ async function validatePasswordInContext(password, context, userData = {}) {
   if (context === 'gallery') {
     // Get complexity settings from database
     const complexityLevel = await getPasswordComplexitySettings();
-    
+
     // Get configuration for the complexity level
     const galleryOptions = {
       ...getPasswordConfigForComplexity(complexityLevel),
       skipStrengthCheck: complexityLevel === 'simple' // Skip zxcvbn for simple passwords
     };
-    
+
     // Base validation with gallery-specific options
     const result = validatePassword(password, galleryOptions);
-    
+
     // Only allow date-format passwords when complexity is 'simple'
     if (complexityLevel === 'simple') {
       const datePattern = /^\d{1,2}[./-]\d{1,2}[./-]\d{4}$/;
@@ -267,25 +267,25 @@ async function validatePasswordInContext(password, context, userData = {}) {
         };
       }
     }
-    
+
     // Additional gallery-specific checks
     if (password.length < 6) {
       result.valid = false;
       result.errors = ['Password must be at least 6 characters long'];
     }
-    
+
     // Check if it's too simple (e.g., just "123456")
     if (/^\d{1,6}$/.test(password)) {
       result.valid = false;
       result.errors.push('Password cannot be just numbers. Consider using a date format like "04.07.2025"');
     }
-    
+
     return result;
   }
-  
+
   // Base validation for other contexts
   const result = validatePassword(password);
-  
+
   // Context-specific validation
   if (context === 'admin') {
     // Admins need stronger passwords
@@ -293,23 +293,15 @@ async function validatePasswordInContext(password, context, userData = {}) {
       result.valid = false;
       result.errors.push('Admin passwords must be very strong (score 4/4)');
     }
-    
+
     // Check password doesn't contain username
     if (userData.username && password.toLowerCase().includes(userData.username.toLowerCase())) {
       result.valid = false;
       result.errors.push('Password must not contain your username');
     }
-    
-    // Check password doesn't contain email
-    if (userData.email) {
-      const emailUser = userData.email.split('@')[0];
-      if (password.toLowerCase().includes(emailUser.toLowerCase())) {
-        result.valid = false;
-        result.errors.push('Password must not contain parts of your email');
-      }
-    }
+
   }
-  
+
   return result;
 }
 
@@ -327,25 +319,25 @@ function generateSecurePassword(options = {}) {
     includeSpecialChars: options.includeSpecialChars !== false,
     excludeAmbiguous: options.excludeAmbiguous !== false
   };
-  
+
   let charset = '';
-  
+
   if (config.includeLowercase) {
     charset += config.excludeAmbiguous ? 'abcdefghjkmnpqrstuvwxyz' : 'abcdefghijklmnopqrstuvwxyz';
   }
-  
+
   if (config.includeUppercase) {
     charset += config.excludeAmbiguous ? 'ABCDEFGHJKLMNPQRSTUVWXYZ' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   }
-  
+
   if (config.includeNumbers) {
     charset += config.excludeAmbiguous ? '23456789' : '0123456789';
   }
-  
+
   if (config.includeSpecialChars) {
     charset += '!@#$%^&*()_+-=[]{}|;:,.<>?';
   }
-  
+
   if (charset.length === 0) {
     throw new Error('At least one character type must be included');
   }

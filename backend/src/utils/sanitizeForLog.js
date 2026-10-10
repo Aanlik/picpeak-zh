@@ -10,8 +10,8 @@
  * Deliberately key-name based rather than value-shaped: a deny-set of names is
  * predictable and cheap, whereas guessing at "this looks like a secret" both
  * misses and false-positives. Matching is case-insensitive and substring-based
- * so `client_password_hash` and `smtp_pass` are caught without enumerating
- * every variant.
+ * so `client_password_hash` and other credential variants are caught without
+ * enumerating every field name.
  */
 
 const DENY_FRAGMENTS = [

@@ -44,8 +44,8 @@ beforeAll(async () => {
     event_type: 'project',
     event_name: 'Admin Marks Test',
     event_date: '2026-07-20',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: '/gallery/admin-marks-test-event/share',
     share_token: 'admin-marks-share',

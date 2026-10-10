@@ -4,7 +4,7 @@ export type ProtectionLevel = 'basic' | 'standard' | 'enhanced' | 'maximum';
 
 export type DetectionSensitivity = 'low' | 'medium' | 'high';
 
-export type ViolationType = 
+export type ViolationType =
   | 'context_menu'
   | 'drag_start'
   | 'text_selection'
@@ -136,17 +136,10 @@ export interface VisibilityProtectionState {
   threshold: number;
 }
 
-export interface ProtectionAnalytics {
-  track: (event: string, properties: Record<string, any>) => void;
-  trackViolation: (violation: ProtectionViolationEvent) => void;
-  getMetrics: () => ProtectionMetrics;
-}
-
 export interface ProtectionConfig {
   global: {
     enabled: boolean;
     defaultLevel: ProtectionLevel;
-    analyticsEnabled: boolean;
   };
   detection: {
     devTools: DevToolsDetectionOptions;
@@ -237,26 +230,6 @@ export type PrintScreenProtectionProps = ProtectionProps & {
   detectPrintScreen?: boolean;
   printScreenSensitivity?: DetectionSensitivity;
 };
-
-// Event types for analytics
-export interface ProtectionAnalyticsEvent {
-  event: string;
-  properties: {
-    protectionLevel: ProtectionLevel;
-    violationType?: ViolationType;
-    timestamp: number;
-    sessionId: string;
-    userId?: string;
-    photoId?: string | number;
-    galleryId?: string | number;
-    userAgent: string;
-    viewport: {
-      width: number;
-      height: number;
-    };
-    [key: string]: any;
-  };
-}
 
 // Configuration validation
 export interface ProtectionConfigValidator {

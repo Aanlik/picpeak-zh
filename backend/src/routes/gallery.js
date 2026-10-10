@@ -5,7 +5,6 @@ router.use(require('./gallery/slideshow'));
 router.use(require('./gallery/photos'));
 router.use(require('./gallery/downloads'));
 router.use(require('./gallery/media'));
-router.use(require('./gallery/stats'));
 router.use(require('./gallery/uploads'));
 router.use(require('./gallery/styles'));
 module.exports = router;

@@ -1,7 +1,3 @@
-const { settingsChanged } = require('../usage/adoptionEvidence');
-const { capabilityEvidence } = require('../usage/capabilityEvidence');
-const SEO_USAGE_KEYS = ['seo_allow_indexing', 'seo_block_ai_crawlers', 'seo_block_social_bots',
-  'seo_blocked_ai_agents', 'seo_custom_rules', 'seo_meta_noindex', 'seo_meta_nofollow', 'seo_meta_noai', 'seo_sitemap_url'];
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -38,7 +34,6 @@ const router = express.Router();
 
 // What a stored secret looks like on GET; a save that carries it back means
 // "unchanged", never "set the secret to this".
-const SECRET_MASK = '••••••••';
 const { clearMaxFilesPerUploadCache, MAX_ALLOWED_FILES_PER_UPLOAD, clearMaxFileSizeCache, clearMaxVideoSizeCache, MAX_ALLOWED_FILE_SIZE_MB } = require('../services/uploadSettings');
 const watermarkService = require('../services/watermarkService');
 const watermarkGeneratorService = require('../services/watermarkGeneratorService');
@@ -100,7 +95,7 @@ const stripReservedSettingKeys = (settings) => {
 //                                 restore_allow_force and
 //                                 restore_require_pre_backup gate restore-start)
 const DEDICATED_ROUTE_KEY_PREFIXES = [
-  'backup_', 'database_backup_', 'rate_limit_', 'max_image_requests_', 'restore_',
+  'backup_', 'database_backup_', 'rate_limit_', 'max_image_requests_', 'restore_', 'ledger_',
 ];
 const isDedicatedRouteOwnedKey = (key) => DEDICATED_ROUTE_KEY_PREFIXES.some((prefix) => key.startsWith(prefix));
 // 400 (naming the keys) when a generic write carries route-owned keys, rather
@@ -116,53 +111,17 @@ const rejectDedicatedRouteOwnedKeys = (settings, res) => {
   return true;
 };
 
-// Migration 174 hardening — per-key permission boundary for the GENERIC settings
-// writers. /general, /analytics, /seo and /security all upsert arbitrary
-// setting_keys, so without this a role holding only the broad `settings.edit`
-// (or `settings.security`) could set keys owned by a NARROWER permission —
-// repointing the public site URL or security policy —
-// via the wrong endpoint, defeating the settings.edit split. Any protected key
-// the caller isn't permitted to write is stripped before the upsert. The
-// dedicated routes still work because their caller holds the matching perm
-// analytics_umami_enabled belongs here too: publicSettings gates umami_url and
-// umami_website_id on it and App.tsx ORs it into the provider check, so it is
-// the on/off switch for the whole Umami path, not a selector. The Analytics
-// tab derives it from the provider dropdown, which is protected by the same
-// permission, so a legitimate save never newly 403s on it.
-const TRACKER_CODE_KEYS = new Set([
-  'analytics_tracker_provider',
-  'analytics_umami_enabled',
-  'analytics_umami_url',
-  'analytics_rybbit_url',
-  'analytics_custom_head_html',
-]);
+// Generic settings writers use a per-key permission boundary for sensitive
+// settings.
 const parseStoredSetting = (row) => {
   if (!row) return undefined;
   try { return JSON.parse(row.setting_value); } catch (_) { return row.setting_value; }
-};
-// What a protected key reads as when it has no row yet, so a save that sends
-// the effective value back unchanged is not treated as a change. The provider
-// falls back to the legacy umami flag exactly like the Analytics tab does.
-const effectiveMissingSetting = async (key) => {
-  if (key === 'analytics_tracker_provider') {
-    const umami = parseStoredSetting(await db('app_settings').where({ setting_key: 'analytics_umami_enabled' }).first());
-    return umami === true || umami === 'true' ? 'umami' : 'none';
-  }
-  if (key === 'analytics_umami_enabled') return false;
-  return null;
 };
 // A rule names either the owning `perm`, or `superAdmin: true` when the key is
 // a super-admin decision that no delegable permission can grant.
 const PROTECTED_SETTING_KEY_PERMS = [
   { match: (k) => k === 'general_site_url', perm: 'settings.domains' },
   { match: (k) => k.startsWith('security_'), perm: 'settings.security' },
-  // The tracker provider/URL and the custom head HTML decide which JavaScript
-  // the app serves from its own origin (the tracker proxy re-serves the
-  // configured script same-origin) and runs in every visitor's session,
-  // including a super admin's. Whoever picks that code can act as any account
-  // that loads it, so no delegable permission (settings.integrations
-  // included) may grant it — super admins only, like the SSO provider.
-  { match: (k) => TRACKER_CODE_KEYS.has(k), superAdmin: true },
 ];
 // Returns the list of {key, perm} the caller tried to CHANGE without the owning
 // permission. Callers 403 when it's non-empty rather than silently no-op'ing a
@@ -182,7 +141,7 @@ const collectUnauthorizedProtectedKeys = async (settings, adminId) => {
       : await userHasAnyPermission(adminId, [rule.perm]);
     if (allowed) continue;
     const row = await db('app_settings').where({ setting_key: key }).first();
-    const stored = row ? parseStoredSetting(row) : await effectiveMissingSetting(key);
+    const stored = row ? parseStoredSetting(row) : undefined;
     if (String(stored ?? '') === String(settings[key] ?? '')) {
       delete settings[key]; // unchanged — let the rest of the save through
       continue;
@@ -231,7 +190,7 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     // Note: SVG files are excluded from magic number validation for logos
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'];
-    
+
     if (validateFileType(file.originalname, file.mimetype, allowedMimeTypes)) {
       return cb(null, true);
     } else {
@@ -293,8 +252,7 @@ const faviconUpload = multer({
  * starts from a clean vault. Off is a promise that nothing reversible is
  * left behind; on-from-off must not resurrect copies a write left behind
  * after the previous purge. Decided BEFORE the upsert (needs the old value),
- * applied after it. Every writer that accepts a security_ key (general,
- * analytics and seo take them from a settings.security holder too) does this.
+ * applied after it. Every writer that accepts a security_ key does this.
  */
 // Every writer that accepts a security_ key runs the vault purge on the side
 // of the write the transition calls for (see purgePlanForSettingWrite).
@@ -353,29 +311,14 @@ router.get('/', adminAuth, requirePermission('settings.view'), async (req, res) 
       settingsObject.general_site_url_effective = envPinnedBase();
     }
 
-    // Mask sensitive secrets before sending to client
-    if (settingsObject.security_recaptcha_secret_key) {
-      settingsObject.security_recaptcha_secret_key = '••••••••';
-    }
     // Backup credentials — the S3 secret key and the rsync SSH PRIVATE KEY
-    // were returned in plaintext to any settings.view holder. Same masking
-    // pattern as the recaptcha/umami/rybbit keys; the dedicated
+    // were returned in plaintext to any settings.view holder. The dedicated
     // /admin/backup/config endpoints handle the edit round-trip.
     if (settingsObject.backup_s3_secret_key) {
       settingsObject.backup_s3_secret_key = '••••••••';
     }
     if (settingsObject.backup_rsync_ssh_key) {
       settingsObject.backup_rsync_ssh_key = '••••••••';
-    }
-    // Umami v2 API key (#661 Bug C) — read-write secret that authenticates
-    // outbound calls to the operator's Umami instance for the device
-    // breakdown. Masked on GET, same pattern as the recaptcha secret.
-    if (settingsObject.analytics_umami_api_key) {
-      settingsObject.analytics_umami_api_key = '••••••••';
-    }
-    // Rybbit API key (#663 Phase 1) — same pattern.
-    if (settingsObject.analytics_rybbit_api_key) {
-      settingsObject.analytics_rybbit_api_key = '••••••••';
     }
 
     // The general API rate limiter falls back to code defaults when a key has
@@ -389,76 +332,6 @@ router.get('/', adminAuth, requirePermission('settings.view'), async (req, res) 
     res.json(settingsObject);
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to fetch settings');
-  }
-});
-
-/**
- * Customer-surface branding settings (#354 follow-up).
- *
- * Two toggles control what shows in the customer dashboard header:
- *   customer_show_logo          (default true)
- *   customer_show_company_name  (default true)
- *
- * The Calendar / Quotes / Bills feature globals that used to live here
- * have moved to the maintainer's Features tab (feature_flags table).
- *
- * IMPORTANT: both routes MUST be registered before the generic
- * `router.get('/:type', ...)` below — Express matches routes in
- * registration order.
- */
-router.get('/customer-surface', adminAuth, requirePermission('settings.view'), async (req, res) => {
-  try {
-    const rows = await db('app_settings')
-      .where('setting_type', 'customer_surface')
-      .select('setting_key', 'setting_value');
-
-    const settings = {};
-    for (const r of rows) {
-      let value = r.setting_value;
-      if (value === null || value === undefined) {
-        settings[r.setting_key] = null;
-        continue;
-      }
-      if (typeof value !== 'string') {
-        settings[r.setting_key] = value;
-      } else {
-        try { settings[r.setting_key] = JSON.parse(value); }
-        catch { settings[r.setting_key] = value; }
-      }
-    }
-
-    res.json(settings);
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to fetch customer surface settings');
-  }
-});
-
-router.put('/customer-surface', adminAuth, requirePermission('settings.edit'), async (req, res) => {
-  try {
-    // Branding-only whitelist; legacy workflow settings are no longer exposed.
-    const allowed = [
-      'customer_show_logo',
-      'customer_show_company_name',
-    ];
-    const updates = [];
-    for (const key of allowed) {
-      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
-        const value = !!req.body[key];
-        updates.push({ setting_key: key, setting_value: JSON.stringify(value), setting_type: 'customer_surface' });
-      }
-    }
-
-    for (const u of updates) {
-      await upsertAppSetting(u.setting_key, u.setting_value, u.setting_type);
-    }
-
-    // Clear the public-site cache so any consumer relying on it
-    // (e.g. customer login footer if it picks these up) refetches.
-    clearPublicSiteCache();
-
-    res.json({ message: 'Customer surface settings updated', updated: updates.map((u) => u.setting_key) });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to save customer surface settings');
   }
 });
 
@@ -757,7 +630,7 @@ router.put('/sso', adminAuth, requirePermission('settings.security'), [
     const providerChanged = (nextIssuer !== undefined && nextIssuer !== (current.issuerUrl || ''))
       || (nextClientId !== undefined && nextClientId !== (current.clientId || ''));
     const secretEntered = typeof req.body.oidc_client_secret === 'string' && req.body.oidc_client_secret.length > 0;
-    // The provider is the trust anchor for every SSO login, and email linking
+    // The provider is the trust anchor for every SSO login, and account linking
     // hands whoever completes SSO the matching local account, super admins
     // included. A settings.security holder who could point the app at a
     // provider of their own choosing could mint a token for a super admin's
@@ -947,29 +820,14 @@ router.get('/:type', adminAuth, requirePermission('settings.view'), async (req, 
       }
     }
 
-    // Mask sensitive secrets before sending to client
-    if (settingsObject.security_recaptcha_secret_key) {
-      settingsObject.security_recaptcha_secret_key = '••••••••';
-    }
     // Backup credentials — the S3 secret key and the rsync SSH PRIVATE KEY
-    // were returned in plaintext to any settings.view holder. Same masking
-    // pattern as the recaptcha/umami/rybbit keys; the dedicated
+    // were returned in plaintext to any settings.view holder. The dedicated
     // /admin/backup/config endpoints handle the edit round-trip.
     if (settingsObject.backup_s3_secret_key) {
       settingsObject.backup_s3_secret_key = '••••••••';
     }
     if (settingsObject.backup_rsync_ssh_key) {
       settingsObject.backup_rsync_ssh_key = '••••••••';
-    }
-    // Umami v2 API key (#661 Bug C) — read-write secret that authenticates
-    // outbound calls to the operator's Umami instance for the device
-    // breakdown. Masked on GET, same pattern as the recaptcha secret.
-    if (settingsObject.analytics_umami_api_key) {
-      settingsObject.analytics_umami_api_key = '••••••••';
-    }
-    // Rybbit API key (#663 Phase 1) — same pattern.
-    if (settingsObject.analytics_rybbit_api_key) {
-      settingsObject.analytics_rybbit_api_key = '••••••••';
     }
 
     res.json(settingsObject);
@@ -982,13 +840,13 @@ router.get('/:type', adminAuth, requirePermission('settings.view'), async (req, 
 router.get('/password/complexity', adminAuth, requirePermission('settings.view'), async (req, res) => {
   try {
     const { getPasswordComplexitySettings, getPasswordConfigForComplexity } = require('../utils/passwordValidation');
-    
+
     // Get current complexity level from database
     const complexityLevel = await getPasswordComplexitySettings();
-    
+
     // Get configuration for the complexity level
     const config = getPasswordConfigForComplexity(complexityLevel);
-    
+
     res.json({
       complexityLevel,
       config
@@ -1004,7 +862,6 @@ router.put('/branding', adminAuth, requirePermission('settings.edit'), async (re
     const {
       company_name,
       company_tagline,
-      support_email,
       footer_text,
       watermark_enabled,
       watermark_position,
@@ -1022,13 +879,13 @@ router.put('/branding', adminAuth, requirePermission('settings.edit'), async (re
       hide_powered_by,
       force_color_mode,
       // Login-page-only branding (#354 follow-up). Both toggles apply
-      // exclusively to /admin/login and /customer/login — the gallery
+      // to the admin login and setup screens — the gallery
       // and admin chrome use their own logo_size / logo_max_height.
       // - login_logo_frame_enabled: true (default) renders the tinted
       //   square behind the logo; false drops it.
       // - login_logo_size: 'small' | 'medium' | 'large' | 'xlarge'
       //   matches the gallery logo_size token set but applies only to
-      //   the two login screens.
+      //   these entry screens.
       login_logo_frame_enabled,
       login_logo_size,
       // Footer overhaul (#441 + #440). Socials are URL strings (empty
@@ -1079,7 +936,6 @@ router.put('/branding', adminAuth, requirePermission('settings.edit'), async (re
     const brandingSettings = {
       company_name,
       company_tagline,
-      support_email,
       footer_text,
       watermark_enabled,
       watermark_position,
@@ -1114,8 +970,6 @@ router.put('/branding', adminAuth, requirePermission('settings.edit'), async (re
       ...(promo_alignment !== undefined && { promo_alignment: normalizedPromoAlignment })
     };
 
-    const brandingUpdates = Object.fromEntries(Object.entries(brandingSettings).map(([key, value]) => [`branding_${key}`, value]));
-    const brandingChanged = await settingsChanged(db, brandingUpdates, Object.keys(brandingUpdates));
 
     // Handle favicon deletion if empty string or null is provided
     if (favicon_url === '' || favicon_url === null || favicon_url === undefined) {
@@ -1123,7 +977,7 @@ router.put('/branding', adminAuth, requirePermission('settings.edit'), async (re
       const currentFaviconSetting = await db('app_settings')
         .where('setting_key', 'branding_favicon_url')
         .first();
-      
+
       if (currentFaviconSetting && currentFaviconSetting.setting_value) {
         let currentFaviconUrl;
         try {
@@ -1133,7 +987,7 @@ router.put('/branding', adminAuth, requirePermission('settings.edit'), async (re
           // If it's not valid JSON, use the raw value
           currentFaviconUrl = currentFaviconSetting.setting_value;
         }
-        
+
         // Containment: the stored URL is admin-writable, so only the leaf
         // name is used and it is joined onto the fixed favicon directory. A
         // prefix test alone let `/uploads/favicons/../../<anything>` pass
@@ -1157,7 +1011,7 @@ router.put('/branding', adminAuth, requirePermission('settings.edit'), async (re
       const currentLogoSetting = await db('app_settings')
         .where('setting_key', 'branding_logo_url')
         .first();
-      
+
       if (currentLogoSetting && currentLogoSetting.setting_value) {
         let currentLogoUrl;
         try {
@@ -1167,7 +1021,7 @@ router.put('/branding', adminAuth, requirePermission('settings.edit'), async (re
           // If it's not valid JSON, use the raw value
           currentLogoUrl = currentLogoSetting.setting_value;
         }
-        
+
         // Same containment as the favicon branch above.
         const logoPath = uploadedAssetPath(currentLogoUrl, 'logos', getStoragePath());
         if (logoPath) {
@@ -1206,7 +1060,6 @@ router.put('/branding', adminAuth, requirePermission('settings.edit'), async (re
       metadata: JSON.stringify({ company_name })
     });
 
-    if (brandingChanged) capabilityEvidence(res, 'branding_editing');
     clearPublicSiteCache();
 
     // Check if watermark settings changed and trigger regeneration
@@ -1311,8 +1164,7 @@ router.post('/logo', adminAuth, requirePermission('settings.edit'), upload.singl
         updated_at: new Date()
       });
 
-    capabilityEvidence(res, 'branding_editing');
-    res.json({ 
+    res.json({
       message: 'Logo uploaded successfully',
       logoUrl: publicPath
     });
@@ -1330,7 +1182,6 @@ router.delete('/logo', adminAuth, requirePermission('settings.edit'), async (req
     const pathKey = isDark ? 'branding_logo_path_dark' : 'branding_logo_path';
     const urlKey = isDark ? 'branding_logo_url_dark' : 'branding_logo_url';
 
-    const logoChanged = await settingsChanged(db, { [pathKey]: '', [urlKey]: '' }, [pathKey, urlKey]);
     const pathSetting = await db('app_settings').where('setting_key', pathKey).first();
     if (pathSetting && pathSetting.setting_value) {
       try {
@@ -1345,7 +1196,6 @@ router.delete('/logo', adminAuth, requirePermission('settings.edit'), async (req
       .whereIn('setting_key', [pathKey, urlKey])
       .update({ setting_value: JSON.stringify(''), updated_at: new Date() });
 
-    if (logoChanged) capabilityEvidence(res, 'branding_editing');
     res.json({ message: 'Logo removed' });
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to remove logo');
@@ -1431,7 +1281,6 @@ router.post('/branding/watermark-logo', adminAuth, requirePermission('settings.e
       watermarkRegenerationStarted = true;
     }
 
-    capabilityEvidence(res, 'branding_editing');
     res.json({
       message: 'Watermark logo uploaded successfully',
       watermarkLogoUrl: publicPath,
@@ -1446,7 +1295,6 @@ router.post('/branding/watermark-logo', adminAuth, requirePermission('settings.e
 router.put('/theme', adminAuth, requirePermission('settings.edit'), async (req, res) => {
   try {
     const themeSettings = req.body;
-    const themeChanged = await settingsChanged(db, { theme_config: themeSettings }, ['theme_config']);
 
     // Save theme settings
     await db('app_settings')
@@ -1473,7 +1321,6 @@ router.put('/theme', adminAuth, requirePermission('settings.edit'), async (req, 
 
     clearPublicSiteCache();
 
-    if (themeChanged) capabilityEvidence(res, 'branding_editing');
     res.json({ message: 'Theme settings updated successfully' });
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to update theme settings');
@@ -1493,7 +1340,7 @@ router.put('/general', adminAuth, requirePermission('settings.edit'), async (req
     // rejectUnauthorizedProtectedKeys (403s when a protected key is denied).
     if (await rejectUnauthorizedProtectedKeys(settings, req, res)) return;
 
-    // The public origin is no longer just an email link: it feeds the CORS
+    // The public origin feeds the CORS
     // allowlist (server.js) and the Access-Control-Allow-Origin header
     // (secureImageMiddleware) since #705. A schemeless value like
     // "gallery.example.com" therefore produces both links that don't resolve
@@ -1623,7 +1470,7 @@ router.put('/general', adminAuth, requirePermission('settings.edit'), async (req
           updated_at: new Date()
         });
     }
-    
+
     if (galleryPasswordPurge.after) await purgeRecoverablePasswords();
 
     // Clear maintenance mode cache if it was updated
@@ -1685,16 +1532,6 @@ router.put('/security', adminAuth, requirePermission('settings.security'), async
     // A settings.security holder still can't write domain keys here.
     if (await rejectUnauthorizedProtectedKeys(settings, req, res)) return;
 
-    // The reCAPTCHA secret goes out masked on GET, and the Security tab sends
-    // every security_* key back on save, mask included. Writing the mask
-    // would replace the stored secret with eight bullets and every
-    // captcha-gated login would then fail closed until it is re-entered.
-    // Analytics and backup already skip the sentinel; this tab did not
-    // (security review 2026-09-29).
-    if (settings.security_recaptcha_secret_key === SECRET_MASK) {
-      delete settings.security_recaptcha_secret_key;
-    }
-
     // Update or insert each setting
     const galleryPasswordPurge = await galleryPasswordPurgePlan(settings);
     if (galleryPasswordPurge.before) await purgeRecoverablePasswords();
@@ -1731,67 +1568,6 @@ router.put('/security', adminAuth, requirePermission('settings.security'), async
   }
 });
 
-// Update analytics settings
-router.put('/analytics', adminAuth, requirePermission('settings.edit'), async (req, res) => {
-  try {
-    const settings = stripReservedSettingKeys({ ...req.body });
-    if (rejectDedicatedRouteOwnedKeys(settings, res)) return;
-    if (await rejectUnauthorizedProtectedKeys(settings, req, res)) return;
-
-    // Validate the provider switch (#663 Phase 1). Reject unknown values
-    // so the dashboard route's factory doesn't have to defensively guard.
-    if (Object.prototype.hasOwnProperty.call(settings, 'analytics_tracker_provider')) {
-      const valid = ['none', 'umami', 'rybbit', 'custom'];
-      if (!valid.includes(settings.analytics_tracker_provider)) {
-        return res.status(400).json({
-          error: `analytics_tracker_provider must be one of: ${valid.join(', ')}`,
-        });
-      }
-    }
-
-    // Sanitise the custom-mode HTML snippet on save (#663 Phase 1). Stored
-    // pre-sanitised so the publicSettings endpoint surfaces it as-is on
-    // every gallery request — never re-running sanitize-html on the hot path.
-    if (Object.prototype.hasOwnProperty.call(settings, 'analytics_custom_head_html')) {
-      const { sanitizeTrackerSnippet } = require('../services/trackers/customScriptSanitiser');
-      settings.analytics_custom_head_html = sanitizeTrackerSnippet(settings.analytics_custom_head_html);
-    }
-
-    // Update or insert each setting
-    const galleryPasswordPurge = await galleryPasswordPurgePlan(settings);
-    if (galleryPasswordPurge.before) await purgeRecoverablePasswords();
-    for (const [key, value] of Object.entries(settings)) {
-      await db('app_settings')
-        .insert({
-          setting_key: key,
-          setting_value: JSON.stringify(value),
-          setting_type: 'analytics',
-          updated_at: new Date()
-        })
-        .onConflict('setting_key')
-        .merge({
-          setting_value: JSON.stringify(value),
-          updated_at: new Date()
-        });
-    }
-
-    if (galleryPasswordPurge.after) await purgeRecoverablePasswords();
-
-    // Log activity
-    await db('activity_logs').insert({
-      activity_type: 'analytics_settings_updated',
-      actor_type: 'admin',
-      actor_id: req.admin.id,
-      actor_name: req.admin.username,
-      metadata: JSON.stringify({ settings_count: Object.keys(settings).length })
-    });
-
-    res.json({ message: 'Analytics settings updated successfully' });
-  } catch (error) {
-    errorResponse(res, error, 500, 'Failed to update analytics settings');
-  }
-});
-
 // Update SEO settings
 router.put('/seo', adminAuth, requirePermission('settings.edit'), async (req, res) => {
   try {
@@ -1822,7 +1598,6 @@ router.put('/seo', adminAuth, requirePermission('settings.edit'), async (req, re
       }
     }
 
-    const seoChanged = await settingsChanged(db, settings, SEO_USAGE_KEYS);
     // Update or insert each setting
     const galleryPasswordPurge = await galleryPasswordPurgePlan(settings);
     if (galleryPasswordPurge.before) await purgeRecoverablePasswords();
@@ -1856,7 +1631,6 @@ router.put('/seo', adminAuth, requirePermission('settings.edit'), async (req, re
       metadata: JSON.stringify({ settings_count: Object.keys(settings).length })
     });
 
-    if (seoChanged) capabilityEvidence(res, 'seo_editing');
     res.json({ message: 'SEO settings updated successfully' });
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to update SEO settings');
@@ -2132,7 +1906,7 @@ router.post('/favicon', adminAuth, requirePermission('settings.edit'), faviconUp
 
     // The file is already in the correct location from multer
     const faviconUrl = `/uploads/favicons/${req.file.filename}`;
-    
+
     // Save to database
     await db('app_settings')
       .insert({
@@ -2148,13 +1922,12 @@ router.post('/favicon', adminAuth, requirePermission('settings.edit'), faviconUp
       });
 
     // Log activity
-    await logActivity('favicon_uploaded', 
-      { faviconUrl }, 
+    await logActivity('favicon_uploaded',
+      { faviconUrl },
       null,
       { type: 'admin', id: req.admin.id, name: req.admin.username }
     );
 
-    capabilityEvidence(res, 'branding_editing');
     res.json({ faviconUrl });
   } catch (error) {
     errorResponse(res, error, 500, 'Failed to upload favicon');
@@ -2221,8 +1994,8 @@ router.put('/security/rate-limit', adminAuth, requirePermission('settings.securi
     await initializeRateLimiters();
 
     // Log activity
-    await logActivity('settings_updated', 
-      { 
+    await logActivity('settings_updated',
+      {
         category: 'security',
         subcategory: 'rate_limit',
         changes: settings.length

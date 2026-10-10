@@ -50,7 +50,7 @@ describe('admin photo list — uncategorized filter (#1211)', () => {
 
     const [ev] = await db('events').insert({
       slug: 'uncat-filter', event_type: 'project', event_name: 'Uncat Filter',
-      event_date: '2026-08-01', host_email: 'h@example.com', admin_email: 'a@example.com',
+      event_date: '2026-08-01',
       password_hash: 'x', share_link: '/gallery/uncat-filter/share',
       expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString(),
       is_active: 1, is_archived: 0, is_draft: 0, created_at: new Date().toISOString(),

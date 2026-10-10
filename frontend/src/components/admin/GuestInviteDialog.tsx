@@ -21,7 +21,6 @@ export const GuestInviteDialog: React.FC<GuestInviteDialogProps> = ({ eventId, o
   const { t: tAudit } = useTranslation();
   const { t } = useTranslation();
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -30,12 +29,11 @@ export const GuestInviteDialog: React.FC<GuestInviteDialogProps> = ({ eventId, o
   });
 
   const createMutation = useMutationWithToast({
-    mutationFn: () => guestsService.createInvite(eventId, { name, email: email || undefined }),
+    mutationFn: () => guestsService.createInvite(eventId, { name }),
     successMessage: t('admin.guests.inviteCreated', 'Invite created'),
     invalidateKeys: [['admin-guest-invites', eventId], ['admin-guests', eventId]],
     onSuccess: () => {
       setName('');
-      setEmail('');
     },
     errorMessage: () => t('admin.guests.inviteCreateError', 'Failed to create invite'),
   });
@@ -79,20 +77,13 @@ export const GuestInviteDialog: React.FC<GuestInviteDialogProps> = ({ eventId, o
             <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 mb-3">
               {t('admin.guests.createInvite', 'Create invite')}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <div className="mb-3">
               <Input
                 label={t('admin.guests.inviteName', 'Guest name')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={tAudit("ui.guestNameExample")}
                 required
-              />
-              <Input
-                type="email"
-                label={t('admin.guests.inviteEmail', 'Email (optional)')}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="alice@example.com"
               />
             </div>
             <Button
@@ -129,11 +120,6 @@ export const GuestInviteDialog: React.FC<GuestInviteDialogProps> = ({ eventId, o
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
                           {invite.guest.name}
-                          {invite.guest.email && (
-                            <span className="text-neutral-500 dark:text-neutral-400 font-normal ml-2">
-                              · {invite.guest.email}
-                            </span>
-                          )}
                         </div>
                         <div className="text-xs mt-1">
                           <span

@@ -8,8 +8,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { settingsService, type BrandingSettings } from '../../services/settings.service';
 import { useTranslation } from 'react-i18next';
 import { buildResourceUrl } from '../../utils/url';
-import { useFeatureEnabled } from '../../contexts/FeatureFlagsContext';
-import { CustomerDashboardBrandingCard } from '../../components/admin/CustomerDashboardBrandingCard';
 import { usePublicSettings } from '../../hooks/usePublicSettings';
 import { useMutationWithToast } from '../../hooks';
 
@@ -21,7 +19,6 @@ export const BrandingPage: React.FC = () => {
     company_name: '',
     company_tagline: '',
     footer_text: '',
-    support_email: '',
     watermark_enabled: false,
     watermark_position: 'bottom-right',
     watermark_opacity: 50,
@@ -384,14 +381,6 @@ export const BrandingPage: React.FC = () => {
               onChange={(e) => handleBrandingChange('company_tagline', e.target.value)}
               placeholder={t('branding.companyTagline')}
               helperText={t('branding.companyTaglineHelp')}
-            />
-            <Input
-              label={t('branding.supportEmail')}
-              type="email"
-              value={brandingSettings.support_email}
-              onChange={(e) => handleBrandingChange('support_email', e.target.value)}
-              placeholder="support@yourcompany.com"
-              helperText={t('branding.supportEmailHelp')}
             />
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
@@ -841,10 +830,10 @@ export const BrandingPage: React.FC = () => {
              logo_size knob above. */}
           <div className="mt-6 pt-6 border-t border-neutral-200 dark:border-neutral-700">
             <h3 className="text-md font-semibold text-neutral-900 dark:text-neutral-100 mb-1">
-              {t('branding.loginLogo.title', 'Login pages logo')}
+              {t('branding.loginLogo.title', 'Admin login and setup logo')}
             </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-              {t('branding.loginLogo.subtitle', 'Controls only /admin/login and /customer/login. Gallery and admin chrome use the logo settings above.')}
+              {t('branding.loginLogo.subtitle', 'Controls the admin login and setup screens. Gallery and other admin pages use the logo settings above.')}
             </p>
 
             <div className="space-y-4">
@@ -1065,14 +1054,6 @@ export const BrandingPage: React.FC = () => {
           )}
         </Card>
 
-        {/* Customer dashboard branding (#354). Sits between "Company
-            Information" and "Gallery Theme" so it stays adjacent to the
-            other brand-visibility controls. Self-hides when the
-            customerPortal feature flag is off. */}
-        <div className="mb-6">
-          <CustomerDashboardBrandingSection />
-        </div>
-
         {/* Theme Customization */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
@@ -1143,15 +1124,4 @@ export const BrandingPage: React.FC = () => {
       </div>
     </ErrorBoundary>
   );
-};
-
-/**
- * Customer-dashboard branding card. Pulled out so the BrandingPage
- * stays readable and the feature-flag gate is local — no conditional
- * hooks in the parent.
- */
-const CustomerDashboardBrandingSection: React.FC = () => {
-  const customerPortalEnabled = useFeatureEnabled('customerPortal');
-  if (!customerPortalEnabled) return null;
-  return <CustomerDashboardBrandingCard />;
 };

@@ -66,8 +66,8 @@ describe('Slideshow photo source (#1015)', () => {
       event_type: 'project',
       event_name: 'Slideshow Source Test',
       event_date: '2026-08-01',
-      host_email: 'host@example.com',
-      admin_email: 'admin@example.com',
+
+
       password_hash: 'x',
       share_link: `/gallery/${SLUG}/share`,
       share_token: 'slideshow-source-share',

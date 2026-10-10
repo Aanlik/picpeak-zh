@@ -92,7 +92,7 @@ describe('gallery ZIP with a failing storage read', () => {
 
     const ev = await db('events').insert({
       slug: SLUG, event_type: 'project', event_name: 'Zip failure', event_date: '2026-08-01',
-      host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
+        password_hash: 'x',
       share_link: `/gallery/${SLUG}/s`, share_token: 'zip-failure-share',
       expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
       is_active: 1, is_archived: 0, is_draft: 0, require_password: 0, allow_downloads: 1,
@@ -113,7 +113,7 @@ describe('gallery ZIP with a failing storage read', () => {
     // A mixed-source gallery: a large external file ahead of a failing S3 read.
     const mixed = await db('events').insert({
       slug: MIXED_SLUG, event_type: 'project', event_name: 'Zip mixed', event_date: '2026-08-01',
-      host_email: 'h@example.com', admin_email: 'a@example.com', password_hash: 'x',
+        password_hash: 'x',
       share_link: `/gallery/${MIXED_SLUG}/s`, share_token: 'zip-mixed-share',
       expires_at: new Date(Date.now() + 7 * 864e5).toISOString(),
       is_active: 1, is_archived: 0, is_draft: 0, require_password: 0, allow_downloads: 1,

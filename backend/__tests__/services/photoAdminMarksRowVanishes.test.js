@@ -48,8 +48,8 @@ beforeAll(async () => {
     event_type: 'project',
     event_name: 'Mark Vanish',
     event_date: '2026-07-20',
-    host_email: 'host@example.com',
-    admin_email: 'admin@example.com',
+
+
     password_hash: 'x',
     share_link: '/gallery/mark-vanish/share',
     share_token: 'mark-vanish-share',

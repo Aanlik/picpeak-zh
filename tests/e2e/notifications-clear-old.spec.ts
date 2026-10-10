@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { adminApiToken } from './_helpers/admin';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 
 test('clearing notifications dismisses entries from this admin\'s bell without deleting the audit log @smoke', async ({ request }) => {
   const token = await adminApiToken(request);
@@ -21,8 +21,6 @@ test('clearing notifications dismisses entries from this admin\'s bell without d
       event_name: eventName,
       event_date: eventDate,
       customer_name: 'Notification Test',
-      customer_email: 'notify@example.com',
-      admin_email: ADMIN_EMAIL,
       password: 'NotifyClearPass!1',
       expiration_days: 30,
       allow_user_uploads: false,

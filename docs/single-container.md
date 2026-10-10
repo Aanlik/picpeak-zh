@@ -7,7 +7,6 @@
 ```bash
 docker build -f Dockerfile.aio \
   --build-arg VITE_DEFAULT_LANGUAGE=zh-CN \
-  --build-arg VITE_NO_EMAIL_MODE=true \
   -t picpeak-zh:3.134.1-zh.20 .
 ```
 
@@ -18,7 +17,6 @@ docker run -d \
   --name picpeak-zh \
   --restart unless-stopped \
   -p 3000:3000 \
-  -e NO_EMAIL_MODE=true \
   -v picpeak-zh-data:/data \
   picpeak-zh:3.134.1-zh.20
 ```

@@ -60,8 +60,6 @@ jest.mock('../../src/utils/authSecurity', () => ({
 }));
 
 // Collaborators the router imports at load but the share-login path doesn't hit.
-jest.mock('../../src/services/recaptcha', () => ({ verifyRecaptcha: async () => true }));
-jest.mock('../../src/services/mfaService', () => ({}));
 jest.mock('../../src/middleware/sessionTimeout', () => ({ endSession: jest.fn(), sessionTimeoutMiddleware: (req, res, next) => next() }));
 jest.mock('../../src/utils/tokenRevocation', () => ({ revokeToken: jest.fn(async () => {}), isTokenRevoked: async () => false }));
 

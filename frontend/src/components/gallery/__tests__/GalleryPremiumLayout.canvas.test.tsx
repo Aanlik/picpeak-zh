@@ -2,7 +2,6 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { GalleryPremiumLayout } from '../layouts/GalleryPremiumLayout';
-import { galleryService } from '../../../services/gallery.service';
 import type { Photo } from '../../../types';
 
 const { download } = vi.hoisted(() => ({ download: vi.fn() }));
@@ -14,7 +13,6 @@ vi.mock('../../../hooks/useGallery', () => ({ useDownloadPhoto: () => ({ mutate:
 vi.mock('../../../contexts/GuestIdentityContext', () => ({ useGuestIdentityOptional: () => null }));
 vi.mock('../../../hooks/useInputMode', () => ({ useInputMode: () => 'mouse' }));
 vi.mock('react-intersection-observer', () => ({ useInView: () => ({ ref: vi.fn(), inView: true }) }));
-vi.mock('../../../services/gallery.service', () => ({ galleryService: { trackPhotoView: vi.fn() } }));
 vi.mock('../../common', async () => ({
   ...await vi.importActual('../../common'),
   PoweredBy: () => null,
@@ -125,7 +123,6 @@ describe('Premium lightbox canvas rendering (#1325)', () => {
     expect(fetchImage).toHaveBeenCalledWith(expect.stringContaining('/preview/1'), expect.objectContaining({
       credentials: 'include', headers: { Authorization: 'Bearer gallery-test-token' },
     }));
-    expect(galleryService.trackPhotoView).toHaveBeenCalledWith('demo', 1);
   });
 
   it.each(['basic', 'standard', 'enhanced'] as const)('uses an image with %s protection and canvas off', async (protectionLevel) => {
@@ -148,7 +145,6 @@ describe('Premium lightbox canvas rendering (#1325)', () => {
     expect(first.height).toBe(0);
     expect(document.querySelectorAll('canvas')).toHaveLength(1);
     expect(revokeObjectURL.mock.calls.length).toBeGreaterThan(revokedBefore);
-    expect(galleryService.trackPhotoView).toHaveBeenLastCalledWith('demo', 2);
     fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(second.width).toBe(0);
