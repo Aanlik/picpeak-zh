@@ -1,0 +1,82 @@
+name: pixcake
+services:
+  picpeak:
+    image: ${STACK_IMAGE:-picpeak-pixcake:3.134.1-zh.20-bridge.0.1.8}
+    build:
+      context: .
+      dockerfile: Dockerfile.integrated
+      args:
+        PICPEAK_BASE: ${PICPEAK_BASE:-picpeak-zh:3.134.1-zh.20}
+    # Copy only configuration into the service volume to support NAS owner-only bind permissions.
+    entrypoint:
+    - dumb-init
+    - --
+    - /bin/sh
+    - -ec
+    - '[ -e /bridge-data/projects.json ] || cp /config/projects.json /bridge-data/projects.json; chown ${BRIDGE_UID:-1001}:${BRIDGE_GID:-1001} /bridge-data/projects.json; chmod 640 /bridge-data/projects.json; exec /opt/integrated/start.sh'
+    environment:
+      PORT: '3000'
+      NO_EMAIL_MODE: 'true'
+      PIXCAKE_BRIDGE_URL: http://127.0.0.1:8080
+      PIXCAKE_BRIDGE_PASSWORD: ${BRIDGE_ADMIN_PASSWORD:?填写管理密码}
+      DATABASE_CLIENT: sqlite3
+      EXTERNAL_MEDIA_ROOT: /external-media
+      EXTERNAL_MEDIA_WATCH_POLLING: 'true'
+      EXTERNAL_MEDIA_WATCH_SWEEP_INTERVAL_MS: '60000'
+      TZ: Asia/Shanghai
+      PICPEAK_URL: http://127.0.0.1:3000
+      PICPEAK_TOKEN: ${PICPEAK_TOKEN:-}
+      BRIDGE_ADMIN_PASSWORD: ${BRIDGE_ADMIN_PASSWORD:?填写管理密码}
+      BRIDGE_UID: ${BRIDGE_UID:-1001}
+      BRIDGE_GID: ${BRIDGE_GID:-1001}
+      DATABASE_URL: sqlite:////bridge-data/bridge.db
+      PROJECTS_FILE: /bridge-data/projects.json
+      RAW_ROOT: /external-media/Camera
+      RAW_HOST_ROOT: ${NAS_CAMERA_ROOT:?填写现有 NAS Camera 绝对路径}
+      DELIVERY_ROOT: /delivery
+      DELIVERY_HOST_ROOT: ${NAS_DELIVERY_ROOT:-}
+      PROJECT_DELIVERY_MOUNTS: ${PROJECT_DELIVERY_MOUNTS:-}
+      POLL_SECONDS: ${POLL_SECONDS:-30}
+      STABLE_SECONDS: ${STABLE_SECONDS:-10}
+      MAX_FINAL_BYTES: ${MAX_FINAL_BYTES:-104857600}
+      HISTORY_KEEP: ${HISTORY_KEEP:-3}
+      RAW_MATERIALIZE_MODE: ${RAW_MATERIALIZE_MODE:-auto}
+      WATCHFILES_FORCE_POLLING: 'true'
+      BRIDGE_ENABLED: ${BRIDGE_ENABLED:-false}
+    ports:
+    - ${LAN_BIND_IP:-127.0.0.1}:${PICPEAK_PORT:-3000}:3000
+    volumes:
+    - picpeak-data:/data
+    - bridge-data:/bridge-data
+    - ./projects.json:/config/projects.json:ro
+    # Mount only this project's PixCakeDelivery directory writable. Keep the
+    # Camera tree above read-only. Add one scoped volume and map entry per
+    # additional active project; never mount Camera writable.
+    - type: bind
+      source: ${NAS_CAMERA_ROOT:?填写现有 NAS Camera 绝对路径}
+      target: /external-media/Camera
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ${NAS_DELIVERY_ROOT:?填写 NAS 交付目录绝对路径}
+      target: /delivery
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ${NAS_PROJECT_5_DELIVERY_ROOT:?填写项目 5 的 PixCakeDelivery 绝对路径}
+      target: /delivery-5
+      bind:
+        create_host_path: false
+    networks:
+    - photos
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    stop_grace_period: 60s
+networks:
+  photos:
+    driver: bridge
+volumes:
+  picpeak-data: null
+  bridge-data: null

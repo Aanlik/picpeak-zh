@@ -1,0 +1,27 @@
+# 本机验证记录
+
+基线：PicPeak v3.134.1，官方 stable SHA `5fc54d9a5e17a7f054c926922a6f820f3c98eda2`；Bridge v0.1.0，Python 3.12。测试日期：2026-10-07。
+
+真实 AIO 容器完成 100 和 1000 张合成照片两组测试。每组 50 初选、追加 5、SELECTING 取消 2、EDITING 再取消保留 RAW，53 个成片加一次返修共 54 次上传。photo_id、客户评论/评分/喜爱/绿色标记、文件名排序与分享入口保留。停止 PicPeak 后恢复、同 SQLite 状态重启引擎，没有重复上传。全部 100/1000 个 RAW SHA-256 不变。完整无凭证报告位于交付目录 verification/real-picpeak-results.json。
+
+中文键检查 6331，复数键 196；检查器故障测试 5 项通过。最终前端完整测试 135 个文件、880 项全部通过；Bridge 55 项通过（1 条上游 Starlette 弃用提示）。GitHub 上两个仓库的 CI（中文检查/构建/Docker，以及 Bridge 单元/真实 AIO 集成）均已通过。Docker AIO 与 Bridge 已在本机实际构建。
+
+最终回归结果与浏览器截图见交付目录 verification。真机/微信、fnOS、FN Connect、像素蛋糕以及物理断电尚未完成。
+
+## 实际 fnOS NAS 验证
+
+2026-10-07 已在 AMD64 fnOS 1.2.0701 部署锁定镜像，100 张 Proof；50 张初选、追加 5、取消 2；独立第 56 张验证 EDITING 取消保护。53 张 FINAL 与 1 次返修成功，反馈和分享入口保留，100 个 RAW SHA256 不变。两个应用容器实际停止启动后无重复上传，阶段状态保留，0 异常。真实手机、像素蛋糕有效相机 RAW、物理 NAS 整机重启及 FN Connect 外部匿名访问仍未验收。
+
+NAS 私有 Home 目录属于 UID 1000，实际部署使用对应运行 UID；仅初始化新建数据卷与选片/历史目录，RAW 保持只读。不可通过更改原始照片权限解决容器访问问题。
+
+## 无邮箱中文版兼容
+
+用户名初始化、登录、账号创建和权限隔离已在真实 AIO 验证；Bridge 集成初始化同时提供 username，保持兼容官方 email 模式。无邮箱 AIO 的 100 张完整闭环仍为 54 次成功交付且无重复上传。
+
+## 摄影进度摘要升级（0.1.1）
+新增持久化的精修/交付阶段追加选择标记；旧 SQLite 原地添加列，保留照片和交付记录。新增 2 个测试覆盖追加→取消→重启及旧表升级。PicPeak 中文项目页读取内部只读摘要，凭据由服务端保管；未关联项目明确提示。
+返修仅统计成功同步的不同内容版本，失败任务不虚增返修。
+
+## NAS 文件夹关联（zh.5）
+
+新增前端测试通过（共 888 项）。真实容器结果见 `outputs/verification/nas-folder-container.json`；NAS 实测见 `nas-folder-results.json`。专用容器脚本 `scripts/nas_folder_e2e.py` 从整套工作区根目录执行，依赖 httpx/Pillow 和本地 Docker 镜像 `picpeak-zh:3.134.1-zh.5`，使用 `pixcake-folder-picpeak`、`pixcake-folder-test-data` 和端口 19309；必须使用未初始化的专用测试卷，不能指向生产实例。脚本留存测试容器和合成图片，便于人工核对。
