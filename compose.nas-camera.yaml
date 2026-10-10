@@ -1,0 +1,13 @@
+# docker compose -f compose.yaml -f compose.nas-camera.yaml up -d
+services:
+  picpeak:
+    environment:
+      BRIDGE_UID: ${BRIDGE_UID:-1000}
+      BRIDGE_GID: ${BRIDGE_GID:-1000}
+    # Match the owner-only NAS Camera directory without changing source permissions.
+    entrypoint:
+      - dumb-init
+      - --
+      - /bin/sh
+      - -ec
+      - "sed -i 's/^nodejs:x:1001:/nodejs:x:${NAS_CAMERA_UID:-1000}:/' /etc/passwd; [ -e /bridge-data/projects.json ] || cp /config/projects.json /bridge-data/projects.json; chown ${BRIDGE_UID:-1000}:${BRIDGE_GID:-1000} /bridge-data/projects.json; chmod 640 /bridge-data/projects.json; exec /opt/integrated/start.sh"

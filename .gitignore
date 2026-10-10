@@ -1,0 +1,11 @@
+.env
+.venv/
+releases/
+__pycache__/
+.pytest_cache/
+*.db*
+data/
+build/
+dist/
+
+projects.json
